@@ -9,7 +9,7 @@ build_build:
     - quartz
     - shell
   script:
-    - virtualenv --python=/usr/tce/bin/python3-3.8.2 --no-site-packages test_env
+    - virtualenv --python=/usr/tce/bin/python3-3.8.2 test_env
     - source test_env/bin/activate
 
 test_test:
