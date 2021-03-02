@@ -1,0 +1,10 @@
+stages:
+  - test
+
+test_test:
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script:
+    - echo "gets here"
