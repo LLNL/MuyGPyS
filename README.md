@@ -1,5 +1,5 @@
 # Fast implementation of the local kriging GP.
-======
+
 
 
 ## Installation
