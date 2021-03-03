@@ -1,22 +1,13 @@
 stages:
-  - build
   - test
-  - teardown
 
-build_build:
-  stage: build
+test_test:
+  stage: test
   tags:
     - quartz
     - shell
   script:
     - virtualenv --python=/usr/tce/bin/python3-3.8.2 test_env
-
-test_test:
-  stage: test
-  needs: [build_build]
-  tags:
-    - quartz
-    - shell
-  script:
     - source test_env/bin/activate
     - pip list
+    - pwd
