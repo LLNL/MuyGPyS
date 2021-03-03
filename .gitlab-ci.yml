@@ -9,7 +9,7 @@ test_test:
   script:
     - virtualenv --python=/usr/tce/bin/python3-3.8.2 test_env
     - source test_env/bin/activate
-    - pip install -r requirements
+    - pip install -r requirements.txt
     - pip install -e .
     - python -c "import muyscans"
     - deactivate
