@@ -119,6 +119,67 @@ class LKGP:
                 ret.append((eps, 2.0))
         return ret
 
+    def _compute_K(self, nn_indices, train):
+        return np.array([self.kernel(mat) for mat in train[nn_indices]])
+
+    def _compute_Kcross(self, indices, nn_indices, test, train):
+        dim = test.shape[1]
+        return np.array(
+            [
+                self.kernel(vec.reshape(1, dim), mat)
+                for vec, mat in zip(test[indices], train[nn_indices])
+            ]
+        )
+
+    def _compute_Kfull(self, indices, nn_indices, test, train):
+        dim = test.shape[1]
+        return np.array(
+            [
+                self.kernel(np.vstack((mat, vec.reshape(1, dim))))
+                for vec, mat in zip(test[indices], train[nn_indices])
+            ]
+        )
+
+    def _compute_kernel_tensors(
+        self,
+        indices,
+        nn_indices,
+        test,
+        train,
+    ):
+        # NOTE[bwp] This is clugy and terrible. Need to reenginer nngp.
+        # NOTE[bwp] In fact, should reengineer all kernels so as to use on-node
+        # parallelism. This is one of the main bottlenecks right now.
+
+        if type(self.kernel) == NNGP:
+            batch_size, nn_count = nn_indices.shape
+            Kfull = self._compute_Kfull(indices, nn_indices, test, train)
+            K = Kfull[:, :-1, :-1]
+            Kcross = Kfull[:, -1, :-1].reshape((batch_size, 1, nn_count))
+        else:
+            K = self._compute_K(nn_indices, train)
+            Kcross = self._compute_Kcross(indices, nn_indices, test, train)
+        return K, Kcross
+
+    def _compute_solve(self, nn_indices, targets, K, Kcross):
+        nn_count = nn_indices.shape[1]
+        return Kcross @ np.linalg.solve(
+            K + self.eps * np.eye(nn_count), targets[nn_indices, :]
+        )
+
+    def _compute_diagonal_variance(self, K, Kcross, batch_size, nn_count):
+        Kcross = Kcross.reshape(batch_size, nn_count)
+        return np.array(
+            [
+                1.0
+                - Kcross[i, :]
+                @ np.linalg.solve(
+                    K[i, :, :] + self.eps * np.eye(nn_count), Kcross[i, :]
+                )
+                for i in range(batch_size)
+            ]
+        )
+
     def regress(
         self,
         indices,
@@ -162,44 +223,20 @@ class LKGP:
         batch_size = len(indices)
         output_dim = targets.shape[1]
         nn_count = nn_indices.shape[1]
-        dim = test.shape[1]
-        # NOTE[bwp] This is clugy and terrible. Need to reenginer nngp.
-        # NOTE[bwp] In fact, should reengineer all kernels so as to use on-node
-        # parallelism. This is one of the main bottlenecks right now.
-        if type(self.kernel) == NNGP:
-            Kfull = np.array(
-                [
-                    self.kernel(np.vstack((mat, vec.reshape(1, dim))))
-                    for vec, mat in zip(test[indices], train[nn_indices])
-                ]
-            )
-            K = Kfull[:, :-1, :-1]
-            Kcross = Kfull[:, -1, :-1].reshape((batch_size, 1, nn_count))
-        else:
-            K = np.array([self.kernel(mat) for mat in train[nn_indices]])
-            Kcross = np.array(
-                [
-                    self.kernel(vec.reshape(1, dim), mat)
-                    for vec, mat in zip(test[indices], train[nn_indices])
-                ]
-            )
-        solve = Kcross @ np.linalg.solve(
-            K + self.eps * np.eye(nn_count), targets[nn_indices, :]
+        K, Kcross = self._compute_kernel_tensors(
+            indices,
+            nn_indices,
+            test,
+            train,
         )
-        responses = solve.reshape(batch_size, output_dim)
+        responses = self._compute_solve(nn_indices, targets, K, Kcross).reshape(
+            batch_size, output_dim
+        )
         if variance_mode is None:
             return responses
         elif variance_mode == "diagonal":
-            Kcross = Kcross.reshape(batch_size, nn_count)
-            diagonal_variance = np.array(
-                [
-                    1.0
-                    - Kcross[i, :]
-                    @ np.linalg.solve(
-                        K[i, :, :] + self.eps * np.eye(nn_count), Kcross[i, :]
-                    )
-                    for i in range(batch_size)
-                ]
+            diagonal_variance = self._compute_diagonal_variance(
+                K, Kcross, batch_size, nn_count
             )
             return responses, diagonal_variance
         else:
@@ -240,8 +277,7 @@ class LKGP:
         batch_size, nn_count = nn_indices.shape
         out_dim = targets.shape[1]
 
-        K = np.array([self.kernel(mat) for mat in train[nn_indices]])
-        # sigmas = np.zeros((batch_size, out_dim))
+        K = self._compute_K(nn_indices, train)
         sigmas = np.zeros((out_dim,))
         for i in range(out_dim):
             sigmas[i] = sum(self._get_sigma_sq(K, targets[:, i], nn_indices))
@@ -279,8 +315,7 @@ class LKGP:
         """
         batch_size, nn_count = nn_indices.shape
 
-        K = np.array([self.kernel(mat) for mat in train[nn_indices]])
-        # sigmas = np.zeros((batch_size, out_dim))
+        K = self._compute_K(nn_indices, train)
         sigmas = np.zeros((batch_size,))
         for i, el in enumerate(self._get_sigma_sq(K, target_col, nn_indices)):
             sigmas[i] = el
