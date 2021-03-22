@@ -47,8 +47,11 @@ def cross_entropy_fn(predictions, targets):
     float
         The cross-entropy loss of the prediction.
     """
+    one_hot_targets = np.zeros(targets.shape)
+    one_hot_targets[targets > 0.0] = 1.0
+
     return log_loss(
-        targets, softmax(predictions, axis=1), eps=1e-6, normalize=False
+        one_hot_targets, softmax(predictions, axis=1), eps=1e-6, normalize=False
     )
 
 
@@ -134,7 +137,5 @@ def loo_crossval(
     )
 
     targets = train_targets[batch_indices, :]
-    one_hot_targets = np.zeros(targets.shape)
-    one_hot_targets[targets > 0.0] = 1.0
 
-    return objective_fn(predictions, one_hot_targets)
+    return objective_fn(predictions, targets)
