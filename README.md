@@ -290,3 +290,33 @@ In [13] sub_train = balanced_subsample(train, 1000)
 In [14] sub_test = balanced_subsample(test, 1000)
 ```
 
+
+### Specifying hyperparameter bounds for optimization
+
+
+When training hyperparameters, one might want to apply prior knowledge to constrain the range of reasonable values that the optimizer should consider.
+`muyscans` has built-in bounds that can be overridden with the `optim_bounds` kwarg, which expects a dict mapping hyperparameter name strings to 2-tuples specifying the lower and upper bounds to be considered for optimization, respectively.
+
+`optim_bounds` example:
+```
+In [5]: predictions = do_regress(train, test, nn_count=50, embed_dim=50, batch_size=500, kern="matern", embed_method="pca", loss_method="mse", hyper_dict={"length_scale": 1.5, "eps": 0.015}, optim_bounds={"nu": (1e-5, 1.0)}, variance_mode=None, exact=False, verbose=True)
+
+optimization parameters: ['length_scale', 'nu']
+bounds: [(1e-06, 40.0), (1e-06, 2.0)]
+sampled x0: [9.1479526  1.13113405]
+optimizer results: 
+      fun: 0.06288895645420908
+ hess_inv: <2x2 LbfgsInvHessProduct with dtype=float64>
+      jac: array([ 1.84574579e-07, -9.53542795e-06])
+  message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
+     nfev: 48
+      nit: 7
+     njev: 16
+   status: 0
+  success: True
+        x: array([6.77309969, 0.54720995])
+lkgp params : {'length_scale': 6.77309968633532, 'nu': 0.5472099500708325}
+timing : {'embed': 1.2968666851520538e-06, 'nn': 0.16625570296309888, 'batch': 3.210734575986862e-07, 'hyperopt': 3.7612421449739486, 'pred': 5.0821877010166645, 'pred_full': {'nn': 0.03705085511319339, 'agree': 8.50064679980278e-07, 'pred': 5.044568303972483}}
+```
+
+One should specify bounds using `optim_bounds` only for hyperparameters that are not specified in `hyper_dict`, as those hyperparameters will be fixed.

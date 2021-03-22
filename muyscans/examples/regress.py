@@ -36,6 +36,7 @@ def do_regress(
     embed_method="pca",
     loss_method="mse",
     hyper_dict=None,
+    optim_bounds=None,
     variance_mode=None,
     do_normalize=False,
     exact=True,
@@ -72,6 +73,10 @@ def do_regress(
     hyper_dict : dict or None
         If specified, use the given parameters for the kernel. If None, perform
         hyperparamter optimization.
+    optim_bounds : dict or None
+        If specified, set the corresponding bounds (a 2-tuple) for each
+        specified hyperparameter. If None, use all default bounds for
+        hyperparameter optimization.
     variance_mode : str or None
         Specifies the type of variance to return. Currently supports
         ``diagonal'' and None. If None, report no variance term.
@@ -125,6 +130,8 @@ def do_regress(
         unset_params.remove("sigma_sq")
         if variance_mode is not None:
             do_sigma = True
+    if optim_bounds is not None:
+        lkgp.set_optim_bounds(**optim_bounds)
 
     # Train hyperparameters by maximizing LOO predictions for batched
     # observations if `hyper_dict` unspecified.

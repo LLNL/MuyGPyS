@@ -57,6 +57,7 @@ def do_classify(
     embed_method="pca",
     loss_method="log",
     hyper_dict=None,
+    optim_bounds=None,
     uq_objectives=None,
     do_normalize=False,
     exact=True,
@@ -99,6 +100,10 @@ def do_classify(
     hyper_dict : dict or None
         If specified, use the given parameters for the kernel. If None, perform
         hyperparamter optimization.
+    optim_bounds : dict or None
+        If specified, set the corresponding bounds (a 2-tuple) for each
+        specified hyperparameter. If None, use all default bounds for
+        hyperparameter optimization.
     uq_objectives : list(Callable)
         List of functions taking four arguments: bit masks alpha and beta - the
         type 1 and type 2 error counts at each grid location, respectively - and
@@ -152,6 +157,8 @@ def do_classify(
     unset_params = lkgp.set_params(**hyper_dict)
     if "sigma_sq" in unset_params:
         unset_params.remove("sigma_sq")
+    if optim_bounds is not None:
+        lkgp.set_optim_bounds(**optim_bounds)
 
     # Train hyperparameters by maximizing LOO predictions for batched
     # observations if `nu` unspecified.

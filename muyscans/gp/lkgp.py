@@ -37,6 +37,7 @@ class LKGP:
         """
         self.kern = kern.lower()
         self.set_params(**kwargs)
+        self.bounds = dict()
 
     def set_params(self, **params):
         # NOTE[bwp] this logic should get moved into kernel functors once
@@ -93,6 +94,13 @@ class LKGP:
         elif self.kern == "nngp":
             self.kernel = NNGP(**self.params)
 
+    def set_optim_bounds(self, **params):
+        for p in params:
+            self.bounds[p] = params[p]
+
+    def _get_bound(self, param, default):
+        return self.bounds.get(param, default)
+
     def optim_bounds(self, names, eps=1e-6):
         """
         Return hyperparameter bounds.
@@ -103,20 +111,20 @@ class LKGP:
         """
         ret = list()
         if "eps" in names:
-            ret.append((eps, 0.2))
+            ret.append(self.bounds.get("eps", (eps, 0.2)))
         if self.kern == "matern":
             if "length_scale" in names:
-                ret.append((eps, 40.0))
+                ret.append(self.bounds.get("length_scale", (eps, 40.0)))
             if "nu" in names:
-                ret.append((eps, 2.0))
+                ret.append(self.bounds.get("nu", (eps, 2.0)))
         elif self.kern == "rbf":
             if "length_scale" in names:
-                ret.append((eps, 40.0))
+                ret.append(self.bounds.get("length_scale", (eps, 40.0)))
         elif self.kern == "nngp":
             if "sigma_b_sq" in names:
-                ret.append((eps, 2.0))
+                ret.append(self.bounds.get("sigma_b_sq", (eps, 2.0)))
             if "sigma_w_sq" in names:
-                ret.append((eps, 2.0))
+                ret.append(self.bounds.get("sigma_w_sq", (eps, 2.0)))
         return ret
 
     def _compute_K(self, nn_indices, train):
