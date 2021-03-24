@@ -28,7 +28,7 @@ test_data:
     - quartz
     - shell
   script:
-    - python test/data.py
+    - python tests/data.py
 
 test_gp:
   extends: .template_env_load
@@ -37,7 +37,7 @@ test_gp:
     - quartz
     - shell
   script:
-    - python test/gp.py
+    - python tests/gp.py
 
 test_neighbors:
   extends: .template_env_load
@@ -46,7 +46,7 @@ test_neighbors:
     - quartz
     - shell
   script:
-    - python test/neighbors.py
+    - python tests/neighbors.py
 
 test_optimize:
   extends: .template_env_load
@@ -55,7 +55,7 @@ test_optimize:
     - quartz
     - shell
   script:
-    - python test/optimize.py
+    - python tests/optimize.py
 
 test_predict:
   extends: .template_env_load
@@ -64,7 +64,7 @@ test_predict:
     - quartz
     - shell
   script:
-    - python test/predict.py
+    - python tests/predict.py
 
 test_api:
   extends: .template_env_load
@@ -73,7 +73,5 @@ test_api:
     - quartz
     - shell
   script:
-    - python test/api.py /p/lustre1/madstare/muygps-data/star-gal/
-
-
+    - python tests/api.py /p/lustre1/madstare/muygps-data/star-gal/
 
