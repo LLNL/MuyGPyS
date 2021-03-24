@@ -28,4 +28,4 @@ test_data:
     - quartz
     - shell
   script:
-    - python test/data.py
+    - python tests/data.py
