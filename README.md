@@ -13,6 +13,23 @@ $ pip install -e .
 ```
 
 
+## API Examples
+
+
+Listed below are several examples using the high-level APIs located in `muyscans.examples.classify` and `muyscans.examples.regress`.
+Note that one need not go through these APIs to use `muyscans`.
+See the function definitions of the APIs themselves for a general idea of how to invoke `muyscans` components.
+
+The example workflows below use Amanda's star-galaxy dataset.
+One can of course replace the star-galaxy dataset with your data of choice, so long as it is contained within two Python dicts such as the `train` and `test` dicts given below.
+The `muyscans` APIs expect that these dicts possess the string keys `"input"`, `"output"`, and `"lookup"`.
+`train["input"]` should be a `(train_count, feature_count)`-shaped `numpy.ndarray` encoding the training observations.
+`train["output"]` should be a `(train_count, response_count)`-shaped `numpy.ndarray` encoding the training targets, i.e. ground-truth 1-hot encoded class labels or regression targets.
+`train["lookup"]` is used only for classification workflows, and should be a `(train_count,)`-shaped `numpy.ndarray` encoding the class ID.
+`train["lookup"] = np.argmax(train["output"], axis=1)` unless we are using the 2-class uncertainty quantification workflow, in which case `train["lookup"] = 2 * np.argmax(train["output"], axis=1) - 1`.
+
+
+
 ## Classification
 
 
