@@ -258,7 +258,7 @@ class StargalTest(parameterized.TestCase):
             # @NOTE[bwp] Should we do more to validate the uq? Expected ranges?
             # What about the first dimension `np.sum(mask)`, which records the
             # number of "ambiguous" prediction locations?
-            print(uq)
+            # print(uq)
             for i in range(uq.shape[0] - 1):
                 self.assertLessEqual(uq[i, 1], acc)
                 self.assertGreaterEqual(uq[i, 2], acc)

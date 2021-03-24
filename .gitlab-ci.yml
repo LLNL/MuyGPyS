@@ -37,7 +37,7 @@ test_gp:
     - quartz
     - shell
   script:
-    - python tests/gp.py
+    - srun -N1 -ppdebug python tests/gp.py
 
 test_neighbors:
   extends: .template_env_load
@@ -64,7 +64,7 @@ test_predict:
     - quartz
     - shell
   script:
-    - python tests/predict.py
+    - srun -N1 -ppdebug python tests/predict.py
 
 test_api:
   extends: .template_env_load
