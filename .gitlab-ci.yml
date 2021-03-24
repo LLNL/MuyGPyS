@@ -55,7 +55,7 @@ test_optimize:
     - quartz
     - shell
   script:
-    - python tests/optimize.py
+    - srun -N1 -ppdebug python tests/optimize.py
 
 test_predict:
   extends: .template_env_load
@@ -73,5 +73,5 @@ test_api:
     - quartz
     - shell
   script:
-    - python tests/api.py /p/lustre1/madstare/muygps-data/star-gal/
+    - srun -N1 -ppdebug python tests/api.py /p/lustre1/madstare/muygps-data/star-gal/
 
