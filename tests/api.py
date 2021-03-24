@@ -7,7 +7,6 @@ import pickle as pkl
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from muyscans.data.load import make_stargal
 from muyscans.embed import embed_all
 from muyscans.examples.classify import (
     do_classify,

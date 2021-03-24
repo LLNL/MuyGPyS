@@ -2,6 +2,4 @@ hnswlib
 numpy
 scipy
 sklearn
-tensorflow
-tensorflow-datasets==2.0.0
 absl-py
