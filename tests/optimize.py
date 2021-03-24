@@ -170,7 +170,7 @@ class BatchTest(parameterized.TestCase):
             target_count / response_count,
         )
         self.assertGreater(
-            np.min(hist) + 0.35 * (target_count / response_count),
+            np.min(hist) + 0.45 * (target_count / response_count),
             target_count / response_count,
         )
 
