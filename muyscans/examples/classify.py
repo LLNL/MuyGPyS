@@ -258,15 +258,7 @@ def do_classify(
 
         # Compute index masks indicating the predictions that include `0` in the
         # confidence interval for each of the training objectives.
-        masks = np.array(
-            [
-                np.logical_and(
-                    predictions[:, 1] - cut * variances < mid_value,
-                    predictions[:, 1] + cut * variances > mid_value,
-                )
-                for cut in cutoffs
-            ]
-        )
+        masks = make_masks(predictions, cutoffs, variances, mid_value)
         time_cutoff = perf_counter()
 
         # Profiling printouts if requested.
@@ -300,6 +292,18 @@ def do_classify(
             print(f"lkgp params : {lkgp.params}")
             print(f"timing : {timing}")
         return predictions
+
+
+def make_masks(predictions, cutoffs, variances, mid_value):
+    return np.array(
+        [
+            np.logical_and(
+                predictions[:, 1] - cut * variances < mid_value,
+                predictions[:, 1] + cut * variances > mid_value,
+            )
+            for cut in cutoffs
+        ]
+    )
 
 
 def do_uq(predicted_labels, test, masks):
@@ -343,4 +347,7 @@ def do_uq(predicted_labels, test, masks):
             for mask in masks
         ]
     )
+    for i in range(uq.shape[0]):
+        if uq[i, 0] == 0:
+            uq[i, 1] = 0.0
     return np.mean(correct), uq

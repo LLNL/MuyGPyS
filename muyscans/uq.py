@@ -49,7 +49,7 @@ def train_two_class_interval(
 
     Returns
     -------
-    cutoffs : np.ndarray, type = float, shape = ``(mask_count)''
+    cutoffs : np.ndarray, type = float, shape = ``(mask_count,)''
         Returns the confidence interval scale parameter that minimizes each
         considered objective function.
     """
@@ -107,8 +107,10 @@ def train_two_class_interval(
 
     correct_count = np.sum(correct_mask)
     incorrect_count = np.sum(incorrect_mask)
-    cutoffs = [
-        cutv[obj_f(_alpha, _beta, correct_count, incorrect_count)]
-        for obj_f in objective_fns
-    ]
+    cutoffs = np.array(
+        [
+            cutv[obj_f(_alpha, _beta, correct_count, incorrect_count)]
+            for obj_f in objective_fns
+        ]
+    )
     return cutoffs
