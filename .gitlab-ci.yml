@@ -29,3 +29,51 @@ test_data:
     - shell
   script:
     - python test/data.py
+
+test_gp:
+  extends: .template_env_load
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script:
+    - python test/gp.py
+
+test_neighbors:
+  extends: .template_env_load
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script:
+    - python test/neighbors.py
+
+test_optimize:
+  extends: .template_env_load
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script:
+    - python test/optimize.py
+
+test_predict:
+  extends: .template_env_load
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script:
+    - python test/predict.py
+
+test_api:
+  extends: .template_env_load
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script:
+    - python test/api.py /p/lustre1/madstare/muygps-data/star-gal/
+
+
+

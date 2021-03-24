@@ -30,14 +30,14 @@ class StargalTest(parameterized.TestCase):
     @classmethod
     def setUpClass(cls):
         super(StargalTest, cls).setUpClass()
-        with open(os.path.join(hardpath, hardfiles["full"]), "rb") as f:
-            cls.train, cls.test = pkl.load(f)
-        with open(os.path.join(hardpath, hardfiles["30"]), "rb") as f:
-            cls.embedded_30_train, cls.embedded_30_test = pkl.load(f)
+        # with open(os.path.join(hardpath, hardfiles["full"]), "rb") as f:
+        #     cls.train, cls.test = pkl.load(f)
+        # with open(os.path.join(hardpath, hardfiles["30"]), "rb") as f:
+        #     cls.embedded_30_train, cls.embedded_30_test = pkl.load(f)
         with open(os.path.join(hardpath, hardfiles["40"]), "rb") as f:
             cls.embedded_40_train, cls.embedded_40_test = pkl.load(f)
-        with open(os.path.join(hardpath, hardfiles["50"]), "rb") as f:
-            cls.embedded_50_train, cls.embedded_50_test = pkl.load(f)
+        # with open(os.path.join(hardpath, hardfiles["50"]), "rb") as f:
+        #     cls.embedded_50_train, cls.embedded_50_test = pkl.load(f)
 
     @parameterized.parameters(
         (
