@@ -373,7 +373,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
             #     np.abs(global_sigmas[0] - true_sigma_sq),
             # )
         mse /= its
-        self.assertAlmostEqual(mse, 0.0, 1)
+        self.assertAlmostEqual(mse, 0.0, 0)
 
 
 class GPOptimTest(parameterized.TestCase):
