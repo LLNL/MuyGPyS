@@ -37,6 +37,9 @@ What follows is an example workflow performing two-class classification with unc
 
 Note that you must have Amanda's preprocessed [galstar.csv](https://doellnl-my.sharepoint.com/personal/muyskens1_llnl_gov/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fmuyskens1%5Fllnl%5Fgov%2FDocuments%2FGALSTAR%2Fgalstar%5Fdata%5Fclean&originalPath=aHR0cHM6Ly9kb2VsbG5sLW15LnNoYXJlcG9pbnQuY29tLzpmOi9nL3BlcnNvbmFsL211eXNrZW5zMV9sbG5sX2dvdi9FdUpkd2dFWThwVkR2QkJSU2xNdkp3d0JGQ1J1TnVJT3ltaTY1WEJUOG4xaXRnP3J0aW1lPWNTTnozYjE2MkVn) stored locally on your machine, and that it is either located at `data/star_gal/galstar.csv` relative to where you run the command, or that you use the keyword argument `fname=/your/file/path/galstar.csv` when you invoke `muyscans.data.load.make_stargal`.
 
+You can also find a `pickle`d version of the star-gal `train` and `test` dicts on LC at `/p/lustre1/madstare/muygps-data/star-gal/galstar.pkl`. 
+Note `madstare` permissions are required to access these files.
+
 What follows is example code surrounding the invocation of `muyscans.examples.classify.do_classify`.
 This function returns GP predictions `surrogate_predictions` and, if `uq_objectives is not None`, a list of index masks `masks`.  
 
