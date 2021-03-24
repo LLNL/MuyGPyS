@@ -3,17 +3,11 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from muyscans.gp.lkgp import LKGP
 from muyscans.neighbors import NN_Wrapper
 from muyscans.optimize.batch import (
     sample_batch,
     sample_balanced_batch,
     full_filtered_batch,
-)
-from muyscans.optimize.objective import (
-    cross_entropy_fn,
-    mse_fn,
-    loo_crossval,
 )
 from muyscans.testing.test_utils import (
     BenchmarkGP,

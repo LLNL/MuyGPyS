@@ -12,7 +12,7 @@ import numpy as np
 
 
 def train_two_class_interval(
-    lkgp,
+    muygps,
     batch_indices,
     batch_nn_indices,
     embedded_train,
@@ -26,8 +26,8 @@ def train_two_class_interval(
 
     Parameters
     ----------
-    lkgp : muyscans.GP.LKGP
-        Local kriging approximate GP.
+    muygps : muyscans.GP.MuyGPS
+        Local kriging approximate MuyGPS.
     batch_indices : numpy.ndarray, type = int, shape = ``(batch_size,)''
         Batch observation indices.
     batch_nn_indices : numpy.ndarray, type = int,
@@ -58,7 +58,7 @@ def train_two_class_interval(
     nn_count = batch_nn_indices.shape[1]
 
     targets = train_lookup[batch_indices]
-    mean, variance = lkgp.regress(
+    mean, variance = muygps.regress(
         batch_indices,
         batch_nn_indices,
         embedded_train,

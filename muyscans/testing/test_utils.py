@@ -15,7 +15,7 @@ from scipy import optimize as opt
 from sklearn.gaussian_process.kernels import Matern, RBF
 
 from muyscans.gp.kernels import NNGP
-from muyscans.gp.lkgp import LKGP
+from muyscans.gp.muygps import MuyGPS
 from muyscans.neighbors import NN_Wrapper
 from muyscans.optimize.batch import sample_batch
 from muyscans.optimize.objective import get_loss_func, loo_crossval
@@ -81,11 +81,11 @@ def _optim_chassis(
         nn_count,
         exact,
     )
-    # Make LKGP object
-    lkgp = LKGP(kern=kern)
+    # Make MuyGPS object
+    muygps = MuyGPS(kern=kern)
     if hyper_dict is None:
         hyper_dict = dict()
-    unset_params = lkgp.set_params(**hyper_dict)
+    unset_params = muygps.set_params(**hyper_dict)
     do_sigma = False
     if "sigma_sq" in unset_params:
         unset_params.remove("sigma_sq")
@@ -93,7 +93,7 @@ def _optim_chassis(
             do_sigma = True
 
     if optim_bounds != None:
-        lkgp.set_optim_bounds(**optim_bounds)
+        muygps.set_optim_bounds(**optim_bounds)
 
     # Train hyperparameters by maximizing LOO predictions for batched
     # observations if `hyper_dict` unspecified.
@@ -110,7 +110,7 @@ def _optim_chassis(
         loss_fn = get_loss_func(loss_method)
 
         # collect optimization settings
-        bounds = lkgp.optim_bounds(unset_params)
+        bounds = muygps.optim_bounds(unset_params)
         x0 = np.array([np.random.uniform(low=b[0], high=b[1]) for b in bounds])
         if verbose is True:
             print(f"parameters to be optimized: {unset_params}")
@@ -123,7 +123,7 @@ def _optim_chassis(
             x0,
             args=(
                 loss_fn,
-                lkgp,
+                muygps,
                 unset_params,
                 batch_indices,
                 batch_nn_indices,
@@ -136,26 +136,26 @@ def _optim_chassis(
 
         if verbose is True:
             print(f"optimizer results: \n{optres}")
-        lkgp.set_param_array(unset_params, optres.x)
+        muygps.set_param_array(unset_params, optres.x)
         return optres.x
 
     if do_sigma is True:
-        lkgp.sigma_sq_optim(
+        muygps.sigma_sq_optim(
             batch_indices,
             batch_nn_indices,
             embedded_train,
             synth_train["output"],
         )
-        return lkgp.sigma_sq, lkgp.get_sigma_sq(
+        return muygps.sigma_sq, muygps.get_sigma_sq(
             batch_indices,
             batch_nn_indices,
             embedded_train,
             synth_train["output"][:, 0],
         )
-    #     print(f"sigma_sq results: {lkgp.sigma_sq}")
+    #     print(f"sigma_sq results: {muygps.sigma_sq}")
 
     # if do_sigma is True:
-    #     return lkgp.get_sigma_sq(
+    #     return muygps.get_sigma_sq(
     #         batch_indices,
     #         batch_nn_indices,
     #         embedded_train,

@@ -14,7 +14,7 @@ from time import perf_counter
 
 
 def classify_any(
-    lkgp,
+    muygps,
     embedded_test,
     embedded_train,
     train_nbrs_lookup,
@@ -27,7 +27,7 @@ def classify_any(
 
     Parameters
     ----------
-    lkgp : muyscans.GP.LKGP
+    muygps : muyscans.GP.MuyGPS
         Local kriging approximate GP.
     test : numpy.ndarray, type = float, shape = ``(test_count, input_dim)''
         Embedded training data.
@@ -69,7 +69,7 @@ def classify_any(
     ]
     time_agree = perf_counter()
 
-    predictions[nonconstant_mask] = lkgp.regress(
+    predictions[nonconstant_mask] = muygps.regress(
         np.where(nonconstant_mask == True)[0],
         test_nn_indices[nonconstant_mask, :],
         embedded_test,
@@ -87,7 +87,7 @@ def classify_any(
 
 
 def classify_two_class_uq(
-    lkgp,
+    muygps,
     embedded_test,
     embedded_train,
     train_nbrs_lookup,
@@ -100,7 +100,7 @@ def classify_two_class_uq(
 
     Parameters
     ----------
-    lkgp : muyscans.GP.LKGP
+    muygps : muyscans.GP.MuyGPS
         Local kriging approximate GP.
     test : numpy.ndarray, type = float, shape = ``(test_count, input_dim)''
         Embedded training data.
@@ -141,7 +141,7 @@ def classify_two_class_uq(
     variances[np.invert(nonconstant_mask)] = 0.0
     time_agree = perf_counter()
 
-    mu, variances[nonconstant_mask] = lkgp.regress(
+    mu, variances[nonconstant_mask] = muygps.regress(
         np.where(nonconstant_mask == True)[0],
         test_nn_indices[nonconstant_mask, :],
         embedded_test,
@@ -164,7 +164,7 @@ def classify_two_class_uq(
 
 
 def regress_any(
-    lkgp,
+    muygps,
     embedded_test,
     embedded_train,
     train_nbrs_lookup,
@@ -178,7 +178,7 @@ def regress_any(
 
     Parameters
     ----------
-    lkgp : muyscans.GP.LKGP
+    muygps : muyscans.GP.MuyGPS
         Local kriging approximate GP.
     test : numpy.ndarray, type = float, shape = ``(test_count, input_dim)''
         Embedded training data.
@@ -220,7 +220,7 @@ def regress_any(
 
     time_agree = perf_counter()
 
-    predictions = lkgp.regress(
+    predictions = muygps.regress(
         np.array([*range(test_count)]),
         test_nn_indices,
         embedded_test,

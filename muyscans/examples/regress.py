@@ -5,7 +5,7 @@
 
 Created by priest2 on 2020-10-27
 
-End-to-end application of LKGP.
+End-to-end application of MuyGPS.
 """
 
 import numpy as np
@@ -19,7 +19,7 @@ from muyscans.optimize.objective import (
 )
 from muyscans.predict import regress_any
 from muyscans.neighbors import NN_Wrapper
-from muyscans.gp.lkgp import LKGP
+from muyscans.gp.muygps import MuyGPS
 
 from scipy import optimize as opt
 from scipy.sparse.linalg.eigen.arpack import eigsh as largest_eigsh
@@ -43,7 +43,7 @@ def do_regress(
     verbose=False,
 ):
     """
-    Performs classification using LKGP.
+    Performs classification using MuyGPS.
 
     Parameters
     ----------
@@ -120,18 +120,18 @@ def do_regress(
     time_nn = perf_counter()
     time_batch = perf_counter()
 
-    # Make LKGP object
-    lkgp = LKGP(kern=kern)
+    # Make MuyGPS object
+    muygps = MuyGPS(kern=kern)
     if hyper_dict is None:
         hyper_dict = dict()
-    unset_params = lkgp.set_params(**hyper_dict)
+    unset_params = muygps.set_params(**hyper_dict)
     do_sigma = False
     if "sigma_sq" in unset_params:
         unset_params.remove("sigma_sq")
         if variance_mode is not None:
             do_sigma = True
     if optim_bounds is not None:
-        lkgp.set_optim_bounds(**optim_bounds)
+        muygps.set_optim_bounds(**optim_bounds)
 
     # Train hyperparameters by maximizing LOO predictions for batched
     # observations if `hyper_dict` unspecified.
@@ -148,7 +148,7 @@ def do_regress(
         loss_fn = get_loss_func(loss_method)
 
         # collect optimization settings
-        bounds = lkgp.optim_bounds(unset_params)
+        bounds = muygps.optim_bounds(unset_params)
         x0 = np.array([np.random.uniform(low=b[0], high=b[1]) for b in bounds])
         if verbose is True:
             print(f"parameters to be optimized: {unset_params}")
@@ -161,7 +161,7 @@ def do_regress(
             x0,
             args=(
                 loss_fn,
-                lkgp,
+                muygps,
                 unset_params,
                 batch_indices,
                 batch_nn_indices,
@@ -174,23 +174,23 @@ def do_regress(
 
         if verbose is True:
             print(f"optimizer results: \n{optres}")
-        lkgp.set_param_array(unset_params, optres.x)
+        muygps.set_param_array(unset_params, optres.x)
 
     if do_sigma is True:
-        lkgp.sigma_sq_optim(
+        muygps.sigma_sq_optim(
             batch_indices,
             batch_nn_indices,
             embedded_train,
             train["output"],
         )
         if verbose is True:
-            print(f"sigma_sq results: {lkgp.sigma_sq}")
+            print(f"sigma_sq results: {muygps.sigma_sq}")
 
     time_hyperopt = perf_counter()
 
     # Prediction on test data.
     predictions, pred_timing = regress_any(
-        lkgp,
+        muygps,
         embedded_test,
         embedded_train,
         train_nbrs_lookup,
@@ -212,11 +212,11 @@ def do_regress(
             "pred_full": pred_timing,
         }
 
-        print(f"lkgp params : {lkgp.params}")
+        print(f"muygps params : {muygps.params}")
         print(f"timing : {timing}")
 
     if variance_mode == "diagonal":
         predictions, variance = predictions
-        return predictions, variance, lkgp.sigma_sq
+        return predictions, variance, muygps.sigma_sq
 
     return predictions

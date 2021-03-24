@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-@file lkgp.py
+@file muygps.py
 
 Created by priest2 on 2020-10-19
 
-Implements the local kriging GP approximation logic.
+Implements the local kriging MuyGPS approximation logic.
 """
 
 import numpy as np
@@ -15,7 +15,7 @@ from sklearn.gaussian_process.kernels import Matern, RBF
 from muyscans.gp.kernels import NNGP
 
 
-class LKGP:
+class MuyGPS:
     """
     Local Kriging Gaussian Process.
 

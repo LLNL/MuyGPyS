@@ -4,7 +4,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from muyscans.examples.classify import example_lambdas, make_masks, do_uq
-from muyscans.gp.lkgp import LKGP
+from muyscans.gp.muygps import MuyGPS
 from muyscans.neighbors import NN_Wrapper
 from muyscans.optimize.batch import (
     get_classify_batch,
@@ -88,11 +88,11 @@ class ClassifyTest(parameterized.TestCase):
             categorical=True,
         )
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, is_exact)
-        lkgp = LKGP(kern=kern)
-        lkgp.set_params(**hyper_dict)
+        muygps = MuyGPS(kern=kern)
+        muygps.set_params(**hyper_dict)
 
         predictions, _ = classify_any(
-            lkgp,
+            muygps,
             test["input"],
             train["input"],
             nbrs_lookup,
@@ -159,11 +159,11 @@ class ClassifyTest(parameterized.TestCase):
     #         categorical=True,
     #     )
     #     nbrs_lookup = NN_Wrapper(train["input"], nn_count, is_exact)
-    #     lkgp = LKGP(kern=kern)
-    #     lkgp.set_params(**hyper_dict)
+    #     muygps = MuyGPS(kern=kern)
+    #     muygps.set_params(**hyper_dict)
 
     #     predictions, variances, _ = classify_two_class_uq(
-    #         lkgp,
+    #         muygps,
     #         test["input"],
     #         train["input"],
     #         nbrs_lookup,
@@ -237,11 +237,11 @@ class ClassifyTest(parameterized.TestCase):
         train["output"] *= 2
         test["output"] *= 2
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, is_exact)
-        lkgp = LKGP(kern=kern)
-        lkgp.set_params(**hyper_dict)
+        muygps = MuyGPS(kern=kern)
+        muygps.set_params(**hyper_dict)
 
         predictions, variances, _ = classify_two_class_uq(
-            lkgp,
+            muygps,
             test["input"],
             train["input"],
             nbrs_lookup,
@@ -261,7 +261,7 @@ class ClassifyTest(parameterized.TestCase):
         )
 
         cutoffs = train_two_class_interval(
-            lkgp,
+            muygps,
             indices,
             nn_indices,
             train["input"],

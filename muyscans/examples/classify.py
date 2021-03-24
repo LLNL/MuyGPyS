@@ -5,7 +5,7 @@
 
 Created by priest2 on 2020-10-27
 
-End-to-end application of LKGP.
+End-to-end application of MuyGPS.
 """
 
 import numpy as np
@@ -23,7 +23,7 @@ from muyscans.predict import (
 )
 from muyscans.neighbors import NN_Wrapper
 from muyscans.uq import train_two_class_interval
-from muyscans.gp.lkgp import LKGP
+from muyscans.gp.muygps import MuyGPS
 
 from scipy import optimize as opt
 from scipy.sparse.linalg.eigen.arpack import eigsh as largest_eigsh
@@ -64,7 +64,7 @@ def do_classify(
     verbose=False,
 ):
     """
-    Performs classification using LKGP.
+    Performs classification using MuyGPS.
 
     Parameters
     ----------
@@ -150,15 +150,15 @@ def do_classify(
     time_nn = perf_counter()
     time_batch = perf_counter()
 
-    # Make LKGP object
-    lkgp = LKGP(kern=kern)
+    # Make MuyGPS object
+    muygps = MuyGPS(kern=kern)
     if hyper_dict is None:
         hyper_dict = dict()
-    unset_params = lkgp.set_params(**hyper_dict)
+    unset_params = muygps.set_params(**hyper_dict)
     if "sigma_sq" in unset_params:
         unset_params.remove("sigma_sq")
     if optim_bounds is not None:
-        lkgp.set_optim_bounds(**optim_bounds)
+        muygps.set_optim_bounds(**optim_bounds)
 
     # Train hyperparameters by maximizing LOO predictions for batched
     # observations if `nu` unspecified.
@@ -176,7 +176,7 @@ def do_classify(
         loss_fn = get_loss_func(loss_method)
 
         # collect optimization settings
-        bounds = lkgp.optim_bounds(unset_params)
+        bounds = muygps.optim_bounds(unset_params)
         x0 = np.array([np.random.uniform(low=b[0], high=b[1]) for b in bounds])
         if verbose is True:
             print(f"parameters to be optimized: {unset_params}")
@@ -189,7 +189,7 @@ def do_classify(
             x0,
             args=(
                 loss_fn,
-                lkgp,
+                muygps,
                 unset_params,
                 batch_indices,
                 batch_nn_indices,
@@ -202,7 +202,7 @@ def do_classify(
 
         if verbose is True:
             print(f"optimizer results: \n{optres}")
-        lkgp.set_param_array(unset_params, optres.x)
+        muygps.set_param_array(unset_params, optres.x)
     time_hyperopt = perf_counter()
 
     # record timing
@@ -217,7 +217,7 @@ def do_classify(
     if uq_objectives is not None:
         # Posterior inference on two class problem.
         predictions, variances, pred_timing = classify_two_class_uq(
-            lkgp,
+            muygps,
             embedded_test,
             embedded_train,
             train_nbrs_lookup,
@@ -247,7 +247,7 @@ def do_classify(
         # NOTE[bwp]: Currently hard-coded, but will make objectives
         # user-specifiable in the near future.
         cutoffs = train_two_class_interval(
-            lkgp,
+            muygps,
             batch_indices,
             batch_nn_indices,
             embedded_train,
@@ -268,14 +268,14 @@ def do_classify(
             timing["uq_batch"] = time_uq_batch - time_pred
             timing["cutoff"] = time_cutoff - time_uq_batch
 
-            print(f"lkgp params : {lkgp.params}")
+            print(f"muygps params : {muygps.params}")
             print(f"cutoffs : {cutoffs}")
             print(f"timing : {timing}")
         return predictions, masks
     else:
         # Posterior mean surrogate classification with no UQ.
         predictions, pred_timing = classify_any(
-            lkgp,
+            muygps,
             embedded_test,
             embedded_train,
             train_nbrs_lookup,
@@ -289,7 +289,7 @@ def do_classify(
             timing["pred"] = time_pred - time_hyperopt
             timing["pred_full"] = (pred_timing,)
 
-            print(f"lkgp params : {lkgp.params}")
+            print(f"muygps params : {muygps.params}")
             print(f"timing : {timing}")
         return predictions
 

@@ -83,7 +83,7 @@ def mse_fn(predictions, targets):
 def loo_crossval(
     x0,
     objective_fn,
-    lkgp,
+    muygps,
     params,
     batch_indices,
     batch_nn_indices,
@@ -91,8 +91,8 @@ def loo_crossval(
     train_targets,
 ):
     """
-    Returns leave-one-out cross validation performance for an lkgp. Predicts on
-    all of the training data at once.
+    Returns leave-one-out cross validation performance for a `MuyGPS` object.
+    Predicts on all of the training data at once.
 
     Parameters
     ----------
@@ -100,8 +100,8 @@ def loo_crossval(
         Hyperparameter values.
     objective_fn : callable
         The function to be used to optimize ``nu''.
-    lkgp : muyscans.GP.LKGP
-        Local kriging approximate GP.
+    muygps : muyscans.GP.MuyGPS
+        Local kriging approximate MuyGPS.
     params : set
         Set of parameter names to optimize.
     batch_indices : numpy.ndarray, type = int, shape = ``(batch_size,)''
@@ -126,9 +126,9 @@ def loo_crossval(
         The evaluation of ``objective_fn'' on the predicted versus expected
         response.
     """
-    lkgp.set_param_array(params, x0)
+    muygps.set_param_array(params, x0)
 
-    predictions = lkgp.regress(
+    predictions = muygps.regress(
         batch_indices,
         batch_nn_indices,
         embedded_train,
