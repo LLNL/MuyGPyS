@@ -17,15 +17,15 @@ import numpy as np
 
 #     Parameters
 #     ----------
-#     X : numpy.ndarray, type = float, shape = ``(X_count, dim)''
+#     X : numpy.ndarray(float), shape = ``(X_count, dim)''
 #         A data matrix of locations.
-#     X_star : numpy.ndarray, type = float, shape = ``(X_star_count, dim)''
+#     X_star : numpy.ndarray(float), shape = ``(X_star_count, dim)''
 #         A data matrix of alternative locations. If unspecified, compute
 #         kernel on `X`.
 
 #     Returns
 #     -------
-#     numpy.ndarray, type = float, shape = ``(X_count, X_star_count)''
+#     numpy.ndarray(float), shape = ``(X_count, X_star_count)''
 #         The kernel matrix.
 #     """
 
@@ -39,12 +39,12 @@ import numpy as np
 
 #         Parameters
 #         ----------
-#         X : numpy.ndarray, type = float, shape = ``(n, m)''
+#         X : numpy.ndarray(float), shape = ``(n, m)''
 #             A distance matrix.
 
 #         Returns
 #         -------
-#         numpy.ndarray, type = float, shape = ``(n, m)''
+#         numpy.ndarray(float), shape = ``(n, m)''
 #             The kernel matrix.
 #         """
 #         pass
@@ -90,15 +90,15 @@ class NNGP:
 
         Parameters
         ----------
-        X : numpy.ndarray, type = float, shape = ``(X_count, dim)''
+        X : numpy.ndarray(float), shape = ``(X_count, dim)''
             A data matrix of locations.
-        X_star : numpy.ndarray, type = float, shape = ``(X_star_count, dim)''
+        X_star : numpy.ndarray(float), shape = ``(X_star_count, dim)''
             A data matrix of alternative locations. If unspecified, compute
             kernel on `X`.
 
         Returns
         -------
-        numpy.ndarray, type = float, shape = ``(X_count, X_star_count)''
+        numpy.ndarray(float), shape = ``(X_count, X_star_count)''
             The kernel matrix.
         """
         if X_star is None:

@@ -95,7 +95,7 @@ def process_stargal(sg_samples):
 
     Parameters
     ----------
-    sg_samples : np.ndarray, type = float, shape = ``(count, dim + 2)''
+    sg_samples : np.ndarray(float), shape = ``(count, dim + 2)''
 
 
     Returns

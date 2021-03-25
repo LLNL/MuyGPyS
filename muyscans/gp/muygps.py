@@ -29,19 +29,58 @@ class MuyGPS:
 
         Parameters
         ----------
-        eps : float
-            Homoscedastic noise prior variance.
         kern : str
-            The kernel to be used. Currently supports ``matern'', ``rbf'' and
-            ``nngp''.
+            The kernel to be used. Each kernel supports different
+            hyperparameters that can be specified in kwargs.
+            NOTE[bwp] Currently supports ``matern'', ``rbf'' and ``nngp''.
         """
         self.kern = kern.lower()
         self.set_params(**kwargs)
         self.bounds = dict()
 
     def set_params(self, **params):
-        # NOTE[bwp] this logic should get moved into kernel functors once
-        # implemented
+        """
+        Set the hyperparameters specified by `params`.
+
+        NOTE[bwp] this logic should get moved into kernel functors once
+        implemented
+
+        Universal Parameters
+        ----------
+        eps : float
+            The homoscedastic noise nugget to be added to the inverted
+            covariance matrix.
+        sigma_sq : np.ndarray(float), shape = ``(response_count)''
+            Scaling parameter to be applied to posterior variance. One element
+            per dimension of the response.
+
+        Matern Parameters
+        ----------
+        nu : float
+            The smoothness parameter. As ``nu'' -> infty, the matern kernel
+            converges pointwise to the RBF kernel.
+        length_scale : float
+            Scale parameter multiplied against distance values.
+
+        RBF Parameters
+        ----------
+        length_scale : float
+            Scale parameter multiplied against distance values.
+
+        NNGP Parameters
+        ----------
+        sigma_b_sq : float
+            Variance prior on the bias parameters in a wide neural network under
+            Glorot inigialization in the infinite width limit.
+        sigma_w_sq : float
+            Variance prior on the weight parameters in a wide neural network
+            under Glorot inigialization in the infinite width limit.
+
+        Returns
+        -------
+        unset_params : list(str)
+            The set of kernel parameters that have not been fixed by ``params''.
+        """
         self.params = {
             p: params[p] for p in params if p != "eps" and p != "sigma_sq"
         }
@@ -76,8 +115,22 @@ class MuyGPS:
         return sorted(list(unset_params))
 
     def set_param_array(self, names, values):
-        # NOTE[bwp] this logic should get moved into kernel functors once
-        # implemented
+        """
+        Set the hyperparameters specified by elements of ``names'' with the
+        corresponding elements of ``values''.
+
+        Convenience function for use in concert with ``scipy.optimize''.
+
+        NOTE[bwp] this logic should get moved into kernel functors once
+        implemented
+
+        Parameters
+        ----------
+        names : list(str)
+            An alphabetically ordered list of parameter names.
+        values : list(float)
+            A corresponding list of parameter values.
+        """
         names = list(names)
         # this is going to break if we add a hyperparameter that occurs earlier
         # in alphabetical order.
@@ -95,19 +148,62 @@ class MuyGPS:
             self.kernel = NNGP(**self.params)
 
     def set_optim_bounds(self, **params):
+        """
+        Set the bounds (2-tuples) corresponding to each specified
+        hyperparameter.
+
+        NOTE[bwp] this logic should get moved into kernel functors once
+        implemented
+
+        Parameters
+        ----------
+        params : dict
+            A dict mapping hyperparameter names to 2-tuples of floats. Floats
+            must be increasing.
+        """
         for p in params:
+            assert len(params[p]) == 2
             self.bounds[p] = params[p]
 
     def _get_bound(self, param, default):
+        """
+        Return the optimization bounds corresponding to the given
+        hyperparameter.
+
+        NOTE[bwp] this logic should get moved into kernel functors once
+        implemented
+
+        Parameters
+        ----------
+        param : str
+            A hyperparameter name.
+        default : tuple(float), shape = (2,)
+            Return value if ``param'' is not set in ``self.bounds''.
+
+        Returns
+        -------
+        tuple(float), shape = (2,)
+            A pair of (min, max) values to be used for hyperparameter
+            optimization.
+        """
         return self.bounds.get(param, default)
 
     def optim_bounds(self, names, eps=1e-6):
         """
         Return hyperparameter bounds.
 
-        NOTE[bwp]: Currently hard-coded. Do we want this to be configurable?
         NOTE[bwp] this logic should get moved into kernel functors once
         implemented
+
+        Parameters
+        ----------
+        names : list(str)
+            The set of hyperparameter names to be queried.
+
+        Returns
+        -------
+        names : list(str)
+            The set of hyperparameter names to be queried.
         """
         ret = list()
         if "eps" in names:
@@ -128,22 +224,90 @@ class MuyGPS:
         return ret
 
     def _compute_K(self, nn_indices, train):
+        """
+        Compute the Kernel tensor.
+
+        NOTE[bwp] this will be reimplemented once kernels/distances are
+        extracted.
+
+        Parameters
+        ----------
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+            A matrix listing the nearest neighbor indices for all observations
+            in the testing batch.
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+            The full training data matrix.
+
+        Returns
+        -------
+        np.ndarray(float), shape = ``(batch_size, nn_count, nn_count)''
+            A tensor containing the ``nn_count'' x ``nn_count'' kernel matrices
+            corresponding to each of the batch elements.
+        """
         return np.array([self.kernel(mat) for mat in train[nn_indices]])
 
     def _compute_Kcross(self, indices, nn_indices, test, train):
-        dim = test.shape[1]
+        """
+        Compute the cross-covariance tensor.
+
+        NOTE[bwp] this will be reimplemented once kernels/distances are
+        extracted.
+
+        Parameters
+        ----------
+        indices : np.ndarray(int), shape = ``(batch_count,)''
+            The integer indices of the observations to be approximated.
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+            A matrix listing the nearest neighbor indices for all observations
+            in the testing batch.
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+            The full training data matrix.
+        test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+            The full testing data matrix.
+
+        Returns
+        -------
+        np.ndarray(float), shape = ``(batch_size, 1, nn_count)''
+            A tensor containing the 1 x ``nn_count'' cross-covariance matrix
+            corresponding to each of the batch elements.
+        """
+        feature_count = test.shape[1]
         return np.array(
             [
-                self.kernel(vec.reshape(1, dim), mat)
+                self.kernel(vec.reshape(1, feature_count), mat)
                 for vec, mat in zip(test[indices], train[nn_indices])
             ]
         )
 
     def _compute_Kfull(self, indices, nn_indices, test, train):
-        dim = test.shape[1]
+        """
+        Compute the full NNGP Kernel tensor.
+
+        NOTE[bwp] this will be reimplemented once kernels/distances are
+        extracted.
+
+        Parameters
+        ----------
+        indices : np.ndarray(int), shape = ``(batch_count,)''
+            The integer indices of the observations to be approximated.
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+            A matrix listing the nearest neighbor indices for all observations
+            in the testing batch.
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+            The full training data matrix.
+        test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+            The full testing data matrix.
+
+        Returns
+        -------
+        np.ndarray(float), shape = ``(batch_size, nn_count + 1, nn_count + 1)''
+            A tensor containing the ``nn_count + 1'' x ``nn_count + 1''
+            full covariance matrix corresponding to each of the batch elements.
+        """
+        feature_count = test.shape[1]
         return np.array(
             [
-                self.kernel(np.vstack((mat, vec.reshape(1, dim))))
+                self.kernel(np.vstack((mat, vec.reshape(1, feature_count))))
                 for vec, mat in zip(test[indices], train[nn_indices])
             ]
         )
@@ -155,6 +319,35 @@ class MuyGPS:
         test,
         train,
     ):
+        """
+        Compute the kernel and cross-covariance tensors for all batch elements.
+
+        NOTE[bwp] implementation is split due to NNGP implementation.
+
+        NOTE[bwp] this will be reimplemented once kernels/distances are
+        extracted.
+
+        Parameters
+        ----------
+        indices : np.ndarray(int), shape = ``(batch_count,)''
+            The integer indices of the observations to be approximated.
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+            A matrix listing the nearest neighbor indices for all observations
+            in the testing batch.
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+            The full training data matrix.
+        test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+            The full testing data matrix.
+
+        Returns
+        -------
+        K : np.ndarray(float), shape = ``(batch_size, nn_count, nn_count)''
+            A tensor containing the ``nn_count'' x ``nn_count'' kernel matrices
+            corresponding to each of the batch elements.
+        Kcross : np.ndarray(float), shape = ``(batch_size, 1, nn_count)''
+            A tensor containing the 1 x ``nn_count'' cross-covariance matrix
+            corresponding to each of the batch elements.
+        """
         # NOTE[bwp] This is clugy and terrible. Need to reenginer nngp.
         # NOTE[bwp] In fact, should reengineer all kernels so as to use on-node
         # parallelism. This is one of the main bottlenecks right now.
@@ -170,19 +363,63 @@ class MuyGPS:
         return K, Kcross
 
     def _compute_solve(self, nn_indices, targets, K, Kcross):
-        nn_count = nn_indices.shape[1]
-        return Kcross @ np.linalg.solve(
+        """
+        Simultaneously solve all of the GP inference systems of linear
+        equations.
+
+        Parameters
+        ----------
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+            A matrix listing the nearest neighbor indices for all observations
+            in the testing batch.
+        targets : numpy.ndarray(float),
+                  shape = ``(train_count, response_count)''
+            Vector-valued responses for each training element.
+        K : np.ndarray(float), shape = ``(batch_size, nn_count, nn_count)''
+            A tensor containing the ``nn_count'' x ``nn_count'' kernel matrices
+            corresponding to each of the batch elements.
+        Kcross : np.ndarray(float), shape = ``(batch_size, 1, nn_count)''
+            A tensor containing the 1 x ``nn_count'' cross-covariance matrix
+            corresponding to each of the batch elements.
+
+        Returns
+        -------
+        numpy.ndarray(float), shape = ``(batch_count, response_count)''
+            The predicted response for each of the given indices.
+        """
+        batch_size, nn_count = nn_indices.shape
+        response_count = targets.shape[1]
+        responses = Kcross @ np.linalg.solve(
             K + self.eps * np.eye(nn_count), targets[nn_indices, :]
         )
+        return responses.reshape(batch_size, response_count)
 
-    def _compute_diagonal_variance(self, K, Kcross, batch_size, nn_count):
-        Kcross = Kcross.reshape(batch_size, nn_count)
+    def _compute_diagonal_variance(self, K, Kcross):
+        """
+        Simultaneously solve all of the GP inference systems of linear
+        equations.
+
+        Parameters
+        ----------
+        K : np.ndarray(float), shape = ``(batch_size, nn_count, nn_count)''
+            A tensor containing the ``nn_count'' x ``nn_count'' kernel matrices
+            corresponding to each of the batch elements.
+        Kcross : np.ndarray(float), shape = ``(batch_size, 1, nn_count)''
+            A tensor containing the 1 x ``nn_count'' cross-covariance matrix
+            corresponding to each of the batch elements.
+
+        Returns
+        -------
+        numpy.ndarray(float), shape = ``(batch_count, response_count,)''
+            The predicted response for each of the given indices.
+        """
+        batch_size, _, nn_count = Kcross.shape
         return np.array(
             [
                 1.0
-                - Kcross[i, :]
+                - Kcross[i, 0, :]
                 @ np.linalg.solve(
-                    K[i, :, :] + self.eps * np.eye(nn_count), Kcross[i, :]
+                    K[i, :, :] + self.eps * np.eye(nn_count), Kcross[i, 0, :]
                 )
                 for i in range(batch_size)
             ]
@@ -202,17 +439,17 @@ class MuyGPS:
 
         Parameters
         ----------
-        index : np.ndarray, type = int, shape = ``(batch_count,)''
+        indices : np.ndarray(int), shape = ``(batch_count,)''
             The integer indices of the observations to be approximated.
-        nn_indices : numpy.ndarray, type=int, shape = ``(batch_size, nn_count)''
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
             A matrix listing the nearest neighbor indices for all observations
             in the testing batch.
-        train : numpy.ndarray, type = float, shape = ``(train_count, dim)''
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
             The full training data matrix.
-        test : numpy.ndarray, type = float, shape = ``(test_count, dim)''
+        test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
             The full testing data matrix.
-        targets : numpy.ndarray, type = float,
-                  shape = ``(train_count, ouput_dim)''
+        targets : numpy.ndarray(float),
+                  shape = ``(train_count, response_count)''
             Vector-valued responses for each training element.
         variance_mode : str or None
             Specifies the type of variance to return. Currently supports
@@ -220,16 +457,13 @@ class MuyGPS:
 
         Returns
         -------
-        responses : numpy.ndarray, type = float,
-                    shape = ``(batch_count, output_dim,)''
+        responses : numpy.ndarray(float),
+                    shape = ``(batch_count, response_count,)''
             The predicted response for each of the given indices.
-        diagonal_variance : numpy.ndarray, type = float,
-                   shape = ``(batch_count, )
+        diagonal_variance : numpy.ndarray(float), shape = ``(batch_count,)
             The diagonal elements of the posterior variance. Only returned where
             ``variance_mode == "diagonal"''.
         """
-        batch_size = len(indices)
-        output_dim = targets.shape[1]
         nn_count = nn_indices.shape[1]
         K, Kcross = self._compute_kernel_tensors(
             indices,
@@ -237,15 +471,11 @@ class MuyGPS:
             test,
             train,
         )
-        responses = self._compute_solve(nn_indices, targets, K, Kcross).reshape(
-            batch_size, output_dim
-        )
+        responses = self._compute_solve(nn_indices, targets, K, Kcross)
         if variance_mode is None:
             return responses
         elif variance_mode == "diagonal":
-            diagonal_variance = self._compute_diagonal_variance(
-                K, Kcross, batch_size, nn_count
-            )
+            diagonal_variance = self._compute_diagonal_variance(K, Kcross)
             return responses, diagonal_variance
         else:
             raise NotImplementedError(
@@ -260,34 +490,38 @@ class MuyGPS:
         targets,
     ):
         """
-        Optimize the value of the sigma^2 scale parameter.
+        Optimize the value of the sigma^2 scale parameter for each response
+        dimension.
+
+        We approximate sigma^2 by way of averaging over the analytic solution
+        from each local kernel.
 
         sigma^2 = 1/n * Y^T @ K^{-1} @ Y
 
         Parameters
         ----------
-        index : np.ndarray, type = int, shape = ``(batch_count,)''
+        index : np.ndarray(int), shape = ``(batch_count,)''
             The integer indices of the observations to be approximated.
-        nn_indices : numpy.ndarray, type=int, shape = ``(batch_size, nn_count)''
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
             A matrix listing the nearest neighbor indices for all observations
             in the testing batch.
-        train : numpy.ndarray, type = float, shape = ``(train_count, dim)''
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
             The full training data matrix.
-        targets : numpy.ndarray, type = float,
-                  shape = ``(train_count, ouput_dim)''
+        targets : numpy.ndarray(float),
+                  shape = ``(train_count, response_count)''
             Vector-valued responses for each training element.
 
         Returns
         -------
-        sigmas : numpy.ndarray, type = float, shape = ``(output_dim,)''
+        sigmas : numpy.ndarray(float), shape = ``(response_count,)''
             The value of sigma^2 for each dimension.
         """
         batch_size, nn_count = nn_indices.shape
-        out_dim = targets.shape[1]
+        response_count = targets.shape[1]
 
         K = self._compute_K(nn_indices, train)
-        sigmas = np.zeros((out_dim,))
-        for i in range(out_dim):
+        sigmas = np.zeros((response_count,))
+        for i in range(response_count):
             sigmas[i] = sum(self._get_sigma_sq(K, targets[:, i], nn_indices))
         self.sigma_sq = sigmas / (nn_count * batch_size)
 
@@ -305,20 +539,20 @@ class MuyGPS:
 
         Parameters
         ----------
-        index : np.ndarray, type = int, shape = ``(batch_count,)''
+        index : np.ndarray(int), shape = ``(batch_count,)''
             The integer indices of the observations to be approximated.
-        nn_indices : numpy.ndarray, type=int, shape = ``(batch_size, nn_count)''
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
             A matrix listing the nearest neighbor indices for all observations
             in the testing batch.
-        train : numpy.ndarray, type = float, shape = ``(train_count, dim)''
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
             The full training data matrix.
-        target_col : numpy.ndarray, type = float, shape = ``(train_count,)''
+        target_col : numpy.ndarray(float), shape = ``(train_count,)''
             The target vector consisting of the target for each nearest
             neighbor.
 
         Returns
         -------
-        sigmas : numpy.ndarray, type = float, shape = ``(output_dim,)''
+        sigmas : numpy.ndarray(float), shape = ``(response_count,)''
             The value of sigma^2 for each dimension.
         """
         batch_size, nn_count = nn_indices.shape
@@ -338,20 +572,19 @@ class MuyGPS:
 
         Parameters
         ----------
-        K : np.ndarray, type = float,
-                shape = ``(batch_count, nn_count, nn_count)''
+        K : np.ndarray(float), shape = ``(batch_count, nn_count, nn_count)''
             Kernel tensor containing nearest neighbor kernels for each local
             neighborhood.
-        target_col : numpy.ndarray, type = float, shape = ``(batch_count,)''
+        target_col : numpy.ndarray(float), shape = ``(batch_count,)''
             The target vector consisting of the target for each nearest
             neighbor.
-        nn_indices : numpy.ndarray, type=int, shape = ``(batch_size, nn_count)''
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
             A matrix listing the nearest neighbor indices for all observations
             in the testing batch.
 
         Yields
         -------
-        sigmas : numpy.ndarray, type = float, shape = ``(batch_count,)''
+        sigmas : numpy.ndarray(float), shape = ``(batch_count,)''
             The optimal value of sigma^2 for each neighborhood for the given
             output dimension.
         """
@@ -361,34 +594,6 @@ class MuyGPS:
             yield Y_0 @ np.linalg.solve(
                 K[j, :, :] + self.eps * np.eye(nn_count), Y_0
             )
-
-    def classify(self, indices, nn_indices, test, train, labels):
-        """
-        Performs simultaneous classification on a list of observations.
-
-        Parameters
-        ----------
-        index : np.ndarray, type = int, shape = ``(batch_count,)''
-            The integer indices of the observations to be approximated.
-        nn_indices : numpy.ndarray, type=int, shape = ``(batch_size, nn_count)''
-            A matrix listing the nearest neighbor indices for all observations
-            in the testing batch.
-        train : numpy.ndarray, type = float, shape = ``(train_count, dim)''
-            The full training data matrix.
-        test : numpy.ndarray, type = float, shape = ``(test_count, dim)''
-            The full testing data matrix.
-        labels : numpy.ndarray, type = int, shape = ``(train_count, n_classes)''
-            One-hot encoding of class labels for all training data.
-
-        Returns
-        -------
-        labels, numpy.ndarray, type = int, shape = ``(batch_count,)''
-            The predicted class labels for each of the given indices.
-        """
-        return np.argmax(
-            self.regress(indices, nn_indices, test, train, labels),
-            axis=1,
-        )
 
 
 #     # def do_GP(

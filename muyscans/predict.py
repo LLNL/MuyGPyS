@@ -15,40 +15,38 @@ from time import perf_counter
 
 def classify_any(
     muygps,
-    embedded_test,
-    embedded_train,
+    test,
+    train,
     train_nbrs_lookup,
     train_labels,
     nn_count,
 ):
     """
-    Obtains the predicted class labels for each test. Predicts on all of the
-    testing data at once.
+    Simulatneously predicts the surrogate regression means for each test item.
 
     Parameters
     ----------
     muygps : muyscans.GP.MuyGPS
         Local kriging approximate GP.
-    test : numpy.ndarray, type = float, shape = ``(test_count, input_dim)''
-        Embedded training data.
-    train : numpy.ndarray, type = float, shape = ``(train_count, input_dim)''
-        Embedded training data.
-    train_nbrs_lookup : `muyscans.ML.NN_Wrapper'
+    test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+        Testing data.
+    train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        Training data.
+    train_nbrs_lookup : muyscans.ML.NN_Wrapper
         Trained nearest neighbor query data structure.
-    train_labels : numpy.ndarray, type = int,
-                   shape = ``(train_count, class_count)''
-        One-hot encoding of class labels for all embedded data.
+    train_labels : numpy.ndarray(int), shape = ``(train_count, class_count)''
+        One-hot encoding of class labels for all training data.
     nn_count : int
         The number of nearest neighbors used for inference
 
     Returns
     -------
-    predictions : numpy.ndarray, type = int, shape = ``(test_count,)''
+    predictions : numpy.ndarray(float), shape = ``(test_count,)''
         The predicted labels associated with each test observation.
     timing : dict
         Timing for the subroutines of this function.
     """
-    test_count = embedded_test.shape[0]
+    test_count = test.shape[0]
     class_count = train_labels.shape[1]
 
     # detect one hot encoding, e.g. {0,1}, {-0.1, 0.9}, {-1,1}, ...
@@ -56,7 +54,7 @@ def classify_any(
     predictions = np.full((test_count, class_count), one_hot_false)
 
     time_start = perf_counter()
-    test_nn_indices = train_nbrs_lookup.get_nns(embedded_test)
+    test_nn_indices = train_nbrs_lookup.get_nns(test)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
@@ -72,8 +70,8 @@ def classify_any(
     predictions[nonconstant_mask] = muygps.regress(
         np.where(nonconstant_mask == True)[0],
         test_nn_indices[nonconstant_mask, :],
-        embedded_test,
-        embedded_train,
+        test,
+        train,
         train_labels,
     )
     time_pred = perf_counter()
@@ -88,47 +86,46 @@ def classify_any(
 
 def classify_two_class_uq(
     muygps,
-    embedded_test,
-    embedded_train,
+    test,
+    train,
     train_nbrs_lookup,
     train_labels,
     nn_count,
 ):
     """
-    Obtains the predicted means and variances each test for binary
-    classification. Predicts on all of the testing data at once.
+    Simultaneously predicts the surrogate means and variances for each test item
+    under the assumption of binary classification.
 
     Parameters
     ----------
     muygps : muyscans.GP.MuyGPS
         Local kriging approximate GP.
-    test : numpy.ndarray, type = float, shape = ``(test_count, input_dim)''
-        Embedded training data.
-    train : numpy.ndarray, type = float, shape = ``(train_count, input_dim)''
-        Embedded training data.
+    test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+        Testing data.
+    train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        Training data.
     train_nbrs_lookup : `muyscans.ML.NN_Wrapper'
         Trained nearest neighbor query data structure.
-    train_labels : numpy.ndarray, type = int,
-                   shape = ``(train_count, class_count)''
-        One-hot encoding of class labels for all embedded data.
+    train_labels : numpy.ndarray(int), shape = ``(train_count, class_count)''
+        One-hot encoding of class labels for all training data.
     nn_count : int
         The number of nearest neighbors used for inference
 
     Returns
     -------
-    means : numpy.ndarray, type = int, shape = ``(test_count,)''
+    means : numpy.ndarray(float), shape = ``(test_count,)''
         The predicted labels associated with each test observation.
     timing : dict
         Timing for the subroutines of this function.
     """
-    test_count = embedded_test.shape[0]
-    train_count = embedded_train.shape[0]
+    test_count = test.shape[0]
+    train_count = train.shape[0]
 
     means = np.zeros((test_count, 2))
     variances = np.zeros(test_count)
 
     time_start = perf_counter()
-    test_nn_indices = train_nbrs_lookup.get_nns(embedded_test)
+    test_nn_indices = train_nbrs_lookup.get_nns(test)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
@@ -144,8 +141,8 @@ def classify_two_class_uq(
     mu, variances[nonconstant_mask] = muygps.regress(
         np.where(nonconstant_mask == True)[0],
         test_nn_indices[nonconstant_mask, :],
-        embedded_test,
-        embedded_train,
+        test,
+        train,
         train_labels,
         variance_mode="diagonal",
     )
@@ -165,29 +162,27 @@ def classify_two_class_uq(
 
 def regress_any(
     muygps,
-    embedded_test,
-    embedded_train,
+    test,
+    train,
     train_nbrs_lookup,
     train_targets,
     nn_count,
     variance_mode=None,
 ):
     """
-    Obtains the predicted response for each test. Predicts on all of the
-    testing data at once.
+    Simultaneously predicts the response for each test item.
 
     Parameters
     ----------
     muygps : muyscans.GP.MuyGPS
         Local kriging approximate GP.
-    test : numpy.ndarray, type = float, shape = ``(test_count, input_dim)''
-        Embedded training data.
-    train : numpy.ndarray, type = float, shape = ``(train_count, input_dim)''
-        Embedded training data.
+    test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+        Testing data.
+    train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        Training raining data.
     train_nbrs_lookup : `muyscans.ML.NN_Wrapper'
         Trained nearest neighbor query data structure.
-    train_targets : numpy.ndarray, type = float,
-                   shape = ``(train_count, output_dim)''
+    train_targets : numpy.ndarray(float), shape = ``(train_count, class_count)''
         Observed outputs for all training data.
     nn_count : int
         The number of nearest neighbors used for inference
@@ -197,8 +192,7 @@ def regress_any(
 
     Returns
     -------
-    predictions : numpy.ndarray, type = float,
-                shape = ``(batch_count, output_dim,)''
+    predictions : numpy.ndarray(float), shape = ``(batch_count, class_count,)''
         The predicted response for each of the given indices. The form returned
         when ``variance_mode == None''.
     predictions : tuple
@@ -209,13 +203,13 @@ def regress_any(
     timing : dict
         Timing for the subroutines of this function.
     """
-    test_count = embedded_test.shape[0]
-    train_count = embedded_train.shape[0]
+    test_count = test.shape[0]
+    train_count = train.shape[0]
 
     predicted_labels = np.zeros((test_count,))
 
     time_start = perf_counter()
-    test_nn_indices = train_nbrs_lookup.get_nns(embedded_test)
+    test_nn_indices = train_nbrs_lookup.get_nns(test)
     time_nn = perf_counter()
 
     time_agree = perf_counter()
@@ -223,8 +217,8 @@ def regress_any(
     predictions = muygps.regress(
         np.array([*range(test_count)]),
         test_nn_indices,
-        embedded_test,
-        embedded_train,
+        test,
+        train,
         train_targets,
         variance_mode=variance_mode,
     )

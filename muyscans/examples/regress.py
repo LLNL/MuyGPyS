@@ -58,7 +58,7 @@ def do_regress(
     nn_count : int
         The number of nearest neighbors to employ.
     embed_dim : int
-        The PCA dimension onto which data will be embedded.
+        The dimension onto which data will be embedded.
     batch_size : int
         The batch size for hyperparameter optimization.
     kern : str
@@ -91,13 +91,12 @@ def do_regress(
 
     Returns
     -------
-    predictions : numpy.ndarray, type = float,
-            shape = ``(test_count, output_dim)''
+    predictions : numpy.ndarray(float), shape = ``(test_count, response_count)''
         The predicted response associated with each test observation.
-    variance : numpy.ndarray, type = float, shape = ``(test_count,)''
+    variance : numpy.ndarray(float), shape = ``(test_count,)''
         The unscaled independent posterior variance associated with each testing
         location. Only returned if ``variance_mode == "diagonal"''.
-    sigma_sq : numpy.ndarray, type = float, shape = ``(output_dim,)''
+    sigma_sq : numpy.ndarray(float), shape = ``(response_count,)''
         The scaling parameter (for each output dimension) to be applied to the
         posterior variance. Only returned if ``variance_mode == "diagonal"''.
     """

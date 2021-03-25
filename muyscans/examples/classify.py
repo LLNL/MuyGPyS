@@ -96,7 +96,6 @@ def do_classify(
     loss_method : str
         The loss method to use in hyperparameter optimization. Ignored if
         ``hyper_dict'' fully specifies the kernel in question.
-        NOTE[bwp]: Currently supports only ``cross_entropy'' for classification.
     hyper_dict : dict or None
         If specified, use the given parameters for the kernel. If None, perform
         hyperparamter optimization.
@@ -123,9 +122,9 @@ def do_classify(
 
     Returns
     -------
-    predictions : numpy.ndarray, type = int, shape = ``(test_count,)''
+    predictions : numpy.ndarray(int), shape = ``(test_count,)''
         The predicted labels associated with each test observation.
-    masks : numpy.ndarray, type = Boolean, shape = ``(obj_count, test_count)''
+    masks : numpy.ndarray(Boolean), shape = ``(objective_count, test_count)''
         A list of index masks into the test set that indicates which test
         elements are ambiguous based upon the confidence intervals derived from
         each objective function.
@@ -168,7 +167,6 @@ def do_classify(
             train_nbrs_lookup,
             train["lookup"],
             opt_batch_size,
-            train_count,
         )
         time_batch = perf_counter()
 
@@ -239,7 +237,6 @@ def do_classify(
             train_nbrs_lookup,
             train["lookup"],
             uq_batch_size,
-            train_count,
         )
         time_uq_batch = perf_counter()
 
@@ -295,6 +292,30 @@ def do_classify(
 
 
 def make_masks(predictions, cutoffs, variances, mid_value):
+    """
+    Compute boolean masks over all of the test data indicating which test
+    indices are considered ambiguous
+
+    Parameters
+    ----------
+    predictions : np.ndarray(float), shape = ``(test_count, class_count)''
+        The surrogate predictions.
+    cutoffs : np.ndarray(float), shape = ``(objective_count,)''
+        The confidence interval scale parameter that minimizes each
+        considered objective function.
+    variances : np.ndarray(float), shape = ``(test_count)''
+        The diagonal posterior variance of each test item.
+    mid_value : float
+        The discriminating value determining absolute uncertainty. Likely ``0''
+        or ``0.5''.
+
+    Returns
+    -------
+    np.ndarray(Boolean), shape = ``(objective_count, test_count)''
+        A number of index masks indexing into the training set. Each ``True''
+        index includes 0.0 within the associated prediction's confidence
+        interval.
+    """
     return np.array(
         [
             np.logical_and(
@@ -313,7 +334,7 @@ def do_uq(predicted_labels, test, masks):
 
     Parameters
     ----------
-    predicted_labels : np.ndarray, type = int, shape = ``(test_count)''
+    predicted_labels : np.ndarray(int), shape = ``(test_count)''
         The list of predicted labels, based on e.g. an invocation of
         ``do_classify''.
     test : dict
@@ -321,7 +342,7 @@ def do_uq(predicted_labels, test, masks):
         matrix of row observation vectors, e.g. flattened images. "output" maps
         to a matrix listing the one-hot encodings of each observation's class.
         "lookup" is effectively the argmax over this matrix's columns.
-    masks : np.ndarray, type = Boolean, shape = ``(mask_count, test_count)''
+    masks : np.ndarray(Boolean), shape = ``(objective_count, test_count)''
         A number of index masks indexing into the training set. Each ``True''
         index includes 0.0 within the associated prediction's confidence
         interval.
@@ -330,7 +351,7 @@ def do_uq(predicted_labels, test, masks):
     -------
     accuracy : float
         The accuracy over all of the test data.
-    uq : numpy.ndarray, type = float, shape = ``(mask_count, 3)''
+    uq : numpy.ndarray(float), shape = ``(objective_count, 3)''
         The uncertainty quantification associated with each input mask. The
         first column is the total number of ambiguous samples. The second column
         is the accuracy of the ambiguous samples. The third column is the

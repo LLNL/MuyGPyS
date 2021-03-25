@@ -12,6 +12,24 @@ import numpy as np
 
 
 def subsample(data, sample_count):
+    """
+    Randomly sample row indices without replacement from data dict.
+
+    Parameters
+    ----------
+    data : dict
+        A dict with keys "input", "output", and "lookup". "input" maps to a
+        matrix of row observation vectors. "output" maps to a matrix listing the
+        observed responses of the phenomenon under study. "lookup" maps to a
+        vector that is effectively the row-wise argmax of "output", and is only
+        used for classification.
+
+    Returns
+    -------
+    dict
+        A dict of the same form as ``data'', but containing only the sampled
+        indices.
+    """
     count = data["input"].shape[0]
     samples = np.random.choice(count, sample_count, replace=False)
     return {
@@ -22,6 +40,29 @@ def subsample(data, sample_count):
 
 
 def balanced_subsample(data, sample_count):
+    """
+    Randomly sample row indices without replacement from data dict, ensuring
+    that classes receive as close to equal representation as possible.
+
+    Partitions the data based upon their true classes, and attempts to randomly
+    sample without replacement a balanced quantity within each partition. May
+    not work well on heavily skewed data except with very small sample sizes.
+
+    Parameters
+    ----------
+    data : dict
+        A dict with keys "input", "output", and "lookup". "input" maps to a
+        matrix of row observation vectors. "output" maps to a matrix listing the
+        observed responses of the phenomenon under study. "lookup" maps to a
+        vector that is effectively the row-wise argmax of "output", and is only
+        used for classification.
+
+    Returns
+    -------
+    dict
+        A dict of the same form as ``data'', but containing only the sampled
+        indices.
+    """
     classes = np.unique(data["lookup"])
     class_count = len(classes)
     each_sample_count = int(sample_count / class_count)

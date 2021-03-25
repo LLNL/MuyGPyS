@@ -15,7 +15,7 @@ def train_two_class_interval(
     muygps,
     batch_indices,
     batch_nn_indices,
-    embedded_train,
+    train,
     train_labels,
     train_lookup,
     objective_fns,
@@ -28,20 +28,17 @@ def train_two_class_interval(
     ----------
     muygps : muyscans.GP.MuyGPS
         Local kriging approximate MuyGPS.
-    batch_indices : numpy.ndarray, type = int, shape = ``(batch_size,)''
+    batch_indices : numpy.ndarray(int), shape = ``(batch_size,)''
         Batch observation indices.
-    batch_nn_indices : numpy.ndarray, type = int,
-                       shape = ``(n_batch, nn_count)''
+    batch_nn_indices : numpy.ndarray(int), shape = ``(n_batch, nn_count)''
         Indices of the nearest neighbors
-    batch_nn_distances : numpy.ndarray, type = float,
-                         shape = ``(batch_size, nn_count)''
-        Distances from each batch observation to its nearest neighbors.
-    embedded_train : numpy.ndarray, type = float,
-                     shape = ``(train_count, embedding_dim)''
-        The full embedded training data matrix.
-    train_lookup : numpy.ndarray, type = int, shape = ``(train_count,)''
-        List of class labels for all embedded data.
-    objective_fns : list(Callable)
+    train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        The full training data matrix.
+    train_labels : numpy.ndarray(int), shape = ``(train_count, class_count)''
+        One-hot encoding of class labels for all training data.
+    train_lookup : numpy.ndarray(int), shape = ``(train_count,)''
+        List of class labels for all training data.
+    objective_fns : list(Callable), shape = ``(objective_count)''
         List of functions taking four arguments: bit masks alpha and beta - the
         type 1 and type 2 error counts at each grid location, respectively - and
         the numbers of correctly and incorrectly classified training examples.
@@ -49,7 +46,7 @@ def train_two_class_interval(
 
     Returns
     -------
-    cutoffs : np.ndarray, type = float, shape = ``(mask_count,)''
+    cutoffs : np.ndarray(float), shape = ``(objective_count,)''
         Returns the confidence interval scale parameter that minimizes each
         considered objective function.
     """
@@ -61,8 +58,8 @@ def train_two_class_interval(
     mean, variance = muygps.regress(
         batch_indices,
         batch_nn_indices,
-        embedded_train,
-        embedded_train,
+        train,
+        train,
         train_labels,
         variance_mode="diagonal",
     )

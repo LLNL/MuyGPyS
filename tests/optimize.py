@@ -57,9 +57,7 @@ class BatchTest(parameterized.TestCase):
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
-        indices, nn_indices = full_filtered_batch(
-            nbrs_lookup, data["lookup"], data_count
-        )
+        indices, nn_indices = full_filtered_batch(nbrs_lookup, data["lookup"])
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
         for i, ind in enumerate(indices):
@@ -89,7 +87,7 @@ class BatchTest(parameterized.TestCase):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
         indices, nn_indices = sample_balanced_batch(
-            nbrs_lookup, data["lookup"], batch_count, data_count
+            nbrs_lookup, data["lookup"], batch_count
         )
         target_count = np.min((data_count, batch_count))
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
@@ -121,7 +119,7 @@ class BatchTest(parameterized.TestCase):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
         indices, nn_indices = sample_balanced_batch(
-            nbrs_lookup, data["lookup"], batch_count, data_count
+            nbrs_lookup, data["lookup"], batch_count
         )
         target_count = np.min((data_count, batch_count))
         hist, _ = np.array(
@@ -153,7 +151,7 @@ class BatchTest(parameterized.TestCase):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
         indices, nn_indices = sample_balanced_batch(
-            nbrs_lookup, data["lookup"], batch_count, data_count
+            nbrs_lookup, data["lookup"], batch_count
         )
         target_count = np.min((data_count, batch_count))
         hist, _ = np.array(
@@ -189,9 +187,7 @@ class ObjectiveTest(parameterized.TestCase):
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
-        indices, nn_indices = full_filtered_batch(
-            nbrs_lookup, data["lookup"], data_count
-        )
+        indices, nn_indices = full_filtered_batch(nbrs_lookup, data["lookup"])
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
         for i, ind in enumerate(indices):
@@ -220,9 +216,7 @@ class BalancedBatchTest(parameterized.TestCase):
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
-        indices, nn_indices = full_filtered_batch(
-            nbrs_lookup, data["lookup"], data_count
-        )
+        indices, nn_indices = full_filtered_batch(nbrs_lookup, data["lookup"])
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
         for i, ind in enumerate(indices):

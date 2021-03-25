@@ -35,11 +35,9 @@ def cross_entropy_fn(predictions, targets):
 
     Parameters
     ----------
-    predictions : numpy.ndarray, type = int,
-            shape = ``(batch_count, output_dim)''
+    predictions : numpy.ndarray(int), shape = ``(batch_count, response_count)''
         The predicted response.
-    targets : numpy.ndarray, type = int,
-            shape = ``(batch_count, output_dim)''
+    targets : numpy.ndarray(int), shape = ``(batch_count, response_count)''
         The expected response.
 
     Returns
@@ -62,11 +60,9 @@ def mse_fn(predictions, targets):
 
     Parameters
     ----------
-    predictions : numpy.ndarray, type = int,
-            shape = ``(batch_count, output_dim)''
+    predictions : numpy.ndarray(int), shape = ``(batch_count, response_count)''
         The predicted response.
-    targets : numpy.ndarray, type = int,
-            shape = ``(batch_count, output_dim)''
+    targets : numpy.ndarray(int), shape = ``(batch_count, response_count)''
         The expected response.
 
     Returns
@@ -75,9 +71,9 @@ def mse_fn(predictions, targets):
         The mse loss of the prediction.
     """
     batch_count = predictions.shape[0]
-    output_dim = predictions.shape[1]
+    response_count = predictions.shape[1]
     squared_errors = np.sum((predictions - targets) ** 2)
-    return squared_errors / (batch_count * output_dim)
+    return squared_errors / (batch_count * response_count)
 
 
 def loo_crossval(
@@ -104,19 +100,18 @@ def loo_crossval(
         Local kriging approximate MuyGPS.
     params : set
         Set of parameter names to optimize.
-    batch_indices : numpy.ndarray, type = int, shape = ``(batch_size,)''
+    batch_indices : numpy.ndarray(int), shape = ``(batch_size,)''
         Batch observation indices.
-    batch_nn_indices : numpy.ndarray, type = int,
-                       shape = ``(n_batch, nn_count)''
+    batch_nn_indices : numpy.ndarray(int), shape = ``(n_batch, nn_count)''
         Indices of the nearest neighbors
-    batch_nn_distances : numpy.ndarray, type = float,
+    batch_nn_distances : numpy.ndarray(float),
                          shape = ``(batch_size, nn_count)''
         Distances from each batch observation to its nearest neighbors.
-    embedded_train : numpy.ndarray, type = float,
+    embedded_train : numpy.ndarray(float),
                      shape = ``(train_count, embedding_dim)''
         The full embedded training data matrix.
-    train_targets : numpy.ndarray, type = int or float,
-                   shape = ``(train_count, class_count)''
+    train_targets : numpy.ndarray(float),
+                   shape = ``(train_count, response_count)''
         List of output response for all embedded data, e.g. one-hot class
         encodings for classification.
 

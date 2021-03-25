@@ -183,10 +183,10 @@ class GPMathTest(parameterized.TestCase):
             indices, nn_indices, test["input"], train["input"]
         )
         solve = muygps._compute_solve(nn_indices, train["output"], K, Kcross)
-        self.assertEqual(solve.shape, (test_count, 1, response_count))
+        self.assertEqual(solve.shape, (test_count, response_count))
         for i in range(test_count):
             self.assertSequenceAlmostEqual(
-                solve[i, 0, :],
+                solve[i, :],
                 Kcross[i, 0, :]
                 @ np.linalg.solve(
                     K[i, :, :] + muygps.eps * np.eye(nn_count),
@@ -231,9 +231,7 @@ class GPMathTest(parameterized.TestCase):
         K, Kcross = muygps._compute_kernel_tensors(
             indices, nn_indices, test["input"], train["input"]
         )
-        diagonal_variance = muygps._compute_diagonal_variance(
-            K, Kcross, len(indices), nn_count
-        )
+        diagonal_variance = muygps._compute_diagonal_variance(K, Kcross)
         self.assertEqual(diagonal_variance.shape, (test_count,))
         for i in range(test_count):
             self.assertAlmostEqual(

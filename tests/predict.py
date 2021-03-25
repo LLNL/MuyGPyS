@@ -101,78 +101,6 @@ class ClassifyTest(parameterized.TestCase):
         )
         self.assertEqual(predictions.shape, (test_count, response_count))
 
-    # @parameterized.parameters(
-    #     (
-    #         (1000, 200, f, nn, e, k_dict[0], k_dict[1])
-    #         # for f in [100]
-    #         # for nn in [10]
-    #         # for e in [True]
-    #         for f in [100, 10, 2]
-    #         for nn in [5, 10, 100]
-    #         for e in [True, False]
-    #         for k_dict in (
-    #             (
-    #                 "matern",
-    #                 {
-    #                     "nu": 0.38,
-    #                     "length_scale": 1.5,
-    #                     "eps": 0.00001,
-    #                     "sigma_sq": [1.0],
-    #                 },
-    #             ),
-    #             (
-    #                 "rbf",
-    #                 {
-    #                     "length_scale": 1.5,
-    #                     "eps": 0.00001,
-    #                     "sigma_sq": [1.0],
-    #                 },
-    #             ),
-    #             (
-    #                 "nngp",
-    #                 {
-    #                     "sigma_w_sq": 1.5,
-    #                     "sigma_b_sq": 1.0,
-    #                     "eps": 0.00001,
-    #                     "sigma_sq": [1.0],
-    #                 },
-    #             ),
-    #         )
-    #     )
-    # )
-    # def test_classify_uq(
-    #     self,
-    #     train_count,
-    #     test_count,
-    #     feature_count,
-    #     nn_count,
-    #     is_exact,
-    #     kern,
-    #     hyper_dict,
-    # ):
-    #     response_count = 2
-    #     train, test = _make_gaussian_data(
-    #         train_count,
-    #         test_count,
-    #         feature_count,
-    #         response_count,
-    #         categorical=True,
-    #     )
-    #     nbrs_lookup = NN_Wrapper(train["input"], nn_count, is_exact)
-    #     muygps = MuyGPS(kern=kern)
-    #     muygps.set_params(**hyper_dict)
-
-    #     predictions, variances, _ = classify_two_class_uq(
-    #         muygps,
-    #         test["input"],
-    #         train["input"],
-    #         nbrs_lookup,
-    #         train["output"],
-    #         nn_count,
-    #     )
-    #     self.assertEqual(predictions.shape, (test_count, response_count))
-    #     self.assertEqual(variances.shape, (test_count,))
-
     @parameterized.parameters(
         (
             (1000, 200, f, nn, b, e, k_dict[0], k_dict[1])
@@ -257,7 +185,6 @@ class ClassifyTest(parameterized.TestCase):
             nbrs_lookup,
             train_lookup,
             batch_size,
-            train_count,
         )
 
         cutoffs = train_two_class_interval(

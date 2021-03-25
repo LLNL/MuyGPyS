@@ -22,12 +22,49 @@ from muyscans.optimize.objective import get_loss_func, loo_crossval
 
 
 def _make_gaussian_matrix(data_count, feature_count):
+    """
+    Create a matrix of i.i.d. Gaussian datapoints.
+
+    Parameters
+    ----------
+    data_count : int
+        The number of data rows.
+    feature_count : int
+        The number of data columns.
+
+    Returns
+    -------
+    np.ndarray(float), shape = ``(data_count, feature_count)''
+        An i.i.d. Gaussian matrix.
+    """
     return np.random.randn(data_count, feature_count)
 
 
 def _make_gaussian_dict(
     data_count, feature_count, response_count, categorical=False
 ):
+    """
+    Create a data dict including "input", "output", and "lookup" keys mapping to
+    i.i.d. Gaussian matrices.
+
+    Parameters
+    ----------
+    data_count : int
+        The number of data rows.
+    feature_count : int
+        The number of data columns in the "input" matrix.
+    resonse_count : int
+        The number of data columns in the "output" matrix.
+    categorical : Boolean
+        If true, convert the "output" matrix to a one-hot encoding matrix.
+
+    Returns
+    -------
+    dict
+        A dict with keys "input" mapping to a ``(data_count, feature_count)''
+        matrix, "output" mapping to a ``(data_count, response_count)'' matrix,
+        and "lookup" mapping to a ``(data_count)'' vector.
+    """
     locations = _make_gaussian_matrix(data_count, feature_count)
     observations = _make_gaussian_matrix(data_count, response_count)
     lookup = np.argmax(observations, axis=1)
@@ -43,6 +80,32 @@ def _make_gaussian_dict(
 def _make_gaussian_data(
     train_count, test_count, feature_count, response_count, categorical=False
 ):
+    """
+    Create train and test dicts including "input", "output", and "lookup" keys
+    mapping to i.i.d. Gaussian matrices.
+
+    Parameters
+    ----------
+    data_count : int
+        The number of data rows.
+    feature_count : int
+        The number of data columns in the "input" matrix.
+    resonse_count : int
+        The number of data columns in the "output" matrix.
+    categorical : Boolean
+        If true, convert the "output" matrix to a one-hot encoding matrix.
+
+    Returns
+    -------
+    dict
+        A dict with keys "input" mapping to a ``(data_count, feature_count)''
+        matrix, "output" mapping to a ``(data_count, response_count)'' matrix,
+        and "lookup" mapping to a ``(data_count)'' vector.
+    dict
+        A dict with keys "input" mapping to a ``(data_count, feature_count)''
+        matrix, "output" mapping to a ``(data_count, response_count)'' matrix,
+        and "lookup" mapping to a ``(data_count)'' vector.
+    """
     return (
         _make_gaussian_dict(
             train_count, feature_count, response_count, categorical=categorical
@@ -65,6 +128,11 @@ def _optim_chassis(
     loss_method="mse",
     verbose=False,
 ):
+    """
+    Execute an optimization pipeline.
+
+    NOTE[bwp] this function is purely for testing purposes.
+    """
     variance_mode = "diagonal"
     # kern = "matern"
     # verbose = True
@@ -164,13 +232,69 @@ def _optim_chassis(
 
 
 class BenchmarkGP:
+    """
+    A basic Gaussian Process.
+
+    Performs GP inference and simulation by way of analytic computations.
+    """
+
     def __init__(self, kern="matern", **kwargs):
+        """
+        Initialize.
+
+        Parameters
+        ----------
+        kern : str
+            The kernel to be used. Each kernel supports different
+            hyperparameters that can be specified in kwargs.
+            NOTE[bwp] Currently supports ``matern'', ``rbf'' and ``nngp''.
+        """
         self.kern = kern.lower()
         self.set_params(**kwargs)
 
     def set_params(self, **params):
-        # NOTE[bwp] this logic should get moved into kernel functors once
-        # implemented
+        """
+        Set the hyperparameters specified by `params`.
+
+        NOTE[bwp] this logic should get moved into kernel functors once
+        implemented
+
+        Universal Parameters
+        ----------
+        eps : float
+            The homoscedastic noise nugget to be added to the inverted
+            covariance matrix.
+        sigma_sq : np.ndarray(float), shape = ``(response_count)''
+            Scaling parameter to be applied to posterior variance. One element
+            per dimension of the response.
+
+        Matern Parameters
+        ----------
+        nu : float
+            The smoothness parameter. As ``nu'' -> infty, the matern kernel
+            converges pointwise to the RBF kernel.
+        length_scale : float
+            Scale parameter multiplied against distance values.
+
+        RBF Parameters
+        ----------
+        length_scale : float
+            Scale parameter multiplied against distance values.
+
+        NNGP Parameters
+        ----------
+        sigma_b_sq : float
+            Variance prior on the bias parameters in a wide neural network under
+            Glorot inigialization in the infinite width limit.
+        sigma_w_sq : float
+            Variance prior on the weight parameters in a wide neural network
+            under Glorot inigialization in the infinite width limit.
+
+        Returns
+        -------
+        unset_params : list(str)
+            The set of kernel parameters that have not been fixed by ``params''.
+        """
         self.params = {
             p: params[p] for p in params if p != "eps" and p != "sigma_sq"
         }
@@ -205,8 +329,22 @@ class BenchmarkGP:
         return sorted(list(unset_params))
 
     def set_param_array(self, names, values):
-        # NOTE[bwp] this logic should get moved into kernel functors once
-        # implemented
+        """
+        Set the hyperparameters specified by elements of ``names'' with the
+        corresponding elements of ``values''.
+
+        Convenience function for use in concert with ``scipy.optimize''.
+
+        NOTE[bwp] this logic should get moved into kernel functors once
+        implemented
+
+        Parameters
+        ----------
+        names : list(str)
+            An alphabetically ordered list of parameter names.
+        values : list(float)
+            A corresponding list of parameter values.
+        """
         names = list(names)
         # this is going to break if we add a hyperparameter that occurs earlier
         # in alphabetical order.
@@ -225,11 +363,17 @@ class BenchmarkGP:
 
     def optim_bounds(self, names, eps=1e-6):
         """
-        Return hyperparameter bounds.
+        Set the bounds (2-tuples) corresponding to each specified
+        hyperparameter.
 
-        NOTE[bwp]: Currently hard-coded. Do we want this to be configurable?
         NOTE[bwp] this logic should get moved into kernel functors once
         implemented
+
+        Parameters
+        ----------
+        params : dict
+            A dict mapping hyperparameter names to 2-tuples of floats. Floats
+            must be increasing.
         """
         ret = list()
         if "eps" in names:
@@ -250,11 +394,31 @@ class BenchmarkGP:
         return ret
 
     def fit(self, test, train):
+        """
+        Compute the full kernel and precompute the cholesky decomposition.
+
+        Parameters
+        ----------
+        test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+            The full testing data matrix.
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+            The full training data matrix.
+        """
         self._fit_kernel(np.vstack((test, train)))
         self.test_count = test.shape[0]
         self._cholesky(self.K)
 
     def fit_train(self, train):
+        """
+        Compute the training kernel and precompute the cholesky decomposition.
+
+        Parameters
+        ----------
+        test : numpy.ndarray(float), shape = ``(test_count, dim)''
+            The full testing data matrix.
+        train : numpy.ndarray(float), shape = ``(train_count, dim)''
+            The full training data matrix.
+        """
         self._fit_kernel(train)
         self.test_count = 0
         self._cholesky(self.K)
@@ -285,17 +449,16 @@ class BenchmarkGP:
         variance_mode : str or None
             Specifies the type of variance to return. Currently supports
             ``diagonal'' and None. If None, report no variance term.
-        targets : numpy.ndarray, type = float,
+        targets : numpy.ndarray(float),
                   shape = ``(train_count, ouput_dim)''
             Vector-valued responses for each training element.
 
         Returns
         -------
-        responses : numpy.ndarray, type = float,
-                    shape = ``(batch_count, output_dim,)''
+        responses : numpy.ndarray(float),
+                    shape = ``(batch_count, response_count,)''
             The predicted response for each of the given indices.
-        diagonal_variance : numpy.ndarray, type = float,
-                   shape = ``(batch_count, )
+        diagonal_variance : numpy.ndarray(float), shape = ``(batch_count, )
             The diagonal elements of the posterior variance. Only returned where
             ``variance_mode == "diagonal"''.
         """

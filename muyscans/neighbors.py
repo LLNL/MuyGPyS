@@ -28,7 +28,7 @@ class NN_Wrapper:
 
         Parameters
         ----------
-        train : numpy.ndarray, type = float, shape = ``(train_count, dim)''
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
             The full training data that will construct the nearest neighbor
             query datastructure.
             NOTE[bwp] Will need to be replaced with a data stream in the future.
@@ -67,12 +67,12 @@ class NN_Wrapper:
 
         Parameters
         ----------
-        test : numpy.ndarray, type = float, shape = ``(test_count, dim)''
+        test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
             Testing data matrix.
 
         Returns
         -------
-        nn_indices, numpy.ndarray, type = int, shape= ``(test_count, nn_count)''
+        nn_indices, numpy.ndarray(int), shape= ``(test_count, nn_count)''
             The nearest neighbors for each row of the test data.
         """
         return self._get_nns(test, self.nn_count)
@@ -84,13 +84,12 @@ class NN_Wrapper:
 
         Parameters
         ----------
-        batch_indices : numpy.ndarray, type = float,
-                shape = ``(batch_size,)''
+        batch_indices : numpy.ndarray(float), shape = ``(batch_size,)''
             Indices into the training data.
 
         Returns
         -------
-        nn_indices, numpy.ndarray, type = int, shape= ``(test_count, nn_count)''
+        nn_indices, numpy.ndarray(int), shape= ``(test_count, nn_count)''
             The nearest neighbors for each row of the test data.
         """
         batch_nn_indices = self._get_nns(
@@ -105,14 +104,15 @@ class NN_Wrapper:
 
         Parameters
         ----------
-        samples : numpy.ndarray, type = float, shape = ``(sample_count, dim)''
+        samples : numpy.ndarray(float),
+                  shape = ``(sample_count, feature_count)''
             Data matrix whose rows include samples to be queried.
         nn_count : int
             THe number of nearest neighbors to query.
 
         Returns
         -------
-        nn_indices, numpy.ndarray, type = int, shape= ``(test_count, nn_count)''
+        nn_indices, numpy.ndarray(int), shape = ``(test_count, nn_count)''
             The nearest neighbors for each row of the samples matrix.
         """
         if self.exact is True:

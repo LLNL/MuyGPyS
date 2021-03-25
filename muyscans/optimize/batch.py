@@ -15,20 +15,35 @@ def get_classify_batch(
     train_nbrs_lookup,
     lookup,
     batch_size,
-    train_count,
 ):
-    if train_count > batch_size:
-        return sample_balanced_batch(
-            train_nbrs_lookup, lookup, batch_size, train_count
-        )
+    """
+    Decide whether to sample a balanced batch or return the full filtered batch.
+
+    Parameters
+    ----------
+    train_nbrs_lookup : `muyscans.neighbors.NN_Wrapper'
+        Trained nearest neighbor query data structure.
+    lookup : numpy.ndarray(int), shape = ``(train_count,)''
+        List of class labels for all training data.
+    batch_size : int
+        The number of batch elements to sample.
+
+    Returns
+    -------
+    numpy.ndarray(int), shape = ``(batch_count,)''
+        The indices of the sampled training points.
+    numpy.ndarray(int), shape = ``(batch_count, nn_count)''
+        The indices of the nearest neighbors of the sampled training points.
+    """
+    if len(lookup) > batch_size:
+        return sample_balanced_batch(train_nbrs_lookup, lookup, batch_size)
     else:
-        return full_filtered_batch(train_nbrs_lookup, lookup, train_count)
+        return full_filtered_batch(train_nbrs_lookup, lookup)
 
 
 def full_filtered_batch(
     train_nbrs_lookup,
     lookup,
-    train_count,
 ):
     """
     Return a batch composed of the entire training set, filtering out elements
@@ -38,19 +53,17 @@ def full_filtered_batch(
     ----------
     train_nbrs_lookup : `muyscans.ML.NN_Wrapper'
         Trained nearest neighbor query data structure.
-    lookup : numpy.ndarray, type = int, shape = ``(train_count,)''
+    lookup : numpy.ndarray(int), shape = ``(train_count,)''
         List of class labels for all embedded data.
 
     Returns
     -------
-    batch_indices : numpy.ndarray, type = int,
-            shape = ``(batch_count,)''
+    batch_indices : numpy.ndarray(int), shape = ``(batch_count,)''
         The indices of the sampled training points.
-    batch_nn_indices : numpy.ndarray, type = int,
-            shape = ``(batch_count, nn_count)''
+    batch_nn_indices : numpy.ndarray(int), shape = ``(batch_count, nn_count)''
         The indices of the nearest neighbors of the sampled training points.
     """
-    train_indices = np.array([*range(train_count)])
+    train_indices = np.array([*range(len(lookup))])
     train_nn_indices = train_nbrs_lookup.get_batch_nns(train_indices)
     train_nn_labels = lookup[train_nn_indices]
 
@@ -71,7 +84,6 @@ def sample_balanced_batch(
     train_nbrs_lookup,
     lookup,
     batch_size,
-    train_count,
 ):
     """
     Collect a class-balanced batch of training indices.
@@ -84,21 +96,20 @@ def sample_balanced_batch(
     ----------
     train_nbrs_lookup : `muyscans.ML.NN_Wrapper'
         Trained nearest neighbor query data structure.
-    lookup : numpy.ndarray, type = int, shape = ``(train_count,)''
+    lookup : numpy.ndarray(int), shape = ``(train_count,)''
         List of class labels for all embedded data.
     batch_size : int
         The number of batch elements to sample.
 
     Returns
     -------
-    nonconstant_balanced_indices : numpy.ndarray, type = int,
-            shape = ``(batch_count,)''
+    nonconstant_balanced_indices : numpy.ndarray(int),
+                                   shape = ``(batch_count,)''
         The indices of the sampled training points.
-    batch_nn_indices : numpy.ndarray, type = int,
-            shape = ``(batch_count, nn_count)''
+    batch_nn_indices : numpy.ndarray(int), shape = ``(batch_count, nn_count)''
         The indices of the nearest neighbors of the sampled training points.
     """
-    train_indices = np.array([*range(train_count)])
+    train_indices = np.array([*range(len(lookup))])
     train_nn_indices = train_nbrs_lookup.get_batch_nns(train_indices)
     train_nn_labels = lookup[train_nn_indices]
     # filter out indices whose neighors all belong to one class
@@ -148,13 +159,14 @@ def sample_batch(
         Trained nearest neighbor query data structure.
     batch_count : int
         The number of batch elements to sample.
+    train_count : int
+        The total number of training examples.
 
     Returns
     -------
-    batch_indices : numpy.ndarray, type = int, shape = ``(batch_count,)''
+    batch_indices : numpy.ndarray(int), shape = ``(batch_count,)''
         The indices of the sampled training points.
-    batch_nn_indices : numpy.ndarray, type = int,
-            shape = ``(batch_count, nn_count)''
+    batch_nn_indices : numpy.ndarray(int), shape = ``(batch_count, nn_count)''
         The indices of the nearest neighbors of the sampled training points.
     """
     if train_count > batch_count:
