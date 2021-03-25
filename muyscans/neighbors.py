@@ -12,6 +12,8 @@ import numpy as np
 
 from time import perf_counter
 
+from muyscans.utils import safe_apply
+
 
 class NN_Wrapper:
     """
@@ -22,7 +24,7 @@ class NN_Wrapper:
     computation and `hnswlib.Index` for approximate nearest neighbors.
     """
 
-    def __init__(self, train, nn_count, exact):
+    def __init__(self, train, nn_count, nn_method="exact", **kwargs):
         """
         Initialize.
 
@@ -34,32 +36,59 @@ class NN_Wrapper:
             NOTE[bwp] Will need to be replaced with a data stream in the future.
         nn_count : int
             The number of nearest neighbors to return in queries.
-        exact : Boolean
-            Flag indicating whether to use `sklearn.neighbors.NearestNeighbors`
-            (if ``True'') or `hnswlib.Index` otherwise.
+        nn_method : str
+            Inicates which nearest neighbor algorithm should be used.
+            NOTE[bwp] currently "exact" indicates
+            `sklearn.neighbors.NearestNeighbors`, while "hnsw" indicates
+            `hnswlib.Index`.
+        kwargs : dict
+            Additional kwargs used for lookup data structure construction.
+            `nn_method="exact"` supports "radius", "algorithm", "leaf_size",
+            "metric", "p", and "metric_params" kwargs. `nn_method="hnsw"
+            supports "space", "ef_construction", "M", and "random_seed" kwargs.
         """
         self.train = train
-        self.train_count, self.dim = self.train.shape
+        self.train_count, self.feature_count = self.train.shape
         self.nn_count = nn_count
-        self.exact = exact
-        if self.exact is True:
+        self.nn_method = nn_method.lower()
+        if self.nn_method == "exact":
             from sklearn.neighbors import NearestNeighbors
 
-            self.nbrs = NearestNeighbors(
-                n_neighbors=(nn_count + 1),
-                algorithm="ball_tree",
-                n_jobs=-1,
-            ).fit(self.train)
-        else:
+            exact_kwargs = {
+                k: kwargs[k]
+                for k in kwargs
+                if k
+                in {
+                    "radius",
+                    "algorithm",
+                    "leaf_size",
+                    "metric",
+                    "p",
+                    "metric_params",
+                }
+            }
+
+            exact_kwargs["n_neighbors"] = nn_count + 1
+            exact_kwargs["n_jobs"] = -1
+            self.nbrs = NearestNeighbors(**exact_kwargs).fit(self.train)
+        elif self.nn_method == "hnsw":
             import hnswlib
 
-            self.nbrs = hnswlib.Index(space="cosine", dim=self.dim)
-            self.nbrs.init_index(
-                max_elements=self.train_count,
-                ef_construction=100,
-                M=16,
+            self.nbrs = hnswlib.Index(
+                space=kwargs.get("space", "l2"), dim=self.feature_count
             )
+            hnsw_kwargs = {
+                k: kwargs[k]
+                for k in kwargs
+                if k in {"ef_construction", "M", "random_seed"}
+            }
+            hnsw_kwargs["max_elements"] = self.train_count
+            self.nbrs.init_index(**hnsw_kwargs)
             self.nbrs.add_items(self.train)
+        else:
+            raise NotImplementedError(
+                f"Nearest Neighbor algorithm {self.nn_method} is not implemented."
+            )
 
     def get_nns(self, test):
         """
@@ -115,11 +144,16 @@ class NN_Wrapper:
         nn_indices, numpy.ndarray(int), shape = ``(test_count, nn_count)''
             The nearest neighbors for each row of the samples matrix.
         """
-        if self.exact is True:
+        if self.nn_method == "exact":
             _, nn_indices = self.nbrs.kneighbors(
                 samples,
                 n_neighbors=nn_count,
             )
-        else:
+        elif self.nn_method == "hnsw":
             nn_indices, _ = self.nbrs.knn_query(samples, k=nn_count)
+        else:
+            raise NotImplementedError(
+                f"Nearest Neighbor algorithm {self.nn_method} is not implemented."
+            )
+
         return nn_indices

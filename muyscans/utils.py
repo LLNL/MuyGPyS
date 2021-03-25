@@ -24,10 +24,10 @@ from sys import maxsize
 
 def _val_to_list(val, L):
     """
-    Takes a value val and returns a list containing L copies if val is any 
+    Takes a value val and returns a list containing L copies if val is any
     scalar number, a callable (e.g. an activation function), or a length-2 tuple
-    (e.g. a convolutional stride). Otherwise just returns val. 
-    
+    (e.g. a convolutional stride). Otherwise just returns val.
+
     Parameters
     ----------
     val : array_like or scalar
@@ -39,7 +39,7 @@ def _val_to_list(val, L):
     -------
     array_like, shape = (L,)
         Either L copies of val or val unchanged.
- 
+
     """
     if (
         isinstance(val, Number)
@@ -55,9 +55,9 @@ def _val_to_list(val, L):
 
 def _vals_to_lists(L, *vals):
     """
-    Applies vals_to_lists_ to ever element of *vals. Non-list parameters will 
-    be converted to lists of copies, signifying that a hyperparameter is 
-    constant across all layers.  
+    Applies vals_to_lists_ to ever element of *vals. Non-list parameters will
+    be converted to lists of copies, signifying that a hyperparameter is
+    constant across all layers.
     """
     return (_val_to_list(val, L) for val in vals)
 

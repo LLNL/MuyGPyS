@@ -25,6 +25,7 @@ from muyscans.testing.test_utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _make_gaussian_data,
+    _basic_nn_kwarg_options,
 )
 from muyscans.uq import (
     train_two_class_interval,
@@ -34,11 +35,11 @@ from muyscans.uq import (
 class ClassifyTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 200, f, r, nn, e, k_dict[0], k_dict[1])
+            (1000, 200, f, r, nn, nn_kwargs, k_dict[0], k_dict[1])
             for f in [100, 10, 2]
             for r in [10, 2]
             for nn in [5, 10, 100]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
             for k_dict in (
                 (
                     "matern",
@@ -76,7 +77,7 @@ class ClassifyTest(parameterized.TestCase):
         feature_count,
         response_count,
         nn_count,
-        is_exact,
+        nn_kwargs,
         kern,
         hyper_dict,
     ):
@@ -87,7 +88,7 @@ class ClassifyTest(parameterized.TestCase):
             response_count,
             categorical=True,
         )
-        nbrs_lookup = NN_Wrapper(train["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
         muygps = MuyGPS(kern=kern)
         muygps.set_params(**hyper_dict)
 
@@ -103,7 +104,7 @@ class ClassifyTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1000, 200, f, nn, b, e, k_dict[0], k_dict[1])
+            (1000, 200, f, nn, b, nn_kwargs, k_dict[0], k_dict[1])
             # for f in [100]
             # for nn in [10]
             # for b in [200]
@@ -111,7 +112,7 @@ class ClassifyTest(parameterized.TestCase):
             for f in [100, 10, 2]
             for nn in [5, 10, 100]
             for b in [200]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
             for k_dict in (
                 (
                     "matern",
@@ -149,7 +150,7 @@ class ClassifyTest(parameterized.TestCase):
         feature_count,
         nn_count,
         batch_size,
-        is_exact,
+        nn_kwargs,
         kern,
         hyper_dict,
     ):
@@ -164,7 +165,7 @@ class ClassifyTest(parameterized.TestCase):
         )
         train["output"] *= 2
         test["output"] *= 2
-        nbrs_lookup = NN_Wrapper(train["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
         muygps = MuyGPS(kern=kern)
         muygps.set_params(**hyper_dict)
 

@@ -21,6 +21,17 @@ from muyscans.optimize.batch import sample_batch
 from muyscans.optimize.objective import get_loss_func, loo_crossval
 
 
+_basic_nn_kwarg_options = (
+    {"nn_method": "exact", "algorithm": "ball_tree"},
+    {
+        "nn_method": "hnsw",
+        "space": "l2",
+        "ef_construction": 100,
+        "M": 16,
+    },
+)
+
+
 def _make_gaussian_matrix(data_count, feature_count):
     """
     Create a matrix of i.i.d. Gaussian datapoints.
@@ -124,9 +135,9 @@ def _optim_chassis(
     kern="matern",
     hyper_dict=None,
     optim_bounds=None,
-    exact=False,
     loss_method="mse",
     verbose=False,
+    nn_kwargs=None,
 ):
     """
     Execute an optimization pipeline.
@@ -147,7 +158,7 @@ def _optim_chassis(
     train_nbrs_lookup = NN_Wrapper(
         embedded_train,
         nn_count,
-        exact,
+        **nn_kwargs,
     )
     # Make MuyGPS object
     muygps = MuyGPS(kern=kern)

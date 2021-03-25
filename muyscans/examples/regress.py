@@ -36,10 +36,10 @@ def do_regress(
     embed_method="pca",
     loss_method="mse",
     hyper_dict=None,
+    nn_kwargs=None,
     optim_bounds=None,
     variance_mode=None,
     do_normalize=False,
-    exact=True,
     verbose=False,
 ):
     """
@@ -73,6 +73,13 @@ def do_regress(
     hyper_dict : dict or None
         If specified, use the given parameters for the kernel. If None, perform
         hyperparamter optimization.
+    nn_kwargs : dict or None
+        If not None, use the given parameters for the nearest neighbor
+        algorithm specified by the "nn_method" key, which must be included if
+        the user wants to use a method other than the default exact algorithm.
+        Parameter names vary by method. See `muyscans.neighbors.NN_Wrapper` for
+        the supported methods and their parameters. If None, exact nearest
+        neighbors with default settings will be used.
     optim_bounds : dict or None
         If specified, set the corresponding bounds (a 2-tuple) for each
         specified hyperparameter. If None, use all default bounds for
@@ -83,9 +90,6 @@ def do_regress(
     do_normalize : Boolean
         Flag indicating whether to normalize. Currently redundant, but might
         want to keep this for now.
-    exact : Boolean
-        If true, use sklearn.neighbors.NearestNeighbors for exact KNN. Else, use
-        hnswlib.Index for approximate KNN.
     verbose : Boolean
         If ``True'', print summary statistics.
 
@@ -114,7 +118,7 @@ def do_regress(
     train_nbrs_lookup = NN_Wrapper(
         embedded_train,
         nn_count,
-        exact,
+        **nn_kwargs,
     )
     time_nn = perf_counter()
     time_batch = perf_counter()

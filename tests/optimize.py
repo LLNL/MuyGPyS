@@ -15,24 +15,25 @@ from muyscans.testing.test_utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _make_gaussian_data,
+    _basic_nn_kwarg_options,
 )
 
 
 class BatchTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, f, nn, b, e)
+            (1000, f, nn, b, nn_kwargs)
             for f in [100, 10, 2, 1]
             for nn in [5, 10, 100]
             for b in [10000, 1000, 100]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
         )
     )
     def test_sample_batch(
-        self, data_count, feature_count, nn_count, batch_count, is_exact
+        self, data_count, feature_count, nn_count, batch_count, nn_kwargs
     ):
         data = _make_gaussian_matrix(data_count, feature_count)
-        nbrs_lookup = NN_Wrapper(data, nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(data, nn_count, **nn_kwargs)
         indices, nn_indices = sample_batch(nbrs_lookup, batch_count, data_count)
         target_count = np.min((data_count, batch_count))
         self.assertEqual(indices.shape, (target_count,))
@@ -40,11 +41,11 @@ class BatchTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1000, f, r, nn, e)
+            (1000, f, r, nn, nn_kwargs)
             for f in [100, 10, 2]
             for r in [10, 2]
             for nn in [5, 10, 100]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
         )
     )
     def test_full_filtered_batch(
@@ -53,10 +54,10 @@ class BatchTest(parameterized.TestCase):
         feature_count,
         response_count,
         nn_count,
-        is_exact,
+        nn_kwargs,
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
-        nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices, nn_indices = full_filtered_batch(nbrs_lookup, data["lookup"])
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
@@ -67,12 +68,12 @@ class BatchTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1000, f, r, nn, b, e)
+            (1000, f, r, nn, b, nn_kwargs)
             for f in [100, 10, 2]
             for r in [10, 2]
             for nn in [5, 10, 100]
             for b in [10000, 1000, 100]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
         )
     )
     def test_sample_balanced_batch(
@@ -82,10 +83,10 @@ class BatchTest(parameterized.TestCase):
         response_count,
         nn_count,
         batch_count,
-        is_exact,
+        nn_kwargs,
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
-        nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices, nn_indices = sample_balanced_batch(
             nbrs_lookup, data["lookup"], batch_count
         )
@@ -99,12 +100,12 @@ class BatchTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1000, f, r, nn, b, e)
+            (1000, f, r, nn, b, nn_kwargs)
             for f in [100, 10, 2]
             for r in [10, 2]
             for nn in [5, 10, 100]
             for b in [100]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
         )
     )
     def test_sample_balanced_batch_lo_dist(
@@ -114,10 +115,10 @@ class BatchTest(parameterized.TestCase):
         response_count,
         nn_count,
         batch_count,
-        is_exact,
+        nn_kwargs,
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
-        nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices, nn_indices = sample_balanced_batch(
             nbrs_lookup, data["lookup"], batch_count
         )
@@ -131,12 +132,12 @@ class BatchTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1000, f, r, nn, b, e)
+            (1000, f, r, nn, b, nn_kwargs)
             for f in [100, 10, 2]
             for r in [10, 2]
             for nn in [5, 10, 100]
             for b in [1000, 10000]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
         )
     )
     def test_sample_balanced_batch_hi_dist(
@@ -146,10 +147,10 @@ class BatchTest(parameterized.TestCase):
         response_count,
         nn_count,
         batch_count,
-        is_exact,
+        nn_kwargs,
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
-        nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices, nn_indices = sample_balanced_batch(
             nbrs_lookup, data["lookup"], batch_count
         )
@@ -170,11 +171,11 @@ class BatchTest(parameterized.TestCase):
 class ObjectiveTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, f, r, nn, e)
+            (1000, f, r, nn, nn_kwargs)
             for f in [100, 10, 2]
             for r in [10, 2]
             for nn in [5, 10, 100]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
         )
     )
     def test_full_filtered_batch(
@@ -183,10 +184,10 @@ class ObjectiveTest(parameterized.TestCase):
         feature_count,
         response_count,
         nn_count,
-        is_exact,
+        nn_kwargs,
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
-        nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices, nn_indices = full_filtered_batch(nbrs_lookup, data["lookup"])
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
@@ -199,11 +200,11 @@ class ObjectiveTest(parameterized.TestCase):
 class BalancedBatchTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, f, r, nn, e)
+            (1000, f, r, nn, nn_kwargs)
             for f in [100, 10, 2]
             for r in [10, 2]
             for nn in [5, 10, 100]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
         )
     )
     def test_full_filtered_batch(
@@ -212,10 +213,10 @@ class BalancedBatchTest(parameterized.TestCase):
         feature_count,
         response_count,
         nn_count,
-        is_exact,
+        nn_kwargs,
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
-        nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices, nn_indices = full_filtered_batch(nbrs_lookup, data["lookup"])
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
@@ -288,14 +289,13 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
                 20,
                 b,
                 n,
-                e,
+                nn_kwargs,
                 k_dict[0],
                 k_dict[1],
             )
             for b in [250]
             for n in [34]
-            for e in [False]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
             for k_dict in (
                 (
                     "matern",
@@ -326,7 +326,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
         its,
         batch_count,
         nn_count,
-        is_exact,
+        nn_kwargs,
         kern,
         hyper_dict,
     ):
@@ -352,7 +352,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
                 batch_count,
                 kern=kern,
                 hyper_dict=hyper_dict,
-                exact=is_exact,
+                nn_kwargs=nn_kwargs,
             )
             mse += (global_sigmas[0] - true_sigma_sq) ** 2
             # print(
@@ -381,7 +381,7 @@ class GPOptimTest(parameterized.TestCase):
                 20,
                 b,
                 n,
-                e,
+                nn_kwargs,
                 k_p_b_dict[0],
                 k_p_b_dict[1],
                 k_p_b_dict[2],
@@ -389,8 +389,7 @@ class GPOptimTest(parameterized.TestCase):
             )
             for b in [250]
             for n in [34]
-            for e in [True]
-            # for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
             for k_p_b_dict in (
                 (
                     "matern",
@@ -433,7 +432,7 @@ class GPOptimTest(parameterized.TestCase):
         its,
         batch_count,
         nn_count,
-        is_exact,
+        nn_kwargs,
         kern,
         param,
         optim_bounds,
@@ -465,7 +464,7 @@ class GPOptimTest(parameterized.TestCase):
                 kern=kern,
                 hyper_dict=subtracted_dict,
                 optim_bounds={param: optim_bounds},
-                exact=is_exact,
+                nn_kwargs=nn_kwargs,
             )[0]
             mse += (est_param - tru_param) ** 2
             # print(
@@ -474,9 +473,7 @@ class GPOptimTest(parameterized.TestCase):
             #     np.abs(est_param - tru_param),
             # )
         mse /= its
-        # Is this a strong enough guarantee? Approximate estimates are pretty
-        # bad. Is that a function of the 1d problem? HNSW is not designed for
-        # low dimensional problems.
+        # Is this a strong enough guarantee?
         self.assertAlmostEqual(mse, 0.0, 1)
 
 

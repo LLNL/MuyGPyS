@@ -9,6 +9,7 @@ from muyscans.testing.test_utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _make_gaussian_data,
+    _basic_nn_kwarg_options,
 )
 
 
@@ -106,11 +107,11 @@ class GPMathTest(parameterized.TestCase):
                 100,
                 f,
                 10,
-                e,
+                nn_kwargs,
                 k,
             )
             for f in [100, 1]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
             for k in ["matern", "rbf", "nngp"]
         )
     )
@@ -120,13 +121,13 @@ class GPMathTest(parameterized.TestCase):
         test_count,
         feature_count,
         nn_count,
-        is_exact,
+        nn_kwargs,
         kern,
     ):
         muygps = MuyGPS(kern=kern)
         train = _make_gaussian_matrix(train_count, feature_count)
         test = _make_gaussian_matrix(test_count, feature_count)
-        nbrs_lookup = NN_Wrapper(train, nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         indices = [*range(test_count)]
         nn_indices = nbrs_lookup.get_nns(test)
         K, Kcross = muygps._compute_kernel_tensors(
@@ -153,12 +154,12 @@ class GPMathTest(parameterized.TestCase):
                 f,
                 r,
                 10,
-                e,
+                nn_kwargs,
                 k,
             )
             for f in [100, 1]
             for r in [10, 2, 1]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
             for k in ["matern", "rbf", "nngp"]
         )
     )
@@ -169,14 +170,14 @@ class GPMathTest(parameterized.TestCase):
         feature_count,
         response_count,
         nn_count,
-        is_exact,
+        nn_kwargs,
         kern,
     ):
         muygps = MuyGPS(kern=kern)
         train, test = _make_gaussian_data(
             train_count, test_count, feature_count, response_count
         )
-        nbrs_lookup = NN_Wrapper(train["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
         indices = [*range(test_count)]
         nn_indices = nbrs_lookup.get_nns(test["input"])
         K, Kcross = muygps._compute_kernel_tensors(
@@ -202,12 +203,12 @@ class GPMathTest(parameterized.TestCase):
                 f,
                 r,
                 10,
-                e,
+                nn_kwargs,
                 k,
             )
             for f in [100, 1]
             for r in [10, 2, 1]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
             for k in ["matern", "rbf", "nngp"]
         )
     )
@@ -218,14 +219,14 @@ class GPMathTest(parameterized.TestCase):
         feature_count,
         response_count,
         nn_count,
-        is_exact,
+        nn_kwargs,
         kern,
     ):
         muygps = MuyGPS(kern=kern)
         train, test = _make_gaussian_data(
             train_count, test_count, feature_count, response_count
         )
-        nbrs_lookup = NN_Wrapper(train["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
         indices = [*range(test_count)]
         nn_indices = nbrs_lookup.get_nns(test["input"])
         K, Kcross = muygps._compute_kernel_tensors(
@@ -253,12 +254,12 @@ class GPSigmaSqTest(parameterized.TestCase):
                 f,
                 r,
                 10,
-                e,
+                nn_kwargs,
                 k,
             )
             for f in [100, 1]
             for r in [10, 2, 1]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
             for k in ["matern", "rbf", "nngp"]
         )
     )
@@ -268,12 +269,12 @@ class GPSigmaSqTest(parameterized.TestCase):
         feature_count,
         response_count,
         nn_count,
-        is_exact,
+        nn_kwargs,
         kern,
     ):
         muygps = MuyGPS(kern=kern)
         data = _make_gaussian_dict(data_count, feature_count, response_count)
-        nbrs_lookup = NN_Wrapper(data["input"], nn_count, is_exact)
+        nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices = [*range(data_count)]
         nn_indices = nbrs_lookup.get_batch_nns(indices)
         muygps.sigma_sq_optim(

@@ -14,6 +14,8 @@ from muyscans.examples.classify import (
     make_masks,
     do_uq,
 )
+from muyscans.testing.test_utils import _basic_nn_kwarg_options
+
 
 hardpath = "../data/star-gal/"
 
@@ -46,7 +48,7 @@ class StargalTest(parameterized.TestCase):
                 ob,
                 ub,
                 uq,
-                e,
+                nn_kwargs,
                 k_ta_dict[0],
                 k_ta_dict[1],
                 k_ta_dict[2],
@@ -58,7 +60,7 @@ class StargalTest(parameterized.TestCase):
             # for uq in [example_lambdas]
             # for e in [True]
             for uq in [None, example_lambdas]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
             for k_ta_dict in (
                 (
                     "matern",
@@ -99,7 +101,7 @@ class StargalTest(parameterized.TestCase):
         opt_batch_size,
         uq_batch_size,
         uq_objectives,
-        is_exact,
+        nn_kwargs,
         kern,
         target_accuracy,
         hyper_dict,
@@ -116,7 +118,7 @@ class StargalTest(parameterized.TestCase):
             None,
             None,
             uq_objectives,
-            is_exact,
+            nn_kwargs,
             kern,
             hyper_dict,
         )
@@ -130,7 +132,7 @@ class StargalTest(parameterized.TestCase):
                 ub,
                 lm,
                 uq,
-                e,
+                nn_kwargs,
                 k_ta_dict[0],
                 k_ta_dict[1],
                 k_ta_dict[2],
@@ -144,7 +146,7 @@ class StargalTest(parameterized.TestCase):
             # for e in [True]
             for lm in ["log", "mse"]
             for uq in [None, example_lambdas]
-            for e in [True, False]
+            for nn_kwargs in _basic_nn_kwarg_options
             for k_ta_dict in (
                 (
                     "matern",
@@ -186,7 +188,7 @@ class StargalTest(parameterized.TestCase):
         uq_batch_size,
         loss_method,
         uq_objectives,
-        is_exact,
+        nn_kwargs,
         kern,
         target_accuracy,
         hyper_dict,
@@ -203,7 +205,7 @@ class StargalTest(parameterized.TestCase):
             loss_method,
             None,
             uq_objectives,
-            is_exact,
+            nn_kwargs,
             kern,
             hyper_dict,
         )
@@ -220,7 +222,7 @@ class StargalTest(parameterized.TestCase):
         loss_method,
         embed_method,
         uq_objectives,
-        is_exact,
+        nn_kwargs,
         kern,
         hyper_dict,
     ):
@@ -234,7 +236,7 @@ class StargalTest(parameterized.TestCase):
             None,
             None,
             uq_objectives,
-            is_exact,
+            nn_kwargs,
             kern,
             hyper_dict,
         )
@@ -276,7 +278,7 @@ class StargalTest(parameterized.TestCase):
         loss_method,
         embed_method,
         uq_objectives,
-        is_exact,
+        nn_kwargs,
         kern,
         hyper_dict,
     ):
@@ -291,7 +293,7 @@ class StargalTest(parameterized.TestCase):
             kern=kern,
             hyper_dict=hyper_dict,
             uq_objectives=uq_objectives,
-            exact=is_exact,
+            nn_kwargs=nn_kwargs,
             verbose=False,
         )
         if uq_objectives is not None:
