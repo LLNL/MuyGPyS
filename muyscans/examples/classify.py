@@ -12,7 +12,7 @@ import numpy as np
 
 from muyscans.embed import apply_embedding
 from muyscans.data.utils import normalize
-from muyscans.optimize.batch import get_classify_batch, sample_balanced_batch
+from muyscans.optimize.batch import get_balanced_batch, sample_balanced_batch
 from muyscans.optimize.objective import (
     loo_crossval,
     get_loss_func,
@@ -167,7 +167,7 @@ def do_classify(
     # observations if `nu` unspecified.
     if len(unset_params) > 0:
         # collect balanced batch
-        batch_indices, batch_nn_indices = get_classify_batch(
+        batch_indices, batch_nn_indices = get_balanced_batch(
             train_nbrs_lookup,
             train["lookup"],
             opt_batch_size,
@@ -237,7 +237,7 @@ def do_classify(
         mid_value = (min_label + max_label) / 2
         time_pred = perf_counter()
 
-        batch_indices, batch_nn_indices = get_classify_batch(
+        batch_indices, batch_nn_indices = get_balanced_batch(
             train_nbrs_lookup,
             train["lookup"],
             uq_batch_size,

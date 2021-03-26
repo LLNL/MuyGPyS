@@ -7,7 +7,7 @@ from muyscans.examples.classify import example_lambdas, make_masks, do_uq
 from muyscans.gp.muygps import MuyGPS
 from muyscans.neighbors import NN_Wrapper
 from muyscans.optimize.batch import (
-    get_classify_batch,
+    get_balanced_batch,
     sample_batch,
     sample_balanced_batch,
     full_filtered_batch,
@@ -182,7 +182,7 @@ class ClassifyTest(parameterized.TestCase):
         self.assertEqual(variances.shape, (test_count,))
 
         train_lookup = np.argmax(train["output"], axis=1)
-        indices, nn_indices = get_classify_batch(
+        indices, nn_indices = get_balanced_batch(
             nbrs_lookup,
             train_lookup,
             batch_size,

@@ -206,8 +206,6 @@ def regress_any(
     test_count = test.shape[0]
     train_count = train.shape[0]
 
-    predicted_labels = np.zeros((test_count,))
-
     time_start = perf_counter()
     test_nn_indices = train_nbrs_lookup.get_nns(test)
     time_nn = perf_counter()

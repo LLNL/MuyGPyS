@@ -11,7 +11,7 @@ Training batch sampling.
 import numpy as np
 
 
-def get_classify_batch(
+def get_balanced_batch(
     train_nbrs_lookup,
     lookup,
     batch_size,
