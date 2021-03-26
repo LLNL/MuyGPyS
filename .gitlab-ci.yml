@@ -1,5 +1,5 @@
 variables:
-  PYTHON_ENVIRONMENT_PATH: $CI_BUILDS_DIR/python-muyscans
+  PYTHON_ENVIRONMENT_PATH: $CI_BUILDS_DIR/MuyGPyS
 
 stages:
   - environment
@@ -15,7 +15,7 @@ configure_python:
     - source ${PYTHON_ENVIRONMENT_PATH}/bin/activate
     - pip install -r requirements.txt
     - pip install -e .
-    - python -c "import muyscans"
+    - python -c "import MuyGPyS"
 
 .template_env_load:
   before_script:
