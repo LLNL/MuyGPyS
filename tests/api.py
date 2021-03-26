@@ -64,7 +64,7 @@ class StargalTest(parameterized.TestCase):
             for k_ta_dict in (
                 (
                     "matern",
-                    0.97,
+                    0.96,
                     {
                         "nu": 0.38,
                         "length_scale": 1.5,
@@ -150,7 +150,7 @@ class StargalTest(parameterized.TestCase):
             for k_ta_dict in (
                 (
                     "matern",
-                    0.97,
+                    0.96,
                     {
                         # "nu": 0.38,
                         "length_scale": 1.5,
