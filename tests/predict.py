@@ -3,31 +3,31 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from muyscans.examples.classify import example_lambdas, make_masks, do_uq
-from muyscans.gp.muygps import MuyGPS
-from muyscans.neighbors import NN_Wrapper
-from muyscans.optimize.batch import (
+from MuyGPyS.examples.classify import example_lambdas, make_masks, do_uq
+from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.batch import (
     get_balanced_batch,
     sample_batch,
     sample_balanced_batch,
     full_filtered_batch,
 )
-from muyscans.optimize.objective import (
+from MuyGPyS.optimize.objective import (
     cross_entropy_fn,
     mse_fn,
     loo_crossval,
 )
-from muyscans.predict import (
+from MuyGPyS.predict import (
     classify_any,
     classify_two_class_uq,
 )
-from muyscans.testing.test_utils import (
+from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _make_gaussian_data,
     _basic_nn_kwarg_options,
 )
-from muyscans.uq import (
+from MuyGPyS.uq import (
     train_two_class_interval,
 )
 

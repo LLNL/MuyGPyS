@@ -96,7 +96,7 @@ def loo_crossval(
         Hyperparameter values.
     objective_fn : callable
         The function to be used to optimize ``nu''.
-    muygps : muyscans.GP.MuyGPS
+    muygps : MuyGPyS.GP.MuyGPS
         Local kriging approximate MuyGPS.
     params : set
         Set of parameter names to optimize.

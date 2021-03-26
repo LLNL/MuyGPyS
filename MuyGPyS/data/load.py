@@ -15,7 +15,7 @@ import pandas as pd
 
 from functools import reduce
 
-from muyscans.data.utils import normalize
+from MuyGPyS.data.utils import normalize
 
 
 def process_mnist(data_chunk, flatten=True):

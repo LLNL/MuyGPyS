@@ -12,7 +12,7 @@ import numpy as np
 
 from scipy.sparse.linalg.eigen.arpack import eigsh as largest_eigsh
 
-from muyscans.data.utils import normalize
+from MuyGPyS.data.utils import normalize
 
 
 def embed_all(

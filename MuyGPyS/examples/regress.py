@@ -10,16 +10,16 @@ End-to-end application of MuyGPS.
 
 import numpy as np
 
-from muyscans.embed import apply_embedding
-from muyscans.data.utils import normalize
-from muyscans.optimize.batch import sample_batch
-from muyscans.optimize.objective import (
+from MuyGPyS.embed import apply_embedding
+from MuyGPyS.data.utils import normalize
+from MuyGPyS.optimize.batch import sample_batch
+from MuyGPyS.optimize.objective import (
     loo_crossval,
     get_loss_func,
 )
-from muyscans.predict import regress_any
-from muyscans.neighbors import NN_Wrapper
-from muyscans.gp.muygps import MuyGPS
+from MuyGPyS.predict import regress_any
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.gp.muygps import MuyGPS
 
 from scipy import optimize as opt
 from scipy.sparse.linalg.eigen.arpack import eigsh as largest_eigsh
@@ -77,7 +77,7 @@ def do_regress(
         If not None, use the given parameters for the nearest neighbor
         algorithm specified by the "nn_method" key, which must be included if
         the user wants to use a method other than the default exact algorithm.
-        Parameter names vary by method. See `muyscans.neighbors.NN_Wrapper` for
+        Parameter names vary by method. See `MuyGPyS.neighbors.NN_Wrapper` for
         the supported methods and their parameters. If None, exact nearest
         neighbors with default settings will be used.
     optim_bounds : dict or None

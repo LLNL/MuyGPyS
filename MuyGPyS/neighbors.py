@@ -12,7 +12,7 @@ import numpy as np
 
 from time import perf_counter
 
-from muyscans.utils import safe_apply
+from MuyGPyS.utils import safe_apply
 
 
 class NN_Wrapper:

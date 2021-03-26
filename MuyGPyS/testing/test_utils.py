@@ -14,11 +14,11 @@ from scipy import optimize as opt
 
 from sklearn.gaussian_process.kernels import Matern, RBF
 
-from muyscans.gp.kernels import NNGP
-from muyscans.gp.muygps import MuyGPS
-from muyscans.neighbors import NN_Wrapper
-from muyscans.optimize.batch import sample_batch
-from muyscans.optimize.objective import get_loss_func, loo_crossval
+from MuyGPyS.gp.kernels import NNGP
+from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.batch import sample_batch
+from MuyGPyS.optimize.objective import get_loss_func, loo_crossval
 
 
 _basic_nn_kwarg_options = (

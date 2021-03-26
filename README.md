@@ -1,4 +1,4 @@
-# Fast implementation of the local kriging GP.
+# Fast implementation of the MuyGPs Gaussian process hyperparameter estimation algorithm
 
 
 
@@ -13,20 +13,138 @@ $ pip install -e .
 ```
 
 
+## The Basics
+
+
+MuyGPs is a GP estimation method that affords fast hyperparameter optimization by way of performing leave-one-out cross-validation.
+MuyGPs achieves best-in-class speed and scalability by limiting inference to the information contained in k nearest neighborhoods for prediction locations for both hyperparameter optimization and tuning.
+
+
+### Data format
+
+
+`MuyGPyS` expects that each train or test observation corresponds to a row index in feature and response matrices.
+In our examples we assume that data is bundled into `train` and `test` dicts possessing the string keys `"input"`, `"output"`, and `"lookup"`.
+`train["input"]` should be a `(train_count, feature_count)`-shaped `numpy.ndarray` encoding the training observations.
+`train["output"]` should be a `(train_count, response_count)`-shaped `numpy.ndarray` encoding the training targets, i.e. ground-truth 1-hot encoded class labels or regression targets.
+`train["lookup"]` is a convenience structure used only for classification workflows, and should be a `(train_count,)`-shaped `numpy.ndarray` encoding the class ID.
+`train["lookup"] = np.argmax(train["output"], axis=1)` unless we are using the 2-class uncertainty quantification workflow, in which case `train["lookup"] = 2 * np.argmax(train["output"], axis=1) - 1`.
+
+
+### Constructing Nearest Neighbor Lookups
+
+
+`MuyGPyS.neighbors.NN_Wrapper` is an api for tasking several KNN libraries with the construction of lookup indexes that empower fast inference.
+The wrapper constructor expects the training features, the number of nearest neighbors, and a method string specifying which algorithm to use, as well as any additional kwargs used by the methods.
+Supported implementations include [exact KNN using sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html) ("exact") and [approximate KNN using hnsw](https://github.com/nmslib/hnswlib) ("hnsw").
+
+Construct exact and approximate  KNN data example with k = 10
+```
+In [1]: from MuyGPyS.neighors import NN_Wrapper 
+
+In [2]: train, test = load_the_data()
+
+In [3]: nn_count = 10
+
+In [4]: exact_nbrs_lookup = NN_Wrapper(train["input"], nn_count, nn_method="exact", algorithm="ball_tree")
+
+In [5]: approx_nbrs_lookup = NN_Wrapper(train["input"], nn_count, nn_method="hnsw", space="l2", M=16)
+```
+
+These lookup data structures are then usable to find nearest neighbors of queries in the training data.
+
+
+### Sampling Batches of Data
+
+
+MuyGPyS includes convenience functions for sampling batches of data from existing datasets.
+These batches are returned in the form of row indices, both of the sampled data as well as their nearest neighbors.
+Also included is the ability to sample "balanced" batches, where the data is partitioned by class and we attempt to sample as close to an equal number of items from each class as is possible. 
+
+Sampling random and balanced (for classification) batches of 100 elements:
+```
+In [6]: from MuyGPyS.optimize.batch import sample_batch, get_balanced_batch
+
+In [7]: batch_count, train_count = (100, train["input"].shape[0])
+
+In [8]: batch_indices, batch_nn_indices = sample_batch(exact_nbrs_lookup, batch_count, train_count)
+
+In [9]: balanced_indices, balanced_nn_indices = get_balanced_batch(exact_nbrs_lookup, train["lookup"], batch_count) # Classification only!
+```
+
+These `indices` and `nn_indices` arrays are the basic operating blocks of `MuyGPyS` linear algebraic inference.
+The elements of `indices.shape == (batch_count,)` lists all of the row indices into `train`'s matrices corresponding to the sampled data.
+The rows of `nn_indices.shape == (batch_count, nn_count)` list the row indices into `train`'s matrices corresponding to the nearest neighbors of the sampled data.
+While the user need not use MuyGPyS sampling tools to construct these data, they will need to construct similar indices into their data in order to use MuyGPyS.
+
+
+### Setting and Optimizing Hyperparameters
+
+
+One initializes a MuyGPS object by indicating the kernel, as well as optionally specifying hyperparameters.
+
+Creating a Matern kernel:
+```
+In [10]: from MuyGPyS.gp.muygps import MuyGPS 
+
+In [11]: muygps = MuyGPS(kern="matern")
+```
+
+Hyperparameters are optionally set at initialization time or by using `set_params`.
+```
+In [12]: unset_params = muygps.set_params(length_scale=1.4, eps=1e-5, sigma_sq=[1.0])
+```
+
+Here `unset_params` is a list of kernel hyperparameters that have not been set, and is a convenient data structure for specifying optimization.
+The MuyGPS object has default bounds for the optimization of its hyperparameters, but they can be overridden using `set_optim_bounds`:
+```
+In [13]: muygps.set_optim_bounds(nu=(1e-10, 1.5))
+```
+
+We supply a leave-one-out cross-validation objective functional for use with `scipy.optimize`.
+```
+In [14]: import numpy as np
+
+In [15]: from scipy import optimize as opt
+
+In [16]: from MuyGPyS.optimize.objective import loo_crossval, mse_fn
+
+In [17]: bounds = muygps.optim_bounds(unset_params)
+
+In [18]: x0 = np.array([np.random.uniform(low=b[0], high=b[1]) for b in bounds])
+
+In [19]: optres = opt.minimize(loo_crossval, x0, args=(mse_fn, muygps, unset_params, batch_indices, batch_nn_indices, train["input"], train["output"]), method="L-BFGS-B", bounds=bounds)
+
+In [20]: muygps.set_param_array(unset_params, optres.x)
+```
+
+
+### Inference
+
+
+With set hyperparameters, we are able to use the `muygps` object to predict the response of test data.
+Several workflows are supported.
+See below a simple regression workflow, using the data structures built up in this example:
+```
+In [21]: test_indices = np.array([*range(test_count)])
+
+In [22]: test_nn_indices = train_nbrs_lookup.get_nns(test["input"])
+
+In [23]: predictions = muygps.regress(test_indices, test_nn_indices, test["input"], train["input"], train["output"])
+```
+
+More complex workflows are of course available.
+See the `MuyGPyS.examples` high-level API functions for examples.
+
+
 ## API Examples
 
 
-Listed below are several examples using the high-level APIs located in `muyscans.examples.classify` and `muyscans.examples.regress`.
-Note that one need not go through these APIs to use `muyscans`.
-See the function definitions of the APIs themselves for a general idea of how to invoke `muyscans` components.
+Listed below are several examples using the high-level APIs located in `MuyGPyS.examples.classify` and `MuyGPyS.examples.regress`.
+Note that one need not go through these APIs to use `MuyGPyS`, but they condense many workflows into a single function call.
 
 The example workflows below use Amanda's star-galaxy dataset.
-One can of course replace the star-galaxy dataset with your data of choice, so long as it is contained within two Python dicts such as the `train` and `test` dicts given below.
-The `muyscans` APIs expect that these dicts possess the string keys `"input"`, `"output"`, and `"lookup"`.
-`train["input"]` should be a `(train_count, feature_count)`-shaped `numpy.ndarray` encoding the training observations.
-`train["output"]` should be a `(train_count, response_count)`-shaped `numpy.ndarray` encoding the training targets, i.e. ground-truth 1-hot encoded class labels or regression targets.
-`train["lookup"]` is used only for classification workflows, and should be a `(train_count,)`-shaped `numpy.ndarray` encoding the class ID.
-`train["lookup"] = np.argmax(train["output"], axis=1)` unless we are using the 2-class uncertainty quantification workflow, in which case `train["lookup"] = 2 * np.argmax(train["output"], axis=1) - 1`.
+One can of course replace the star-galaxy dataset with your data of choice, so long as it is contained within two Python dicts such as the `train` and `test` dicts as specified above.
 
 
 
@@ -35,12 +153,12 @@ The `muyscans` APIs expect that these dicts possess the string keys `"input"`, `
 
 What follows is an example workflow performing two-class classification with uncertainty quantification using the star-galaxy dataset.
 
-Note that you must have Amanda's preprocessed [galstar.csv](https://doellnl-my.sharepoint.com/personal/muyskens1_llnl_gov/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fmuyskens1%5Fllnl%5Fgov%2FDocuments%2FGALSTAR%2Fgalstar%5Fdata%5Fclean&originalPath=aHR0cHM6Ly9kb2VsbG5sLW15LnNoYXJlcG9pbnQuY29tLzpmOi9nL3BlcnNvbmFsL211eXNrZW5zMV9sbG5sX2dvdi9FdUpkd2dFWThwVkR2QkJSU2xNdkp3d0JGQ1J1TnVJT3ltaTY1WEJUOG4xaXRnP3J0aW1lPWNTTnozYjE2MkVn) stored locally on your machine, and that it is either located at `data/star_gal/galstar.csv` relative to where you run the command, or that you use the keyword argument `fname=/your/file/path/galstar.csv` when you invoke `muyscans.data.load.make_stargal`.
+Note that you must have Amanda's preprocessed [galstar.csv](https://doellnl-my.sharepoint.com/personal/muyskens1_llnl_gov/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fmuyskens1%5Fllnl%5Fgov%2FDocuments%2FGALSTAR%2Fgalstar%5Fdata%5Fclean&originalPath=aHR0cHM6Ly9kb2VsbG5sLW15LnNoYXJlcG9pbnQuY29tLzpmOi9nL3BlcnNvbmFsL211eXNrZW5zMV9sbG5sX2dvdi9FdUpkd2dFWThwVkR2QkJSU2xNdkp3d0JGQ1J1TnVJT3ltaTY1WEJUOG4xaXRnP3J0aW1lPWNTTnozYjE2MkVn) stored locally on your machine, and that it is either located at `data/star_gal/galstar.csv` relative to where you run the command, or that you use the keyword argument `fname=/your/file/path/galstar.csv` when you invoke `MuyGPyS.data.load.make_stargal`.
 
 You can also find a `pickle`d version of the star-gal `train` and `test` dicts on LC at `/p/lustre1/madstare/muygps-data/star-gal/galstar.pkl`. 
 Note `madstare` permissions are required to access these files.
 
-What follows is example code surrounding the invocation of `muyscans.examples.classify.do_classify`.
+What follows is example code surrounding the invocation of `MuyGPyS.examples.classify.do_classify`.
 This function returns GP predictions `surrogate_predictions` and, if `uq_objectives is not None`, a list of index masks `masks`.  
 
 Run star-gal with UQ example instructions:
@@ -51,13 +169,13 @@ IPython 7.18.1 -- An enhanced Interactive Python. Type '?' for help.
 
 In [1]: import numpy as np
 
-In [2]: from muyscans.data.load import make_stargal
+In [2]: from MuyGPyS.data.load import make_stargal
 
-In [3]: from muyscans.examples.classify import do_classify, do_uq, example_lambdas
+In [3]: from MuyGPyS.examples.classify import do_classify, do_uq, example_lambdas
 
 In [4]: train, test = make_stargal(fname="path/to/data/galstar.csv")
 
-In [5]: surrogate_predictions, masks = do_classify(train, test, nn_count=50, embed_dim=50, opt_batch_size=500, uq_batch_size=2000, kern="matern", embed_method="pca", loss_method="log", hyper_dict={"eps": 0.015}, uq_objectives=example_lambdas, exact=False, verbose=True)
+In [5]: surrogate_predictions, masks = do_classify(train, test, nn_count=50, embed_dim=50, opt_batch_size=500, uq_batch_size=2000, kern="matern", embed_method="pca", loss_method="log", hyper_dict={"eps": 0.015}, nn_kwargs={"nn_method": "hnsw", "space": "cosine"}, uq_objectives=example_lambdas, verbose=True)
 
 parameters to be optimized: ['length_scale', 'nu']
 bounds: [(1e-06, 40.0), (1e-06, 2.0)]
@@ -97,8 +215,10 @@ The kwarg `hyper_dict` expects a dictionary of fixed kernel hyperparameters that
 If all kwargs are fixed - e.g. `eps`, `length_scale` and `nu` in the case of the `matern` kernel - then no optimization will occur.
 If `hyper_dict=None` (default behavior), then we will optimize over all of the kernel hyperparameters.
 
+The kwarge `nn_kwargs` expects a dictionary of kwargs for KNN library initialization, as well as the additional `nn_method` key.
+
 `uq_objectives` expects a list of functions of `alpha`, `beta`, `correct_count`, and `incorrect_count`, where `alpha` and `beta` are the number of type I and type II errors, respectively.
-`muyscans.examples.classify.example_lambdas` lists some options, but you can supply your own.
+`MuyGPyS.examples.classify.example_lambdas` lists some options, but you can supply your own.
 
 If uncertainty quantification is not desired, or the classifcation problem in question involves more than two classes, set `uq_objectives=None`.
 This is the default behavior.
@@ -114,13 +234,13 @@ IPython 7.18.1 -- An enhanced Interactive Python. Type '?' for help.
 
 In [1]: import numpy as np
 
-In [2]: from muyscans.data.load import make_stargal
+In [2]: from MuyGPyS.data.load import make_stargal
 
-In [3]: from muyscans.examples.classify import do_classify
+In [3]: from MuyGPyS.examples.classify import do_classify
 
 In [4]: train, test = make_stargal(fname="path/to/data/galstar.csv")
 
-In [5]: surrogate_predictions = do_classify(train, test, nn_count=50, embed_dim=50, opt_batch_size=500, kern="matern", embed_method="pca", loss_method="log", hyper_dict={"eps": 0.015}, exact=False, verbose=True)
+In [5]: surrogate_predictions = do_classify(train, test, nn_count=50, embed_dim=50, opt_batch_size=500, kern="matern", embed_method="pca", loss_method="log", hyper_dict={"eps": 0.015}, nn_kwargs={"nn_method": "hnsw", "space": "cosine"}, verbose=True)
 
 parameters to be optimized: ['length_scale', 'nu']
 bounds: [(1e-06, 40.0), (1e-06, 2.0)]
@@ -164,13 +284,13 @@ IPython 7.18.1 -- An enhanced Interactive Python. Type '?' for help.
 
 In [1]: import numpy as np
 
-In [2]: from muyscans.data.load import make_stargal
+In [2]: from MuyGPyS.data.load import make_stargal
 
-In [3]: from muyscans.examples.regress import do_regress
+In [3]: from MuyGPyS.examples.regress import do_regress
 
 In [4]: train, test = make_stargal(fname="path/to/data/galstar.csv")
 
-In [5]: predictions = do_regress(train, test, nn_count=50, embed_dim=50, batch_size=500, kern="matern", embed_method="pca", loss_method="mse", hyper_dict={"eps": 0.015}, variance_mode=diagonal, exact=False, verbose=True)
+In [5]: predictions = do_regress(train, test, nn_count=50, embed_dim=50, batch_size=500, kern="matern", embed_method="pca", loss_method="mse", hyper_dict={"eps": 0.015}, variance_mode=diagonal, nn_kwargs={"nn_method": "hnsw", "space": "cosine"}, verbose=True)
 
 optimization parameters: ['length_scale', 'nu']
 bounds: [(1e-06, 40.0), (1e-06, 2.0)]
@@ -190,7 +310,7 @@ lkgp params : {'length_scale': 6.77309968633532, 'nu': 0.5472099500708325}
 timing : {'embed': 1.2968666851520538e-06, 'nn': 0.16625570296309888, 'batch': 3.210734575986862e-07, 'hyperopt': 3.7612421449739486, 'pred': 5.0821877010166645, 'pred_full': {'nn': 0.03705085511319339, 'agree': 8.50064679980278e-07, 'pred': 5.044568303972483}}
 
 
-In [6]: from muyscans.optimize.objective import mse_fn
+In [6]: from MuyGPyS.optimize.objective import mse_fn
 
 In [7]: print(f"MSE : {mse_fn(predictions, test["output"])}")
 Out[7]: MSE: 0.09194243606326429
@@ -216,13 +336,13 @@ IPython 7.18.1 -- An enhanced Interactive Python. Type '?' for help.
 
 In [1]: import numpy as np
 
-In [2]: from muyscans.data.load import make_stargal
+In [2]: from MuyGPyS.data.load import make_stargal
 
-In [3]: from muyscans.examples.regress import do_regress
+In [3]: from MuyGPyS.examples.regress import do_regress
 
 In [4]: train, test = make_stargal(fname="path/to/data/galstar.csv")
 
-In [5]: predictions, variance, sigma_sq = do_regress(train, test, nn_count=50, embed_dim=50, batch_size=500, kern="matern", embed_method="pca", loss_method="mse", hyper_dict={"eps": 0.015}, variance_mode=diagonal, exact=False, verbose=True)
+In [5]: predictions, variance, sigma_sq = do_regress(train, test, nn_count=50, embed_dim=50, batch_size=500, kern="matern", embed_method="pca", loss_method="mse", hyper_dict={"eps": 0.015}, variance_mode=diagonal, nn_kwargs={"nn_method": "hnsw", "space": "cosine"}, verbose=True)
 
 optimization parameters: ['length_scale', 'nu']
 bounds: [(1e-06, 40.0), (1e-06, 2.0)]
@@ -241,7 +361,7 @@ optimizer results:
 lkgp params : {'length_scale': 6.77309968633532, 'nu': 0.5472099500708325}
 timing : {'embed': 1.2968666851520538e-06, 'nn': 0.16625570296309888, 'batch': 3.210734575986862e-07, 'hyperopt': 3.7612421449739486, 'pred': 5.0821877010166645, 'pred_full': {'nn': 0.03705085511319339, 'agree': 8.50064679980278e-07, 'pred': 5.044568303972483}}
 
-In [6]: from muyscans.optimize.objective import mse_fn
+In [6]: from MuyGPyS.optimize.objective import mse_fn
 
 In [7]: print(f"MSE : {mse_fn(predictions, test["output"])}")
 Out[7]: MSE: 0.09194243606326429
@@ -268,11 +388,11 @@ What follows are some quality-of-life modifications to workflows involving repea
 ### Preprocessing data embedding for many trials
 
 
-If one wants to experiment with many trials with the same embedding dimension with a deterministic(-ish) embedding method like PCA, on cane use `muyscans.embed.embed_all` to embed the data either in-place or into a pair of fresh dicts, depending on your experiment needs.
+If one wants to experiment with many trials with the same embedding dimension with a deterministic(-ish) embedding method like PCA, on cane use `MuyGPyS.embed.embed_all` to embed the data either in-place or into a pair of fresh dicts, depending on your experiment needs.
 
 In-place embedding:
 ```
-In [9] from muyscans.embed import embed_all 
+In [9] from MuyGPyS.embed import embed_all 
 
 In [10] embed_all(train, test, embed_dim=40, embed_method="pca", in_place=True)
 ```
@@ -289,12 +409,12 @@ In either case, you should pass the appropriate `train` and `test` dicts to `do_
 
 
 Similarly, one might want to run trials using a smaller number of samples than the full dataset, perhaps as part of an exploration experiment where you invoke the API many times.
-In addition to possibly invoking `muyscans.embed.embed_all` as above, can use `muyscans.data.utils.subsample` or `muyscans.data.utils.balanced_subsample`.
+In addition to possibly invoking `MuyGPyS.embed.embed_all` as above, can use `MuyGPyS.data.utils.subsample` or `MuyGPyS.data.utils.balanced_subsample`.
 The latter utility is reserved for classification, and tries to collect an equal number of samples of each class.
 
 Subsample example:
 ```
-In [12] from muyscans.data.utils import subsample
+In [12] from MuyGPyS.data.utils import subsample
 
 In [13] sub_train = subsample(train, 1000)
 
@@ -303,7 +423,7 @@ In [14] sub_test = subsample(test, 1000)
 
 Balanced subsample example:
 ```
-In [12] from muyscans.data.utils import subsample
+In [12] from MuyGPyS.data.utils import subsample
 
 In [13] sub_train = balanced_subsample(train, 1000)
 
@@ -315,7 +435,7 @@ In [14] sub_test = balanced_subsample(test, 1000)
 
 
 When training hyperparameters, one might want to apply prior knowledge to constrain the range of reasonable values that the optimizer should consider.
-`muyscans` has built-in bounds that can be overridden with the `optim_bounds` kwarg, which expects a dict mapping hyperparameter name strings to 2-tuples specifying the lower and upper bounds to be considered for optimization, respectively.
+`MuyGPyS` has built-in bounds that can be overridden with the `optim_bounds` kwarg, which expects a dict mapping hyperparameter name strings to 2-tuples specifying the lower and upper bounds to be considered for optimization, respectively.
 
 `optim_bounds` example:
 ```

@@ -3,13 +3,13 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from muyscans.neighbors import NN_Wrapper
-from muyscans.optimize.batch import (
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.batch import (
     sample_batch,
     sample_balanced_batch,
     full_filtered_batch,
 )
-from muyscans.testing.test_utils import (
+from MuyGPyS.testing.test_utils import (
     BenchmarkGP,
     _optim_chassis,
     _make_gaussian_matrix,

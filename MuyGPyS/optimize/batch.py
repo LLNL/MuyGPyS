@@ -21,7 +21,7 @@ def get_balanced_batch(
 
     Parameters
     ----------
-    train_nbrs_lookup : `muyscans.neighbors.NN_Wrapper'
+    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
         Trained nearest neighbor query data structure.
     lookup : numpy.ndarray(int), shape = ``(train_count,)''
         List of class labels for all training data.
@@ -51,7 +51,7 @@ def full_filtered_batch(
 
     Parameters
     ----------
-    train_nbrs_lookup : `muyscans.neighbors.NN_Wrapper'
+    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
         Trained nearest neighbor query data structure.
     lookup : numpy.ndarray(int), shape = ``(train_count,)''
         List of class labels for all embedded data.
@@ -94,7 +94,7 @@ def sample_balanced_batch(
 
     Parameters
     ----------
-    train_nbrs_lookup : `muyscans.neighbors.NN_Wrapper'
+    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
         Trained nearest neighbor query data structure.
     lookup : numpy.ndarray(int), shape = ``(train_count,)''
         List of class labels for all embedded data.
@@ -155,7 +155,7 @@ def sample_batch(
 
     Parameters
     ----------
-    train_nbrs_lookup : `muyscans.neighbors.NN_Wrapper'
+    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
         Trained nearest neighbor query data structure.
     batch_count : int
         The number of batch elements to sample.

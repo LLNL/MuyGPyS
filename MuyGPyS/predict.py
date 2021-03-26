@@ -26,13 +26,13 @@ def classify_any(
 
     Parameters
     ----------
-    muygps : muyscans.GP.MuyGPS
+    muygps : MuyGPyS.GP.MuyGPS
         Local kriging approximate GP.
     test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
         Testing data.
     train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
         Training data.
-    train_nbrs_lookup : muyscans.neighbors.NN_Wrapper
+    train_nbrs_lookup : MuyGPyS.neighbors.NN_Wrapper
         Trained nearest neighbor query data structure.
     train_labels : numpy.ndarray(int), shape = ``(train_count, class_count)''
         One-hot encoding of class labels for all training data.
@@ -98,13 +98,13 @@ def classify_two_class_uq(
 
     Parameters
     ----------
-    muygps : muyscans.GP.MuyGPS
+    muygps : MuyGPyS.GP.MuyGPS
         Local kriging approximate GP.
     test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
         Testing data.
     train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
         Training data.
-    train_nbrs_lookup : `muyscans.neighbors.NN_Wrapper'
+    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
         Trained nearest neighbor query data structure.
     train_labels : numpy.ndarray(int), shape = ``(train_count, class_count)''
         One-hot encoding of class labels for all training data.
@@ -174,13 +174,13 @@ def regress_any(
 
     Parameters
     ----------
-    muygps : muyscans.GP.MuyGPS
+    muygps : MuyGPyS.GP.MuyGPS
         Local kriging approximate GP.
     test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
         Testing data.
     train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
         Training raining data.
-    train_nbrs_lookup : `muyscans.neighbors.NN_Wrapper'
+    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
         Trained nearest neighbor query data structure.
     train_targets : numpy.ndarray(float), shape = ``(train_count, class_count)''
         Observed outputs for all training data.

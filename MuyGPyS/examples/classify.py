@@ -10,20 +10,20 @@ End-to-end application of MuyGPS.
 
 import numpy as np
 
-from muyscans.embed import apply_embedding
-from muyscans.data.utils import normalize
-from muyscans.optimize.batch import get_balanced_batch, sample_balanced_batch
-from muyscans.optimize.objective import (
+from MuyGPyS.embed import apply_embedding
+from MuyGPyS.data.utils import normalize
+from MuyGPyS.optimize.batch import get_balanced_batch, sample_balanced_batch
+from MuyGPyS.optimize.objective import (
     loo_crossval,
     get_loss_func,
 )
-from muyscans.predict import (
+from MuyGPyS.predict import (
     classify_two_class_uq,
     classify_any,
 )
-from muyscans.neighbors import NN_Wrapper
-from muyscans.uq import train_two_class_interval
-from muyscans.gp.muygps import MuyGPS
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.uq import train_two_class_interval
+from MuyGPyS.gp.muygps import MuyGPS
 
 from scipy import optimize as opt
 from scipy.sparse.linalg.eigen.arpack import eigsh as largest_eigsh
@@ -103,7 +103,7 @@ def do_classify(
         If not None, use the given parameters for the nearest neighbor
         algorithm specified by the "nn_method" key, which must be included if
         the user wants to use a method other than the default exact algorithm.
-        Parameter names vary by method. See `muyscans.neighbors.NN_Wrapper` for
+        Parameter names vary by method. See `MuyGPyS.neighbors.NN_Wrapper` for
         the supported methods and their parameters. If None, exact nearest
         neighbors with default settings will be used.
     optim_bounds : dict or None
@@ -115,7 +115,7 @@ def do_classify(
         type 1 and type 2 error counts at each grid location, respectively - and
         the numbers of correctly and incorrectly classified training examples.
         Used to determine scale parameter for confidence intervals. See
-        `muyscans.examples.classify.example_lambdas` for examples. If None, do
+        `MuyGPyS.examples.classify.example_lambdas` for examples. If None, do
         not perform uncertainty quantifification.
         NOTE[bwp]: Supports only 2-class classification at the moment.
     do_normalize : Boolean

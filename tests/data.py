@@ -3,9 +3,9 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from muyscans.embed import embed_all
-from muyscans.data.utils import normalize, subsample, balanced_subsample
-from muyscans.testing.test_utils import _make_gaussian_dict, _make_gaussian_data
+from MuyGPyS.embed import embed_all
+from MuyGPyS.data.utils import normalize, subsample, balanced_subsample
+from MuyGPyS.testing.test_utils import _make_gaussian_dict, _make_gaussian_data
 
 
 class EmbedTest(parameterized.TestCase):

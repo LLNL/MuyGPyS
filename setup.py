@@ -1,11 +1,11 @@
 from setuptools import setup
 
-setup(name='muyscans',
+setup(name='MuyGPyS',
       version='0.1',
-      description='Efficient Local Kriging Approximate Gaussian Process',
+      description='Scalable Approximate Gaussian Process using Local Kriging',
       author='Benjamin W. Priest',
       author_email='priest2@llnl.gov',
       license='MIT',
-      packages=['muyscans'],
+      packages=['MuyGPyS'],
       python_requires='>=3.6',
       zip_safe=False)

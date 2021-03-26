@@ -12,7 +12,7 @@ import numpy as np
 
 from sklearn.gaussian_process.kernels import Matern, RBF
 
-from muyscans.gp.kernels import NNGP
+from MuyGPyS.gp.kernels import NNGP
 
 
 class MuyGPS:

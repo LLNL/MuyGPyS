@@ -26,7 +26,7 @@ def train_two_class_interval(
 
     Parameters
     ----------
-    muygps : muyscans.GP.MuyGPS
+    muygps : MuyGPyS.GP.MuyGPS
         Local kriging approximate MuyGPS.
     batch_indices : numpy.ndarray(int), shape = ``(batch_size,)''
         Batch observation indices.

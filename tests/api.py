@@ -7,14 +7,14 @@ import pickle as pkl
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from muyscans.embed import embed_all
-from muyscans.examples.classify import (
+from MuyGPyS.embed import embed_all
+from MuyGPyS.examples.classify import (
     do_classify,
     example_lambdas,
     make_masks,
     do_uq,
 )
-from muyscans.testing.test_utils import _basic_nn_kwarg_options
+from MuyGPyS.testing.test_utils import _basic_nn_kwarg_options
 
 
 hardpath = "../data/star-gal/"
