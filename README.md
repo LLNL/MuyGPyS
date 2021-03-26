@@ -1,3 +1,5 @@
+[![pipeline status](https://lc.llnl.gov/gitlab/muygps/MuyGPyS/badges/main/pipeline.svg)](https://lc.llnl.gov/gitlab/muygps/MuyGPyS/-/commits/main)
+
 # Fast implementation of the MuyGPs Gaussian process hyperparameter estimation algorithm
 
 
