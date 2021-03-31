@@ -462,3 +462,32 @@ timing : {'embed': 1.2968666851520538e-06, 'nn': 0.16625570296309888, 'batch': 3
 ```
 
 One should specify bounds using `optim_bounds` only for hyperparameters that are not specified in `hyper_dict`, as those hyperparameters will be fixed.
+
+
+# About
+
+## Authors
+
+* Benjamin W. Priest (priest2 at llnl dot gov)
+* Amanada Muyskens (muyskens1 at llnl dot gov)
+
+## Papers
+
+MuyGPyS has been used the in the following papers (newest first):
+
+1. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
+
+## License
+
+MuyGPyS is distributed under the terms of both the MIT license and the Apache License (Version 2.0).
+Users may choose either license, at their discretion.
+
+All new contributions must be made under both the MIT and Apache-2.0 licenses.
+
+See [LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE), [NOTICE](NOTICE), and [COPYRIGHT](COPYRIGHT) for details.
+
+SPDX-License-Identifier: (Apache-2.0 or MIT)
+
+## Release
+
+LLNL-CODE-XXXXXX
