@@ -3,6 +3,10 @@
 # Fast implementation of the MuyGPs Gaussian process hyperparameter estimation algorithm
 
 
+MuyGPs is a GP estimation method that affords fast hyperparameter optimization by way of performing leave-one-out cross-validation.
+MuyGPs achieves best-in-class speed and scalability by limiting inference to the information contained in k nearest neighborhoods for prediction locations for both hyperparameter optimization and tuning.
+This feature affords the optimization of hyperparameters by way of leave-one-out cross-validation, as opposed to the more expensive loglikelihood evaluations requires by similar sparse methods. 
+
 
 ## Installation
 
@@ -16,10 +20,6 @@ $ pip install -e .
 
 
 ## The Basics
-
-
-MuyGPs is a GP estimation method that affords fast hyperparameter optimization by way of performing leave-one-out cross-validation.
-MuyGPs achieves best-in-class speed and scalability by limiting inference to the information contained in k nearest neighborhoods for prediction locations for both hyperparameter optimization and tuning.
 
 
 ### Data format
