@@ -1,12 +1,7 @@
-#!/usr/bin/env python
-# encoding: utf-8
-"""
-@file kernels.py
-
-Created by priest2 on 2020-11-10
-
-Implements various kernels.
-"""
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Project Developers. See the top-level COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 import numpy as np
 
@@ -20,8 +15,8 @@ def cosine(x_locs, z_locs=None):
         z_diags = np.sum(z_locs ** 2, axis=1)
         if x_locs.shape[1] != z_locs.shape[1]:
             raise ValueError(
-                f"x_locs shape {x_locs.shape} is incompatible with y_locs shape"
-                f" {y_locs.shape}"
+                f"x_locs shape {x_locs.shape} is incompatible with z_locs shape"
+                f" {z_locs.shape}"
             )
     cross_diff_tensor = 1 - np.einsum(
         "bj, bij -> bi",

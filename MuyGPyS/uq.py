@@ -1,12 +1,7 @@
-#!/usr/bin/env python
-# encoding: utf-8
-"""
-@file uq.py
-
-Created by priest2 on 2020-10-19
-
-Leave-one-out hyperparameter optimization logic and testing.
-"""
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Project Developers. See the top-level COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 import numpy as np
 

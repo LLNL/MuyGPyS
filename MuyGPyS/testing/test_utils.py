@@ -1,12 +1,7 @@
-#!/usr/bin/env python
-# encoding: utf-8
-"""
-@file test_utils.py
-
-Created by priest2 on 2021-03-08
-
-Utilities for testing chassis.
-"""
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Project Developers. See the top-level COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 import numpy as np
 

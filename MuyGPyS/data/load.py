@@ -1,17 +1,9 @@
-#!/usr/bin/env python
-# encoding: utf-8
-"""
-@file load.py
-
-Created by priest2 on 2020-10-19
-
-Convenience functions for loading data sets into expected dict format.
-
-Currently MNIST support requires tensorflow-datasets==2.0.0.
-"""
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Project Developers. See the top-level COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 import numpy as np
-import pandas as pd
 
 from functools import reduce
 
@@ -138,6 +130,8 @@ def make_stargal(fname="data/star-gal/galstar.csv", test_count=10000):
         to a matrix listing the one-hot encodings of each observation's class.
         "lookup" is effectively the argmax over this matrix's columns.
     """
+    import pandas as pd
+
     stargal = pd.read_csv(fname, sep=",").to_numpy()
     np.random.shuffle(stargal)
     return (

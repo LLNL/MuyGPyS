@@ -1,20 +1,8 @@
-#!/usr/bin/env python
-# encoding: utf-8
-"""
-@file utils.py
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Project Developers. See the top-level COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-Created by priest2 on 2020-03-25
-
-Wraps elements of Google Brain's neural-tangents package. This wrapper includes
-a chassis that will eventually build out to evaluate arbitrary feedforward 
-architectures. 
-
-Currently only supports fully-connected networks.
-
-References:
-
-[1] https://github.com/google/neural-tangents
-"""
 import inspect
 
 from numbers import Number
