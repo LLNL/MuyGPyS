@@ -258,7 +258,7 @@ timing : {'embed': 2.0149163901805878e-06, 'nn': 0.16120136599056423, 'batch': 0
 
 In [5]: predicted_labels = np.argmax(surrogate_predictions, axis=1)
 
-In [6]: print(f"Total accuracy : {np.sum(predicted_labels == test["lookup"])}")
+In [6]: print(f"Total accuracy : {np.sum(predicted_labels == np.argmax(test["output"], axis=1))}")
 Out[6]: Total accuracy : 0.9762
 ```
 
@@ -309,11 +309,8 @@ In [5]: from MuyGPyS.optimize.objective import mse_fn
 In [6]: print(f"MSE : {mse_fn(predictions, test["output"])}")
 Out[6]: MSE: 0.09194243606326429
 
-In [7]: print(f"Accuracy : {np.mean(np.argmax(predictions, axis=1) == np.argmax(test["output"]))}")
-Out[7]: Accuracy: 0.9744
-
-In [8]: print(f"Variance: {variance}")
-Out [8]: Variance: [0.0220988  0.01721446 0.02487733 ... 0.03346663 0.17433852 0.03273306]
+In [7]: print(f"Classification accuracy : {np.mean(np.argmax(predictions, axis=1) == np.argmax(test["output"]))}")
+Out[7]: Classification accuracy: 0.9744
 ```
 
 If one requires the (individual, independent) posterior variances for each of the predictions, one can pass `variance_mode="diagonal"`.
@@ -358,11 +355,11 @@ In [5]: from MuyGPyS.optimize.objective import mse_fn
 In [6]: print(f"MSE : {mse_fn(predictions, test["output"])}")
 Out[6]: MSE: 0.09194243606326429
 
-In [7]: print(f"Accuracy : {np.mean(np.argmax(predictions, axis=1) == np.argmax(test["output"], axis=1))}")
-Out[7]: Accuracy: 0.9744
+In [7]: print(f"Classification accuracy : {np.mean(np.argmax(predictions, axis=1) == np.argmax(test["output"], axis=1))}")
+Out[7]: Classification accuracy: 0.9744
 
-In [8]: print(f"Variance: {variance * sigma_sq[0]}")
-Out [8]: Variance: [0.0220988  0.01721446 0.02487733 ... 0.03346663 0.17433852 0.03273306]
+In [8]: print(f"Posterior variance: {variance * sigma_sq[0]}")
+Out [8]: Posterior variance: [0.0220988  0.01721446 0.02487733 ... 0.03346663 0.17433852 0.03273306]
 ```
 
 This is presently the only form of posterior variance collection that is supported.
