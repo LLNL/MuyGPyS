@@ -140,6 +140,8 @@ def do_classify(
     time_embed = perf_counter()
 
     # Construct NN lookup datastructure.
+    if nn_kwargs is None:
+        nn_kwargs = dict()
     train_nbrs_lookup = NN_Wrapper(
         embedded_train,
         nn_count,
