@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -64,15 +64,13 @@ def do_classify(
     Parameters
     ----------
     train : dict
-        A dict with keys "input", "output", and "lookup". "input" maps to a
-        matrix of row observation vectors, e.g. flattened images. "output" maps
-        to a matrix listing the one-hot encodings of each observation's class.
-        "lookup" is effectively the argmax over this matrix's columns.
+        A dict with keys "input" and "output". "input" maps to a matrix of row
+        observation vectors, e.g. flattened images. "output" maps to a matrix
+        listing the one-hot encodings of each observation's class.
     test : dict
-        A dict with keys "input", "output", and "lookup". "input" maps to a
-        matrix of row observation vectors, e.g. flattened images. "output" maps
-        to a matrix listing the one-hot encodings of each observation's class.
-        "lookup" is effectively the argmax over this matrix's columns.
+        A dict with keys "input" and "output". "input" maps to a matrix of row
+        observation vectors, e.g. flattened images. "output" maps to a matrix
+        listing the one-hot encodings of each observation's class.
     nn_count : int
         The number of nearest neighbors to employ.
     embed_dim : int
@@ -128,9 +126,14 @@ def do_classify(
         elements are ambiguous based upon the confidence intervals derived from
         each objective function.
     """
-    num_class = len(np.unique(train["lookup"]))
-    test_count = test["lookup"].shape[0]
-    train_count = train["lookup"].shape[0]
+    train_count, num_class = train["output"].shape
+    test_count, _ = test["output"].shape
+
+    # Compute array of training labels for convenience
+    train_labels = np.argmax(train["output"], axis=1)
+    if uq_objectives is not None:
+        train_labels = 2 * train_labels - 1
+
     time_start = perf_counter()
 
     # Perform embedding
@@ -166,7 +169,7 @@ def do_classify(
         # collect balanced batch
         batch_indices, batch_nn_indices = get_balanced_batch(
             train_nbrs_lookup,
-            train["lookup"],
+            train_labels,
             opt_batch_size,
         )
         time_batch = perf_counter()
@@ -236,7 +239,7 @@ def do_classify(
 
         batch_indices, batch_nn_indices = get_balanced_batch(
             train_nbrs_lookup,
-            train["lookup"],
+            train_labels,
             uq_batch_size,
         )
         time_uq_batch = perf_counter()
@@ -250,7 +253,7 @@ def do_classify(
             batch_nn_indices,
             embedded_train,
             train["output"],
-            train["lookup"],
+            train_labels,
             uq_objectives,
         )
 
@@ -328,21 +331,19 @@ def make_masks(predictions, cutoffs, variances, mid_value):
     )
 
 
-def do_uq(predicted_labels, test, masks):
+def do_uq(surrogate_predictions, test_output, masks):
     """
     Convenience function performing uncertainty quantification given predicted
     labels and ground truth for a given set of confidence interval scales.
 
     Parameters
     ----------
-    predicted_labels : np.ndarray(int), shape = ``(test_count)''
-        The list of predicted labels, based on e.g. an invocation of
+    surrogate_predictions : np.ndarray(float),
+                            shape = ``(test_count, class_count)''
+        The surrogate predictions, based e.g. on an invocation of
         ``do_classify''.
-    test : dict
-        A dict with keys "input", "output", and "lookup". "input" maps to a
-        matrix of row observation vectors, e.g. flattened images. "output" maps
-        to a matrix listing the one-hot encodings of each observation's class.
-        "lookup" is effectively the argmax over this matrix's columns.
+    test_output : np.ndarray(float), shape = ``(test_count, class_count)''
+        A matrix listing the one-hot encodings of each observation's class.
     masks : np.ndarray(Boolean), shape = ``(objective_count, test_count)''
         A number of index masks indexing into the training set. Each ``True''
         index includes 0.0 within the associated prediction's confidence
@@ -358,7 +359,9 @@ def do_uq(predicted_labels, test, masks):
         is the accuracy of the ambiguous samples. The third column is the
         accuracy of the unambiguous samples.
     """
-    correct = predicted_labels == test["lookup"]
+    correct = np.argmax(surrogate_predictions, axis=1) == np.argmax(
+        test_output, axis=1
+    )
     uq = np.array(
         [
             [

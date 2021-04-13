@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -11,8 +11,8 @@ def train_two_class_interval(
     batch_indices,
     batch_nn_indices,
     train,
+    train_responses,
     train_labels,
-    train_lookup,
     objective_fns,
 ):
     """
@@ -29,9 +29,9 @@ def train_two_class_interval(
         Indices of the nearest neighbors
     train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
         The full training data matrix.
-    train_labels : numpy.ndarray(int), shape = ``(train_count, class_count)''
+    train_responses : numpy.ndarray(int), shape = ``(train_count, class_count)''
         One-hot encoding of class labels for all training data.
-    train_lookup : numpy.ndarray(int), shape = ``(train_count,)''
+    train_labels : numpy.ndarray(int), shape = ``(train_count,)''
         List of class labels for all training data.
     objective_fns : list(Callable), shape = ``(objective_count)''
         List of functions taking four arguments: bit masks alpha and beta - the
@@ -46,16 +46,16 @@ def train_two_class_interval(
         considered objective function.
     """
     batch_count = batch_nn_indices.shape[0]
-    train_count = train_lookup.shape[0]
+    train_count = train_labels.shape[0]
     nn_count = batch_nn_indices.shape[1]
 
-    targets = train_lookup[batch_indices]
+    targets = train_labels[batch_indices]
     mean, variance = muygps.regress(
         batch_indices,
         batch_nn_indices,
         train,
         train,
-        train_labels,
+        train_responses,
         variance_mode="diagonal",
     )
     predicted_labels = 2 * np.argmax(mean, axis=1) - 1

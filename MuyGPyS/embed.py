@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -64,8 +64,6 @@ def embed_all(
         etest = dict()
         etrain["output"] = train["output"]
         etest["output"] = test["output"]
-        etrain["lookup"] = train["lookup"]
-        etest["lookup"] = test["lookup"]
 
         etrain["input"], etest["input"] = apply_embedding(
             train["input"], test["input"], embed_dim, embed_method, do_normalize

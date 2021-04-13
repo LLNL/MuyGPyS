@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -7,8 +7,8 @@ import numpy as np
 
 
 def get_balanced_batch(
-    train_nbrs_lookup,
-    lookup,
+    nbrs_lookup,
+    labels,
     batch_size,
 ):
     """
@@ -16,9 +16,9 @@ def get_balanced_batch(
 
     Parameters
     ----------
-    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
+    nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
         Trained nearest neighbor query data structure.
-    lookup : numpy.ndarray(int), shape = ``(train_count,)''
+    labels : numpy.ndarray(int), shape = ``(train_count,)''
         List of class labels for all training data.
     batch_size : int
         The number of batch elements to sample.
@@ -30,15 +30,15 @@ def get_balanced_batch(
     numpy.ndarray(int), shape = ``(batch_count, nn_count)''
         The indices of the nearest neighbors of the sampled training points.
     """
-    if len(lookup) > batch_size:
-        return sample_balanced_batch(train_nbrs_lookup, lookup, batch_size)
+    if len(labels) > batch_size:
+        return sample_balanced_batch(nbrs_lookup, labels, batch_size)
     else:
-        return full_filtered_batch(train_nbrs_lookup, lookup)
+        return full_filtered_batch(nbrs_lookup, labels)
 
 
 def full_filtered_batch(
-    train_nbrs_lookup,
-    lookup,
+    nbrs_lookup,
+    labels,
 ):
     """
     Return a batch composed of the entire training set, filtering out elements
@@ -46,9 +46,9 @@ def full_filtered_batch(
 
     Parameters
     ----------
-    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
+    nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
         Trained nearest neighbor query data structure.
-    lookup : numpy.ndarray(int), shape = ``(train_count,)''
+    labels : numpy.ndarray(int), shape = ``(train_count,)''
         List of class labels for all embedded data.
 
     Returns
@@ -58,26 +58,26 @@ def full_filtered_batch(
     batch_nn_indices : numpy.ndarray(int), shape = ``(batch_count, nn_count)''
         The indices of the nearest neighbors of the sampled training points.
     """
-    train_indices = np.array([*range(len(lookup))])
-    train_nn_indices = train_nbrs_lookup.get_batch_nns(train_indices)
-    train_nn_labels = lookup[train_nn_indices]
+    indices = np.array([*range(len(labels))])
+    nn_indices = nbrs_lookup.get_batch_nns(indices)
+    nn_labels = labels[nn_indices]
 
     # filter out indices whose neighors all belong to one class
     # What if the index is mislabeled? Currently assuming that constant nn
     # labels -> correctly classified.
-    train_nonconstant_mask = np.max(train_nn_labels, axis=1) != np.min(
-        train_nn_labels,
+    nonconstant_mask = np.max(nn_labels, axis=1) != np.min(
+        nn_labels,
         axis=1,
     )
 
-    batch_indices = train_indices[train_nonconstant_mask]
-    batch_nn_indices = train_nn_indices[train_nonconstant_mask, :]
+    batch_indices = indices[nonconstant_mask]
+    batch_nn_indices = nn_indices[nonconstant_mask, :]
     return batch_indices, batch_nn_indices
 
 
 def sample_balanced_batch(
-    train_nbrs_lookup,
-    lookup,
+    nbrs_lookup,
+    labels,
     batch_size,
 ):
     """
@@ -89,9 +89,9 @@ def sample_balanced_batch(
 
     Parameters
     ----------
-    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
+    nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
         Trained nearest neighbor query data structure.
-    lookup : numpy.ndarray(int), shape = ``(train_count,)''
+    labels : numpy.ndarray(int), shape = ``(train_count,)''
         List of class labels for all embedded data.
     batch_size : int
         The number of batch elements to sample.
@@ -104,22 +104,22 @@ def sample_balanced_batch(
     batch_nn_indices : numpy.ndarray(int), shape = ``(batch_count, nn_count)''
         The indices of the nearest neighbors of the sampled training points.
     """
-    train_indices = np.array([*range(len(lookup))])
-    train_nn_indices = train_nbrs_lookup.get_batch_nns(train_indices)
-    train_nn_labels = lookup[train_nn_indices]
+    indices = np.array([*range(len(labels))])
+    nn_indices = nbrs_lookup.get_batch_nns(indices)
+    nn_labels = labels[nn_indices]
     # filter out indices whose neighors all belong to one class
     # What if the index is mislabeled? Currently assuming that constant nn
     # labels -> correctly classified.
-    train_nonconstant_mask = np.max(train_nn_labels, axis=1) != np.min(
-        train_nn_labels,
+    nonconstant_mask = np.max(nn_labels, axis=1) != np.min(
+        nn_labels,
         axis=1,
     )
-    classes = np.unique(lookup)
+    classes = np.unique(labels)
     class_count = len(classes)
     each_batch_size = int(batch_size / class_count)
 
     nonconstant_indices = [
-        np.where(np.logical_and(train_nonconstant_mask, lookup == i))[0]
+        np.where(np.logical_and(nonconstant_mask, labels == i))[0]
         for i in classes
     ]
 
@@ -136,12 +136,12 @@ def sample_balanced_batch(
         ]
     )
 
-    batch_nn_indices = train_nn_indices[nonconstant_balanced_indices, :]
+    batch_nn_indices = nn_indices[nonconstant_balanced_indices, :]
     return nonconstant_balanced_indices, batch_nn_indices
 
 
 def sample_batch(
-    train_nbrs_lookup,
+    nbrs_lookup,
     batch_count,
     train_count,
 ):
@@ -150,7 +150,7 @@ def sample_batch(
 
     Parameters
     ----------
-    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
+    nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
         Trained nearest neighbor query data structure.
     batch_count : int
         The number of batch elements to sample.
@@ -170,5 +170,5 @@ def sample_batch(
         )
     else:
         batch_indices = np.array([*range(train_count)])
-    batch_nn_indices = train_nbrs_lookup.get_batch_nns(batch_indices)
+    batch_nn_indices = nbrs_lookup.get_batch_nns(batch_indices)
     return batch_indices, batch_nn_indices

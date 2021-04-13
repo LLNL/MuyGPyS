@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -13,11 +13,9 @@ def subsample(data, sample_count):
     Parameters
     ----------
     data : dict
-        A dict with keys "input", "output", and "lookup". "input" maps to a
-        matrix of row observation vectors. "output" maps to a matrix listing the
-        observed responses of the phenomenon under study. "lookup" maps to a
-        vector that is effectively the row-wise argmax of "output", and is only
-        used for classification.
+        A dict with keys "input" and "output". "input" maps to a matrix of row
+        observation vectors. "output" maps to a matrix listing the observed
+        responses of the phenomenon under study.
 
     Returns
     -------
@@ -30,7 +28,6 @@ def subsample(data, sample_count):
     return {
         "input": data["input"][samples, :],
         "output": data["output"][samples, :],
-        "lookup": data["lookup"][samples],
     }
 
 
@@ -46,11 +43,9 @@ def balanced_subsample(data, sample_count):
     Parameters
     ----------
     data : dict
-        A dict with keys "input", "output", and "lookup". "input" maps to a
-        matrix of row observation vectors. "output" maps to a matrix listing the
-        observed responses of the phenomenon under study. "lookup" maps to a
-        vector that is effectively the row-wise argmax of "output", and is only
-        used for classification.
+        A dict with keys "input" and "output". "input" maps to a matrix of row
+        observation vectors. "output" maps to a matrix listing the observed
+        responses of the phenomenon under study.
 
     Returns
     -------
@@ -58,13 +53,12 @@ def balanced_subsample(data, sample_count):
         A dict of the same form as ``data'', but containing only the sampled
         indices.
     """
-    classes = np.unique(data["lookup"])
+    labels = np.argmax(data["output"], axis=1)
+    classes = np.unique(labels)
     class_count = len(classes)
     each_sample_count = int(sample_count / class_count)
 
-    class_indices = np.array(
-        [np.where(data["lookup"] == i)[0] for i in classes]
-    )
+    class_indices = np.array([np.where(labels == i)[0] for i in classes])
     sample_sizes = np.array(
         [np.min((len(arr), each_sample_count)) for arr in class_indices]
     )
@@ -77,7 +71,6 @@ def balanced_subsample(data, sample_count):
     return {
         "input": data["input"][balanced_samples, :],
         "output": data["output"][balanced_samples, :],
-        "lookup": data["lookup"][balanced_samples],
     }
 
 

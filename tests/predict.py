@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -52,7 +52,7 @@ class ClassifyTest(parameterized.TestCase):
                         "nu": 0.38,
                         "length_scale": 1.5,
                         "eps": 0.00001,
-                        "sigma_sq": [1.0],
+                        "sigma_sq": np.array([1.0]),
                     },
                 ),
                 (
@@ -60,7 +60,7 @@ class ClassifyTest(parameterized.TestCase):
                     {
                         "length_scale": 1.5,
                         "eps": 0.00001,
-                        "sigma_sq": [1.0],
+                        "sigma_sq": np.array([1.0]),
                     },
                 ),
                 (
@@ -69,7 +69,7 @@ class ClassifyTest(parameterized.TestCase):
                         "sigma_w_sq": 1.5,
                         "sigma_b_sq": 1.0,
                         "eps": 0.00001,
-                        "sigma_sq": [1.0],
+                        "sigma_sq": np.array([1.0]),
                     },
                 ),
             )
@@ -125,7 +125,7 @@ class ClassifyTest(parameterized.TestCase):
                         "nu": 0.38,
                         "length_scale": 1.5,
                         "eps": 0.00001,
-                        "sigma_sq": [1.0],
+                        "sigma_sq": np.array([1.0]),
                     },
                 ),
                 (
@@ -133,7 +133,7 @@ class ClassifyTest(parameterized.TestCase):
                     {
                         "length_scale": 1.5,
                         "eps": 0.00001,
-                        "sigma_sq": [1.0],
+                        "sigma_sq": np.array([1.0]),
                     },
                 ),
                 (
@@ -142,7 +142,7 @@ class ClassifyTest(parameterized.TestCase):
                         "sigma_w_sq": 1.5,
                         "sigma_b_sq": 1.0,
                         "eps": 0.00001,
-                        "sigma_sq": [1.0],
+                        "sigma_sq": np.array([1.0]),
                     },
                 ),
             )
@@ -186,10 +186,10 @@ class ClassifyTest(parameterized.TestCase):
         self.assertEqual(predictions.shape, (test_count, response_count))
         self.assertEqual(variances.shape, (test_count,))
 
-        train_lookup = np.argmax(train["output"], axis=1)
+        train_labels = np.argmax(train["output"], axis=1)
         indices, nn_indices = get_balanced_batch(
             nbrs_lookup,
-            train_lookup,
+            train_labels,
             batch_size,
         )
 
@@ -199,7 +199,7 @@ class ClassifyTest(parameterized.TestCase):
             nn_indices,
             train["input"],
             train["output"],
-            train_lookup,
+            train_labels,
             example_lambdas,
         )
         self.assertEqual(cutoffs.shape, (objective_count,))
@@ -217,7 +217,7 @@ class ClassifyTest(parameterized.TestCase):
         masks = make_masks(predictions, cutoffs, variances, mid_value)
         self.assertEqual(masks.shape, (objective_count, test_count))
 
-        acc, uq = do_uq(predicted_labels, test, masks)
+        acc, uq = do_uq(predictions, test["output"], masks)
         self.assertGreaterEqual(acc, 0.0)
         self.assertLessEqual(acc, 1.0)
         self.assertEqual(uq.shape, (objective_count, 3))

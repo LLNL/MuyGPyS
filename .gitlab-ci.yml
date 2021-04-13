@@ -81,7 +81,7 @@ test_predict:
   script:
     - srun -N1 -ppdebug -A madstare python tests/predict.py
 
-test_api:
+test_api_mnist:
   extends: .template_run_rules
   extends: .template_env_load
   stage: test
@@ -89,5 +89,24 @@ test_api:
     - quartz
     - shell
   script:
-    - srun -N1 -ppdebug -A madstare python tests/api.py /p/lustre1/madstare/muygps-data/star-gal/
+    - srun -N1 -ppdebug -A madstare python tests/api.py MNISTTest /p/lustre1/madstare/muygps-data/
 
+test_api_stargal:
+  extends: .template_run_rules
+  extends: .template_env_load
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script:
+    - srun -N1 -ppdebug -A madstare python tests/api.py StargalTest /p/lustre1/madstare/muygps-data/
+
+test_api_heaton:
+  extends: .template_run_rules
+  extends: .template_env_load
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script:
+    - srun -N1 -ppdebug -A madstare python tests/api.py HeatonTest /p/lustre1/madstare/muygps-data/

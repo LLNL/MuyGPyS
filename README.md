@@ -26,11 +26,9 @@ $ pip install -e .
 
 
 `MuyGPyS` expects that each train or test observation corresponds to a row index in feature and response matrices.
-In our examples we assume that data is bundled into `train` and `test` dicts possessing the string keys `"input"`, `"output"`, and `"lookup"`.
+In our examples we assume that data is bundled into `train` and `test` dicts possessing the string keys `"input"` and `"output"`.
 `train["input"]` should be a `(train_count, feature_count)`-shaped `numpy.ndarray` encoding the training observations.
 `train["output"]` should be a `(train_count, response_count)`-shaped `numpy.ndarray` encoding the training targets, i.e. ground-truth 1-hot encoded class labels or regression targets.
-`train["lookup"]` is a convenience structure used only for classification workflows, and should be a `(train_count,)`-shaped `numpy.ndarray` encoding the class ID.
-`train["lookup"] = np.argmax(train["output"], axis=1)` unless we are using the 2-class uncertainty quantification workflow, in which case `train["lookup"] = 2 * np.argmax(train["output"], axis=1) - 1`.
 
 
 ### Constructing Nearest Neighbor Lookups
@@ -71,7 +69,9 @@ In [7]: batch_count, train_count = (100, train["input"].shape[0])
 
 In [8]: batch_indices, batch_nn_indices = sample_batch(exact_nbrs_lookup, batch_count, train_count)
 
-In [9]: balanced_indices, balanced_nn_indices = get_balanced_batch(exact_nbrs_lookup, train["lookup"], batch_count) # Classification only!
+In [9]: train_labels = np.argmax(train["output"], axis=1)
+
+In [10]: balanced_indices, balanced_nn_indices = get_balanced_batch(exact_nbrs_lookup, train_labels, batch_count) # Classification only!
 ```
 
 These `indices` and `nn_indices` arrays are the basic operating blocks of `MuyGPyS` linear algebraic inference.
@@ -87,37 +87,37 @@ One initializes a MuyGPS object by indicating the kernel, as well as optionally 
 
 Creating a Matern kernel:
 ```
-In [10]: from MuyGPyS.gp.muygps import MuyGPS 
+In [11]: from MuyGPyS.gp.muygps import MuyGPS 
 
-In [11]: muygps = MuyGPS(kern="matern")
+In [12]: muygps = MuyGPS(kern="matern")
 ```
 
 Hyperparameters are optionally set at initialization time or by using `set_params`.
 ```
-In [12]: unset_params = muygps.set_params(length_scale=1.4, eps=1e-5, sigma_sq=[1.0])
+In [13]: unset_params = muygps.set_params(length_scale=1.4, eps=1e-5, sigma_sq=[1.0])
 ```
 
 Here `unset_params` is a list of kernel hyperparameters that have not been set, and is a convenient data structure for specifying optimization.
 The MuyGPS object has default bounds for the optimization of its hyperparameters, but they can be overridden using `set_optim_bounds`:
 ```
-In [13]: muygps.set_optim_bounds(nu=(1e-10, 1.5))
+In [14]: muygps.set_optim_bounds(nu=(1e-10, 1.5))
 ```
 
 We supply a leave-one-out cross-validation objective functional for use with `scipy.optimize`.
 ```
-In [14]: import numpy as np
+In [15]: import numpy as np
 
-In [15]: from scipy import optimize as opt
+In [16]: from scipy import optimize as opt
 
-In [16]: from MuyGPyS.optimize.objective import loo_crossval, mse_fn
+In [17]: from MuyGPyS.optimize.objective import loo_crossval, mse_fn
 
-In [17]: bounds = muygps.optim_bounds(unset_params)
+In [18]: bounds = muygps.optim_bounds(unset_params)
 
-In [18]: x0 = np.array([np.random.uniform(low=b[0], high=b[1]) for b in bounds])
+In [19]: x0 = np.array([np.random.uniform(low=b[0], high=b[1]) for b in bounds])
 
-In [19]: optres = opt.minimize(loo_crossval, x0, args=(mse_fn, muygps, unset_params, batch_indices, batch_nn_indices, train["input"], train["output"]), method="L-BFGS-B", bounds=bounds)
+In [20]: optres = opt.minimize(loo_crossval, x0, args=(mse_fn, muygps, unset_params, batch_indices, batch_nn_indices, train["input"], train["output"]), method="L-BFGS-B", bounds=bounds)
 
-In [20]: muygps.set_param_array(unset_params, optres.x)
+In [21]: muygps.set_param_array(unset_params, optres.x)
 ```
 
 
@@ -128,11 +128,11 @@ With set hyperparameters, we are able to use the `muygps` object to predict the 
 Several workflows are supported.
 See below a simple regression workflow, using the data structures built up in this example:
 ```
-In [21]: test_indices = np.array([*range(test_count)])
+In [22]: test_indices = np.array([*range(test_count)])
 
-In [22]: test_nn_indices = train_nbrs_lookup.get_nns(test["input"])
+In [23]: test_nn_indices = train_nbrs_lookup.get_nns(test["input"])
 
-In [23]: predictions = muygps.regress(test_indices, test_nn_indices, test["input"], train["input"], train["output"])
+In [24]: predictions = muygps.regress(test_indices, test_nn_indices, test["input"], train["input"], train["output"])
 ```
 
 More complex workflows are of course available.

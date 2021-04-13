@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -26,17 +26,20 @@ class GPInitTest(parameterized.TestCase):
                 "nu": 0.38,
                 "length_scale": 1.5,
                 "eps": 0.00001,
-                "sigma_sq": [0.98],
+                "sigma_sq": np.array([0.98]),
             },
         ),
-        ("rbf", {"length_scale": 1.5, "eps": 0.00001, "sigma_sq": [0.98]}),
+        (
+            "rbf",
+            {"length_scale": 1.5, "eps": 0.00001, "sigma_sq": np.array([0.98])},
+        ),
         (
             "nngp",
             {
                 "sigma_w_sq": 1.5,
                 "sigma_b_sq": 1.0,
                 "eps": 0.00001,
-                "sigma_sq": [0.98],
+                "sigma_sq": np.array([0.98]),
             },
         ),
     )
@@ -56,40 +59,44 @@ class GPInitTest(parameterized.TestCase):
         (
             "matern",
             "nu",
-            {"length_scale": 1.5, "eps": 0.00001, "sigma_sq": [0.98]},
+            {"length_scale": 1.5, "eps": 0.00001, "sigma_sq": np.array([0.98])},
         ),
         (
             "matern",
             "length_scale",
-            {"nu": 0.38, "eps": 0.00001, "sigma_sq": [0.98]},
+            {"nu": 0.38, "eps": 0.00001, "sigma_sq": np.array([0.98])},
         ),
         (
             "matern",
             "eps",
-            {"nu": 0.38, "length_scale": 1.5, "sigma_sq": [0.98]},
+            {"nu": 0.38, "length_scale": 1.5, "sigma_sq": np.array([0.98])},
         ),
         (
             "matern",
             "sigma_sq",
             {"nu": 0.38, "length_scale": 1.5, "eps": 0.00001},
         ),
-        ("rbf", "length_scale", {"eps": 0.00001, "sigma_sq": [0.98]}),
-        ("rbf", "eps", {"length_scale": 1.5, "sigma_sq": [0.98]}),
+        ("rbf", "length_scale", {"eps": 0.00001, "sigma_sq": np.array([0.98])}),
+        ("rbf", "eps", {"length_scale": 1.5, "sigma_sq": np.array([0.98])}),
         ("rbf", "sigma_sq", {"length_scale": 1.5, "eps": 0.00001}),
         (
             "nngp",
             "sigma_w_sq",
-            {"sigma_b_sq": 1.0, "eps": 0.00001, "sigma_sq": [0.98]},
+            {"sigma_b_sq": 1.0, "eps": 0.00001, "sigma_sq": np.array([0.98])},
         ),
         (
             "nngp",
             "sigma_b_sq",
-            {"sigma_w_sq": 0.38, "eps": 0.00001, "sigma_sq": [0.98]},
+            {"sigma_w_sq": 0.38, "eps": 0.00001, "sigma_sq": np.array([0.98])},
         ),
         (
             "nngp",
             "eps",
-            {"sigma_w_sq": 1.5, "sigma_b_sq": 1.0, "sigma_sq": [0.98]},
+            {
+                "sigma_w_sq": 1.5,
+                "sigma_b_sq": 1.0,
+                "sigma_sq": np.array([0.98]),
+            },
         ),
         (
             "nngp",

@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -119,9 +119,8 @@ class SampleTest(parameterized.TestCase):
             data_count, feature_count, response_count, categorical=True
         )
         sub_data = balanced_subsample(data, sample_count)
-        hist, _ = np.array(
-            np.histogram(sub_data["lookup"], bins=response_count)
-        )
+        labels = np.argmax(sub_data["output"], axis=1)
+        hist, _ = np.array(np.histogram(labels, bins=response_count))
         self.assertSequenceAlmostEqual(
             hist, (sample_count / response_count) * np.ones((response_count))
         )

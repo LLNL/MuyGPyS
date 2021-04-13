@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -14,9 +14,9 @@ from MuyGPyS.optimize.batch import (
     sample_balanced_batch,
     full_filtered_batch,
 )
+from MuyGPyS.testing.gp import BenchmarkGP
+from MuyGPyS.testing.opt import _optim_chassis
 from MuyGPyS.testing.test_utils import (
-    BenchmarkGP,
-    _optim_chassis,
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _make_gaussian_data,
@@ -63,12 +63,12 @@ class BatchTest(parameterized.TestCase):
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
-        indices, nn_indices = full_filtered_batch(nbrs_lookup, data["lookup"])
+        indices, nn_indices = full_filtered_batch(nbrs_lookup, data["labels"])
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
         for i, ind in enumerate(indices):
             self.assertNotEqual(
-                len(np.unique(data["lookup"][nn_indices[i, :]])), 1
+                len(np.unique(data["labels"][nn_indices[i, :]])), 1
             )
 
     @parameterized.parameters(
@@ -93,14 +93,14 @@ class BatchTest(parameterized.TestCase):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices, nn_indices = sample_balanced_batch(
-            nbrs_lookup, data["lookup"], batch_count
+            nbrs_lookup, data["labels"], batch_count
         )
         target_count = np.min((data_count, batch_count))
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
         for i, ind in enumerate(indices):
             self.assertNotEqual(
-                len(np.unique(data["lookup"][nn_indices[i, :]])), 1
+                len(np.unique(data["labels"][nn_indices[i, :]])), 1
             )
 
     @parameterized.parameters(
@@ -125,11 +125,11 @@ class BatchTest(parameterized.TestCase):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices, nn_indices = sample_balanced_batch(
-            nbrs_lookup, data["lookup"], batch_count
+            nbrs_lookup, data["labels"], batch_count
         )
         target_count = np.min((data_count, batch_count))
         hist, _ = np.array(
-            np.histogram(data["lookup"][indices], bins=response_count)
+            np.histogram(data["labels"][indices], bins=response_count)
         )
         self.assertSequenceAlmostEqual(
             hist, (batch_count / response_count) * np.ones((response_count))
@@ -157,11 +157,11 @@ class BatchTest(parameterized.TestCase):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices, nn_indices = sample_balanced_batch(
-            nbrs_lookup, data["lookup"], batch_count
+            nbrs_lookup, data["labels"], batch_count
         )
         target_count = np.min((data_count, batch_count))
         hist, _ = np.array(
-            np.histogram(data["lookup"][indices], bins=response_count)
+            np.histogram(data["labels"][indices], bins=response_count)
         )
         self.assertGreater(
             np.mean(hist) + 0.1 * (target_count / response_count),
@@ -193,12 +193,12 @@ class ObjectiveTest(parameterized.TestCase):
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
-        indices, nn_indices = full_filtered_batch(nbrs_lookup, data["lookup"])
+        indices, nn_indices = full_filtered_batch(nbrs_lookup, data["labels"])
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
         for i, ind in enumerate(indices):
             self.assertNotEqual(
-                len(np.unique(data["lookup"][nn_indices[i, :]])), 1
+                len(np.unique(data["labels"][nn_indices[i, :]])), 1
             )
 
 
@@ -222,12 +222,12 @@ class BalancedBatchTest(parameterized.TestCase):
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
-        indices, nn_indices = full_filtered_batch(nbrs_lookup, data["lookup"])
+        indices, nn_indices = full_filtered_batch(nbrs_lookup, data["labels"])
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
         for i, ind in enumerate(indices):
             self.assertNotEqual(
-                len(np.unique(data["lookup"][nn_indices[i, :]])), 1
+                len(np.unique(data["labels"][nn_indices[i, :]])), 1
             )
 
 
@@ -404,7 +404,7 @@ class GPOptimTest(parameterized.TestCase):
                         "nu": 0.38,
                         "length_scale": 1.5,
                         "eps": 0.00001,
-                        "sigma_sq": [1.0],
+                        "sigma_sq": np.array([1.0]),
                     },
                 ),
                 # (
@@ -414,7 +414,7 @@ class GPOptimTest(parameterized.TestCase):
                 #     {
                 #         "length_scale": 1.5,
                 #         "eps": 0.00001,
-                #         "sigma_sq": [1.0],
+                #         "sigma_sq": np.array([1.0]),
                 #     },
                 # ),
                 # (
@@ -425,7 +425,7 @@ class GPOptimTest(parameterized.TestCase):
                 #         "sigma_w_sq": 1.5,
                 #         "sigma_b_sq": 1.0,
                 #         "eps": 0.00001,
-                #         "sigma_sq": [1.0],
+                #         "sigma_sq": np.array([1.0]),
                 #     },
                 # ),
             )
