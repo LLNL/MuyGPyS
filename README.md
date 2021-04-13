@@ -28,7 +28,7 @@ $ pip install -e .
 `MuyGPyS` expects that each train or test observation corresponds to a row index in feature and response matrices.
 In our examples we assume that data is bundled into `train` and `test` dicts possessing the string keys `"input"` and `"output"`.
 `train["input"]` should be a `(train_count, feature_count)`-shaped `numpy.ndarray` encoding the training observations.
-`train["output"]` should be a `(train_count, response_count)`-shaped `numpy.ndarray` encoding the training targets, i.e. ground-truth 1-hot encoded class labels or regression targets.
+`train["output"]` should be a `(train_count, response_count)`-shaped `numpy.ndarray` encoding the training targets, i.e. ground truth regression targets or 1-hot encoded class labels.
 
 
 ### Constructing Nearest Neighbor Lookups
@@ -36,7 +36,7 @@ In our examples we assume that data is bundled into `train` and `test` dicts pos
 
 `MuyGPyS.neighbors.NN_Wrapper` is an api for tasking several KNN libraries with the construction of lookup indexes that empower fast inference.
 The wrapper constructor expects the training features, the number of nearest neighbors, and a method string specifying which algorithm to use, as well as any additional kwargs used by the methods.
-Supported implementations include [exact KNN using sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html) ("exact") and [approximate KNN using hnsw](https://github.com/nmslib/hnswlib) ("hnsw").
+Currently supported implementations include [exact KNN using sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html) ("exact") and [approximate KNN using hnsw](https://github.com/nmslib/hnswlib) ("hnsw").
 
 Construct exact and approximate  KNN data example with k = 10
 ```
@@ -97,7 +97,7 @@ Hyperparameters are optionally set at initialization time or by using `set_param
 In [13]: unset_params = muygps.set_params(length_scale=1.4, eps=1e-5, sigma_sq=[1.0])
 ```
 
-Here `unset_params` is a list of kernel hyperparameters that have not been set, and is a convenient data structure for specifying optimization.
+Here `unset_params` is a list of kernel hyperparameters that have not been set, and is a convenient data structure for specifying optimization parameters.
 The MuyGPS object has default bounds for the optimization of its hyperparameters, but they can be overridden using `set_optim_bounds`:
 ```
 In [14]: muygps.set_optim_bounds(nu=(1e-10, 1.5))
@@ -147,6 +147,107 @@ Note that one need not go through these APIs to use `MuyGPyS`, but they condense
 
 The example workflows below use Amanda's star-galaxy dataset.
 One can of course replace the star-galaxy dataset with your data of choice, so long as it is contained within two Python dicts such as the `train` and `test` dicts as specified above.
+
+
+## Regression
+
+
+The following example performs GP regression on the [Heaton spatial statistics case study dataset](https://github.com/finnlindgren/heatoncomparison).
+In the example, `load_heaton` is a unspecified function that reads in the dataset in the specified dict format.
+In practice, a user can use any conforming dataset.
+If one wants to predict on a univariate response as in this example, one must ensure the data is stored as a matrix rather than as a vector, i.e. that `train['output'].shape = (train_count, 1)`.
+The regression API adds a `sigma_sq` scale parameter for the variance.
+One can set `sigma_sq` using the `hyper_dict` kwarg like other hyperparameters.
+The API expects that `sigma_sq` is a `numpy.ndarray` with a value associated with each dimension of the response, i.e. that `train['output'].shape[1] == len(sigma_sq)`.
+
+Regress on Heaton data with no variance
+```
+Python 3.8.5 (default, Oct  5 2020, 15:42:46)
+Type 'copyright', 'credits' or 'license' for more information
+IPython 7.18.1 -- An enhanced Interactive Python. Type '?' for help.
+
+In [1]: import numpy as np
+
+In [2]: from MuyGPyS.examples.regress import do_regress
+
+In [3]: train, test = load_heaton()
+
+In [4]: predictions = do_regress(train, test, nn_count=100, batch_size=500, kern="matern", embed_method=None, loss_method="mse", hyper_dict={"length_scale": 1.0, "eps": 0.001, "sigma_sq": np.array([1.0])}, variance_mode=None, nn_kwargs={"nn_method": "hnsw", "space": "l2"}, verbose=True)
+
+parameters to be optimized: ['nu']
+bounds: [(1e-06, 2.0)]
+sampled x0: [1.57519863]
+optimizer results: 
+      fun: 0.35772958737027205
+ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+      jac: array([-7.69939668e-06])
+  message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
+     nfev: 24
+      nit: 5
+     njev: 12
+   status: 0
+  success: True
+        x: array([0.42607888])
+muygps params : {'length_scale': 1.0, 'nu': 0.426078884827504}
+timing : {'embed': 3.128999992441095e-06, 'nn': 1.0015629420000067, 'batch': 4.009999940990383e-07, 'hyperopt': 30.46917777600001, 'pred': 121.31757297099999, 'pred_full': {'nn': 0.258999474999996, 'agree': 1.4889999988554337e-06, 'pred': 121.053048638}}
+
+In [5]: from MuyGPyS.optimize.objective import mse_fn
+
+In [6]: print(f"MSE : {mse_fn(predictions, test["output"])}")
+Out[6]: MSE: 2.345136495565052
+```
+
+If one requires the (individual, independent) posterior variances for each of the predictions, one can pass `variance_mode="diagonal"`.
+This mode assumes that each output dimension uses the same model, and so will output a vector `variance` with a scalar posterior variance associated with each test point.
+The API also returns `sigma_sq`, which reports a multiplicative scaling parameter on the variance of each dimension.
+Obtaining the tuned posterior variance implies multiplying the returned variance by the scaling parameter along each dimension.
+
+
+Regress on Heaton data while estimating diagonal variance
+```
+Python 3.8.5 (default, Oct  5 2020, 15:42:46)
+Type 'copyright', 'credits' or 'license' for more information
+IPython 7.18.1 -- An enhanced Interactive Python. Type '?' for help.
+
+In [1]: import numpy as np
+
+In [2]: from MuyGPyS.examples.regress import do_regress
+
+In [3]: train, test = load_stargal()
+
+In [4]: predictions, variance, sigma_sq = do_regress(train, test, nn_count=100, batch_size=500, kern="matern", embed_method=None, loss_method="mse", hyper_dict={"length_scale": 1.0, "eps": 0.001}, variance_mode="diagonal", nn_kwargs={"nn_method": "hnsw", "space": "l2"}, verbose=True)
+
+parameters to be optimized: ['nu']
+bounds: [(1e-06, 2.0)]
+sampled x0: [0.3958409]
+optimizer results: 
+      fun: 0.4139257104460645
+ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+      jac: array([1.18238752e-06])
+  message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
+     nfev: 10
+      nit: 3
+     njev: 5
+   status: 0
+  success: True
+        x: array([0.41872329])
+sigma_sq results: [83.51018175]
+muygps params : {'length_scale': 1.0, 'nu': 0.41872329289111654}
+timing : {'embed': 1.7239999579032883e-06, 'nn': 0.9958009070000458, 'batch': 3.079999828514701e-07, 'hyperopt': 13.70992314, 'pred': 156.11644804899998, 'pred_full': {'nn': 0.2591565799999671, 'agree': 3.450000463089964e-07, 'pred': 155.85499449999992}}
+
+In [5]: from MuyGPyS.optimize.objective import mse_fn
+
+In [6]: print(f"MSE : {mse_fn(predictions, test["output"])}")
+Out[6]: MSE: 2.4458125175701215
+
+In [7]: print(f"Diagonal posterior variance: {variance * sigma_sq[0]}")
+Out [7]: Diagonal posterior variance: [0.52199482 0.45934382 0.81381388 ... 0.64982631 0.45958342 0.68602048]
+```
+
+This is presently the only form of posterior variance collection that is supported.
+Computing the independent diagonal posterior variances between the dimensions of multivariate output with different models is not currently supported, but is planned for a future release.
+Computing the full posterior covariance between the dimensions of multivariate output is not currently supported, but is planned for a future release.
+Computing the full posterior covariance between all inputs is not and will not be supported for scalability reasons. 
 
 
 
@@ -262,110 +363,6 @@ In [6]: print(f"Total accuracy : {np.sum(predicted_labels == np.argmax(test["out
 Out[6]: Total accuracy : 0.9762
 ```
 
-## Regression
-
-
-We can use a similar API to perform regression.
-The following example uses the star-galaxy data as above, but any conforming data might be used.
-If one wants to predict on a univariate response, one must ensure the data is stored as a matrix rather than as a vector, i.e. that `train['output'].shape = (train_count, 1)`.
-The regression API adds a `sigma_sq` scale parameter for the variance.
-One can set `sigma_sq` using the `hyper_dict` kwarg like other hyperparameters.
-The API expects that `sigma_sq` is a `numpy.ndarray` with a value associated with each dimension of the response, i.e. that `train['output'].shape[1] == len(sigma_sq)`.
-
-Run star-gal with no variance
-```
-Python 3.8.5 (default, Oct  5 2020, 15:42:46)
-Type 'copyright', 'credits' or 'license' for more information
-IPython 7.18.1 -- An enhanced Interactive Python. Type '?' for help.
-
-In [1]: import numpy as np
-
-In [2]: from MuyGPyS.examples.regress import do_regress
-
-In [3]: train, test = load_stargal()
-
-In [4]: predictions = do_regress(train, test, nn_count=50, embed_dim=50, batch_size=500, kern="matern", embed_method="pca", loss_method="mse", hyper_dict={"eps": 0.015}, variance_mode=diagonal, nn_kwargs={"nn_method": "hnsw", "space": "cosine"}, verbose=True)
-
-optimization parameters: ['length_scale', 'nu']
-bounds: [(1e-06, 40.0), (1e-06, 2.0)]
-sampled x0: [9.1479526  1.13113405]
-optimizer results: 
-      fun: 0.06288895645420908
- hess_inv: <2x2 LbfgsInvHessProduct with dtype=float64>
-      jac: array([ 1.84574579e-07, -9.53542795e-06])
-  message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
-     nfev: 48
-      nit: 7
-     njev: 16
-   status: 0
-  success: True
-        x: array([6.77309969, 0.54720995])
-lkgp params : {'length_scale': 6.77309968633532, 'nu': 0.5472099500708325}
-timing : {'embed': 1.2968666851520538e-06, 'nn': 0.16625570296309888, 'batch': 3.210734575986862e-07, 'hyperopt': 3.7612421449739486, 'pred': 5.0821877010166645, 'pred_full': {'nn': 0.03705085511319339, 'agree': 8.50064679980278e-07, 'pred': 5.044568303972483}}
-
-
-In [5]: from MuyGPyS.optimize.objective import mse_fn
-
-In [6]: print(f"MSE : {mse_fn(predictions, test["output"])}")
-Out[6]: MSE: 0.09194243606326429
-
-In [7]: print(f"Classification accuracy : {np.mean(np.argmax(predictions, axis=1) == np.argmax(test["output"]))}")
-Out[7]: Classification accuracy: 0.9744
-```
-
-If one requires the (individual, independent) posterior variances for each of the predictions, one can pass `variance_mode="diagonal"`.
-This mode assumes that each output dimension uses the same model, and so will output a vector `variance` with a scalar posterior variance associated with each test point.
-The API also returns `sigma_sq`, which reports a multiplicative scaling parameter on the variance of each dimension.
-Obtaining the tuned posterior variance implies multiplying the returned variance by the scaling parameter along each dimension.
-
-
-Run star-gal with diagonal variance
-```
-Python 3.8.5 (default, Oct  5 2020, 15:42:46)
-Type 'copyright', 'credits' or 'license' for more information
-IPython 7.18.1 -- An enhanced Interactive Python. Type '?' for help.
-
-In [1]: import numpy as np
-
-In [2]: from MuyGPyS.examples.regress import do_regress
-
-In [3]: train, test = load_stargal()
-
-In [4]: predictions, variance, sigma_sq = do_regress(train, test, nn_count=50, embed_dim=50, batch_size=500, kern="matern", embed_method="pca", loss_method="mse", hyper_dict={"eps": 0.015}, variance_mode=diagonal, nn_kwargs={"nn_method": "hnsw", "space": "cosine"}, verbose=True)
-
-optimization parameters: ['length_scale', 'nu']
-bounds: [(1e-06, 40.0), (1e-06, 2.0)]
-sampled x0: [9.1479526  1.13113405]
-optimizer results: 
-      fun: 0.06288895645420908
- hess_inv: <2x2 LbfgsInvHessProduct with dtype=float64>
-      jac: array([ 1.84574579e-07, -9.53542795e-06])
-  message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
-     nfev: 48
-      nit: 7
-     njev: 16
-   status: 0
-  success: True
-        x: array([6.77309969, 0.54720995])
-lkgp params : {'length_scale': 6.77309968633532, 'nu': 0.5472099500708325}
-timing : {'embed': 1.2968666851520538e-06, 'nn': 0.16625570296309888, 'batch': 3.210734575986862e-07, 'hyperopt': 3.7612421449739486, 'pred': 5.0821877010166645, 'pred_full': {'nn': 0.03705085511319339, 'agree': 8.50064679980278e-07, 'pred': 5.044568303972483}}
-
-In [5]: from MuyGPyS.optimize.objective import mse_fn
-
-In [6]: print(f"MSE : {mse_fn(predictions, test["output"])}")
-Out[6]: MSE: 0.09194243606326429
-
-In [7]: print(f"Classification accuracy : {np.mean(np.argmax(predictions, axis=1) == np.argmax(test["output"], axis=1))}")
-Out[7]: Classification accuracy: 0.9744
-
-In [8]: print(f"Posterior variance: {variance * sigma_sq[0]}")
-Out [8]: Posterior variance: [0.0220988  0.01721446 0.02487733 ... 0.03346663 0.17433852 0.03273306]
-```
-
-This is presently the only form of posterior variance collection that is supported.
-Computing the independent diagonal posterior variances between the dimensions of multivariate output with different models is not currently supported.
-Computing the full posterior covariance between the dimensions of multivariate output is not currently supported.
-Computing the full posterior covariance between all inputs is not and will not be supported for scalability reasons. 
 
 
 ## Optional workflow modifications for experiment chassis design
@@ -457,6 +454,12 @@ One should specify bounds using `optim_bounds` only for hyperparameters that are
 
 * Benjamin W. Priest (priest2 at llnl dot gov)
 * Amanada Muyskens (muyskens1 at llnl dot gov)
+
+## Citation
+
+If you use MuyGPyS in a research paper, please reference our article:
+
+* TODO
 
 ## Papers
 
