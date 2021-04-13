@@ -12,8 +12,6 @@ stages:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
 
-
-
 configure_python:
   extends: .template_run_rules
   stage: environment
@@ -21,6 +19,7 @@ configure_python:
     - quartz
     - shell
   script:
+    - rm -rf ${PYTHON_ENVIRONMENT_PATH}
     - virtualenv --python=/usr/tce/bin/python3-3.8.2 ${PYTHON_ENVIRONMENT_PATH}
     - source ${PYTHON_ENVIRONMENT_PATH}/bin/activate
     - pip install -r requirements.txt
