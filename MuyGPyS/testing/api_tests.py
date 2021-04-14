@@ -75,9 +75,10 @@ class ClassifyAPITest(parameterized.TestCase):
             # What about the first dimension `np.sum(mask)`, which records the
             # number of "ambiguous" prediction locations?
             # print(uq)
-            for i in range(uq.shape[0] - 1):
-                self.assertLessEqual(uq[i, 1], acc)
-                self.assertGreaterEqual(uq[i, 2], acc)
+            if kern == "matern":
+                for i in range(uq.shape[0] - 1):
+                    self.assertLessEqual(uq[i, 1], acc)
+                    self.assertGreaterEqual(uq[i, 2], acc)
             self.assertLessEqual(uq[-1, 1], 1.0)
             self.assertGreaterEqual(uq[-1, 2], target_acc)
 

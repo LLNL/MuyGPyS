@@ -12,8 +12,9 @@ import pickle as pkl
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS.testing.api_tests import ClassifyAPITest, RegressionAPITest
+from MuyGPyS.data.utils import balanced_subsample, subsample
 from MuyGPyS.examples.classify import example_lambdas
+from MuyGPyS.testing.api_tests import ClassifyAPITest, RegressionAPITest
 from MuyGPyS.testing.test_utils import (
     _basic_nn_kwarg_options,
     _fast_nn_kwarg_options,
@@ -40,7 +41,7 @@ mnist_files = {
     "50": "embedded_50_mnist.pkl",
 }
 
-heaton_file = "heaton/heaton.pkl"
+heaton_file = "heaton/sub_heaton.pkl"
 
 
 class MNISTTest(ClassifyAPITest):
@@ -71,7 +72,7 @@ class MNISTTest(ClassifyAPITest):
             for k_ta_dict in (
                 (
                     "matern",
-                    0.96,
+                    0.85,
                     {
                         "nu": 0.38,
                         "length_scale": 1.5,
@@ -81,7 +82,7 @@ class MNISTTest(ClassifyAPITest):
                 ),
                 (
                     "rbf",
-                    0.96,
+                    0.85,
                     {
                         "length_scale": 1.5,
                         "eps": 0.00001,
@@ -111,10 +112,11 @@ class MNISTTest(ClassifyAPITest):
         target_accuracy,
         hyper_dict,
     ):
-
+        train = balanced_subsample(self.embedded_40_train, 1000)
+        test = balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
-            train=self.embedded_40_train,
-            test=self.embedded_40_test,
+            train=train,
+            test=test,
             target_acc=target_accuracy,
             nn_count=nn_count,
             embed_dim=embed_dim,
@@ -150,7 +152,7 @@ class MNISTTest(ClassifyAPITest):
             for k_ta_dict in (
                 (
                     "matern",
-                    0.96,
+                    0.85,
                     {
                         # "nu": 0.38,
                         "length_scale": 1.5,
@@ -160,7 +162,7 @@ class MNISTTest(ClassifyAPITest):
                 ),
                 (
                     "rbf",
-                    0.96,
+                    0.85,
                     {
                         # "length_scale": 1.5,
                         "eps": 0.00001,
@@ -191,10 +193,11 @@ class MNISTTest(ClassifyAPITest):
         target_accuracy,
         hyper_dict,
     ):
-
+        train = balanced_subsample(self.embedded_40_train, 1000)
+        test = balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
-            train=self.embedded_40_train,
-            test=self.embedded_40_test,
+            train=train,
+            test=test,
             target_acc=target_accuracy,
             nn_count=nn_count,
             embed_dim=embed_dim,
@@ -248,7 +251,7 @@ class StargalTest(ClassifyAPITest):
             for k_ta_dict in (
                 (
                     "matern",
-                    0.96,
+                    0.92,
                     {
                         "nu": 0.38,
                         "length_scale": 1.5,
@@ -258,7 +261,7 @@ class StargalTest(ClassifyAPITest):
                 ),
                 (
                     "rbf",
-                    0.945,
+                    0.90,
                     {
                         "length_scale": 1.5,
                         "eps": 0.00001,
@@ -290,10 +293,11 @@ class StargalTest(ClassifyAPITest):
         target_accuracy,
         hyper_dict,
     ):
-
+        train = balanced_subsample(self.embedded_40_train, 2000)
+        test = balanced_subsample(self.embedded_40_test, 2000)
         self._do_classify_test_chassis(
-            train=self.embedded_40_train,
-            test=self.embedded_40_test,
+            train=train,
+            test=test,
             target_acc=target_accuracy,
             nn_count=nn_count,
             embed_dim=embed_dim,
@@ -334,7 +338,7 @@ class StargalTest(ClassifyAPITest):
             for k_ta_dict in (
                 (
                     "matern",
-                    0.96,
+                    0.92,
                     {
                         # "nu": 0.38,
                         "length_scale": 1.5,
@@ -344,7 +348,7 @@ class StargalTest(ClassifyAPITest):
                 ),
                 (
                     "rbf",
-                    0.945,
+                    0.9,
                     {
                         # "length_scale": 1.5,
                         "eps": 0.00001,
@@ -377,10 +381,11 @@ class StargalTest(ClassifyAPITest):
         target_accuracy,
         hyper_dict,
     ):
-
+        train = balanced_subsample(self.embedded_40_train, 1000)
+        test = balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
-            train=self.embedded_40_train,
-            test=self.embedded_40_test,
+            train=train,
+            test=test,
             target_acc=target_accuracy,
             nn_count=nn_count,
             embed_dim=embed_dim,
@@ -422,7 +427,7 @@ class HeatonTest(RegressionAPITest):
             for k_ta_dict in (
                 (
                     "matern",
-                    3.5,
+                    11.0,
                     {
                         "nu": 0.42,
                         "length_scale": 1.0,
@@ -432,7 +437,7 @@ class HeatonTest(RegressionAPITest):
                 ),
                 (
                     "rbf",
-                    6.0,
+                    11.0,
                     {
                         "length_scale": 1.5,
                         "eps": 0.001,
@@ -441,7 +446,7 @@ class HeatonTest(RegressionAPITest):
                 ),
                 (
                     "nngp",
-                    6.0,
+                    11.0,
                     {
                         "sigma_w_sq": 1.5,
                         "sigma_b_sq": 1.0,
