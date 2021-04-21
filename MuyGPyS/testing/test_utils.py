@@ -5,16 +5,6 @@
 
 import numpy as np
 
-# from scipy import optimize as opt
-
-# from sklearn.gaussian_process.kernels import Matern, RBF
-
-# from MuyGPyS.gp.kernels import NNGP
-# from MuyGPyS.gp.muygps import MuyGPS
-# from MuyGPyS.neighbors import NN_Wrapper
-# from MuyGPyS.optimize.batch import sample_batch
-# from MuyGPyS.optimize.objective import get_loss_func, loo_crossval
-
 
 _basic_nn_kwarg_options = (
     {"nn_method": "exact", "algorithm": "ball_tree"},
@@ -24,6 +14,16 @@ _basic_nn_kwarg_options = (
         "ef_construction": 100,
         "M": 16,
     },
+)
+
+_exact_nn_kwarg_options = (
+    {"nn_method": "exact", "algorithm": "ball_tree"},
+    # {
+    #     "nn_method": "hnsw",
+    #     "space": "l2",
+    #     "ef_construction": 100,
+    #     "M": 16,
+    # },
 )
 
 _fast_nn_kwarg_options = (
