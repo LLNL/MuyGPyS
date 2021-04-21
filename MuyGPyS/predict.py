@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -62,13 +62,14 @@ def classify_any(
     ]
     time_agree = perf_counter()
 
-    predictions[nonconstant_mask] = muygps.regress(
-        np.where(nonconstant_mask == True)[0],
-        test_nn_indices[nonconstant_mask, :],
-        test,
-        train,
-        train_labels,
-    )
+    if np.sum(nonconstant_mask) > 0:
+        predictions[nonconstant_mask] = muygps.regress(
+            np.where(nonconstant_mask == True)[0],
+            test_nn_indices[nonconstant_mask, :],
+            test,
+            train,
+            train_labels,
+        )
     time_pred = perf_counter()
 
     timing = {
@@ -133,17 +134,18 @@ def classify_two_class_uq(
     variances[np.invert(nonconstant_mask)] = 0.0
     time_agree = perf_counter()
 
-    mu, variances[nonconstant_mask] = muygps.regress(
-        np.where(nonconstant_mask == True)[0],
-        test_nn_indices[nonconstant_mask, :],
-        test,
-        train,
-        train_labels,
-        variance_mode="diagonal",
-    )
-    # NOTE[bwp] there is probably a way to write this directly into `means`
-    # without the extra copy...
-    means[nonconstant_mask, :] = mu
+    if np.sum(nonconstant_mask) > 0:
+        mu, variances[nonconstant_mask] = muygps.regress(
+            np.where(nonconstant_mask == True)[0],
+            test_nn_indices[nonconstant_mask, :],
+            test,
+            train,
+            train_labels,
+            variance_mode="diagonal",
+        )
+        # NOTE[bwp] there is probably a way to write this directly into `means`
+        # without the extra copy...
+        means[nonconstant_mask, :] = mu
     time_pred = perf_counter()
 
     timing = {
