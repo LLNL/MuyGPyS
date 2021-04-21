@@ -49,7 +49,7 @@ def classify_any(
     predictions = np.full((test_count, class_count), one_hot_false)
 
     time_start = perf_counter()
-    test_nn_indices = train_nbrs_lookup.get_nns(test)
+    test_nn_indices, _ = train_nbrs_lookup.get_nns(test)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
@@ -121,7 +121,7 @@ def classify_two_class_uq(
     variances = np.zeros(test_count)
 
     time_start = perf_counter()
-    test_nn_indices = train_nbrs_lookup.get_nns(test)
+    test_nn_indices, _ = train_nbrs_lookup.get_nns(test)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
@@ -204,7 +204,7 @@ def regress_any(
     train_count = train.shape[0]
 
     time_start = perf_counter()
-    test_nn_indices = train_nbrs_lookup.get_nns(test)
+    test_nn_indices, _ = train_nbrs_lookup.get_nns(test)
     time_nn = perf_counter()
 
     time_agree = perf_counter()

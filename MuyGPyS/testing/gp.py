@@ -7,7 +7,7 @@ import numpy as np
 
 from sklearn.gaussian_process.kernels import Matern, RBF
 
-from MuyGPyS.gp.kernels import NNGP
+from MuyGPyS.gp.kernels import NNGPimpl as NNGP
 
 
 class BenchmarkGP:

@@ -19,7 +19,7 @@ from MuyGPyS.testing.test_utils import (
     _fast_nn_kwarg_options,
 )
 from MuyGPyS.gp.distance import pairwise_distances
-from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern
+from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern, NNGP, NNGPimpl
 
 
 class DistancesTest(parameterized.TestCase):
@@ -47,8 +47,9 @@ class DistancesTest(parameterized.TestCase):
         train = _make_gaussian_matrix(train_count, feature_count)
         test = _make_gaussian_matrix(test_count, feature_count)
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices = nbrs_lookup.get_nns(test)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         self.assertEqual(nn_indices.shape, (test_count, nn_count))
+        self.assertEqual(nn_dists.shape, (test_count, nn_count))
         dists = pairwise_distances(train, nn_indices, metric=metric)
         self.assertEqual(dists.shape, (test_count, nn_count, nn_count))
 
@@ -66,7 +67,7 @@ class DistancesTest(parameterized.TestCase):
         train = _make_gaussian_matrix(train_count, feature_count)
         test = _make_gaussian_matrix(test_count, feature_count)
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices = nbrs_lookup.get_nns(test)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         points = train[nn_indices]
         self.assertEqual(points.shape, (test_count, nn_count, feature_count))
         dists = np.array(
@@ -107,22 +108,37 @@ class DistancesTest(parameterized.TestCase):
         train = train / np.linalg.norm(train, axis=1)[:, None]
         test = test / np.linalg.norm(test, axis=1)[:, None]
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices = nbrs_lookup.get_nns(test)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         points = train[nn_indices]
         ip_dists = pairwise_distances(train, nn_indices, metric="ip")
         co_dists = pairwise_distances(train, nn_indices, metric="cosine")
         self.assertTrue(np.allclose(ip_dists, co_dists))
 
 
-class RBFTest(parameterized.TestCase):
+class KernelTest(parameterized.TestCase):
+    def _check_params_chassis(self, kern_fn, **kwargs):
+        for p in kern_fn.hyperparameters:
+            self._check_params(kern_fn, p, **kwargs.get(p, dict()))
+
+    def _check_params(self, kern_fn, param, val=None, bounds=None):
+        if val is not None:
+            self.assertEqual(val, kern_fn.hyperparameters[param]())
+        if bounds is not None:
+            self.assertEqual(
+                bounds, kern_fn.hyperparameters[param].get_bounds()
+            )
+
+
+class RBFTest(KernelTest):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
             # for f in [100]
             # for nn in [5]
-            # for nn_kwargs in _fast_nn_kwarg_options
+            # # for nn_kwargs in _fast_nn_kwarg_options
+            # for nn_kwargs in _exact_nn_kwarg_options
             # for k_kwargs in [
-            #     {"length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)}}
+            #     {"length_scale": {"val": 10.0, "bounds": (1e-5, 1e1)}}
             # ]
             for f in [100, 10, 2, 1]
             for nn in [5, 10, 100]
@@ -145,32 +161,195 @@ class RBFTest(parameterized.TestCase):
         train = _make_gaussian_matrix(train_count, feature_count)
         test = _make_gaussian_matrix(test_count, feature_count)
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices = nbrs_lookup.get_nns(test)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         F2_dists = pairwise_distances(train, nn_indices, metric="F2")
         rbf = RBF(**k_kwargs)
+        self._check_params_chassis(rbf, **k_kwargs)
         kern = rbf(F2_dists)
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
-        self.assertEqual(k_kwargs["length_scale"]["val"], rbf.length_scale())
-        self.assertSequenceAlmostEqual(
-            k_kwargs["length_scale"]["bounds"], rbf.length_scale.get_bounds()
-        )
         points = train[nn_indices]
         sk_rbf = sk_RBF(length_scale=rbf.length_scale())
         sk_kern = np.array([sk_rbf(mat) for mat in points])
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         self.assertTrue(np.allclose(kern, sk_kern))
+        Kcross = rbf(nn_dists)
+        self.assertEqual(Kcross.shape, (test_count, nn_count))
+        sk_Kcross = np.array(
+            [sk_rbf(vec, mat) for vec, mat in zip(test, points)]
+        ).reshape(test_count, nn_count)
+        self.assertEqual(Kcross.shape, (test_count, nn_count))
+        self.assertTrue(np.allclose(Kcross, sk_Kcross))
 
 
-class MaternTest(parameterized.TestCase):
+class ParamTest(KernelTest):
+    @parameterized.parameters(
+        (
+            (k_kwargs, alt_kwargs)
+            for k_kwargs in [
+                {"length_scale": {"val": 10.0, "bounds": (1e-5, 1e1)}}
+            ]
+            for alt_kwargs in [
+                {"length_scale": {"val": 1.0, "bounds": (1e-2, 1e4)}},
+                {"length_scale": {"bounds": (1e-3, 1e2)}},
+                {"length_scale": {"val": 2.0}},
+            ]
+        )
+    )
+    def test_rbf(self, k_kwargs, alt_kwargs):
+        self._test_chassis(RBF, k_kwargs, alt_kwargs)
+
+    @parameterized.parameters(
+        (
+            (k_kwargs, alt_kwargs)
+            for k_kwargs in [
+                {
+                    "nu": {"val": 0.42, "bounds": (1e-4, 5e1)},
+                    "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
+                }
+            ]
+            for alt_kwargs in [
+                {
+                    "nu": {"val": 1.0, "bounds": (1e-2, 5e4)},
+                    "length_scale": {"val": 7.2, "bounds": (2e-5, 2e1)},
+                },
+                {
+                    "nu": {"val": 1.0},
+                    "length_scale": {"bounds": (2e-5, 2e1)},
+                },
+                {
+                    "nu": {"bounds": (1e-2, 5e4)},
+                },
+                {
+                    "length_scale": {"val": 7.2},
+                },
+            ]
+        )
+    )
+    def test_matern(self, k_kwargs, alt_kwargs):
+        self._test_chassis(Matern, k_kwargs, alt_kwargs)
+
+    @parameterized.parameters(
+        (
+            (k_kwargs, alt_kwargs)
+            for k_kwargs in [
+                {
+                    "sigma_b_sq": {"val": 0.42, "bounds": (1e-4, 5e1)},
+                    "sigma_w_sq": {"val": 1.0, "bounds": (1e-5, 1e1)},
+                }
+            ]
+            for alt_kwargs in [
+                {
+                    "sigma_b_sq": {"val": 1.42, "bounds": (1e-2, 5e3)},
+                    "sigma_w_sq": {"val": 0.32, "bounds": (5e-5, 1e2)},
+                },
+                {
+                    "sigma_b_sq": {"bounds": (1e-2, 5e3)},
+                    "sigma_w_sq": {"val": 0.32},
+                },
+                {
+                    "sigma_b_sq": {"bounds": (1e-2, 5e3)},
+                },
+                {
+                    "sigma_w_sq": {"bounds": (5e-5, 1e2)},
+                },
+            ]
+        )
+    )
+    def test_nngp(self, k_kwargs, alt_kwargs):
+        self._test_chassis(NNGP, k_kwargs, alt_kwargs)
+
+    def _test_chassis(self, kern, k_kwargs, alt_kwargs):
+        kern_fn = kern(**k_kwargs)
+        self._check_params_chassis(kern_fn, **k_kwargs)
+        kern_fn.set_params(**alt_kwargs)
+        self._check_params_chassis(kern_fn, **alt_kwargs)
+
+
+class NNGPTest(KernelTest):
+    @parameterized.parameters(
+        (
+            (1000, f, nn, 10, nn_kwargs, k_kwargs)
+            for f in [100, 10, 2]
+            for nn in [5, 10, 100]
+            for nn_kwargs in [
+                {
+                    "nn_method": "hnsw",
+                    "space": "ip",
+                    "ef_construction": 100,
+                    "M": 16,
+                }
+            ]
+            for k_kwargs in [
+                {
+                    "sigma_b_sq": {"val": 0.42, "bounds": (1e-4, 5e1)},
+                    "sigma_w_sq": {"val": 1.0, "bounds": (1e-5, 1e1)},
+                },
+                {
+                    "sigma_b_sq": {"val": 1.3, "bounds": (1e-2, 5e3)},
+                    "sigma_w_sq": {"val": 0.2, "bounds": (1e-3, 3e1)},
+                },
+            ]
+            # for f in [100]
+            # for nn in [5]
+            # for k_kwargs in [
+            #     {
+            #         "sigma_b_sq": {"val": 0.42, "bounds": (1e-4, 5e1)},
+            #         "sigma_w_sq": {"val": 1.0, "bounds": (1e-5, 1e1)},
+            #     }
+            # ]
+        )
+    )
+    def test_nngp(
+        self,
+        train_count,
+        feature_count,
+        nn_count,
+        test_count,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        # NOTE[bwp]: Breaks when feature_count is small, as this appears to
+        # cause invalid values in the interior np.arccos call. Punting for now.
+        train = _make_gaussian_matrix(train_count, feature_count)
+        test = _make_gaussian_matrix(test_count, feature_count)
+        train = train / np.linalg.norm(train, axis=1)[:, None]
+        test = test / np.linalg.norm(test, axis=1)[:, None]
+        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+        ip_dists = pairwise_distances(train, nn_indices, metric="ip")
+        nngp = NNGP(**k_kwargs)
+        self._check_params_chassis(nngp, **k_kwargs)
+        K, Kcross = nngp(ip_dists, nn_dists)
+        self.assertEqual(K.shape, (test_count, nn_count, nn_count))
+        self.assertEqual(Kcross.shape, (test_count, 1, nn_count))
+        points = train[nn_indices]
+        indices = np.array([*range(test_count)])
+        im_nngp = NNGPimpl(
+            sigma_b_sq=nngp.sigma_b_sq(),
+            sigma_w_sq=nngp.sigma_w_sq(),
+            L=nngp.L(),
+        )
+        im_Kfull = np.array(
+            [
+                im_nngp(np.vstack((mat, vec.reshape(1, feature_count))))
+                for vec, mat in zip(test[indices], train[nn_indices])
+            ]
+        )
+        im_K = im_Kfull[:, :-1, :-1]
+        im_Kcross = im_Kfull[:, -1, :-1].reshape((test_count, 1, nn_count))
+        self.assertEqual(im_K.shape, (test_count, nn_count, nn_count))
+        self.assertEqual(im_Kcross.shape, (test_count, 1, nn_count))
+        self.assertTrue(np.allclose(K, im_K))
+        self.assertTrue(np.allclose(Kcross, im_Kcross))
+
+
+class MaternTest(KernelTest):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
             for f in [100, 10, 2, 1]
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
-            # for f in [100]
-            # for nn in [5]
-            # for nn_kwargs in _fast_nn_kwarg_options
             for k_kwargs in [
                 {
                     "nu": {"val": 0.42, "bounds": (1e-4, 5e1)},
@@ -193,6 +372,15 @@ class MaternTest(parameterized.TestCase):
                     "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
                 },
             ]
+            # for f in [100]
+            # for nn in [5]
+            # for nn_kwargs in _fast_nn_kwarg_options
+            # for k_kwargs in [
+            #     {
+            #         "nu": {"val": 0.42, "bounds": (1e-4, 5e1)},
+            #         "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
+            #     }
+            # ]
         )
     )
     def test_matern(
@@ -207,63 +395,25 @@ class MaternTest(parameterized.TestCase):
         train = _make_gaussian_matrix(train_count, feature_count)
         test = _make_gaussian_matrix(test_count, feature_count)
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices = nbrs_lookup.get_nns(test)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+        nn_dists = np.sqrt(nn_dists)
         l2_dists = pairwise_distances(train, nn_indices, metric="l2")
         mtn = Matern(**k_kwargs)
+        self._check_params_chassis(mtn, **k_kwargs)
         kern = mtn(l2_dists)
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
-        self.assertEqual(k_kwargs["length_scale"]["val"], mtn.length_scale())
-        self.assertSequenceAlmostEqual(
-            k_kwargs["length_scale"]["bounds"], mtn.length_scale.get_bounds()
-        )
-        self.assertEqual(k_kwargs["nu"]["val"], mtn.nu())
-        self.assertSequenceAlmostEqual(
-            k_kwargs["nu"]["bounds"], mtn.nu.get_bounds()
-        )
         points = train[nn_indices]
         sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=mtn.length_scale())
         sk_kern = np.array([sk_mtn(mat) for mat in points])
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         self.assertTrue(np.allclose(kern, sk_kern))
-
-    # @parameterized.parameters(
-    #     (
-    #         (1000, f, nn, 10, nn_kwargs, k_kwargs)
-    #         # for f in [100, 10, 2, 1]
-    #         # for nn in [5, 10, 100]
-    #         # for nn_kwargs in _basic_nn_kwarg_options
-    #         for f in [100]
-    #         for nn in [5]
-    #         for nn_kwargs in _fast_nn_kwarg_options
-    #         for k_kwargs in [
-    #             {
-    #                 "nu": {"val": 1.5, "bounds": (1e-5, 1e2)},
-    #                 "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
-    #             },
-    #         ]
-    #     )
-    # )
-    # def test_matern(
-    #     self,
-    #     train_count,
-    #     feature_count,
-    #     nn_count,
-    #     test_count,
-    #     nn_kwargs,
-    #     k_kwargs,
-    # ):
-    #     train = _make_gaussian_matrix(train_count, feature_count)
-    #     test = _make_gaussian_matrix(test_count, feature_count)
-    #     nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-    #     nn_indices = nbrs_lookup.get_nns(test)
-    #     F2_dists = pairwise_distances(train, nn_indices, metric="F2")
-    #     rbf = RBF(**k_kwargs)
-    #     kern = rbf(F2_dists)
-    #     self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
-    #     self.assertEqual(k_kwargs["length_scale"]["val"], rbf.length_scale())
-    #     self.assertSequenceAlmostEqual(
-    #         k_kwargs["length_scale"]["bounds"], rbf.length_scale.get_bounds()
-    #     )
+        Kcross = mtn(nn_dists)
+        self.assertEqual(Kcross.shape, (test_count, nn_count))
+        sk_Kcross = np.array(
+            [sk_mtn(vec, mat) for vec, mat in zip(test, points)]
+        ).reshape(test_count, nn_count)
+        self.assertEqual(Kcross.shape, (test_count, nn_count))
+        self.assertTrue(np.allclose(Kcross, sk_Kcross))
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -30,8 +30,9 @@ class NeighborsTest(parameterized.TestCase):
         data = _make_gaussian_matrix(data_count, feature_count)
         nbrs_lookup = NN_Wrapper(data, nn_count, **nn_kwargs)
         indices = np.random.choice(data_count, batch_count, replace=False)
-        nn_indices = nbrs_lookup.get_batch_nns(indices)
+        nn_indices, nn_dists = nbrs_lookup.get_batch_nns(indices)
         self.assertEqual(nn_indices.shape, (batch_count, nn_count))
+        self.assertEqual(nn_dists.shape, (batch_count, nn_count))
 
     @parameterized.parameters(
         (
@@ -52,8 +53,9 @@ class NeighborsTest(parameterized.TestCase):
         train = _make_gaussian_matrix(train_count, feature_count)
         test = _make_gaussian_matrix(test_count, feature_count)
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices = nbrs_lookup.get_nns(test)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         self.assertEqual(nn_indices.shape, (test_count, nn_count))
+        self.assertEqual(nn_dists.shape, (test_count, nn_count))
 
     ## NOTE[bwp] Should we validate actual KNN behavior, or just trust that we
     # are using the APIs correctly and that the libraries work internally? I

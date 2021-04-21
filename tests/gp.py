@@ -141,7 +141,7 @@ class GPMathTest(parameterized.TestCase):
         test = _make_gaussian_matrix(test_count, feature_count)
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         indices = [*range(test_count)]
-        nn_indices = nbrs_lookup.get_nns(test)
+        nn_indices, _ = nbrs_lookup.get_nns(test)
         K, Kcross = muygps._compute_kernel_tensors(
             indices, nn_indices, test, train
         )
@@ -191,7 +191,7 @@ class GPMathTest(parameterized.TestCase):
         )
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
         indices = [*range(test_count)]
-        nn_indices = nbrs_lookup.get_nns(test["input"])
+        nn_indices, _ = nbrs_lookup.get_nns(test["input"])
         K, Kcross = muygps._compute_kernel_tensors(
             indices, nn_indices, test["input"], train["input"]
         )
@@ -240,7 +240,7 @@ class GPMathTest(parameterized.TestCase):
         )
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
         indices = [*range(test_count)]
-        nn_indices = nbrs_lookup.get_nns(test["input"])
+        nn_indices, _ = nbrs_lookup.get_nns(test["input"])
         K, Kcross = muygps._compute_kernel_tensors(
             indices, nn_indices, test["input"], train["input"]
         )
@@ -288,7 +288,7 @@ class GPSigmaSqTest(parameterized.TestCase):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices = [*range(data_count)]
-        nn_indices = nbrs_lookup.get_batch_nns(indices)
+        nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
         muygps.sigma_sq_optim(
             indices, nn_indices, data["input"], data["output"]
         )

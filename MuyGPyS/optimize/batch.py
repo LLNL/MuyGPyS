@@ -59,7 +59,7 @@ def full_filtered_batch(
         The indices of the nearest neighbors of the sampled training points.
     """
     indices = np.array([*range(len(labels))])
-    nn_indices = nbrs_lookup.get_batch_nns(indices)
+    nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
     nn_labels = labels[nn_indices]
 
     # filter out indices whose neighors all belong to one class
@@ -105,7 +105,7 @@ def sample_balanced_batch(
         The indices of the nearest neighbors of the sampled training points.
     """
     indices = np.array([*range(len(labels))])
-    nn_indices = nbrs_lookup.get_batch_nns(indices)
+    nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
     nn_labels = labels[nn_indices]
     # filter out indices whose neighors all belong to one class
     # What if the index is mislabeled? Currently assuming that constant nn
@@ -170,5 +170,5 @@ def sample_batch(
         )
     else:
         batch_indices = np.array([*range(train_count)])
-    batch_nn_indices = nbrs_lookup.get_batch_nns(batch_indices)
+    batch_nn_indices, _ = nbrs_lookup.get_batch_nns(batch_indices)
     return batch_indices, batch_nn_indices

@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -116,11 +116,11 @@ class NN_Wrapper:
         nn_indices, numpy.ndarray(int), shape= ``(test_count, nn_count)''
             The nearest neighbors for each row of the test data.
         """
-        batch_nn_indices = self._get_nns(
+        batch_nn_indices, batch_nn_dists = self._get_nns(
             self.train[batch_indices, :],
             self.nn_count + 1,
         )
-        return batch_nn_indices[:, 1:]
+        return batch_nn_indices[:, 1:], batch_nn_dists[:, 1:]
 
     def _get_nns(self, samples, nn_count):
         """
@@ -140,15 +140,20 @@ class NN_Wrapper:
             The nearest neighbors for each row of the samples matrix.
         """
         if self.nn_method == "exact":
-            _, nn_indices = self.nbrs.kneighbors(
+            nn_dists, nn_indices = self.nbrs.kneighbors(
                 samples,
                 n_neighbors=nn_count,
             )
+            if self.nbrs.metric == "minkowski" and self.nbrs.p == 2:
+                # We do this so that both implementations return the squared l2
+                # for downstream consistency. Taking the square root is much
+                # more expensive, so this should not produce much overhead.
+                nn_dists = nn_dists ** 2
         elif self.nn_method == "hnsw":
-            nn_indices, _ = self.nbrs.knn_query(samples, k=nn_count)
+            nn_indices, nn_dists = self.nbrs.knn_query(samples, k=nn_count)
         else:
             raise NotImplementedError(
                 f"Nearest Neighbor algorithm {self.nn_method} is not implemented."
             )
 
-        return nn_indices
+        return nn_indices, nn_dists
