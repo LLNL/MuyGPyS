@@ -26,7 +26,12 @@ class MuyGPS:
     """
 
     def __init__(
-        self, kern="matern", metric="l2", eps={}, sigma_sq={}, **kwargs
+        self,
+        kern="matern",
+        metric="l2",
+        eps={"val": 1e-5},
+        sigma_sq=[{"val": 1e0}],
+        **kwargs,
     ):
         """
         Initialize.
@@ -46,35 +51,42 @@ class MuyGPS:
             _init_hyperparameter(1.0, "fixed", **ss) for ss in sigma_sq
         ]
 
-    def _compute_solve(self, nn_indices, targets, K, Kcross):
+    def get_optim_params(self):
+        optim_params = {
+            p: self.kernel.hyperparameters[p]
+            for p in self.kernel.hyperparameters
+            if self.kernel.hyperparameters[p].get_bounds() != "fixed"
+        }
+        if self.eps.get_bounds() != "fixed":
+            optim_params["eps"] = self.eps
+        return optim_params
+
+    def _compute_solve(self, K, Kcross, batch_targets):
         """
         Simultaneously solve all of the GP inference systems of linear
         equations.
 
         Parameters
         ----------
-        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
-            A matrix listing the nearest neighbor indices for all observations
-            in the testing batch.
-        targets : numpy.ndarray(float),
-                  shape = ``(train_count, response_count)''
-            Vector-valued responses for each training element.
         K : np.ndarray(float), shape = ``(batch_size, nn_count, nn_count)''
             A tensor containing the ``nn_count'' x ``nn_count'' kernel matrices
             corresponding to each of the batch elements.
-        Kcross : np.ndarray(float), shape = ``(batch_size, 1, nn_count)''
+        Kcross : np.ndarray(float), shape = ``(batch_size, nn_count)''
             A tensor containing the 1 x ``nn_count'' cross-covariance matrix
             corresponding to each of the batch elements.
+        batch_targets : numpy.ndarray(float),
+                  shape = ``(batch_size, nn_count, response_count)''
+            The vector-valued responses for the nearest neighbors of each
+            batch element.
 
         Returns
         -------
         numpy.ndarray(float), shape = ``(batch_count, response_count)''
             The predicted response for each of the given indices.
         """
-        batch_size, nn_count = Kcross.shape
-        _, response_count = targets.shape
+        batch_size, nn_count, response_count = batch_targets.shape
         responses = Kcross.reshape(batch_size, 1, nn_count) @ np.linalg.solve(
-            K + self.eps() * np.eye(nn_count), targets[nn_indices, :]
+            K + self.eps() * np.eye(nn_count), batch_targets
         )
         return responses.reshape(batch_size, response_count)
 
@@ -88,7 +100,7 @@ class MuyGPS:
         K : np.ndarray(float), shape = ``(batch_size, nn_count, nn_count)''
             A tensor containing the ``nn_count'' x ``nn_count'' kernel matrices
             corresponding to each of the batch elements.
-        Kcross : np.ndarray(float), shape = ``(batch_size, 1, nn_count)''
+        Kcross : np.ndarray(float), shape = ``(batch_size, nn_count)''
             A tensor containing the 1 x ``nn_count'' cross-covariance matrix
             corresponding to each of the batch elements.
 
@@ -111,11 +123,9 @@ class MuyGPS:
 
     def regress(
         self,
-        indices,
-        nn_indices,
-        test,
-        train,
-        targets,
+        K,
+        Kcross,
+        batch_targets,
         variance_mode=None,
     ):
         """
@@ -123,18 +133,16 @@ class MuyGPS:
 
         Parameters
         ----------
-        indices : np.ndarray(int), shape = ``(batch_count,)''
-            The integer indices of the observations to be approximated.
-        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
-            A matrix listing the nearest neighbor indices for all observations
-            in the testing batch.
-        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-            The full training data matrix.
-        test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
-            The full testing data matrix.
-        targets : numpy.ndarray(float),
-                  shape = ``(train_count, response_count)''
-            Vector-valued responses for each training element.
+        K : np.ndarray(float), shape = ``(batch_size, nn_count, nn_count)''
+            A tensor containing the ``nn_count'' x ``nn_count'' kernel matrices
+            corresponding to each of the batch elements.
+        Kcross : np.ndarray(float), shape = ``(batch_size, nn_count)''
+            A tensor containing the 1 x ``nn_count'' cross-covariance matrix
+            corresponding to each of the batch elements.
+        batch_targets : numpy.ndarray(float),
+                  shape = ``(batch_size, nn_count, response_count)''
+            The vector-valued responses for the nearest neighbors of each
+            batch element.
         variance_mode : str or None
             Specifies the type of variance to return. Currently supports
             ``diagonal'' and None. If None, report no variance term.
@@ -148,14 +156,7 @@ class MuyGPS:
             The diagonal elements of the posterior variance. Only returned where
             ``variance_mode == "diagonal"''.
         """
-        nn_count = nn_indices.shape[1]
-        K, Kcross = self._compute_kernel_tensors(
-            indices,
-            nn_indices,
-            test,
-            train,
-        )
-        responses = self._compute_solve(nn_indices, targets, K, Kcross)
+        responses = self._compute_solve(K, Kcross, batch_targets)
         if variance_mode is None:
             return responses
         elif variance_mode == "diagonal":
@@ -188,8 +189,6 @@ class MuyGPS:
         nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
             A matrix listing the nearest neighbor indices for all observations
             in the testing batch.
-        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-            The full training data matrix.
         targets : numpy.ndarray(float),
                   shape = ``(train_count, response_count)''
             Vector-valued responses for each training element.
@@ -202,14 +201,11 @@ class MuyGPS:
         batch_size, nn_count = nn_indices.shape
         _, response_count = targets.shape
 
-        # K = self._compute_K(nn_indices, train)
-        # sigmas = np.zeros((response_count,))
         for i in range(response_count):
             self.sigma_sq[i]._set_val(
                 sum(self._get_sigma_sq(K, targets[:, i], nn_indices))
                 / (nn_count * batch_size)
             )
-        # self.sigma_sq = sigmas / (nn_count * batch_size)
 
     def _get_sigma_sq_series(
         self,
@@ -242,7 +238,6 @@ class MuyGPS:
         """
         batch_size, nn_count = nn_indices.shape
 
-        # K = self._compute_K(nn_indices, train)
         sigmas = np.zeros((batch_size,))
         for i, el in enumerate(self._get_sigma_sq(K, target_col, nn_indices)):
             sigmas[i] = el
@@ -279,67 +274,3 @@ class MuyGPS:
             yield Y_0 @ np.linalg.solve(
                 K[j, :, :] + self.eps() * np.eye(nn_count), Y_0
             )
-
-
-#     # def do_GP(
-#     #     kernel,
-#     #     test_indices,
-#     #     nn_indices,
-#     #     embedded_test,
-#     #     embedded_train,
-#     #     train_diags,
-#     #     test_diags,
-#     # ):
-#     # dist = 1 - (
-#     #     (embedded_train[coords2, :] @ embedded_train[coords2, :].T)
-#     #     / np.outer(
-#     #         np.sqrt(train_diags[coords2]), np.sqrt(train_diags[coords2])
-#     #     )
-#     # )
-#     # dist[dist < 0] = 0.0
-#     # cross_dist = 1 - (
-#     #     (embedded_test[test_index, :] @ embedded_train[coords2, :].T)
-#     #     / np.sqrt(train_diags[coords2])
-#     #     * np.sqrt(test_diags[test_index])
-#     # )
-#     # cross_dist[cross_dist < 0] = 0
-#     # K = kernel(dist)
-#     # Kcross = kernel(cross_dist)
-
-#     # label = np.argmax(
-#     #     Kcross
-#     #     @ np.linalg.solve(K + eps * np.eye(K.shape[0]), labels[coords2, :])
-#     # )
-#     # return label
-
-
-# def do_GP_tensor(
-#     nu,
-#     test_indices,
-#     nn_indices,
-#     embedded_test,
-#     embedded_train,
-#     train_labels,
-#     eps=0.015,
-#     kern="matern",
-# ):
-#     """
-#     Using https://stackoverflow.com/questions/26089893/understanding-numpys-einsum
-#     """
-#     #     diff_tensor = 1 - np.einsum('bij, bjk -> bik',
-#     #                                 embedded_train[batch_nn_indices],
-#     #                                 embedded_train[batch_nn_indices].transpose(0,2,1))
-#     #     diag_tensor = np.einsum("bi, bj -> bij",
-#     #                             np.sqrt(train_diags[batch_nn_indices]),
-#     #                             np.sqrt(train_diags[batch_nn_indices]))
-#     #     dist_tensor = diff_tensor / diag_tensor
-#     #     dist_tensor[dist_tensor < 0] = 0.
-
-#     #     cross_diff_tensor = 1 - np.einsum('bj, bij -> bi',
-#     #                                       embedded_test[test_indices],
-#     #                                       embedded_train[batch_nn_indices])
-#     #     cross_diag_tensor = np.einsum("b, bi -> bi",
-#     #                                   np.sqrt(test_diags[test_indices]),
-#     #                                   np.sqrt(train_diags[batch_nn_indices]))
-#     #     cross_dist_tensor = cross_diff_tensor / cross_diag_tensor
-#     #     cross_dist_tensor[cross_dist_tensor < 0] = 0.

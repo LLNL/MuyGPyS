@@ -5,17 +5,21 @@
 
 import numpy as np
 
+
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
+from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import (
     sample_batch,
     sample_balanced_batch,
     full_filtered_batch,
 )
+from MuyGPyS.optimize.chassis import scipy_optimize
 from MuyGPyS.testing.gp import BenchmarkGP
-from MuyGPyS.testing.opt import _optim_chassis
+from MuyGPyS.testing.opt import _old_optim_chassis
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
@@ -289,9 +293,97 @@ class GPSigmaSqBaselineTest(parameterized.TestCase):
 class GPSigmaSqOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
+            (1001, 10, b, n, nn_kwargs, e, k_kwargs)
+            for b in [250]
+            for n in [34]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for e in (({"val": 1e-5},))
+            for k_kwargs in (
+                (
+                    "matern",
+                    "l2",
+                    {
+                        "nu": {"val": 0.38},
+                        "length_scale": {"val": 1.5},
+                    },
+                ),
+                (
+                    "rbf",
+                    "F2",
+                    {"length_scale": {"val": 1.5}},
+                ),
+            )
+        )
+    )
+    def test_sigma_sq_optim(
+        self,
+        data_count,
+        its,
+        batch_count,
+        nn_count,
+        nn_kwargs,
+        eps,
+        k_kwargs,
+    ):
+        kern, metric, kwargs = k_kwargs
+        muygps = MuyGPS(kern=kern, eps=eps, **kwargs)
+
+        # construct the observation locations
+        sim_train = dict()
+        sim_test = dict()
+        x = np.linspace(-10.0, 10.0, data_count).reshape(1001, 1)
+        sim_train["input"] = x[::2, :]
+        sim_test["input"] = x[1::2, :]
+        train_count = sim_train["input"].shape[0]
+        test_count = sim_test["input"].shape[0]
+
+        mse = 0.0
+
+        # compute nearest neighbor structure
+        nbrs_lookup = NN_Wrapper(sim_train["input"], nn_count, **nn_kwargs)
+        # nn_indices, _ = nbrs_lookup.get_nns(sim_test["input"])
+        batch_indices, batch_nn_indices = sample_batch(
+            nbrs_lookup, batch_count, train_count
+        )
+        pairwise_dists = pairwise_distances(
+            sim_train["input"], batch_nn_indices, metric=metric
+        )
+        K = muygps.kernel(pairwise_dists)
+
+        for _ in range(its):
+            # Make GP benchmark. Still uses old API.
+            hyper_dict = {key: kwargs[key]["val"] for key in kwargs}
+            hyper_dict["eps"] = eps["val"]
+            hyper_dict["sigma_sq"] = np.array([1.0])
+            # print(hyper_dict)
+            gp = BenchmarkGP(kern=kern, **hyper_dict)
+
+            # Simulate the response
+            gp.fit(sim_train["input"], sim_test["input"])
+            y = gp.simulate()
+            sim_train["output"] = y[:train_count].reshape(train_count, 1)
+            sim_test["output"] = y[train_count:].reshape(test_count, 1)
+
+            # Ground truth sigma sq
+            target = gp.get_sigma_sq(y)
+
+            # Find MuyGPyS optim
+            muygps.sigma_sq_optim(K, batch_nn_indices, sim_train["output"])
+            estimate = muygps.sigma_sq[0]()
+
+            mse += (estimate - target) ** 2
+        mse /= its
+        print(f"optimizes with mse {mse}")
+        # Is this a strong enough guarantee?
+        self.assertAlmostEqual(mse, 0.0, 1)
+
+
+class OldGPSigmaSqOptimTest(parameterized.TestCase):
+    @parameterized.parameters(
+        (
             (
                 1001,
-                20,
+                10,
                 b,
                 n,
                 nn_kwargs,
@@ -350,7 +442,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
             sim_train["output"] = y[:train_count].reshape(train_count, 1)
             sim_test["output"] = y[train_count:].reshape(test_count, 1)
             true_sigma_sq = gp.get_sigma_sq(y)
-            global_sigmas, indiv_sigmas = _optim_chassis(
+            global_sigmas, indiv_sigmas = _old_optim_chassis(
                 sim_train,
                 sim_train,
                 nn_count,
@@ -366,10 +458,112 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
             #     np.abs(global_sigmas[0] - true_sigma_sq),
             # )
         mse /= its
+        print(f"optimized with mse {mse}")
         self.assertAlmostEqual(mse, 0.0, 0)
 
 
 class GPOptimTest(parameterized.TestCase):
+    @parameterized.parameters(
+        (
+            (1001, 10, b, n, nn_kwargs, lm, e, k_kwargs)
+            for b in [250]
+            for n in [34]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for lm in ["mse"]
+            for e in (({"val": 1e-5},))
+            for k_kwargs in (
+                (
+                    "matern",
+                    "l2",
+                    0.38,
+                    {
+                        "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
+                        "length_scale": {"val": 1.5},
+                    },
+                ),
+            )
+        )
+    )
+    def test_hyper_optim(
+        self,
+        data_count,
+        its,
+        batch_count,
+        nn_count,
+        nn_kwargs,
+        loss_method,
+        eps,
+        k_kwargs,
+    ):
+        kern, metric, target, kwargs = k_kwargs
+
+        # construct the observation locations
+        sim_train = dict()
+        sim_test = dict()
+        x = np.linspace(-10.0, 10.0, data_count).reshape(1001, 1)
+        sim_train["input"] = x[::2, :]
+        sim_test["input"] = x[1::2, :]
+        train_count = sim_train["input"].shape[0]
+        test_count = sim_test["input"].shape[0]
+
+        mse = 0.0
+
+        # compute nearest neighbor structure
+        nbrs_lookup = NN_Wrapper(sim_train["input"], nn_count, **nn_kwargs)
+        # nn_indices, _ = nbrs_lookup.get_nns(sim_test["input"])
+        batch_indices, batch_nn_indices = sample_batch(
+            nbrs_lookup, batch_count, train_count
+        )
+        crosswise_dists = crosswise_distances(
+            sim_train["input"],
+            sim_train["input"],
+            batch_indices,
+            batch_nn_indices,
+            metric=metric,
+        )
+        pairwise_dists = pairwise_distances(
+            sim_train["input"], batch_nn_indices, metric=metric
+        )
+
+        for i in range(its):
+            # Make GP benchmark. Still uses old API.
+            hyper_dict = {
+                key: kwargs[key]["val"]
+                if not isinstance(kwargs[key]["val"], str)
+                else target
+                for key in kwargs
+            }
+            hyper_dict["eps"] = eps["val"]
+            hyper_dict["sigma_sq"] = np.array([1.0])
+            gp = BenchmarkGP(kern=kern, **hyper_dict)
+
+            # Simulate the response
+            gp.fit(sim_train["input"], sim_test["input"])
+            y = gp.simulate()
+            sim_train["output"] = y[:train_count].reshape(train_count, 1)
+            sim_test["output"] = y[train_count:].reshape(test_count, 1)
+
+            # set up MuyGPS object
+            muygps = MuyGPS(kern=kern, eps=eps, **kwargs)
+
+            estimate = scipy_optimize(
+                muygps,
+                pairwise_dists,
+                crosswise_dists,
+                batch_nn_indices,
+                batch_indices,
+                sim_train["output"],
+                loss_method=loss_method,
+            )[0]
+
+            mse += (estimate - target) ** 2
+        mse /= its
+        print(f"optimizes with mse {mse}")
+        # Is this a strong enough guarantee?
+        self.assertAlmostEqual(mse, 0.0, 1)
+
+
+class OldGPOptimTest(parameterized.TestCase):
     """
     @NOTE[bwp] We are seeing bad performance on recovering true hyperparameters
     for all settings aside from the `matern`/`nu` pairing using exact nearest
@@ -383,7 +577,7 @@ class GPOptimTest(parameterized.TestCase):
         (
             (
                 1001,
-                20,
+                10,
                 b,
                 n,
                 nn_kwargs,
@@ -461,7 +655,7 @@ class GPOptimTest(parameterized.TestCase):
                 k: hyper_dict[k] for k in hyper_dict if k != param
             }
             tru_param = hyper_dict[param]
-            est_param = _optim_chassis(
+            est_param = _old_optim_chassis(
                 sim_train,
                 sim_train,
                 nn_count,
@@ -472,13 +666,9 @@ class GPOptimTest(parameterized.TestCase):
                 nn_kwargs=nn_kwargs,
             )[0]
             mse += (est_param - tru_param) ** 2
-            # print(
-            #     est_param,
-            #     tru_param,
-            #     np.abs(est_param - tru_param),
-            # )
         mse /= its
         # Is this a strong enough guarantee?
+        print(f"optimizes with mse {mse}")
         self.assertAlmostEqual(mse, 0.0, 1)
 
 

@@ -7,13 +7,17 @@ import numpy as np
 
 from scipy import optimize as opt
 
-from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp.old_muygps import MuyGPS as OldMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.objective import get_loss_func, loo_crossval
+from MuyGPyS.optimize.objective import (
+    get_loss_func,
+    old_loo_crossval,
+    # loo_crossval,
+)
 
 
-def _optim_chassis(
+def _old_optim_chassis(
     synth_train,
     synth_test,
     nn_count,
@@ -46,11 +50,11 @@ def _optim_chassis(
         nn_count,
         **nn_kwargs,
     )
-    # Make MuyGPS object
-    muygps = MuyGPS(kern=kern)
+    # Make OldMuyGPS object
+    oldmuygps = OldMuyGPS(kern=kern)
     if hyper_dict is None:
         hyper_dict = dict()
-    unset_params = muygps.set_params(**hyper_dict)
+    unset_params = oldmuygps.set_params(**hyper_dict)
     do_sigma = False
     if "sigma_sq" in unset_params:
         unset_params.remove("sigma_sq")
@@ -58,7 +62,7 @@ def _optim_chassis(
             do_sigma = True
 
     if optim_bounds != None:
-        muygps.set_optim_bounds(**optim_bounds)
+        oldmuygps.set_optim_bounds(**optim_bounds)
 
     # Train hyperparameters by maximizing LOO predictions for batched
     # observations if `hyper_dict` unspecified.
@@ -75,7 +79,7 @@ def _optim_chassis(
         loss_fn = get_loss_func(loss_method)
 
         # collect optimization settings
-        bounds = muygps.optim_bounds(unset_params)
+        bounds = oldmuygps.optim_bounds(unset_params)
         x0 = np.array([np.random.uniform(low=b[0], high=b[1]) for b in bounds])
         if verbose is True:
             print(f"parameters to be optimized: {unset_params}")
@@ -84,11 +88,11 @@ def _optim_chassis(
 
         # perform optimization
         optres = opt.minimize(
-            loo_crossval,
+            old_loo_crossval,
             x0,
             args=(
                 loss_fn,
-                muygps,
+                oldmuygps,
                 unset_params,
                 batch_indices,
                 batch_nn_indices,
@@ -101,26 +105,26 @@ def _optim_chassis(
 
         if verbose is True:
             print(f"optimizer results: \n{optres}")
-        muygps.set_param_array(unset_params, optres.x)
+        oldmuygps.set_param_array(unset_params, optres.x)
         return optres.x
 
     if do_sigma is True:
-        muygps.sigma_sq_optim(
+        oldmuygps.sigma_sq_optim(
             batch_indices,
             batch_nn_indices,
             embedded_train,
             synth_train["output"],
         )
-        return muygps.sigma_sq, muygps.get_sigma_sq(
+        return oldmuygps.sigma_sq, oldmuygps.get_sigma_sq(
             batch_indices,
             batch_nn_indices,
             embedded_train,
             synth_train["output"][:, 0],
         )
-    #     print(f"sigma_sq results: {muygps.sigma_sq}")
+    #     print(f"sigma_sq results: {oldmuygps.sigma_sq}")
 
     # if do_sigma is True:
-    #     return muygps.get_sigma_sq(
+    #     return oldmuygps.get_sigma_sq(
     #         batch_indices,
     #         batch_nn_indices,
     #         embedded_train,

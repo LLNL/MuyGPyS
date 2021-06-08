@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -7,7 +7,6 @@ import numpy as np
 
 from scipy.special import softmax
 from sklearn.metrics import log_loss
-from time import perf_counter
 
 
 def get_loss_func(loss_method):
@@ -75,6 +74,65 @@ def loo_crossval(
     x0,
     objective_fn,
     muygps,
+    optim_params,
+    pairwise_dists,
+    crosswise_dists,
+    batch_nn_targets,
+    batch_targets,
+):
+    """
+    Returns leave-one-out cross validation performance for a `MuyGPS` object.
+    Predicts on all of the training data at once.
+
+    Parameters
+    ----------
+    x0 : numpy.ndarray(float), shape = ``(opt_count,)''
+        Current guess for hyperparameter values.
+    objective_fn : callable
+        The function to be optimized.
+    muygps : MuyGPyS.GP.MuyGPS
+        The MuyGPS object.
+    optim_params : dict(MuyGPyS.gp.kernels.Hyperparameter),
+                   shape = ``(opt_count,)''
+        Dictionary of references of unfixed hyperparameters belonging to the
+        MuyGPS object.
+    pairwise_dists : numpy.ndarray(float),
+                     shape = ``(batch_size, nn_count, nn_count)''
+        Distance tensor whose second two dimensions give the pairwise distances
+        between the nearest neighbors of each batch element.
+    crosswise_dists : numpy.ndarray(float),
+                     shape = ``(batch_size, nn_count)''
+        Distance matrix whose rows give the distances between each batch
+        element and its nearest neighbors.
+    batch_nn_targets : numpy.ndarray(float),
+                       shape = ``(batch_size, nn_count, response_count)''
+        Tensor listing the expected response for each nearest neighbor of each
+        batch element.
+    batch_targets : numpy.ndarray(float),
+                    shape = ``(batch_size, response_count)''
+        Matrix whose rows give the expected response for each  batch element.
+
+    Returns
+    -------
+    float
+        The evaluation of ``objective_fn'' on the predicted versus expected
+        response.
+    """
+    for i, key in enumerate(optim_params):
+        optim_params[key]._set_val(x0[i])
+
+    K = muygps.kernel(pairwise_dists)
+    Kcross = muygps.kernel(crosswise_dists)
+
+    predictions = muygps.regress(K, Kcross, batch_nn_targets)
+
+    return objective_fn(predictions, batch_targets)
+
+
+def old_loo_crossval(
+    x0,
+    objective_fn,
+    muygps,
     params,
     batch_indices,
     batch_nn_indices,
@@ -129,3 +187,55 @@ def loo_crossval(
     targets = train_targets[batch_indices, :]
 
     return objective_fn(predictions, targets)
+
+
+# def scipy_optimize(
+#     muygps,
+#     pairwise_dists,
+#     crosswise_dists,
+#     batch_nn_indices,
+#     batch_indices,
+#     train_targets,
+#     loss_method="mse",
+#     verbose=False,
+# ):
+#     # get the loss function
+#     loss_fn = get_loss_func(loss_method)
+
+#     # construct target tensors
+#     batch_nn_targets = train_targets[batch_nn_indices, :]
+#     batch_targets = train_targets[batch_indices, :]
+
+#     # get optimization parameters
+#     optim_params = muygps.get_optim_params()
+#     x0 = np.array([optim_params[p]() for p in optim_params])
+#     bounds = np.array([optim_params[p].get_bounds() for p in optim_params])
+#     if verbose is True:
+#         print(f"parameters to be optimized: {[p for p in optim_params]}")
+#         print(f"bounds: {bounds}")
+#         print(f"sampled x0: {x0}")
+
+#     # do optimization
+#     optres = opt.minimize(
+#         loo_crossval,
+#         x0,
+#         args=(
+#             loss_fn,
+#             muygps,
+#             optim_params,
+#             pairwise_dists,
+#             crosswise_dists,
+#             batch_nn_targets,
+#             batch_targets,
+#         ),
+#         method="L-BFGS-B",
+#         bounds=bounds,
+#     )
+#     if verbose is True:
+#         print(f"optimizer results: \n{optres}")
+
+#     # set final values
+#     for i, key in enumerate(optim_params):
+#         optim_params[key]._set_val(x0[i])
+
+#     return x0
