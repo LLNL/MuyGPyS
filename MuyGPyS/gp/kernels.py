@@ -139,10 +139,11 @@ class KernelFn:
 
 
 class RBF(KernelFn):
-    def __init__(self, length_scale=dict()):
+    def __init__(self, length_scale=dict(), metric="F2"):
         super().__init__()
         self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
         self.hyperparameters["length_scale"] = self.length_scale
+        self.metric = metric
 
     def __call__(self, squared_dists):
         """
@@ -170,12 +171,13 @@ class RBF(KernelFn):
 
 
 class Matern(KernelFn):
-    def __init__(self, nu=dict(), length_scale=dict()):
+    def __init__(self, nu=dict(), length_scale=dict(), metric="l2"):
         super().__init__()
         self.nu = _init_hyperparameter(1.0, "fixed", **nu)
         self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
         self.hyperparameters["nu"] = self.nu
         self.hyperparameters["length_scale"] = self.length_scale
+        self.metric = metric
 
     def __call__(self, dists):
         """
@@ -223,13 +225,16 @@ class Matern(KernelFn):
 
 
 class NNGP(KernelFn):
-    def __init__(self, sigma_b_sq=dict(), sigma_w_sq=dict(), L=dict()):
+    def __init__(
+        self, sigma_b_sq=dict(), sigma_w_sq=dict(), L=dict(), metric="ip"
+    ):
         super().__init__()
         self.sigma_b_sq = _init_hyperparameter(0.5, "fixed", **sigma_b_sq)
         self.sigma_w_sq = _init_hyperparameter(0.5, "fixed", **sigma_w_sq)
         self.L = _init_hyperparameter(5, "fixed", **L)
         self.hyperparameters["sigma_b_sq"] = self.sigma_b_sq
         self.hyperparameters["sigma_w_sq"] = self.sigma_w_sq
+        self.metric = metric
 
     def __call__(self, dists, nn_dists):
         """

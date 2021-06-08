@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+from MuyGPyS.gp.distance import crosswise_distances, pairwise_distances
 import numpy as np
 
 from scipy import optimize as opt
@@ -10,12 +11,44 @@ from scipy import optimize as opt
 from MuyGPyS.optimize.objective import get_loss_func, loo_crossval
 
 
-def scipy_optimize(
+def scipy_optimize_from_indices(
     muygps,
-    pairwise_dists,
-    crosswise_dists,
-    batch_nn_indices,
     batch_indices,
+    batch_nn_indices,
+    test,
+    train,
+    train_targets,
+    loss_method="mse",
+    verbose=False,
+):
+    crosswise_dists = crosswise_distances(
+        test,
+        train,
+        batch_indices,
+        batch_nn_indices,
+        metric=muygps.kernel.metric,
+    )
+    pairwise_dists = pairwise_distances(
+        train, batch_nn_indices, metric=muygps.kernel.metric
+    )
+    return scipy_optimize_from_tensors(
+        muygps,
+        batch_indices,
+        batch_nn_indices,
+        crosswise_dists,
+        pairwise_dists,
+        train_targets,
+        loss_method=loss_method,
+        verbose=verbose,
+    )
+
+
+def scipy_optimize_from_tensors(
+    muygps,
+    batch_indices,
+    batch_nn_indices,
+    crosswise_dists,
+    pairwise_dists,
     train_targets,
     loss_method="mse",
     verbose=False,
@@ -56,5 +89,3 @@ def scipy_optimize(
     for i, key in enumerate(optim_params):
         optim_params[key]._set_val(x0[i])
     return optres.x
-
-def

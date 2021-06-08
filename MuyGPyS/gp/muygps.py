@@ -5,13 +5,11 @@
 
 import numpy as np
 
-# from sklearn.gaussian_process.kernels import Matern, RBF
-
-# from MuyGPyS.gp.kernels import NNGPimpl as NNGP
+from MuyGPyS.gp.distance import (
+    crosswise_distances,
+    pairwise_distances,
+)
 from MuyGPyS.gp.kernels import (
-    Matern,
-    RBF,
-    NNGP,
     _get_kernel,
     _init_hyperparameter,
 )
@@ -28,7 +26,6 @@ class MuyGPS:
     def __init__(
         self,
         kern="matern",
-        metric="l2",
         eps={"val": 1e-5},
         sigma_sq=[{"val": 1e0}],
         **kwargs,
@@ -44,7 +41,6 @@ class MuyGPS:
             NOTE[bwp] Currently supports ``matern'', ``rbf'' and ``nngp''.
         """
         self.kern = kern.lower()
-        self.metric = metric.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
         self.sigma_sq = [
@@ -119,6 +115,60 @@ class MuyGPS:
                 )
                 for i in range(batch_size)
             ]
+        )
+
+    def regress_from_indices(
+        self,
+        indices,
+        nn_indices,
+        test,
+        train,
+        targets,
+        variance_mode=None,
+    ):
+        """
+        Performs simultaneous regression on a list of observations. This is
+        similar to the old regress API in that it implicitly creates and
+        discards the distance and kernel matrices.
+
+        Parameters
+        ----------
+        indices : np.ndarray(int), shape = ``(batch_count,)''
+            The integer indices of the observations to be approximated.
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+            A matrix listing the nearest neighbor indices for all observations
+            in the testing batch.
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+            The full training data matrix.
+        test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+            The full testing data matrix.
+        targets : numpy.ndarray(float),
+                  shape = ``(train_count, response_count)''
+            Vector-valued responses for each training element.
+        variance_mode : str or None
+            Specifies the type of variance to return. Currently supports
+            ``diagonal'' and None. If None, report no variance term.
+
+        Returns
+        -------
+        responses : numpy.ndarray(float),
+                    shape = ``(batch_count, response_count,)''
+            The predicted response for each of the given indices.
+        diagonal_variance : numpy.ndarray(float), shape = ``(batch_count,)
+            The diagonal elements of the posterior variance. Only returned where
+            ``variance_mode == "diagonal"''.
+        """
+        crosswise_dists = crosswise_distances(
+            test, train, indices, nn_indices, metric=self.kernel.metric
+        )
+        pairwise_dists = pairwise_distances(
+            train, nn_indices, metric=self.kernel.metric
+        )
+        K = self.kernel(pairwise_dists)
+        Kcross = self.kernel(crosswise_dists)
+        batch_targets = targets[nn_indices, :]
+        return self.regress(
+            K, Kcross, batch_targets, variance_mode=variance_mode
         )
 
     def regress(

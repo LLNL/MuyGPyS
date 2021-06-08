@@ -50,7 +50,7 @@ def train_two_class_interval(
     nn_count = batch_nn_indices.shape[1]
 
     targets = train_labels[batch_indices]
-    mean, variance = muygps.regress_from_indices(
+    mean, variance = muygps.regress(
         batch_indices,
         batch_nn_indices,
         train,

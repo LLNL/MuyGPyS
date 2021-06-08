@@ -3,10 +3,6 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-from MuyGPyS.gp.distance import (
-    crosswise_distances,
-    pairwise_distances,
-)
 import numpy as np
 
 from time import perf_counter
@@ -18,6 +14,7 @@ def classify_any(
     train,
     train_nbrs_lookup,
     train_labels,
+    nn_count,
 ):
     """
     Simulatneously predicts the surrogate regression means for each test item.
@@ -34,6 +31,8 @@ def classify_any(
         Trained nearest neighbor query data structure.
     train_labels : numpy.ndarray(int), shape = ``(train_count, class_count)''
         One-hot encoding of class labels for all training data.
+    nn_count : int
+        The number of nearest neighbors used for inference
 
     Returns
     -------
@@ -64,7 +63,7 @@ def classify_any(
     time_agree = perf_counter()
 
     if np.sum(nonconstant_mask) > 0:
-        predictions[nonconstant_mask] = muygps.regress_from_indices(
+        predictions[nonconstant_mask] = muygps.regress(
             np.where(nonconstant_mask == True)[0],
             test_nn_indices[nonconstant_mask, :],
             test,
@@ -87,6 +86,7 @@ def classify_two_class_uq(
     train,
     train_nbrs_lookup,
     train_labels,
+    nn_count,
 ):
     """
     Simultaneously predicts the surrogate means and variances for each test item
@@ -135,10 +135,7 @@ def classify_two_class_uq(
     time_agree = perf_counter()
 
     if np.sum(nonconstant_mask) > 0:
-        (
-            means[nonconstant_mask, :],
-            variances[nonconstant_mask],
-        ) = muygps.regress_from_indices(
+        mu, variances[nonconstant_mask] = muygps.regress(
             np.where(nonconstant_mask == True)[0],
             test_nn_indices[nonconstant_mask, :],
             test,
@@ -146,8 +143,9 @@ def classify_two_class_uq(
             train_labels,
             variance_mode="diagonal",
         )
-
-        # means[nonconstant_mask, :] = mu
+        # NOTE[bwp] there is probably a way to write this directly into `means`
+        # without the extra copy...
+        means[nonconstant_mask, :] = mu
     time_pred = perf_counter()
 
     timing = {
