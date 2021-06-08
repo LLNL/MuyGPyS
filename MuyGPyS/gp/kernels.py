@@ -9,6 +9,23 @@ from scipy.special import gamma, kv
 
 
 def _get_kernel(kern, **kwargs):
+    """
+    Select and return an appropriate kernel functor based upon the passed
+    parameters.
+
+    Parameters
+    ----------
+    embed_method : str
+        The embedding method to be used.
+        NOTE[bwp] Current supporing only ``matern'' and ``rbf''.
+    kwargs : dict
+        Kernel parameters, possibly including hyperparameter dicts.
+
+    Return
+    ------
+    Callable
+        The appropriately initialized kernel functor.
+    """
     if kern == "rbf":
         return RBF(**kwargs)
     elif kern == "matern":
@@ -20,17 +37,63 @@ def _get_kernel(kern, **kwargs):
 
 
 class Hyperparameter:
+    """
+    A MuyGPs kernel or model Hyperparameter.
+
+    Hyperparameters are defined by a value and optimization bounds. Values must
+    be scalar numeric types, and bounds are either a len == 2 iterable container
+    whose elements are numeric scalars in increasing order, or the string
+    ``fixed''. If ``bounds == fixed'' (the default behavior), the hyperparameter
+    value will remain fixed during optimization. ``val'' must remain within the
+    range of the upper and lower bounds, if not ``fixed''.
+
+    Parameters
+    ----------
+    val : numeric or str
+        A scalar within the range of the upper and lower bounds (if given).
+        val can also be the strings ``sample'' or ``log_sample'', which will
+        result in randomly sampling a value within the range given by the
+        bounds.
+    bounds : iterable(numeric), shape = ``(2,)'', or str
+        Iterable container of lower and upper bounds, or the string
+        ``fixed''.
+    """
+
     def __init__(self, val, bounds):
+        """
+        Initialize a hyperparameter.
+        """
         self._set_bounds(bounds)
         self._set_val(val)
 
     def _set(self, val=None, bounds=None):
+        """
+        Reset hyperparameter value and/or bounds using keyword arguments.
+
+        Parameters
+        ----------
+        val : numeric or str
+            A valid value or ``sample'' or ``log_sample''.
+        bounds : iterable(numeric), shape = ``(2,)'', or str
+            Iterable container of lower and upper bounds, or the string
+            ``fixed''.
+        """
         if bounds is not None:
             self._set_bounds(bounds)
         if val is not None:
             self._set_val(val)
 
     def _set_val(self, val):
+        """
+        Set hyperparameter value; sample if appropriate.
+
+        Throws on out-of-range and other badness.
+
+        Parameters
+        ----------
+        val : numeric or str
+            A valid value or ``sample'' or ``log_sample''.
+        """
         if np.isscalar(val) is not True:
             raise ValueError(
                 f"Nonscalar {val} of type {type(val)} is not a supported "
@@ -78,6 +141,17 @@ class Hyperparameter:
         self._val = val
 
     def _set_bounds(self, bounds):
+        """
+        Set hyperparameter bounds.
+
+        Throws on wrong order and other badness.
+
+        Parameters
+        ----------
+        bounds : iterable(numeric), shape = ``(2,)'', or str
+            Iterable container of lower and upper bounds, or the string
+            ``fixed''.
+        """
         if bounds != "fixed":
             if isinstance(bounds, str) is True:
                 raise ValueError(f"Unknown bound option {bounds}.")
@@ -109,13 +183,33 @@ class Hyperparameter:
         self._bounds = bounds
 
     def __call__(self):
+        """
+        Value accessor.
+        """
         return self._val
 
     def get_bounds(self):
+        """
+        Bounds accessor.
+        """
         return self._bounds
 
 
 def _init_hyperparameter(val_def, bounds_def, **kwargs):
+    """
+    Initialize a hyperparameter given default values.
+
+    Parameters
+    ----------
+    val_def : numeric or str
+        A valid value or ``sample'' or ``log_sample''.
+    bounds_def : iterable(numeric), shape = ``(2,)'', or str
+        Iterable container of lower and upper bounds, or the string
+        ``fixed''.
+    kwargs : dict
+        A hyperparameter dict including as subset of the keys ``val'' and
+        ``bounds''.
+    """
     val = kwargs.get("val", val_def)
     bounds = kwargs.get("bounds", bounds_def)
     return Hyperparameter(val, bounds)
@@ -123,14 +217,34 @@ def _init_hyperparameter(val_def, bounds_def, **kwargs):
 
 class KernelFn:
     def __init__(self, **kwargs):
+        """
+        Initialize dict holding hyperparameters.
+
+        Parameters
+        ----------
+        kwargs : dict
+            Keyword arguments.
+        """
         self.hyperparameters = dict()
 
     def set_params(self, **kwargs):
+        """
+        Reset hyperparameters using hyperparameter dict(s).
+
+        Parameters
+        ----------
+        kwargs : dict
+            Hyperparameter kwargs.
+        """
         for name in kwargs:
             self.hyperparameters[name]._set(**kwargs[name])
 
     def __str__(self):
-        # Only for testing purposes.
+        """
+        Print state of hyperparameter dict.
+
+        Intended only for testing purposes.
+        """
         ret = ""
         for p in self.hyperparameters:
             param = self.hyperparameters[p]
@@ -139,6 +253,31 @@ class KernelFn:
 
 
 class RBF(KernelFn):
+    """
+    The radial basis function (RBF) or squared-exponential kernel.
+
+    The RBF kernel includes a single explicit length scale parameter
+    :math:`\\ell>0`, and depends upon a distance function
+    :math:`d(\\cdot, \\cdot)`.
+    NOTE[bwp] We currently assume that the kernel is isotropic, so
+    :math:`|\\ell| = 1'.
+
+    The kernel is defined by
+
+    .. math::
+        K(x_i, x_j) = \\exp\\left(- \\frac{d(x_i, x_j)}{2\\ell^2}\\right).
+
+    Typically, :math:`\\d(\\cdot,\\cdot)` is the squared Euclidean distance
+    or second frequency moment of the difference of the operands.
+
+    Parameters
+    ----------
+    length_scale : dict
+        A hyperparameter dict defining the length_scale parameter.
+    metric : str
+        The distance function to be used. Defaults to ``F2''.
+    """
+
     def __init__(self, length_scale=dict(), metric="F2"):
         super().__init__()
         self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
@@ -147,7 +286,7 @@ class RBF(KernelFn):
 
     def __call__(self, squared_dists):
         """
-        Compute RBF kernels from distance tensor.
+        Compute RBF kernel(s) from a distance matrix or tensor.
 
         Parameters
         ----------
@@ -166,11 +305,48 @@ class RBF(KernelFn):
         """
         return np.exp(-squared_dists / (2 * self.length_scale() ** 2))
 
-    # def set_params(self, length_scale=dict()):
-    #     self.length_scale._set(**length_scale)
-
 
 class Matern(KernelFn):
+    """
+    The Màtern kernel.
+
+    The Màtern kernel includes a length scale parameter :math:`\\ell>0` and an
+    additional smoothness parameter :math:`\\nu>0`. :math:`\\nu` is inversely
+    proportional to the smoothness of the resulting function. The Màtern kernel
+    also depends upon a distance function :math:`d(\\cdot, \\cdot)`.
+    As :math:`\\nu\\rightarrow\\infty`, the kernel becomes equivalent to
+    the :class:`RBF` kernel. When :math:`\\nu = 1/2`, the Matérn kernel
+    becomes identical to the absolute exponential kernel.
+    Important intermediate values are
+    :math:`\\nu=1.5` (once differentiable functions)
+    and :math:`\\nu=2.5` (twice differentiable functions).
+    NOTE[bwp] We currently assume that the kernel is isotropic, so
+    :math:`|\\ell| = 1'.
+
+    The kernel is defined by
+
+    .. math::
+         k(x_i, x_j) =  \\frac{1}{\\Gamma(\\nu)2^{\\nu-1}}\\Bigg(
+         \\frac{\\sqrt{2\\nu}}{l} d(x_i , x_j )
+         \\Bigg)^\\nu K_\\nu\\Bigg(
+         \\frac{\\sqrt{2\\nu}}{l} d(x_i , x_j )\\Bigg),
+
+    where :math:`K_{\\nu}(\\cdot)` is a modified Bessel function and
+    :math:`\\Gamma(\\cdot)` is the gamma function.
+
+    Typically, :math:`\\d(\\cdot,\\cdot)` is the Euclidean distance or
+    :math:`\\ell_2` norm of the difference of the operands.
+
+    Parameters
+    ----------
+    nu : dict
+        A hyperparameter dict defining the length_scale parameter.
+    length_scale : dict
+        A hyperparameter dict defining the length_scale parameter.
+    metric : str
+        The distance function to be used. Defaults to ``l2''.
+    """
+
     def __init__(self, nu=dict(), length_scale=dict(), metric="l2"):
         super().__init__()
         self.nu = _init_hyperparameter(1.0, "fixed", **nu)

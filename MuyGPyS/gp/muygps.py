@@ -21,6 +21,34 @@ class MuyGPS:
 
     Performs approximate GP inference by locally approximating an observation's
     response using its nearest neighbors.
+
+    Kernels accept different hyperparameter dictionaries specifying
+    hyperparameter settings. Keys can include ``val'' and ``bounds''.
+    ``bounds'' must be either a len == 2  iterable container whose elements
+    are scalars in increasing order, or the string ``fixed''. If
+    ``bounds == fixed'' (the default behavior), the hyperparameter value
+    will remain fixed during optimization. ``val'' must be either a scalar
+    (within the range of the upper and lower bounds if given) or the strings
+    ``sample'' or ``log_sample'', which will randomly sample a value within
+    the range given by the bounds.
+
+    In addition to individual kernel hyperparamters, each MuyGPS object also
+    possesses a homoscedastic :math:`\\varepsilon` noise parameter and a
+    vector of :math:`\\sigma^2`.
+
+    Parameters
+    ----------
+    kern : str
+        The kernel to be used. Each kernel supports different
+        hyperparameters that can be specified in kwargs.
+        NOTE[bwp] Currently supports only ``matern'' and ``rbf''.
+    eps : dict
+        A hyperparameter dict.
+    sigma_sq : Iterable(dicts)
+        An iterable container of hyperparameter dicts.
+    kwargs : dict
+        Addition parameters to be passed to the kernel, possibly including
+        additional hyperparameter dicts and a metric keyword.
     """
 
     def __init__(
@@ -30,16 +58,6 @@ class MuyGPS:
         sigma_sq=[{"val": 1e0}],
         **kwargs,
     ):
-        """
-        Initialize.
-
-        Parameters
-        ----------
-        kern : str
-            The kernel to be used. Each kernel supports different
-            hyperparameters that can be specified in kwargs.
-            NOTE[bwp] Currently supports ``matern'', ``rbf'' and ``nngp''.
-        """
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
@@ -48,6 +66,23 @@ class MuyGPS:
         ]
 
     def get_optim_params(self):
+        """
+        Return a dictionary of references to the unfixed kernel hyperparameters.
+
+        This is a convenience function for obtaining all of the information
+        necessary to optimize hyperparameters. It is important to note that the
+        values of the dictionary are references to the actual hyperparameter
+        objects underying the kernel functor - changing these references will
+        change the kernel.
+
+        Returns
+        -------
+        dict (str: MuyGPyS.gp.kernel.Hyperparameter)
+            A dict mapping hyperparameter names to references to their objects.
+            Only returns hyperparameters whose bounds are not set as ``fixed''.
+            Returned hyperparameters can include ``eps'', but not ``sigma_sq'',
+            as it is currently optimized via a separate closed-form method.
+        """
         optim_params = {
             p: self.kernel.hyperparameters[p]
             for p in self.kernel.hyperparameters
@@ -127,8 +162,9 @@ class MuyGPS:
         variance_mode=None,
     ):
         """
-        Performs simultaneous regression on a list of observations. This is
-        similar to the old regress API in that it implicitly creates and
+        Performs simultaneous regression on a list of observations.
+
+        This is similar to the old regress API in that it implicitly creates and
         discards the distance and kernel matrices.
 
         Parameters
@@ -179,7 +215,8 @@ class MuyGPS:
         variance_mode=None,
     ):
         """
-        Performs simultaneous regression on a list of observations.
+        Performs simultaneous regression on provided covariance,
+        cross-covariance, and target.
 
         Parameters
         ----------
@@ -295,10 +332,15 @@ class MuyGPS:
 
     def _get_sigma_sq(self, K, target_col, nn_indices):
         """
-        Generate series of sigma^2 scale parameters for each individual solve
-        along a single dimension:
+        Generate series of :math:`\\sigma^2` scale parameters for each
+        individual solve along a single dimension:
 
-        sigma^2 = 1/nn * Y_{nn}^T @ K_{nn}^{-1} @ Y_{nn}
+        .. math::
+            \\sigma^2 = \\frac{1}{k} * Y_{nn}^T K_{nn}^{-1} Y_{nn}
+
+        Here :math:`Y_{nn}` and :math:`K_{nn}` are the target and kernel
+        matrices with respect to the nearest neighbor set in scope, where
+        :math:`k` is the number of nearest neighbors.
 
         Parameters
         ----------

@@ -9,6 +9,33 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 def crosswise_distances(data, nn_data, data_indices, nn_indices, metric="l2"):
+    """
+    Form a distance tensor from nearest neighbor indices into a dataset.
+
+    Parameters
+    ----------
+    data : numpy.ndarray(float), shape = ``(data_count, feature_count)''
+        The data matrix containing batch elements.
+    nn_data : numpy.ndarray(float), shape = ``(data_count, feature_count)''
+        The data matrix containing the universe of candidate neighbors for
+        the batch elements. Might be the same as ``data''.
+    indices : np.ndarray(int), shape = ``(batch_count,)''
+        The integer indices of the batch.
+    nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+        A matrix listing the nearest neighbor indices for a batch of data
+        points.
+    metric : string
+        The name of the metric to use in order to form distances.
+        NOTE[bwp] supported values are ``l2'', ``F2'', ``ip'' (inner product,
+        a distance only if data is normalized to the unit hypersphere), and
+        ``cosine''.
+
+    Returns
+    -------
+    numpy.ndarray(float), shape = ``(batch_count, nn_count)''
+        A matrix whose rows list the distance of the corresponding batch
+        element to each of its nearest neighbors.
+    """
     locations = data[data_indices]
     points = nn_data[nn_indices]
     if metric == "l2":
@@ -78,6 +105,29 @@ def _crosswise_cosine(locations, points):
 
 
 def pairwise_distances(data, nn_indices, metric="l2"):
+    """
+    Form a distance tensor from nearest neighbor indices into a dataset.
+
+    Parameters
+    ----------
+    data : numpy.ndarray(float), shape = ``(data_count, feature_count)''
+        The full data matrix.
+    nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+        A matrix listing the nearest neighbor indices for a batch of data
+        points, not necessarily contained in the data.
+    metric : string
+        The name of the metric to use in order to form distances.
+        NOTE[bwp] supported values are ``l2'', ``F2'', ``ip'' (inner product,
+        a distance only if data is normalized to the unit hypersphere), and
+        ``cosine''.
+
+    Returns
+    -------
+    numpy.ndarray(float), shape = ``(batch_count, nn_count, nn_count,)''
+        A tensor whose latter two dimensions contain square matrices containing
+        the pairwise distances between the nearest neighbors of the batch
+        elements.
+    """
     points = data[nn_indices]
     if metric == "l2":
         diffs = _diffs(points)

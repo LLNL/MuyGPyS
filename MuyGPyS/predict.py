@@ -104,8 +104,6 @@ def classify_two_class_uq(
         Trained nearest neighbor query data structure.
     train_labels : numpy.ndarray(int), shape = ``(train_count, class_count)''
         One-hot encoding of class labels for all training data.
-    nn_count : int
-        The number of nearest neighbors used for inference
 
     Returns
     -------
