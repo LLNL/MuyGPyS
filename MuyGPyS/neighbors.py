@@ -150,6 +150,9 @@ class NN_Wrapper:
                 # more expensive, so this should not produce much overhead.
                 nn_dists = nn_dists ** 2
         elif self.nn_method == "hnsw":
+            # Although hnsw uses 'l2' as the name of its metric, it returns
+            # F2 values as distances in order to avoid the square root
+            # computations.
             nn_indices, nn_dists = self.nbrs.knn_query(samples, k=nn_count)
         else:
             raise NotImplementedError(

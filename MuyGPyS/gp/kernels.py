@@ -8,32 +8,121 @@ import numpy as np
 from scipy.special import gamma, kv
 
 
+def _get_kernel(kern, **kwargs):
+    if kern == "rbf":
+        return RBF(**kwargs)
+    elif kern == "matern":
+        return Matern(**kwargs)
+    elif kern == "nngp":
+        return NNGP(**kwargs)
+    else:
+        raise ValueError(f"Kernel type {self.kern} is not supported!")
+
+
 class Hyperparameter:
     def __init__(self, val, bounds):
-        self.val = val
-        self.bounds = bounds
+        self._set_bounds(bounds)
+        self._set_val(val)
 
     def _set(self, val=None, bounds=None):
-        if val is not None:
-            self.val = val
         if bounds is not None:
-            self.bounds = bounds
+            self._set_bounds(bounds)
+        if val is not None:
+            self._set_val(val)
 
-    def get_bounds(self):
-        return self.bounds
+    def _set_val(self, val):
+        if np.isscalar(val) is not True:
+            raise ValueError(
+                f"Nonscalar {val} of type {type(val)} is not a supported "
+                f"hyperparameter type."
+            )
+        if self._bounds == "fixed":
+            if val == "sample" or val == "log_sample":
+                raise ValueError(
+                    f"Must provide optimization bounds in order to sample a "
+                    f"hyperparameter value."
+                )
+            if np.issubdtype(type(val), np.number) is not True:
+                raise ValueError(
+                    f"Unrecognized non-numeric type {type(val)} as "
+                    f"hyperparamter value {val}."
+                )
+        else:
+            if val == "sample":
+                val = np.random.uniform(
+                    low=self._bounds[0], high=self._bounds[1]
+                )
+            elif val == "log_sample":
+                val = np.exp(
+                    np.random.uniform(
+                        low=np.log(self._bounds[0]),
+                        high=np.log(self._bounds[1]),
+                    )
+                )
+            else:
+                if np.issubdtype(type(val), np.number) is not True:
+                    raise ValueError(
+                        f"Unrecognized non-numeric type {type(val)} as "
+                        f"hyperparamter value {val}."
+                    )
+                if val < self._bounds[0]:
+                    raise ValueError(
+                        f"Hyperparameter value {val} is lesser than the "
+                        f"optimization lower bound {self._bounds[0]}"
+                    )
+                if val > self._bounds[1]:
+                    raise ValueError(
+                        f"Hyperparameter value {val} is greater than the "
+                        f"optimization upper bound {self._bounds[1]}"
+                    )
+        self._val = val
+
+    def _set_bounds(self, bounds):
+        if bounds != "fixed":
+            if isinstance(bounds, str) is True:
+                raise ValueError(f"Unknown bound option {bounds}.")
+            if hasattr(bounds, "__iter__") is not True:
+                raise ValueError(
+                    f"Unknown bound optiom {bounds} of a non-iterable type "
+                    f"{type(bounds)}."
+                )
+            if len(bounds) != 2:
+                raise ValueError(
+                    f"Provided hyperparameter optimization bounds have "
+                    f"unsupported length {len(bounds)}."
+                )
+            if np.issubdtype(type(bounds[0]), np.number) is not True:
+                raise ValueError(
+                    f"Nonscalar {bounds[0]} of type {type(bounds[0])} is not a "
+                    f"supported hyperparameter bound type."
+                )
+            if np.issubdtype(type(bounds[1]), np.number) is not True:
+                raise ValueError(
+                    f"Nonscalar {bounds[1]} of type {type(bounds[1])} is not a "
+                    f"supported hyperparameter bound type."
+                )
+            if bounds[0] > bounds[1]:
+                raise ValueError(
+                    f"Lower bound {bounds[0]} is not lesser than upper bound "
+                    f"{bounds[1]}."
+                )
+        self._bounds = bounds
 
     def __call__(self):
-        return self.val
+        return self._val
+
+    def get_bounds(self):
+        return self._bounds
 
 
 def _init_hyperparameter(val_def, bounds_def, **kwargs):
-    return Hyperparameter(
-        kwargs.get("val", val_def), kwargs.get("bounds", bounds_def)
-    )
+    val = kwargs.get("val", val_def)
+    bounds = kwargs.get("bounds", bounds_def)
+    return Hyperparameter(val, bounds)
 
 
 class KernelFn:
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.hyperparameters = dict()
 
     def set_params(self, **kwargs):
@@ -52,9 +141,7 @@ class KernelFn:
 class RBF(KernelFn):
     def __init__(self, length_scale=dict()):
         super().__init__()
-        self.length_scale = _init_hyperparameter(
-            1.0, (1e-5, 1e2), **length_scale
-        )
+        self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
         self.hyperparameters["length_scale"] = self.length_scale
 
     def __call__(self, squared_dists):
@@ -85,10 +172,8 @@ class RBF(KernelFn):
 class Matern(KernelFn):
     def __init__(self, nu=dict(), length_scale=dict()):
         super().__init__()
-        self.nu = _init_hyperparameter(1.0, (1e-5, 2e1), **nu)
-        self.length_scale = _init_hyperparameter(
-            1.0, (1e-5, 2e1), **length_scale
-        )
+        self.nu = _init_hyperparameter(1.0, "fixed", **nu)
+        self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
         self.hyperparameters["nu"] = self.nu
         self.hyperparameters["length_scale"] = self.length_scale
 
@@ -140,9 +225,9 @@ class Matern(KernelFn):
 class NNGP(KernelFn):
     def __init__(self, sigma_b_sq=dict(), sigma_w_sq=dict(), L=dict()):
         super().__init__()
-        self.sigma_b_sq = _init_hyperparameter(0.5, (1e-5, 4e1), **sigma_b_sq)
-        self.sigma_w_sq = _init_hyperparameter(0.5, (1e-5, 4e1), **sigma_w_sq)
-        self.L = _init_hyperparameter(5, (1, 30), **L)
+        self.sigma_b_sq = _init_hyperparameter(0.5, "fixed", **sigma_b_sq)
+        self.sigma_w_sq = _init_hyperparameter(0.5, "fixed", **sigma_w_sq)
+        self.L = _init_hyperparameter(5, "fixed", **L)
         self.hyperparameters["sigma_b_sq"] = self.sigma_b_sq
         self.hyperparameters["sigma_w_sq"] = self.sigma_w_sq
 

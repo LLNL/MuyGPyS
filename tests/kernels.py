@@ -115,6 +115,138 @@ class DistancesTest(parameterized.TestCase):
         self.assertTrue(np.allclose(ip_dists, co_dists))
 
 
+class HyperparameterTest(parameterized.TestCase):
+    @parameterized.parameters(
+        (
+            kwargs
+            for kwargs in (
+                {"val": 1.0, "bounds": (1e-5, 1e1)},
+                {"val": 1e-5, "bounds": (1e-5, 1e1)},
+                {"val": 1e1, "bounds": (1e-5, 1e1)},
+            )
+        )
+    )
+    def test_full_init(self, val, bounds):
+        param = Hyperparameter(val, bounds)
+        self.assertEqual(val, param())
+        self._check_in_bounds(bounds, param)
+
+    def _check_in_bounds(self, given_bounds, param):
+        bounds = param.get_bounds()
+        self.assertEqual(given_bounds, bounds)
+        self.assertGreaterEqual(param(), bounds[0])
+        self.assertLessEqual(param(), bounds[1])
+
+    @parameterized.parameters(
+        (kwargs for kwargs in ({"val": 1.0, "bounds": "fixed"},))
+    )
+    def test_fixed_init(self, val, bounds):
+        param = Hyperparameter(val, bounds)
+        self.assertEqual(val, param())
+        self.assertEqual("fixed", param.get_bounds())
+
+    @parameterized.parameters(
+        (
+            kwargs
+            for kwargs in (
+                {"val": "sample", "bounds": (1e-4, 1e2), "reps": 100},
+                {"val": "log_sample", "bounds": (1e-4, 1e2), "reps": 100},
+            )
+        )
+    )
+    def test_sample(self, val, bounds, reps):
+        for _ in range(reps):
+            param = Hyperparameter(val, bounds)
+            self._check_in_bounds(bounds, param)
+
+    @parameterized.parameters(
+        (
+            kwargs
+            for kwargs in (
+                {"val": "sample", "bounds": "fixed"},
+                {"val": "log_sample", "bounds": "fixed"},
+            )
+        )
+    )
+    def test_fixed_sample(self, val, bounds):
+        with self.assertRaisesRegex(ValueError, "Must provide"):
+            Hyperparameter(val, bounds)
+
+    @parameterized.parameters(
+        (
+            kwargs
+            for kwargs in (
+                {"val": 1e-2, "bounds": (1e-1, 1e2)},
+                {"val": 1e3, "bounds": (1e-1, 1e2)},
+            )
+        )
+    )
+    def test_oob(self, val, bounds):
+        with self.assertRaisesRegex(ValueError, "bound"):
+            Hyperparameter(val, bounds)
+
+    @parameterized.parameters(
+        (kwargs for kwargs in ({"val": "wut", "bounds": (1e-1, 1e2)},))
+    )
+    def test_bad_val_string(self, val, bounds):
+        with self.assertRaisesRegex(ValueError, "Unrecognized"):
+            Hyperparameter(val, bounds)
+
+    @parameterized.parameters(
+        (kwargs for kwargs in ({"val": 1.0, "bounds": "badstring"},))
+    )
+    def test_bad_val_bounds(self, val, bounds):
+        with self.assertRaisesRegex(ValueError, "Unknown"):
+            Hyperparameter(val, bounds)
+
+    @parameterized.parameters(
+        (kwargs for kwargs in ({"val": [1.0], "bounds": (1e-1, 1e2)},))
+    )
+    def test_bad_iterable_val(self, val, bounds):
+        with self.assertRaisesRegex(ValueError, "Nonscalar"):
+            Hyperparameter(val, bounds)
+
+    @parameterized.parameters(
+        (kwargs for kwargs in ({"val": 1.0, "bounds": (1e2, 1e-1)},))
+    )
+    def test_bad_bounds(self, val, bounds):
+        with self.assertRaisesRegex(ValueError, "not lesser than upper bound"):
+            Hyperparameter(val, bounds)
+
+    @parameterized.parameters(
+        (
+            kwargs
+            for kwargs in (
+                {"val": 1.0, "bounds": (1e2, 1e-1, 1e2)},
+                {"val": 1.0, "bounds": [1e2]},
+            )
+        )
+    )
+    def test_bad_bound_length(self, val, bounds):
+        with self.assertRaisesRegex(ValueError, "unsupported length"):
+            Hyperparameter(val, bounds)
+
+    @parameterized.parameters(
+        (
+            kwargs
+            for kwargs in (
+                {"val": 1.0, "bounds": ("a", 1e-2)},
+                {"val": 1.0, "bounds": (1e-1, "b")},
+            )
+        )
+    )
+    def test_bad_bound_vals(self, val, bounds):
+        with self.assertRaisesRegex(ValueError, "supported hyperparameter"):
+            Hyperparameter(val, bounds)
+
+    @parameterized.parameters(
+        (kwargs for kwargs in ({"val": 1.0, "bounds": 1e-2},))
+    )
+    def test_noniterable_bound(self, val, bounds):
+        with self.assertRaisesRegex(ValueError, "non-iterable type"):
+            Hyperparameter(val, bounds)
+
+
 class KernelTest(parameterized.TestCase):
     def _check_params_chassis(self, kern_fn, **kwargs):
         for p in kern_fn.hyperparameters:
@@ -269,7 +401,7 @@ class NNGPTest(KernelTest):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
-            for f in [100, 10, 2]
+            for f in [100, 10, 5]
             for nn in [5, 10, 100]
             for nn_kwargs in [
                 {
@@ -290,7 +422,15 @@ class NNGPTest(KernelTest):
                 },
             ]
             # for f in [100]
-            # for nn in [5]
+            # for nn in [2]
+            # for nn_kwargs in [
+            #     {
+            #         "nn_method": "hnsw",
+            #         "space": "ip",
+            #         "ef_construction": 100,
+            #         "M": 16,
+            #     }
+            # ]
             # for k_kwargs in [
             #     {
             #         "sigma_b_sq": {"val": 0.42, "bounds": (1e-4, 5e1)},
@@ -322,8 +462,8 @@ class NNGPTest(KernelTest):
         K, Kcross = nngp(ip_dists, nn_dists)
         self.assertEqual(K.shape, (test_count, nn_count, nn_count))
         self.assertEqual(Kcross.shape, (test_count, 1, nn_count))
-        points = train[nn_indices]
-        indices = np.array([*range(test_count)])
+        # points = train[nn_indices]
+        indices = np.arange(test_count)
         im_nngp = NNGPimpl(
             sigma_b_sq=nngp.sigma_b_sq(),
             sigma_w_sq=nngp.sigma_w_sq(),
@@ -352,24 +492,24 @@ class MaternTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": {"val": 0.42, "bounds": (1e-4, 5e1)},
-                    "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
+                    "nu": {"val": 0.42, "bounds": "fixed"},
+                    "length_scale": {"val": 1.0, "bounds": "fixed"},
                 },
                 {
-                    "nu": {"val": 0.5, "bounds": (1e-4, 5e1)},
-                    "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
+                    "nu": {"val": 0.5, "bounds": "fixed"},
+                    "length_scale": {"val": 1.0, "bounds": "fixed"},
                 },
                 {
-                    "nu": {"val": 1.5, "bounds": (1e-4, 5e1)},
-                    "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
+                    "nu": {"val": 1.5, "bounds": "fixed"},
+                    "length_scale": {"val": 1.0, "bounds": "fixed"},
                 },
                 {
-                    "nu": {"val": 2.5, "bounds": (1e-4, 5e1)},
-                    "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
+                    "nu": {"val": 2.5, "bounds": "fixed"},
+                    "length_scale": {"val": 1.0, "bounds": "fixed"},
                 },
                 {
-                    "nu": {"val": np.inf, "bounds": (1e-4, 5e1)},
-                    "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
+                    "nu": {"val": np.inf, "bounds": "fixed"},
+                    "length_scale": {"val": 1.0, "bounds": "fixed"},
                 },
             ]
             # for f in [100]

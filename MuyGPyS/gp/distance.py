@@ -8,6 +8,75 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 
+def crosswise_distances(data, nn_data, data_indices, nn_indices, metric="l2"):
+    locations = data[data_indices]
+    points = nn_data[nn_indices]
+    if metric == "l2":
+        return _crosswise_l2(locations, points)
+    elif metric == "F2":
+        return _crosswise_F2(locations, points)
+    elif metric == "ip":
+        return _crosswise_prods(locations, points)
+    elif metric == "cosine":
+        return _crosswise_cosine(points)
+    else:
+        raise ValueError(f"Metric {metric} is not supported!")
+
+
+def _crosswise_diffs(locations, points):
+    return np.array(
+        [
+            [locations[i, :] - points[i, j, :] for j in range(points.shape[1])]
+            for i in range(points.shape[0])
+        ]
+    )
+
+
+def _crosswise_F2(locations, points):
+    return np.array(
+        [
+            [
+                _F2(locations[i, :] - points[i, j, :])
+                for j in range(points.shape[1])
+            ]
+            for i in range(points.shape[0])
+        ]
+    )
+
+
+def _crosswise_l2(locations, points):
+    return np.array(
+        [
+            [
+                _l2(locations[i, :] - points[i, j, :])
+                for j in range(points.shape[1])
+            ]
+            for i in range(points.shape[0])
+        ]
+    )
+
+
+def _crosswise_prods(locations, points):
+    return 1 - np.array(
+        [
+            [locations[i, :] @ points[i, j, :] for j in range(points.shape[1])]
+            for i in range(points.shape[0])
+        ]
+    )
+
+
+def _crosswise_cosine(locations, points):
+    return 1 - np.array(
+        [
+            [
+                cosine_similarity(locations[i, :], points[i, j, :])
+                for j in range(points.shape[1])
+            ]
+            for i in range(points.shape[0])
+        ]
+    )
+
+
 def pairwise_distances(data, nn_indices, metric="l2"):
     points = data[nn_indices]
     if metric == "l2":
@@ -45,7 +114,7 @@ def _prods(points):
     if len(points.shape) == 3:
         return 1 - np.array([mat @ mat.T for mat in points])
     elif len(points.shape) == 2:
-        return 1 - points @ point.T
+        return 1 - points @ points.T
     else:
         raise ValueError(f"points shape {points.shape} is not supported.")
 
