@@ -6,7 +6,6 @@
 import os
 import sys
 
-import numpy as np
 import pickle as pkl
 
 from absl.testing import absltest
@@ -17,7 +16,6 @@ from MuyGPyS.examples.classify import example_lambdas
 from MuyGPyS.testing.api_tests import ClassifyAPITest, RegressionAPITest
 from MuyGPyS.testing.test_utils import (
     _basic_nn_kwarg_options,
-    _fast_nn_kwarg_options,
 )
 
 
@@ -55,160 +53,52 @@ class MNISTTest(ClassifyAPITest):
 
     @parameterized.parameters(
         (
-            (
-                nn,
-                ed,
-                ob,
-                nn_kwargs,
-                k_ta_dict[0],
-                k_ta_dict[1],
-                k_ta_dict[2],
-            )
+            (nn, bs, lm, nn_kwargs, k_kwargs)
             for nn in [30]
-            for ed in [40]
-            for ob in [500]
-            # for nn_kwargs in _fast_nn_kwarg_options
-            for nn_kwargs in _basic_nn_kwarg_options
-            for k_ta_dict in (
-                (
-                    "matern",
-                    0.85,
-                    {
-                        "nu": 0.38,
-                        "length_scale": 1.5,
-                        "eps": 0.00001,
-                        "sigma_sq": np.array([1.0]),
-                    },
-                ),
-                (
-                    "rbf",
-                    0.85,
-                    {
-                        "length_scale": 1.5,
-                        "eps": 0.00001,
-                        "sigma_sq": np.array([1.0]),
-                    },
-                ),
-                # (
-                #     "nngp",
-                #     0.935,
-                #     {
-                #         "sigma_w_sq": 1.5,
-                #         "sigma_b_sq": 1.0,
-                #         "eps": 0.015,
-                #         "sigma_sq": np.array([1.0]),
-                #     },
-                # ),
-            )
-        )
-    )
-    def test_classify_notrain_noembed(
-        self,
-        nn_count,
-        embed_dim,
-        opt_batch_size,
-        nn_kwargs,
-        kern,
-        target_accuracy,
-        hyper_dict,
-    ):
-        train = balanced_subsample(self.embedded_40_train, 1000)
-        test = balanced_subsample(self.embedded_40_test, 1000)
-        self._do_classify_test_chassis(
-            train=train,
-            test=test,
-            target_acc=target_accuracy,
-            nn_count=nn_count,
-            embed_dim=embed_dim,
-            opt_batch_size=opt_batch_size,
-            uq_batch_size=None,
-            loss_method=None,
-            embed_method=None,
-            uq_objectives=None,
-            nn_kwargs=nn_kwargs,
-            kern=kern,
-            hyper_dict=hyper_dict,
-        )
-
-    @parameterized.parameters(
-        (
-            (
-                nn,
-                ed,
-                ob,
-                lm,
-                nn_kwargs,
-                k_ta_dict[0],
-                k_ta_dict[1],
-                k_ta_dict[2],
-            )
-            for nn in [30]
-            for ed in [40]
-            for ob in [500]
+            for bs in [500]
             for lm in ["log", "mse"]
             for nn_kwargs in _basic_nn_kwarg_options
-            # for lm in ["log"]
-            # for nn_kwargs in _fast_nn_kwarg_options
-            for k_ta_dict in (
+            for k_kwargs in (
                 (
-                    "matern",
                     0.85,
                     {
-                        # "nu": 0.38,
-                        "length_scale": 1.5,
-                        "eps": 0.00001,
-                        "sigma_sq": np.array([1.0]),
+                        "kern": "matern",
+                        "metric": "l2",
+                        "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
+                        "length_scale": {"val": 1.5},
+                        "eps": {"val": 1e-3},
+                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
                     },
                 ),
                 (
-                    "rbf",
                     0.85,
                     {
-                        # "length_scale": 1.5,
-                        "eps": 0.00001,
-                        "sigma_sq": np.array([1.0]),
+                        "kern": "rbf",
+                        "metric": "F2",
+                        "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                        "eps": {"val": 1e-3},
+                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
                     },
                 ),
-                # (
-                #     "nngp",
-                #     0.935,
-                #     {
-                #         "sigma_w_sq": 1.5,
-                #         "sigma_b_sq": 1.0,
-                #         "eps": 0.015,
-                #         "sigma_sq": np.array([1.0]),
-                #     },
-                # ),
             )
         )
     )
-    def test_classify_noembed(
-        self,
-        nn_count,
-        embed_dim,
-        opt_batch_size,
-        loss_method,
-        nn_kwargs,
-        kern,
-        target_accuracy,
-        hyper_dict,
+    def test_classify(
+        self, nn_count, batch_size, loss_method, nn_kwargs, k_kwargs
     ):
-        train = balanced_subsample(self.embedded_40_train, 1000)
+        target_accuracy, k_kwargs = k_kwargs
+        train = balanced_subsample(self.embedded_40_train, 5000)
         test = balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
             train=train,
             test=test,
             target_acc=target_accuracy,
             nn_count=nn_count,
-            embed_dim=embed_dim,
-            opt_batch_size=opt_batch_size,
-            uq_batch_size=None,
+            batch_size=batch_size,
             loss_method=loss_method,
-            embed_method=None,
-            uq_objectives=None,
             nn_kwargs=nn_kwargs,
-            kern=kern,
-            hyper_dict=hyper_dict,
+            k_kwargs=k_kwargs,
+            verbose=False,
         )
 
 
@@ -229,174 +119,113 @@ class StargalTest(ClassifyAPITest):
 
     @parameterized.parameters(
         (
-            (
-                nn,
-                ed,
-                ob,
-                ub,
-                uq,
-                nn_kwargs,
-                k_ta_dict[0],
-                k_ta_dict[1],
-                k_ta_dict[2],
-            )
+            (nn, bs, lm, nn_kwargs, k_kwargs)
             for nn in [30]
-            for ed in [40]
-            for ob in [500]
-            for ub in [500]
-            # for uq in [example_lambdas]
-            # for nn_kwargs in _fast_nn_kwarg_options
-            for uq in [None, example_lambdas]
-            for nn_kwargs in _basic_nn_kwarg_options
-            for k_ta_dict in (
-                (
-                    "matern",
-                    0.92,
-                    {
-                        "nu": 0.38,
-                        "length_scale": 1.5,
-                        "eps": 0.00001,
-                        "sigma_sq": np.array([1.0]),
-                    },
-                ),
-                (
-                    "rbf",
-                    0.90,
-                    {
-                        "length_scale": 1.5,
-                        "eps": 0.00001,
-                        "sigma_sq": np.array([1.0]),
-                    },
-                ),
-                # (
-                #     "nngp",
-                #     0.935,
-                #     {
-                #         "sigma_w_sq": 1.5,
-                #         "sigma_b_sq": 1.0,
-                #         "eps": 0.015,
-                #         "sigma_sq": np.array([1.0]),
-                #     },
-                # ),
-            )
-        )
-    )
-    def test_classify_notrain_noembed(
-        self,
-        nn_count,
-        embed_dim,
-        opt_batch_size,
-        uq_batch_size,
-        uq_objectives,
-        nn_kwargs,
-        kern,
-        target_accuracy,
-        hyper_dict,
-    ):
-        train = balanced_subsample(self.embedded_40_train, 2000)
-        test = balanced_subsample(self.embedded_40_test, 2000)
-        self._do_classify_test_chassis(
-            train=train,
-            test=test,
-            target_acc=target_accuracy,
-            nn_count=nn_count,
-            embed_dim=embed_dim,
-            opt_batch_size=opt_batch_size,
-            uq_batch_size=uq_batch_size,
-            loss_method=None,
-            embed_method=None,
-            uq_objectives=uq_objectives,
-            nn_kwargs=nn_kwargs,
-            kern=kern,
-            hyper_dict=hyper_dict,
-        )
-
-    @parameterized.parameters(
-        (
-            (
-                nn,
-                ed,
-                ob,
-                ub,
-                lm,
-                uq,
-                nn_kwargs,
-                k_ta_dict[0],
-                k_ta_dict[1],
-                k_ta_dict[2],
-            )
-            for nn in [30]
-            for ed in [40]
-            for ob in [500]
-            for ub in [500]
-            # for lm in ["log"]
-            # for uq in [example_lambdas]
-            # for e in [True]
+            for bs in [500]
             for lm in ["log", "mse"]
-            for uq in [None, example_lambdas]
             for nn_kwargs in _basic_nn_kwarg_options
-            for k_ta_dict in (
+            for k_kwargs in (
                 (
-                    "matern",
                     0.92,
                     {
-                        # "nu": 0.38,
-                        "length_scale": 1.5,
-                        "eps": 0.00001,
-                        "sigma_sq": np.array([1.0]),
+                        "kern": "matern",
+                        "metric": "l2",
+                        "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
+                        "length_scale": {"val": 1.5},
+                        "eps": {"val": 1e-3},
+                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
                     },
                 ),
                 (
-                    "rbf",
                     0.9,
                     {
-                        # "length_scale": 1.5,
-                        "eps": 0.00001,
-                        "sigma_sq": np.array([1.0]),
+                        "kern": "rbf",
+                        "metric": "F2",
+                        "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                        "eps": {"val": 1e-3},
+                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
                     },
                 ),
-                # (
-                #     "nngp",
-                #     0.935,
-                #     {
-                #         "sigma_w_sq": 1.5,
-                #         "sigma_b_sq": 1.0,
-                #         "eps": 0.015,
-                #         "sigma_sq": np.array([1.0]),
-                #     },
-                # ),
             )
         )
     )
-    def test_classify_noembed(
-        self,
-        nn_count,
-        embed_dim,
-        opt_batch_size,
-        uq_batch_size,
-        loss_method,
-        uq_objectives,
-        nn_kwargs,
-        kern,
-        target_accuracy,
-        hyper_dict,
+    def test_classify(
+        self, nn_count, batch_size, loss_method, nn_kwargs, k_kwargs
     ):
-        train = balanced_subsample(self.embedded_40_train, 1000)
+        target_accuracy, k_kwargs = k_kwargs
+        train = balanced_subsample(self.embedded_40_train, 5000)
         test = balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
             train=train,
             test=test,
             target_acc=target_accuracy,
             nn_count=nn_count,
-            embed_dim=embed_dim,
+            batch_size=batch_size,
+            loss_method=loss_method,
+            nn_kwargs=nn_kwargs,
+            k_kwargs=k_kwargs,
+            verbose=False,
+        )
+
+    @parameterized.parameters(
+        (
+            (nn, obs, ubs, lm, uq, nn_kwargs, k_kwargs)
+            for nn in [30]
+            for obs in [500]
+            for ubs in [500]
+            for lm in ["log", "mse"]
+            for uq in [example_lambdas]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for k_kwargs in (
+                (
+                    0.92,
+                    {
+                        "kern": "matern",
+                        "metric": "l2",
+                        "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
+                        "length_scale": {"val": 1.5},
+                        "eps": {"val": 1e-3},
+                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                    },
+                ),
+                (
+                    0.9,
+                    {
+                        "kern": "rbf",
+                        "metric": "F2",
+                        "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                        "eps": {"val": 1e-3},
+                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                    },
+                ),
+            )
+        )
+    )
+    def test_classify_uq(
+        self,
+        nn_count,
+        opt_batch_size,
+        uq_batch_size,
+        loss_method,
+        uq_objectives,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        target_accuracy, k_kwargs = k_kwargs
+        train = balanced_subsample(self.embedded_40_train, 10000)
+        test = balanced_subsample(self.embedded_40_test, 1000)
+        self._do_classify_uq_test_chassis(
+            train=train,
+            test=test,
+            target_acc=target_accuracy,
+            nn_count=nn_count,
             opt_batch_size=opt_batch_size,
             uq_batch_size=uq_batch_size,
             loss_method=loss_method,
-            embed_method=None,
             uq_objectives=uq_objectives,
             nn_kwargs=nn_kwargs,
-            kern=kern,
-            hyper_dict=hyper_dict,
+            k_kwargs=k_kwargs,
+            verbose=False,
         )
 
 
@@ -409,77 +238,60 @@ class HeatonTest(RegressionAPITest):
 
     @parameterized.parameters(
         (
-            (
-                nn,
-                ob,
-                vm,
-                nn_kwargs,
-                k_ta_dict[0],
-                k_ta_dict[1],
-                k_ta_dict[2],
-            )
+            (nn, bs, vm, lm, nn_kwargs, k_kwargs)
             for nn in [30]
-            for ob in [500]
-            for vm in [None, "diagonal"]
-            for nn_kwargs in _basic_nn_kwarg_options
-            # for vm in [None]
-            # for nn_kwargs in _fast_nn_kwarg_options
-            for k_ta_dict in (
+            for bs in [500]
+            for vm in [None]
+            # for vm in [None, "diagonal"]
+            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for lm in ["mse"]
+            for k_kwargs in (
                 (
-                    "matern",
                     11.0,
                     {
-                        "nu": 0.42,
-                        "length_scale": 1.0,
-                        "eps": 0.001,
-                        "sigma_sq": np.array([1.0]),
+                        "kern": "matern",
+                        "metric": "l2",
+                        "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
+                        "length_scale": {"val": 1.5},
+                        "eps": {"val": 1e-3},
+                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
                     },
                 ),
-                (
-                    "rbf",
-                    11.0,
-                    {
-                        "length_scale": 1.5,
-                        "eps": 0.001,
-                        "sigma_sq": np.array([1.0]),
-                    },
-                ),
-                (
-                    "nngp",
-                    11.0,
-                    {
-                        "sigma_w_sq": 1.5,
-                        "sigma_b_sq": 1.0,
-                        "eps": 0.015,
-                        "sigma_sq": np.array([1.0]),
-                    },
-                ),
+                # (
+                #     11.0,
+                #     {
+                #         "kern": "rbf",
+                #         "metric": "F2",
+                #         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                #         "eps": {"val": 1e-3},
+                #         "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                #     },
+                # ),
             )
         )
     )
-    def test_regress_notrain(
+    def test_regress(
         self,
         nn_count,
         batch_size,
         variance_mode,
+        loss_method,
         nn_kwargs,
-        kern,
-        target_mse,
-        hyper_dict,
+        k_kwargs,
     ):
+        target_mse, k_kwargs = k_kwargs
+
         self._do_regress_test_chassis(
             train=self.train,
             test=self.test,
             target_mse=target_mse,
             nn_count=nn_count,
-            embed_dim=None,
             batch_size=batch_size,
-            loss_method=None,
+            loss_method=loss_method,
             variance_mode=variance_mode,
-            embed_method=None,
             nn_kwargs=nn_kwargs,
-            kern=kern,
-            hyper_dict=hyper_dict,
+            k_kwargs=k_kwargs,
+            verbose=True,
         )
 
 

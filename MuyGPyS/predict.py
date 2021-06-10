@@ -163,7 +163,6 @@ def regress_any(
     train,
     train_nbrs_lookup,
     train_targets,
-    nn_count,
     variance_mode=None,
 ):
     """
@@ -209,8 +208,8 @@ def regress_any(
 
     time_agree = perf_counter()
 
-    predictions = muygps.regress(
-        np.array([*range(test_count)]),
+    predictions = muygps.regress_from_indices(
+        np.arange(test_count),
         test_nn_indices,
         test,
         train,

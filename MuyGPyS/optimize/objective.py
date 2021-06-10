@@ -92,7 +92,7 @@ def loo_crossval(
         The function to be optimized.
     muygps : MuyGPyS.GP.MuyGPS
         The MuyGPS object.
-    optim_params : dict(MuyGPyS.gp.kernels.Hyperparameter),
+    optim_params : dict(str: MuyGPyS.gp.kernels.Hyperparameter),
                    shape = ``(opt_count,)''
         Dictionary of references of unfixed hyperparameters belonging to the
         MuyGPS object.
@@ -187,55 +187,3 @@ def old_loo_crossval(
     targets = train_targets[batch_indices, :]
 
     return objective_fn(predictions, targets)
-
-
-# def scipy_optimize(
-#     muygps,
-#     pairwise_dists,
-#     crosswise_dists,
-#     batch_nn_indices,
-#     batch_indices,
-#     train_targets,
-#     loss_method="mse",
-#     verbose=False,
-# ):
-#     # get the loss function
-#     loss_fn = get_loss_func(loss_method)
-
-#     # construct target tensors
-#     batch_nn_targets = train_targets[batch_nn_indices, :]
-#     batch_targets = train_targets[batch_indices, :]
-
-#     # get optimization parameters
-#     optim_params = muygps.get_optim_params()
-#     x0 = np.array([optim_params[p]() for p in optim_params])
-#     bounds = np.array([optim_params[p].get_bounds() for p in optim_params])
-#     if verbose is True:
-#         print(f"parameters to be optimized: {[p for p in optim_params]}")
-#         print(f"bounds: {bounds}")
-#         print(f"sampled x0: {x0}")
-
-#     # do optimization
-#     optres = opt.minimize(
-#         loo_crossval,
-#         x0,
-#         args=(
-#             loss_fn,
-#             muygps,
-#             optim_params,
-#             pairwise_dists,
-#             crosswise_dists,
-#             batch_nn_targets,
-#             batch_targets,
-#         ),
-#         method="L-BFGS-B",
-#         bounds=bounds,
-#     )
-#     if verbose is True:
-#         print(f"optimizer results: \n{optres}")
-
-#     # set final values
-#     for i, key in enumerate(optim_params):
-#         optim_params[key]._set_val(x0[i])
-
-#     return x0

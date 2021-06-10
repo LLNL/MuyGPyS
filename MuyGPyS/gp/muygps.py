@@ -65,6 +65,52 @@ class MuyGPS:
             _init_hyperparameter(1.0, "fixed", **ss) for ss in sigma_sq
         ]
 
+    def fixed(self):
+        """
+        Checks whether all kernel and model parameters are fixed.
+
+        This is a convenience utility to determine whether optimization is
+        required.
+
+        Returns
+        -------
+        bool
+            Returns ``True'' if all parameters are fixed, and false otherwise.
+        """
+        return self.fixed_nosigmasq() and self.fixed_sigmasq()
+
+    def fixed_nosigmasq(self):
+        """
+        Checks whether all kernel and model parameters are fixed, excluding
+        :math:`\\sigma^2`.
+
+        Returns
+        -------
+        bool
+            Returns ``True'' if all parameters are fixed, and false otherwise.
+        """
+        for p in self.kernel.hyperparameters:
+            if self.kernel.hyperparameters[p].get_bounds() != "fixed":
+                return False
+        if self.eps.get_bounds() != "fixed":
+            return False
+        return True
+
+    def fixed_sigmasq(self):
+        """
+        Checks whether all dimensions of :math:`\\sigma^2` are fixed.
+
+        Returns
+        -------
+        bool
+            Returns ``True'' if all :math:`\\sigma^2` dimensions are fixed, and
+            false otherwise.
+        """
+        for ss in self.sigma_sq:
+            if ss.get_bounds() != "fixed":
+                return False
+        return True
+
     def get_optim_params(self):
         """
         Return a dictionary of references to the unfixed kernel hyperparameters.

@@ -5,13 +5,10 @@
 
 import numpy as np
 
-from MuyGPyS.embed import apply_embedding
-from MuyGPyS.data.utils import normalize
-from MuyGPyS.optimize.batch import get_balanced_batch, sample_balanced_batch
-from MuyGPyS.optimize.objective import (
-    loo_crossval,
-    get_loss_func,
-)
+from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
+from MuyGPyS.gp.distance import crosswise_distances, pairwise_distances
+
+from MuyGPyS.optimize.batch import get_balanced_batch
 from MuyGPyS.predict import (
     classify_two_class_uq,
     classify_any,
@@ -20,8 +17,6 @@ from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.uq import train_two_class_interval
 from MuyGPyS.gp.muygps import MuyGPS
 
-from scipy import optimize as opt
-from scipy.sparse.linalg.eigen.arpack import eigsh as largest_eigsh
 from time import perf_counter
 
 example_lambdas = [
@@ -41,68 +36,176 @@ example_lambdas = [
 ]
 
 
-def do_classify(
-    train,
-    test,
+def make_classifier(
+    train_data,
+    train_labels,
     nn_count=30,
-    embed_dim=30,
-    opt_batch_size=200,
-    uq_batch_size=200,
-    kern="matern",
-    embed_method="pca",
+    batch_size=200,
     loss_method="log",
-    hyper_dict=None,
-    nn_kwargs=None,
-    optim_bounds=None,
-    uq_objectives=None,
-    do_normalize=False,
+    k_kwargs=dict(),
+    nn_kwargs=dict(),
     verbose=False,
 ):
     """
-    Performs classification using MuyGPS.
+    Convenience function for creating MuyGPyS functor and neighbor lookup data
+    structure.
+
+    Expected parameters include keyword argument dicts specifying kernel
+    parameters and nearest neighbor parameters. See the docstrings of the
+    appropriate functions for specifics.
 
     Parameters
     ----------
-    train : dict
-        A dict with keys "input" and "output". "input" maps to a matrix of row
-        observation vectors, e.g. flattened images. "output" maps to a matrix
-        listing the one-hot encodings of each observation's class.
-    test : dict
-        A dict with keys "input" and "output". "input" maps to a matrix of row
-        observation vectors, e.g. flattened images. "output" maps to a matrix
-        listing the one-hot encodings of each observation's class.
+    train_data : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        A matrix of row observation vectors.
+    train_labels = numpy.ndarray(float),
+                    shape = ``(train_count, response_count)''
+        A matrix of row label vectors for the training data.
     nn_count : int
         The number of nearest neighbors to employ.
-    embed_dim : int
-        The PCA dimension onto which data will be embedded.
-    opt_batch_size : int
-        The batch size for hyperparameter optimization. Unused if ``nu'' is
-        None.
-    uq_batch_size : int
-        The batch size for uncertainty quantification optimization. Unused if
-        ``uq_objectives'' is None.
-    kern : str
-        The kernel to use. Supports ``matern'', ``rbf'', and ``nngp''.
-    embed_method : str
-        The embedding method to use.
-        NOTE[bwp]: Currently supports only ``pca'' and None.
+    batch_size : int
+        The batch size for hyperparameter optimization.
     loss_method : str
-        The loss method to use in hyperparameter optimization. Ignored if
-        ``hyper_dict'' fully specifies the kernel in question.
-    hyper_dict : dict or None
-        If specified, use the given parameters for the kernel. If None, perform
-        hyperparamter optimization.
-    nn_kwargs : dict or None
-        If not None, use the given parameters for the nearest neighbor
-        algorithm specified by the "nn_method" key, which must be included if
-        the user wants to use a method other than the default exact algorithm.
-        Parameter names vary by method. See `MuyGPyS.neighbors.NN_Wrapper` for
-        the supported methods and their parameters. If None, exact nearest
-        neighbors with default settings will be used.
-    optim_bounds : dict or None
-        If specified, set the corresponding bounds (a 2-tuple) for each
-        specified hyperparameter. If None, use all default bounds for
-        hyperparameter optimization.
+        The loss method to use in hyperparameter optimization. Ignored if all of
+        the parameters specified by ``k_kwargs'' are fixed.
+        NOTE[bwp]: Currently supports only ``log'' (also known as
+        ``cross_entropy'') and ``mse'' for regression.
+    k_kwargs : dict
+        Parameters for the kernel, possibly including kernel type, distance
+        metric, epsilon and sigma hyperparameter specifications, and
+        specifications for kernel hyperparameters. If all of the hyperparameters
+        are fixed or are not given optimization bounds, no optimization will
+        occur.
+    nn_kwargs : dict
+        Parameters for the nearest neighbors wrapper. See
+        `MuyGPyS.neighbors.NN_Wrapper` for the supported methods and their
+        parameters.
+    verbose : Boolean
+        If ``True'', print summary statistics.
+
+    Returns
+    -------
+    muygps : MuyGPyS.gp.MuyGPS
+        A (possibly trained) MuyGPs object.
+    nbrs_lookup : MuyGPyS.neighbors.NN_Wrapper
+        A data structure supporting nearest neighbor queries into
+        ``train_data''.
+
+    Examples
+    --------
+    >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
+    >>> from MuyGPyS.examples.regress import make_regressor
+    >>> train = _make_gaussian_dict(10000, 100, 10, categorial=True)
+    >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+    >>> k_kwargs = {
+    ...         "kern": "rbf",
+    ...         "metric": "F2",
+    ...         "eps": {"val": 1e-5},
+    ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)},
+    ... }
+    >>> muygps, nbrs_lookup = make_classifier(
+    ...         train['input'],
+    ...         train['output'],
+    ...         nn_count=30,
+    ...         batch_size=200,
+    ...         loss_method="log",
+    ...         k_kwargs=k_kwargs,
+    ...         nn_kwargs=nn_kwargs,
+    ...         verbose=False,
+    ... )
+    """
+    time_start = perf_counter()
+
+    nbrs_lookup = NN_Wrapper(
+        train_data,
+        nn_count,
+        **nn_kwargs,
+    )
+    time_nn = perf_counter()
+
+    muygps = MuyGPS(**k_kwargs)
+    if muygps.fixed_nosigmasq() is False:
+        # collect batch
+        batch_indices, batch_nn_indices = get_balanced_batch(
+            nbrs_lookup,
+            np.argmax(train_labels, axis=1),
+            batch_size,
+        )
+        time_batch = perf_counter()
+
+        crosswise_dists = crosswise_distances(
+            train_data,
+            train_data,
+            batch_indices,
+            batch_nn_indices,
+            metric=muygps.kernel.metric,
+        )
+        pairwise_dists = pairwise_distances(
+            train_data, batch_nn_indices, metric=muygps.kernel.metric
+        )
+        time_tensor = perf_counter()
+
+        # maybe do something with these estimates?
+        estimates = scipy_optimize_from_tensors(
+            muygps,
+            batch_indices,
+            batch_nn_indices,
+            crosswise_dists,
+            pairwise_dists,
+            train_labels,
+            loss_method=loss_method,
+            verbose=verbose,
+        )
+        time_opt = perf_counter()
+
+        if verbose is True:
+            print(f"NN lookup creation time: {time_nn - time_start}s")
+            print(f"batch sampling time: {time_batch - time_nn}s")
+            print(f"tensor creation time: {time_tensor - time_batch}s")
+            print(f"hyper opt time: {time_opt - time_tensor}s")
+
+    return muygps, nbrs_lookup
+
+
+def do_classify(
+    test_data,
+    train_data,
+    train_labels,
+    nn_count=30,
+    batch_size=200,
+    loss_method="log",
+    k_kwargs=dict(),
+    nn_kwargs=dict(),
+    verbose=False,
+):
+    """
+    Convenience function for initializing a model and performing surrogate
+    classification.
+
+    Expected parameters include keyword argument dicts specifying kernel
+    parameters and nearest neighbor parameters. See the docstrings of the
+    appropriate functions for specifics.
+
+    Parameters
+    ----------
+    test_data : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+        A matrix of row observation vectors of the test data.
+    train_data : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        A matrix of row observation vectors of the train data.
+    train_labels = numpy.ndarray(float),
+                    shape = ``(train_count, response_count)''
+        A matrix of row label vectors for the training data.
+    train_data : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        A matrix of row observation vectors of the testing data.
+    nn_count : int
+        The number of nearest neighbors to employ.
+    batch_size : int
+        The batch size for hyperparameter optimization.
+    loss_method : str
+        The loss method to use in hyperparameter optimization. Ignored if all of
+        the parameters specified by ``k_kwargs'' are fixed.
+        NOTE[bwp]: Currently supports only ``log'' (also known as
+        ``cross_entropy'') and ``mse'' for regression.
     uq_objectives : list(Callable)
         List of functions taking four arguments: bit masks alpha and beta - the
         type 1 and type 2 error counts at each grid location, respectively - and
@@ -111,188 +214,239 @@ def do_classify(
         `MuyGPyS.examples.classify.example_lambdas` for examples. If None, do
         not perform uncertainty quantifification.
         NOTE[bwp]: Supports only 2-class classification at the moment.
-    do_normalize : Boolean
-        Flag indicating whether to normalize. Currently redundant, but might
-        want to keep this for now.
+    k_kwargs : dict
+        Parameters for the kernel, possibly including kernel type, distance
+        metric, epsilon and sigma hyperparameter specifications, and
+        specifications for kernel hyperparameters. If all of the hyperparameters
+        are fixed or are not given optimization bounds, no optimization will
+        occur.
+    nn_kwargs : dict
+        Parameters for the nearest neighbors wrapper. See
+        `MuyGPyS.neighbors.NN_Wrapper` for the supported methods and their
+        parameters.
     verbose : Boolean
         If ``True'', print summary statistics.
 
     Returns
     -------
-    predictions : numpy.ndarray(int), shape = ``(test_count,)''
-        The predicted labels associated with each test observation.
-    masks : numpy.ndarray(Boolean), shape = ``(objective_count, test_count)''
-        A list of index masks into the test set that indicates which test
-        elements are ambiguous based upon the confidence intervals derived from
-        each objective function.
+    muygps : MuyGPyS.gp.MuyGPS
+        A (possibly trained) MuyGPs object.
+    nbrs_lookup : MuyGPyS.neighbors.NN_Wrapper
+        A data structure supporting nearest neighbor queries into
+        ``train_data''.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
+    >>> from MuyGPyS.examples.regress import do_classify
+    >>> train, test  = _make_gaussian_dict(10000, 100, 100, 10, categorial=True)
+    >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+    >>> k_kwargs = {
+    ...         "kern": "rbf",
+    ...         "metric": "F2",
+    ...         "eps": {"val": 1e-5},
+    ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)},
+    ... }
+    >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
+    ...         test['input'],
+    ...         train['input'],
+    ...         train['output'],
+    ...         nn_count=30,
+    ...         batch_size=200,
+    ...         loss_method="log",
+    ...         k_kwargs=k_kwargs,
+    ...         nn_kwargs=nn_kwargs,
+    ...         verbose=False,
+    ... )
+    >>> predicted_labels = np.argmax(surrogate_predictions, axis=1)
+    >>> true_labels = np.argmax(test['output'], axis=1)
+    >>> acc = np.mean(predicted_labels == true_labels)
+    >>> print(f"obtained accuracy {acc}")
+    obtained accuracy: 0.973...
     """
-    train_count, num_class = train["output"].shape
-    test_count, _ = test["output"].shape
-
-    # Compute array of training labels for convenience
-    train_labels = np.argmax(train["output"], axis=1)
-    if uq_objectives is not None:
-        train_labels = 2 * train_labels - 1
-
-    time_start = perf_counter()
-
-    # Perform embedding
-    embedded_train, embedded_test = apply_embedding(
-        train["input"], test["input"], embed_dim, embed_method, do_normalize
+    muygps, nbrs_lookup = make_classifier(
+        train_data,
+        train_labels,
+        nn_count=nn_count,
+        batch_size=batch_size,
+        loss_method=loss_method,
+        k_kwargs=k_kwargs,
+        nn_kwargs=nn_kwargs,
+        verbose=verbose,
     )
-    time_embed = perf_counter()
-
-    # Construct NN lookup datastructure.
-    if nn_kwargs is None:
-        nn_kwargs = dict()
-    train_nbrs_lookup = NN_Wrapper(
-        embedded_train,
-        nn_count,
-        **nn_kwargs,
+    surrogate_predictions, pred_timing = classify_any(
+        muygps,
+        test_data,
+        train_data,
+        nbrs_lookup,
+        train_labels,
     )
-    time_nn = perf_counter()
-    time_batch = perf_counter()
+    if verbose is True:
+        print(f"prediction time breakdown:")
+        for k in pred_timing:
+            print(f"\t{k} time:{pred_timing[k]}s")
+    return muygps, nbrs_lookup, surrogate_predictions
 
-    # Make MuyGPS object
-    muygps = MuyGPS(kern=kern)
-    if hyper_dict is None:
-        hyper_dict = dict()
-    unset_params = muygps.set_params(**hyper_dict)
-    if "sigma_sq" in unset_params:
-        unset_params.remove("sigma_sq")
-    if optim_bounds is not None:
-        muygps.set_optim_bounds(**optim_bounds)
 
-    # Train hyperparameters by maximizing LOO predictions for batched
-    # observations if `nu` unspecified.
-    if len(unset_params) > 0:
-        # collect balanced batch
-        batch_indices, batch_nn_indices = get_balanced_batch(
-            train_nbrs_lookup,
-            train_labels,
-            opt_batch_size,
-        )
-        time_batch = perf_counter()
+def do_classify_uq(
+    test_data,
+    train_data,
+    train_labels,
+    nn_count=30,
+    opt_batch_size=200,
+    uq_batch_size=500,
+    loss_method="log",
+    uq_objectives=example_lambdas,
+    k_kwargs=dict(),
+    nn_kwargs=dict(),
+    verbose=False,
+):
+    """
+    Convenience function for initializing a model and performing surrogate
+    classification.
 
-        # set loss function
-        loss_fn = get_loss_func(loss_method)
+    Expected parameters include keyword argument dicts specifying kernel
+    parameters and nearest neighbor parameters. See the docstrings of the
+    appropriate functions for specifics.
 
-        # collect optimization settings
-        bounds = muygps.optim_bounds(unset_params)
-        x0 = np.array([np.random.uniform(low=b[0], high=b[1]) for b in bounds])
-        if verbose is True:
-            print(f"parameters to be optimized: {unset_params}")
-            print(f"bounds: {bounds}")
-            print(f"sampled x0: {x0}")
+    Parameters
+    ----------
+    test_data : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+        A matrix of row observation vectors of the test data.
+    train_data : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        A matrix of row observation vectors of the train data.
+    train_labels = numpy.ndarray(float),
+                    shape = ``(train_count, response_count)''
+        A matrix of row label vectors for the training data.
+    train_data : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        A matrix of row observation vectors of the testing data.
+    nn_count : int
+        The number of nearest neighbors to employ.
+    batch_size : int
+        The batch size for hyperparameter optimization.
+    loss_method : str
+        The loss method to use in hyperparameter optimization. Ignored if all of
+        the parameters specified by ``k_kwargs'' are fixed.
+        NOTE[bwp]: Currently supports only ``mse'' for regression.
+    k_kwargs : dict
+        Parameters for the kernel, possibly including kernel type, distance
+        metric, epsilon and sigma hyperparameter specifications, and
+        specifications for kernel hyperparameters. If all of the hyperparameters
+        are fixed or are not given optimization bounds, no optimization will
+        occur.
+    nn_kwargs : dict
+        Parameters for the nearest neighbors wrapper. See
+        `MuyGPyS.neighbors.NN_Wrapper` for the supported methods and their
+        parameters.
+    verbose : Boolean
+        If ``True'', print summary statistics.
 
-        # perform optimization
-        optres = opt.minimize(
-            loo_crossval,
-            x0,
-            args=(
-                loss_fn,
-                muygps,
-                unset_params,
-                batch_indices,
-                batch_nn_indices,
-                embedded_train,
-                train["output"],
-            ),
-            method="L-BFGS-B",
-            bounds=bounds,
-        )
+    Returns
+    -------
+    muygps : MuyGPyS.gp.MuyGPS
+        A (possibly trained) MuyGPs object.
+    nbrs_lookup : MuyGPyS.neighbors.NN_Wrapper
+        A data structure supporting nearest neighbor queries into
+        ``train_data''.
 
-        if verbose is True:
-            print(f"optimizer results: \n{optres}")
-        muygps.set_param_array(unset_params, optres.x)
-    time_hyperopt = perf_counter()
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
+    >>> from MuyGPyS.examples.regress import do_classify_uq, do_uq
+    >>> train, test  = _make_gaussian_dict(10000, 100, 100, 10, categorial=True)
+    >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+    >>> k_kwargs = {
+    ...         "kern": "rbf",
+    ...         "metric": "F2",
+    ...         "eps": {"val": 1e-5},
+    ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)},
+    ... }
+    >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
+    ...         test['input'],
+    ...         train['input'],
+    ...         train['output'],
+    ...         nn_count=30,
+    ...         batch_size=200,
+    ...         loss_method="log",
+    ...         k_kwargs=k_kwargs,
+    ...         nn_kwargs=nn_kwargs,
+    ...         verbose=False,
+    ... )
+    >>> accuracy, uq = do_uq(surrogate_predictions, test['output'], masks)
+    >>> print(f"obtained accuracy {accuracy}")
+    obtained accuracy: 0.973...
+    >>> print(f"obtained mask uq: \n{uq}")
+    obtained mask uq :
+        [[8.21000000e+02 8.53836784e-01 9.87144569e-01]
+        [8.59000000e+02 8.55646100e-01 9.87528717e-01]
+        [1.03500000e+03 8.66666667e-01 9.88845510e-01]
+        [1.03500000e+03 8.66666667e-01 9.88845510e-01]
+        [5.80000000e+01 6.72413793e-01 9.77972239e-01]]
+    """
+    muygps, nbrs_lookup = make_classifier(
+        train_data,
+        train_labels,
+        nn_count=nn_count,
+        batch_size=opt_batch_size,
+        loss_method=loss_method,
+        k_kwargs=k_kwargs,
+        nn_kwargs=nn_kwargs,
+        verbose=verbose,
+    )
 
-    # record timing
-    timing = {
-        "embed": time_embed - time_start,
-        "nn": time_nn - time_embed,
-        "batch": time_batch - time_nn,
-        "hyperopt": time_hyperopt - time_batch,
-    }
+    surrogate_predictions, variances, pred_timing = classify_two_class_uq(
+        muygps,
+        test_data,
+        train_data,
+        nbrs_lookup,
+        train_labels,
+    )
 
-    # Prediction on test data.
-    if uq_objectives is not None:
-        # Posterior inference on two class problem.
-        predictions, variances, pred_timing = classify_two_class_uq(
-            muygps,
-            embedded_test,
-            embedded_train,
-            train_nbrs_lookup,
-            train["output"],
-            nn_count,
-        )
-        min_label = np.min(train["output"][0, :])
-        max_label = np.max(train["output"][0, :])
-        if min_label == 0.0 and max_label == 1.0:
-            predicted_labels = np.argmax(predictions, axis=1)
-        elif min_label == -1.0 and max_label == 1.0:
-            predicted_labels = 2 * np.argmax(predictions, axis=1) - 1
-        else:
-            raise ("Unhandled label encoding min ({min_label}, {max_label})!")
-        mid_value = (min_label + max_label) / 2
-        time_pred = perf_counter()
+    min_label = np.min(train_labels[0, :])
+    max_label = np.max(train_labels[0, :])
+    # if min_label == 0.0 and max_label == 1.0:
+    #     predicted_labels = np.argmax(predictions, axis=1)
+    # elif min_label == -1.0 and max_label == 1.0:
+    #     predicted_labels = 2 * np.argmax(predictions, axis=1) - 1
+    # else:
+    #     raise ("Unhandled label encoding min ({min_label}, {max_label})!")
+    mid_value = (min_label + max_label) / 2
+    time_pred = perf_counter()
 
-        batch_indices, batch_nn_indices = get_balanced_batch(
-            train_nbrs_lookup,
-            train_labels,
-            uq_batch_size,
-        )
-        time_uq_batch = perf_counter()
+    one_hot_labels = 2 * np.argmax(train_labels, axis=1) - 1
 
-        # Training of confidence interval scaling using different objectives.
-        # NOTE[bwp]: Currently hard-coded, but will make objectives
-        # user-specifiable in the near future.
-        cutoffs = train_two_class_interval(
-            muygps,
-            batch_indices,
-            batch_nn_indices,
-            embedded_train,
-            train["output"],
-            train_labels,
-            uq_objectives,
-        )
+    batch_indices, batch_nn_indices = get_balanced_batch(
+        nbrs_lookup,
+        one_hot_labels,
+        uq_batch_size,
+    )
+    time_uq_batch = perf_counter()
 
-        # Compute index masks indicating the predictions that include `0` in the
-        # confidence interval for each of the training objectives.
-        masks = make_masks(predictions, cutoffs, variances, mid_value)
-        time_cutoff = perf_counter()
+    # Training of confidence interval scaling using different objectives.
+    cutoffs = train_two_class_interval(
+        muygps,
+        batch_indices,
+        batch_nn_indices,
+        train_data,
+        train_labels,
+        one_hot_labels,
+        uq_objectives,
+    )
 
-        # Profiling printouts if requested.
-        if verbose is True:
-            timing["pred"] = time_pred - time_hyperopt
-            timing["pred_full"] = (pred_timing,)
-            timing["uq_batch"] = time_uq_batch - time_pred
-            timing["cutoff"] = time_cutoff - time_uq_batch
+    # Compute index masks indicating the predictions that include `0` in the
+    # confidence interval for each of the training objectives.
+    masks = make_masks(surrogate_predictions, cutoffs, variances, mid_value)
+    time_cutoff = perf_counter()
 
-            print(f"muygps params : {muygps.params}")
-            print(f"cutoffs : {cutoffs}")
-            print(f"timing : {timing}")
-        return predictions, masks
-    else:
-        # Posterior mean surrogate classification with no UQ.
-        predictions, pred_timing = classify_any(
-            muygps,
-            embedded_test,
-            embedded_train,
-            train_nbrs_lookup,
-            train["output"],
-            nn_count,
-        )
-        time_pred = perf_counter()
-
-        # Profiling printouts if requested.
-        if verbose is True:
-            timing["pred"] = time_pred - time_hyperopt
-            timing["pred_full"] = (pred_timing,)
-
-            print(f"muygps params : {muygps.params}")
-            print(f"timing : {timing}")
-        return predictions
+    if verbose is True:
+        print(f"uq batching time: {time_cutoff - time_pred}")
+        print(f"cutoff time: {time_cutoff - time_uq_batch}s")
+        print(f"prediction time breakdown:")
+        for k in pred_timing:
+            print(f"\t{k} time:{pred_timing[k]}s")
+    return muygps, nbrs_lookup, surrogate_predictions, masks
 
 
 def make_masks(predictions, cutoffs, variances, mid_value):
@@ -331,7 +485,7 @@ def make_masks(predictions, cutoffs, variances, mid_value):
     )
 
 
-def do_uq(surrogate_predictions, test_output, masks):
+def do_uq(surrogate_predictions, test_labels, masks):
     """
     Convenience function performing uncertainty quantification given predicted
     labels and ground truth for a given set of confidence interval scales.
@@ -341,8 +495,8 @@ def do_uq(surrogate_predictions, test_output, masks):
     surrogate_predictions : np.ndarray(float),
                             shape = ``(test_count, class_count)''
         The surrogate predictions, based e.g. on an invocation of
-        ``do_classify''.
-    test_output : np.ndarray(float), shape = ``(test_count, class_count)''
+        ``do_classify_uq''.
+    test_labels : np.ndarray(float), shape = ``(test_count, class_count)''
         A matrix listing the one-hot encodings of each observation's class.
     masks : np.ndarray(Boolean), shape = ``(objective_count, test_count)''
         A number of index masks indexing into the training set. Each ``True''
@@ -360,7 +514,7 @@ def do_uq(surrogate_predictions, test_output, masks):
         accuracy of the unambiguous samples.
     """
     correct = np.argmax(surrogate_predictions, axis=1) == np.argmax(
-        test_output, axis=1
+        test_labels, axis=1
     )
     uq = np.array(
         [

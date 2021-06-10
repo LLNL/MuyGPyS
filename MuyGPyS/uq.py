@@ -45,10 +45,6 @@ def train_two_class_interval(
         Returns the confidence interval scale parameter that minimizes each
         considered objective function.
     """
-    batch_count = batch_nn_indices.shape[0]
-    train_count = train_labels.shape[0]
-    nn_count = batch_nn_indices.shape[1]
-
     targets = train_labels[batch_indices]
     mean, variance = muygps.regress_from_indices(
         batch_indices,
