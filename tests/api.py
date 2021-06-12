@@ -242,6 +242,8 @@ class HeatonTest(RegressionAPITest):
             for nn in [30]
             for bs in [500]
             # for vm in [None]
+            # for vm in ["diagonal"]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for vm in [None, "diagonal"]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
@@ -254,7 +256,7 @@ class HeatonTest(RegressionAPITest):
                         "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                        # "sigma_sq": "learn",
                     },
                 ),
                 (

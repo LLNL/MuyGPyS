@@ -299,7 +299,8 @@ obtains mse: 2.345136495565052
 
 If one requires the (individual, independent) posterior variances for each of the predictions, one can pass `variance_mode="diagonal"`.
 This mode assumes that each output dimension uses the same model, and so will output an additional vector `variance` with a scalar posterior variance associated with each test point.
-The API also returns a (possibly trained) `MuyGPyS.gp.MuyGPS` instance, whose `sigma_sq` member reports a multiplicative scaling parameter on the variance of each dimension.
+The API also returns a (possibly trained) `MuyGPyS.gp.MuyGPS` instance, whose `sigma_sq` member reports an array of multiplicative scaling parameters associated with the variance of each dimension.
+In order to tune `sigma-sq` using the `do_regress` API, pass `k_kwargs["sigma_sq"] = "learn"`.
 Obtaining the tuned posterior variance implies multiplying the returned variance by the scaling parameter along each dimension.
 
 
@@ -316,6 +317,7 @@ Regress on Heaton data while estimating diagonal variance
 ...         "eps": {"val": 1e-5},
 ...         "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
 ...         "length_scale": {"val": 7.2},
+...	    "sigma_sq": "learn",
 ... }
 >>> muygps, nbrs_lookup, predictions, variance = do_regress(
 ...         test['input'],

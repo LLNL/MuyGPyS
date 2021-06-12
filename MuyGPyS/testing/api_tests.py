@@ -360,7 +360,6 @@ class RegressionAPITest(parameterized.TestCase):
         k_kwargs,
         verbose=False,
     ):
-
         ret = do_regress(
             test["input"],
             train["input"],
