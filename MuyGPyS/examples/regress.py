@@ -278,8 +278,12 @@ def do_regress(
         train_targets,
         variance_mode=variance_mode,
     )
+
     if verbose is True:
         print(f"prediction time breakdown:")
         for k in pred_timing:
             print(f"\t{k} time:{pred_timing[k]}s")
+    if variance_mode is not None:
+        predictions, variance = predictions
+        return muygps, nbrs_lookup, predictions, variance
     return muygps, nbrs_lookup, predictions

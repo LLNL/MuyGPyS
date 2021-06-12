@@ -241,9 +241,9 @@ class HeatonTest(RegressionAPITest):
             (nn, bs, vm, lm, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for vm in [None]
-            # for vm in [None, "diagonal"]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for vm in [None]
+            for vm in [None, "diagonal"]
+            for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
             for k_kwargs in (
                 (
@@ -257,16 +257,16 @@ class HeatonTest(RegressionAPITest):
                         "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
                     },
                 ),
-                # (
-                #     11.0,
-                #     {
-                #         "kern": "rbf",
-                #         "metric": "F2",
-                #         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
-                #         "eps": {"val": 1e-3},
-                #         "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
-                #     },
-                # ),
+                (
+                    11.0,
+                    {
+                        "kern": "rbf",
+                        "metric": "F2",
+                        "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                        "eps": {"val": 1e-3},
+                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                    },
+                ),
             )
         )
     )
@@ -291,7 +291,7 @@ class HeatonTest(RegressionAPITest):
             variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
-            verbose=True,
+            verbose=False,
         )
 
 

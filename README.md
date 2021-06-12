@@ -299,7 +299,7 @@ obtains mse: 2.345136495565052
 
 If one requires the (individual, independent) posterior variances for each of the predictions, one can pass `variance_mode="diagonal"`.
 This mode assumes that each output dimension uses the same model, and so will output an additional vector `variance` with a scalar posterior variance associated with each test point.
-The API also returns `sigma_sq`, which reports a multiplicative scaling parameter on the variance of each dimension.
+The API also returns a (possibly trained) `MuyGPyS.gp.MuyGPS` instance, whose `sigma_sq` member reports a multiplicative scaling parameter on the variance of each dimension.
 Obtaining the tuned posterior variance implies multiplying the returned variance by the scaling parameter along each dimension.
 
 

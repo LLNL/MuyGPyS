@@ -361,7 +361,7 @@ class RegressionAPITest(parameterized.TestCase):
         verbose=False,
     ):
 
-        muygps, _, predictions = do_regress(
+        ret = do_regress(
             test["input"],
             train["input"],
             train["output"],
@@ -374,10 +374,12 @@ class RegressionAPITest(parameterized.TestCase):
             verbose=verbose,
         )
         if variance_mode is None:
+            muygps, _, predictions = ret
             variance = None
             sigma_sq = None
         elif variance_mode == "diagonal":
-            predictions, variance = predictions
+            muygps, _, predictions, variance = ret
+            # predictions, variance = predictions
             sigma_sq = np.array([ss() for ss in muygps.sigma_sq])
         else:
             raise ValueError(f"Variance mode {variance_mode} is not supported.")
