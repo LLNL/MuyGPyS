@@ -101,9 +101,12 @@ If `"bounds"` is set, `"val"` can also take the arguments `"sample"` and `"log_s
 If `"bounds"` is set to `"fixed"`, the hyperparameter will remain fixed during any optimization.
 This is the default behavior for all hyperparameters if `"bounds"` is unset by the user.
 
-Hyperparameters such as `eps`, `sigma_sq`, or in the case of the Matern kernel `nu` and  `length_scale` can be set at initialization or by invoking the `MuyGPS.kernel.set_params` member function.
+One sets yyperparameters such as `eps`, `sigma_sq`, as well as kernel-specific hyperparameters, e.g. `nu` and  `length_scale` for the Matern kernel, at initialization as above.
+Alternately, one can reset parameters after initialization by invoking the `MuyGPyS.gp.muygps.MuyGPS.set_eps`,`MuyGPyS.gp.muygps.MuyGPS.set_sigma_sq`, or `MuyGPyS.gp.kernel.KernelFn.set_params` member functions.
 ```
->>> unset_params = muygps.kernel.set_params(
+>>> muygps.eps(val= 1.4, bounds=(1e-2, 1e-2))
+>>> muygps.set_params([{"val": 1.0, "bounds": "fixed}])
+>>> muygps.kernel.set_params(
 ...         length_scale={"val": 1.4, "bounds": (1e-2, 1e-2)}
 ... )
 ```
@@ -179,6 +182,65 @@ If you do not need to keep the distance tensors around for reference, you can us
 ...         loss_method="mse",
 ...         verbose=False,
 ... )
+```
+
+
+### One-line model creation
+
+
+The library also provides one-line APIs for creating MuyGPs models intended for regression and classification.
+The functions are `MuyGPyS.examples.regress.make_regressor` and `MuyGPyS.examples.classify.make_classifier`, respectively.
+These functions provide convenient mechanisms for specifying and optimizing models if you have no need to later reference their intermediate data structures (such as the training batches or their distance tensors).
+They return only the trained `MuyGPyS.gp.muygps.MuyGPS` model and the `MuyGPyS.neighbors.NN_Wrapper` neighbors lookup data structure.
+
+An example regressor.
+In order to automatically train `sigma_sq`, set `k_kwargs["sigma_sq"] = "learn"`. 
+```
+>>> from MuyGPyS.examples.regress import make_regressor
+>>> train, test = load_regression_dataset()  # hypothetical data load
+>>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+>>> k_kwargs = {
+...         "kern": "rbf",
+...         "metric": "F2",
+...         "eps": {"val": 1e-5},
+...         "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
+...         "length_scale": {"val": 7.2},
+...         "sigma_sq": "learn",
+... }
+>>> muygps, nbrs_lookup = make_regressor(
+...         train["input"],
+...         train["output"],
+...         nn_count=40,
+...         batch_size=500,
+...         loss_method="mse",
+...         k_kwargs=k_kwargs,
+...         nn_kwargs=nn_kwargs,
+...         verbose=False,
+... )    
+```
+
+An example surrogate classifier.
+```
+>>> from MuyGPyS.examples.classify import make_classifier
+>>> train, test = load_classification_dataset()  # hypothetical data load
+>>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+>>> k_kwargs = {
+...         "kern": "rbf",
+...         "metric": "F2",
+...         "eps": {"val": 1e-5},
+...         "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
+...         "length_scale": {"val": 7.2},
+... }
+>>> muygps, nbrs_lookup = make_classifier(
+...         train["input"],
+...         train["output"],
+...         nn_count=40,
+...         batch_size=500,
+...         loss_method="log",
+...         k_kwargs=k_kwargs,
+...         nn_kwargs=nn_kwargs,
+...         verbose=False,
+... )    
 ```
 
 
