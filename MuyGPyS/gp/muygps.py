@@ -65,6 +65,36 @@ class MuyGPS:
             _init_hyperparameter(1.0, "fixed", **ss) for ss in sigma_sq
         ]
 
+    def set_eps(self, **eps):
+        """
+        Reset :math:`\\varepsilon` value or bounds.
+
+        Uses existing value and bounds as defaults.
+
+        Parameters
+        ----------
+        eps : dict
+            A hyperparameter dict.
+        """
+        self.eps = _init_hyperparameter(
+            self.eps(), self.eps.get_bounds(), **eps
+        )
+
+    def set_sigma_sq(self, sigma_sq):
+        """
+        Reset :math:`\\sigma^2` values or bounds.
+
+        Completely resets parameters, as :math:`\\sigma^2` could have changed.
+
+        Parameters
+        ----------
+        sigma_sq : Iterable(dicts)
+            An iterable container of hyperparameter dicts.
+        """
+        self.sigma_sq = [
+            _init_hyperparameter(1.0, "fixed", *ss) for ss in sigma_sq
+        ]
+
     def fixed(self):
         """
         Checks whether all kernel and model parameters are fixed.
