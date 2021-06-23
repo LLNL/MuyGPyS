@@ -47,14 +47,7 @@ class GPInitTest(parameterized.TestCase):
             ),
         )
         for e in (({"val": 1e-5},))
-        for ss in (
-            (
-                [
-                    {"val": 1.0},
-                    {"val": 0.98},
-                ],
-            )
-        )
+        for ss in ({"val": [1.0, 0.98]}, {"val": 1.0})
     )
     def test_bounds_defaults_init(self, k_kwargs, eps, sigma_sq):
         kern, kwargs = k_kwargs
@@ -70,9 +63,11 @@ class GPInitTest(parameterized.TestCase):
             )
         self.assertEqual(eps["val"], muygps.eps())
         self.assertEqual("fixed", muygps.eps.get_bounds())
-        for i, ss in enumerate(sigma_sq):
-            self.assertEqual(ss["val"], muygps.sigma_sq[i]())
-            self.assertEqual("fixed", muygps.sigma_sq[i].get_bounds())
+        if np.isscalar(sigma_sq["val"]):
+            self.assertEqual(sigma_sq["val"], muygps.sigma_sq())
+        else:
+            self.assertSequenceAlmostEqual(sigma_sq["val"], muygps.sigma_sq())
+        self.assertEqual("fixed", muygps.sigma_sq.get_bounds())
 
     @parameterized.parameters(
         (k_kwargs, e, ss)
@@ -126,20 +121,13 @@ class GPInitTest(parameterized.TestCase):
         )
         for ss in (
             (
-                [
-                    {"val": 1.0, "bounds": (1e-8, 2.0)},
-                    {"val": 0.98, "bounds": (1e-7, 1.5)},
-                ],
-                [
-                    {"val": 1.0, "bounds": "fixed"},
-                    {"val": 0.98, "bounds": "fixed"},
-                ],
+                {"val": [1.0, 0.98], "bounds": (1e-8, 2.0)},
+                {"val": [1.0, 0.98], "bounds": "fixed"},
             )
         )
     )
     def test_full_init(self, k_kwargs, eps, sigma_sq):
         kern, kwargs = k_kwargs
-        # print(f"gets here: {k_kwargs}")
         muygps = MuyGPS(kern=kern, eps=eps, sigma_sq=sigma_sq, **kwargs)
         for param in kwargs:
             self.assertEqual(
@@ -152,9 +140,11 @@ class GPInitTest(parameterized.TestCase):
             )
         self.assertEqual(eps["val"], muygps.eps())
         self.assertEqual(eps["bounds"], muygps.eps.get_bounds())
-        for i, ss in enumerate(sigma_sq):
-            self.assertEqual(ss["val"], muygps.sigma_sq[i]())
-            self.assertEqual(ss["bounds"], muygps.sigma_sq[i].get_bounds())
+        if np.isscalar(sigma_sq["val"]):
+            self.assertEqual(sigma_sq["val"], muygps.sigma_sq())
+        else:
+            self.assertSequenceAlmostEqual(sigma_sq["val"], muygps.sigma_sq())
+        self.assertEqual(sigma_sq["bounds"], muygps.sigma_sq.get_bounds())
 
     @parameterized.parameters(
         (k_kwargs, e, ss)
@@ -188,10 +178,8 @@ class GPInitTest(parameterized.TestCase):
         )
         for ss in (
             (
-                [
-                    {"val": 2.1, "bounds": (1e-8, 2.0)},
-                    {"val": 1e-8, "bounds": (1e-7, 1.5)},
-                ],
+                {"val": 2.1, "bounds": (1e-8, 2.0)},
+                {"val": 1e-8, "bounds": (1e-7, 1.5)},
             )
         )
     )
@@ -258,14 +246,8 @@ class GPInitTest(parameterized.TestCase):
         )
         for ss in (
             (
-                [
-                    {"val": "sample", "bounds": (1e-8, 2.0)},
-                    {"val": "sample", "bounds": (1e-7, 1.5)},
-                ],
-                [
-                    {"val": "log_sample", "bounds": (1e-8, 2.0)},
-                    {"val": "log_sample", "bounds": (1e-7, 1.5)},
-                ],
+                {"val": "sample", "bounds": (1e-8, 2.0)},
+                {"val": "log_sample", "bounds": (1e-7, 1.5)},
             )
         )
     )
@@ -279,8 +261,7 @@ class GPInitTest(parameterized.TestCase):
                     muygps.kernel.hyperparameters[param],
                 )
             self._check_in_bounds(eps["bounds"], muygps.eps)
-            for i, ss in enumerate(sigma_sq):
-                self._check_in_bounds(ss["bounds"], muygps.sigma_sq[i])
+            self._check_in_bounds(sigma_sq["bounds"], muygps.sigma_sq)
 
     def _check_in_bounds(self, given_bounds, param):
         bounds = param.get_bounds()
@@ -544,7 +525,7 @@ class GPSigmaSqTest(parameterized.TestCase):
         nn_kwargs,
         k_kwargs,
     ):
-        sigma_sq = [{"val": 1e0}] * response_count
+        sigma_sq = {"val": [1e0] * response_count}
         muygps = MuyGPS(sigma_sq=sigma_sq, **k_kwargs)
 
         # prepare data
@@ -561,13 +542,20 @@ class GPSigmaSqTest(parameterized.TestCase):
         K = muygps.kernel(F2_dists)
         muygps.sigma_sq_optim(K, nn_indices, data["output"])
 
-        self.assertEqual(len(muygps.sigma_sq), response_count)
-        for i in range(response_count):
+        if response_count > 1:
+            self.assertEqual(len(muygps.sigma_sq()), response_count)
+            for i in range(response_count):
+                sigmas = muygps._get_sigma_sq_series(
+                    K, nn_indices, data["output"][:, i]
+                )
+                self.assertEqual(sigmas.shape, (data_count,))
+                self.assertAlmostEqual(muygps.sigma_sq()[i], np.mean(sigmas), 5)
+        else:
             sigmas = muygps._get_sigma_sq_series(
-                K, nn_indices, data["output"][:, i]
+                K, nn_indices, data["output"][:, 0]
             )
             self.assertEqual(sigmas.shape, (data_count,))
-            self.assertAlmostEqual(muygps.sigma_sq[i](), np.mean(sigmas), 5)
+            self.assertAlmostEqual(muygps.sigma_sq(), np.mean(sigmas), 5)
 
 
 class LegacyConsistencyTest(parameterized.TestCase):

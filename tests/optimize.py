@@ -371,7 +371,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
 
             # Find MuyGPyS optim
             muygps.sigma_sq_optim(K, batch_nn_indices, sim_train["output"])
-            estimate = muygps.sigma_sq[0]()
+            estimate = muygps.sigma_sq()
 
             mse += (estimate - target) ** 2
         mse /= its

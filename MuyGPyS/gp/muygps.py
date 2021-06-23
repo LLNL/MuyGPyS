@@ -55,15 +55,13 @@ class MuyGPS:
         self,
         kern="matern",
         eps={"val": 1e-5},
-        sigma_sq=[{"val": 1e0}],
+        sigma_sq={"val": 1e0},
         **kwargs,
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
-        self.sigma_sq = [
-            _init_hyperparameter(1.0, "fixed", **ss) for ss in sigma_sq
-        ]
+        self.sigma_sq = _init_hyperparameter(1.0, "fixed", **sigma_sq)
 
     def set_eps(self, **eps):
         """
@@ -80,7 +78,7 @@ class MuyGPS:
             self.eps(), self.eps.get_bounds(), **eps
         )
 
-    def set_sigma_sq(self, sigma_sq):
+    def set_sigma_sq(self, **sigma_sq):
         """
         Reset :math:`\\sigma^2` values or bounds.
 
@@ -91,9 +89,7 @@ class MuyGPS:
         sigma_sq : Iterable(dicts)
             An iterable container of hyperparameter dicts.
         """
-        self.sigma_sq = [
-            _init_hyperparameter(1.0, "fixed", *ss) for ss in sigma_sq
-        ]
+        self.sigma_sq = _init_hyperparameter(1.0, "fixed", **sigma_sq)
 
     def fixed(self):
         """
@@ -136,10 +132,7 @@ class MuyGPS:
             Returns ``True'' if all :math:`\\sigma^2` dimensions are fixed, and
             false otherwise.
         """
-        for ss in self.sigma_sq:
-            if ss.get_bounds() != "fixed":
-                return False
-        return True
+        return self.sigma_sq.get_bounds() == "fixed"
 
     def get_optim_params(self):
         """
@@ -364,11 +357,13 @@ class MuyGPS:
         batch_size, nn_count = nn_indices.shape
         _, response_count = targets.shape
 
+        sigma_sq = np.zeros((response_count,))
         for i in range(response_count):
-            self.sigma_sq[i]._set_val(
-                sum(self._get_sigma_sq(K, targets[:, i], nn_indices))
-                / (nn_count * batch_size)
-            )
+            sigma_sq[i] = sum(
+                self._get_sigma_sq(K, targets[:, i], nn_indices)
+            ) / (nn_count * batch_size)
+
+        self.sigma_sq._set_val(sigma_sq)
 
     def _get_sigma_sq_series(
         self,

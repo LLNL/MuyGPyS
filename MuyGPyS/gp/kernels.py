@@ -33,7 +33,7 @@ def _get_kernel(kern, **kwargs):
     elif kern == "nngp":
         return NNGP(**kwargs)
     else:
-        raise ValueError(f"Kernel type {self.kern} is not supported!")
+        raise ValueError(f"Kernel type {kern} is not supported!")
 
 
 class Hyperparameter:
@@ -94,28 +94,22 @@ class Hyperparameter:
         val : numeric or str
             A valid value or ``sample'' or ``log_sample''.
         """
-        if np.isscalar(val) is not True:
-            raise ValueError(
-                f"Nonscalar {val} of type {type(val)} is not a supported "
-                f"hyperparameter type."
-            )
+        if not isinstance(val, str):
+            val = np.squeeze(val).astype(float)
         if self._bounds == "fixed":
-            if val == "sample" or val == "log_sample":
+            if np.isscalar(val) and (val == "sample" or val == "log_sample"):
                 raise ValueError(
                     f"Must provide optimization bounds in order to sample a "
                     f"hyperparameter value."
                 )
-            if np.issubdtype(type(val), np.number) is not True:
-                raise ValueError(
-                    f"Unrecognized non-numeric type {type(val)} as "
-                    f"hyperparamter value {val}."
-                )
         else:
-            if val == "sample":
+            # NOTE[bwp] Do we want to support the sampling of vector-valued
+            # hyperparameters?
+            if np.isscalar(val) and val == "sample":
                 val = np.random.uniform(
                     low=self._bounds[0], high=self._bounds[1]
                 )
-            elif val == "log_sample":
+            elif np.isscalar(val) and val == "log_sample":
                 val = np.exp(
                     np.random.uniform(
                         low=np.log(self._bounds[0]),
@@ -123,17 +117,18 @@ class Hyperparameter:
                     )
                 )
             else:
-                if np.issubdtype(type(val), np.number) is not True:
-                    raise ValueError(
-                        f"Unrecognized non-numeric type {type(val)} as "
-                        f"hyperparamter value {val}."
-                    )
-                if val < self._bounds[0]:
+                any_below = np.any(
+                    np.choose(val < self._bounds[0], [False, True])
+                )
+                any_above = np.any(
+                    np.choose(val > self._bounds[1], [False, True])
+                )
+                if any_below == True:
                     raise ValueError(
                         f"Hyperparameter value {val} is lesser than the "
                         f"optimization lower bound {self._bounds[0]}"
                     )
-                if val > self._bounds[1]:
+                if any_above == True:
                     raise ValueError(
                         f"Hyperparameter value {val} is greater than the "
                         f"optimization upper bound {self._bounds[1]}"
@@ -456,7 +451,7 @@ class NNGP(KernelFn):
         # print(X)
         K = self.sigma_w_sq() * X + self.sigma_b_sq()
         # print(K)
-        for _ in range(self.L()):
+        for _ in range(int(self.L())):
             Kcorr = cov2cor(K)
             # Kcorr[Kcorr > 1.0] = 1.0
             theta = np.arccos(Kcorr)

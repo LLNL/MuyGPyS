@@ -346,7 +346,8 @@ class RegressionAPITest(parameterized.TestCase):
         if variance is not None:
             test_count, response_count = test["output"].shape
             self.assertEqual(variance.shape, (test_count,))
-            self.assertEqual(sigma_sq.shape, (response_count,))
+            if response_count > 1:
+                self.assertEqual(sigma_sq.shape, (response_count,))
 
     def _do_regress(
         self,
@@ -379,7 +380,9 @@ class RegressionAPITest(parameterized.TestCase):
         elif variance_mode == "diagonal":
             muygps, _, predictions, variance = ret
             # predictions, variance = predictions
-            sigma_sq = np.array([ss() for ss in muygps.sigma_sq])
+            sigma_sq = (
+                muygps.sigma_sq()
+            )  # np.array([ss() for ss in muygps.sigma_sq])
         else:
             raise ValueError(f"Variance mode {variance_mode} is not supported.")
         mse = mse_fn(predictions, test["output"])

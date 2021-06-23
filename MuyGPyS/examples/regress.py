@@ -115,14 +115,13 @@ def make_regressor(
     time_nn = perf_counter()
 
     skip_sigma = True
-    if "sigma_sq" not in k_kwargs:
-        # if sigma_sq unspecified, detect correct dimension.
-        k_kwargs["sigma_sq"] = [{"val": 1.0} for _ in range(response_count)]
-    if k_kwargs.get("sigma_sq") == "learn":
-        # If the user wants to learn sigma_sq, detect correct dimension and do
-        # so
-        k_kwargs["sigma_sq"] = [{"val": 1.0} for _ in range(response_count)]
-        skip_sigma = False
+    if k_kwargs.get("sigma_sq", "learn") == "learn":
+        if k_kwargs.get("sigma_sq") == "learn":
+            skip_sigma = False
+        if response_count == 1:
+            k_kwargs["sigma_sq"] = {"val": 1.0}
+        else:
+            k_kwargs["sigma_sq"] = {"val": [1.0] * response_count}
 
     # create MuyGPs object
     muygps = MuyGPS(**k_kwargs)
@@ -168,10 +167,7 @@ def make_regressor(
             K = muygps.kernel(pairwise_dists)
             muygps.sigma_sq_optim(K, batch_nn_indices, train_targets)
             if verbose is True:
-                print(
-                    f"Optimized sigma_sq values "
-                    f"{[ss() for ss in muygps.sigma_sq]}"
-                )
+                print(f"Optimized sigma_sq values " f"{muygps.sigma_sq()}")
         time_sopt = perf_counter()
 
         if verbose is True:

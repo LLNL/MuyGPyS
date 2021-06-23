@@ -67,7 +67,7 @@ class MNISTTest(ClassifyAPITest):
                         "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
                 (
@@ -77,7 +77,7 @@ class MNISTTest(ClassifyAPITest):
                         "metric": "F2",
                         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
             )
@@ -133,7 +133,7 @@ class StargalTest(ClassifyAPITest):
                         "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
                 (
@@ -143,7 +143,7 @@ class StargalTest(ClassifyAPITest):
                         "metric": "F2",
                         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
             )
@@ -185,7 +185,7 @@ class StargalTest(ClassifyAPITest):
                         "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
                 (
@@ -195,7 +195,7 @@ class StargalTest(ClassifyAPITest):
                         "metric": "F2",
                         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
             )
@@ -256,7 +256,7 @@ class HeatonTest(RegressionAPITest):
                         "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
                         "eps": {"val": 1e-3},
-                        # "sigma_sq": "learn",
+                        "sigma_sq": "learn",
                     },
                 ),
                 (
@@ -266,7 +266,7 @@ class HeatonTest(RegressionAPITest):
                         "metric": "F2",
                         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": [{"val": 1.0, "bounds": "fixed"}],
+                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
             )

@@ -395,7 +395,7 @@ Regress on Heaton data while estimating diagonal variance
 ... )
 >>> print(f"mse : {mse_fn(predictions, test["output"])}")
 obtains mse: 2.345136495565052
->>> print(f"diagonal posterior variance: {variance * muygps.sigma_sq[0]()}")
+>>> print(f"diagonal posterior variance: {variance * muygps.sigma_sq()}")
 diagonal posterior variance: [0.52199482 0.45934382 0.81381388 ... 0.64982631 0.45958342 0.68602048]
 ```
 
