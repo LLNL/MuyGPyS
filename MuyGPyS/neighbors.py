@@ -60,11 +60,13 @@ class NN_Wrapper:
                     "metric",
                     "p",
                     "metric_params",
+                    "n_jobs",
                 }
             }
 
             exact_kwargs["n_neighbors"] = nn_count + 1
-            exact_kwargs["n_jobs"] = -1
+            exact_kwargs["n_jobs"] = exact_kwargs.get("n_jobs", -1)
+            print(exact_kwargs["n_jobs"])
             self.nbrs = NearestNeighbors(**exact_kwargs).fit(self.train)
         elif self.nn_method == "hnsw":
             import hnswlib
