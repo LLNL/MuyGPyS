@@ -80,6 +80,15 @@ test_predict:
   script:
     - srun -N1 -ppdebug -A madstare python tests/predict.py
 
+test_multivariate:
+  extends: .template_run_rules
+  extends: .template_env_load
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script python tests/multivariate.py
+
 test_api_mnist:
   extends: .template_run_rules
   extends: .template_env_load
