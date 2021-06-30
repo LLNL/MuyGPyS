@@ -101,15 +101,7 @@ If `"bounds"` is set, `"val"` can also take the arguments `"sample"` and `"log_s
 If `"bounds"` is set to `"fixed"`, the hyperparameter will remain fixed during any optimization.
 This is the default behavior for all hyperparameters if `"bounds"` is unset by the user.
 
-One sets yyperparameters such as `eps`, `sigma_sq`, as well as kernel-specific hyperparameters, e.g. `nu` and  `length_scale` for the Matern kernel, at initialization as above.
-Alternately, one can reset parameters after initialization by invoking the `MuyGPyS.gp.muygps.MuyGPS.set_eps`,`MuyGPyS.gp.muygps.MuyGPS.set_sigma_sq`, or `MuyGPyS.gp.kernel.KernelFn.set_params` member functions.
-```
->>> muygps.eps(val= 1.4, bounds=(1e-2, 1e-2))
->>> muygps.set_params([{"val": 1.0, "bounds": "fixed}])
->>> muygps.kernel.set_params(
-...         length_scale={"val": 1.4, "bounds": (1e-2, 1e-2)}
-... )
-```
+One sets hyperparameters such as `eps`, `sigma_sq`, as well as kernel-specific hyperparameters, e.g. `nu` and  `length_scale` for the Matern kernel, at initialization as above.
 
 MuyGPyS depends upon linear operations on specially-constructed tensors in order to efficiently estimate GP realizations.
 Constructing these tensors depends upon the nearest neighbor index matrices that we described above.
@@ -238,10 +230,82 @@ An example surrogate classifier.
 ...         batch_size=500,
 ...         loss_method="log",
 ...         k_kwargs=k_kwargs,
+...         nn_kwargs=nn_kwargs, 
+...         verbose=False,
+... )    
+```
+
+
+### Multivariate Models
+
+
+MuyGPyS also supports multivariate models via the `MuyGPyS.gp.muygps.MultivariateMuyGPS` class, which maintains a separte kernel function for each response dimension.
+This class is similar in interface to `MuyGPyS.gp.muygps.MuyGPS`, but requires a list of hyperparameter dicts at initialization.
+See the following example:
+```
+>>> from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
+>>> k_args = [
+... 	    {
+...                 "eps": {"val": 1e-5},
+...                 "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
+...                 "length_scale": {"val": 7.2},
+...	    },
+... 	    {
+...                 "eps": {"val": 1e-5},
+...                 "nu": {"val": 0.67, "bounds": (0.1, 2.5)},
+...                 "length_scale": {"val": 7.2},
+...	    },
+... ]
+>>> mmuygps = MMuyGPS("matern", **k_args)
+```
+
+Training is similar, and depends upon the same neighbors index datastructures as the singular models.
+In order to train, one need only loop over the models contained within the multivariate object.
+```
+>>> from MuyGPyS.optimize.chassis.scipy_optimize_from_indices
+>>> for i, model in mmuygps.models:
+>>>         scipy_optimize_from_indices(
+...                 model,
+...                 batch_indices,
+...                 batch_nn_indices,
+...                 train['input'],
+...	            test['input'],
+...	            train['output'][:, i].reshape(train_count, 1),
+...                 loss_method="mse",
+...                 verbose=False,
+...         )
+```
+
+We also support one-line make functions for regression and classification:
+```
+>>> from MuyGPyS.examples.regress import make_multivariate_regressor
+>>> train, test = load_regression_dataset()  # hypothetical data load
+>>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+>>> k_args = [
+... 	    {
+...                 "eps": {"val": 1e-5},
+...                 "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
+...                 "length_scale": {"val": 7.2},
+...	    },
+... 	    {
+...                 "eps": {"val": 1e-5},
+...                 "nu": {"val": 0.67, "bounds": (0.1, 2.5)},
+...                 "length_scale": {"val": 7.2},
+...	    },
+... ]
+>>> muygps, nbrs_lookup = make_multivariate_regressor(
+...         train["input"],
+...         train["output"],
+...         nn_count=40,
+...         batch_size=500,
+...         loss_method="mse",
+...	    kern="matern",
+...         k_args=k_args,
 ...         nn_kwargs=nn_kwargs,
 ...         verbose=False,
 ... )    
 ```
+
 
 
 ### Inference
@@ -281,6 +345,8 @@ Again if you do not want to reuse your tensors, you can run the more compact:
 ... )
 ```
 
+Multivariate models support the same functions.
+
 More complex workflows are of course available.
 See the `MuyGPyS.examples` high-level API functions for examples.
 
@@ -291,7 +357,7 @@ See the `MuyGPyS.examples` high-level API functions for examples.
 Listed below are several examples using the high-level APIs located in `MuyGPyS.examples.classify` and `MuyGPyS.examples.regress`.
 Note that one need not go through these APIs to use `MuyGPyS`, but they condense many workflows into a single function call.
 In all of these examples, note that if all of the hyperparameters are fixed in `k_kwargs` (i.e. you supply no optimization bounds), the API will perform no optimization and will instead simply predict on the data problem using the provided kernel.
-
+While these examples all use a single model, one can modify those with multivariate responses to use multivariate models by supplying the additional keyword argument `kern=kernel_name`, for `kernel_name in ['rbf', 'matern']` and providing a list of hyperparameter dicts to the keyword argument `k_kwargs` as above.
 
 ## Regression
 

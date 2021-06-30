@@ -12,6 +12,7 @@ from MuyGPyS.examples.classify import (
     do_uq,
 )
 from MuyGPyS.examples.regress import do_regress
+from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize.objective import mse_fn
 
 
@@ -26,6 +27,7 @@ class ClassifyAPITest(parameterized.TestCase):
         loss_method,
         nn_kwargs,
         k_kwargs,
+        kern=None,
         verbose=False,
     ):
         (
@@ -40,15 +42,17 @@ class ClassifyAPITest(parameterized.TestCase):
             batch_size,
             loss_method,
             nn_kwargs,
+            kern,
             k_kwargs,
             verbose=verbose,
         )
         self.assertEqual(surrogate_predictions.shape, test["output"].shape)
         self.assertEqual(predicted_labels.shape, (test["output"].shape[0],))
-        self.assertSequenceAlmostEqual(
-            np.sum(surrogate_predictions, axis=1),
-            np.zeros(surrogate_predictions.shape[0]),
-        )
+        if kern is None:
+            self.assertSequenceAlmostEqual(
+                np.sum(surrogate_predictions, axis=1),
+                np.zeros(surrogate_predictions.shape[0]),
+            )
         # There is almost certainly a better way to do this.
         if np.all(np.unique(train["output"]) == np.unique([-1, 1])):
             self.assertSequenceAlmostEqual(
@@ -61,9 +65,16 @@ class ClassifyAPITest(parameterized.TestCase):
                 np.unique(np.argmax(train["output"], axis=1)),
             )
         print(f"Finds hyperparameters:")
-        optim_params = muygps.get_optim_params()
-        for p in optim_params:
-            print(f"\t{p} : {optim_params[p]()}")
+        if isinstance(muygps, MuyGPS):
+            optim_params = muygps.get_optim_params()
+            for p in optim_params:
+                print(f"\t{p} : {optim_params[p]()}")
+        elif isinstance(muygps, MMuyGPS):
+            for i, model in enumerate(muygps.models):
+                print(f"model {i}:")
+                optim_params = model.get_optim_params()
+                for p in optim_params:
+                    print(f"\t{p} : {optim_params[p]()}")
         print(f"obtains accuracy: {acc}")
         self.assertGreaterEqual(acc, target_acc)
 
@@ -75,6 +86,7 @@ class ClassifyAPITest(parameterized.TestCase):
         batch_size,
         loss_method,
         nn_kwargs,
+        kern,
         k_kwargs,
         verbose=False,
     ):
@@ -85,6 +97,7 @@ class ClassifyAPITest(parameterized.TestCase):
             nn_count=nn_count,
             batch_size=batch_size,
             loss_method=loss_method,
+            kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             verbose=verbose,
@@ -318,11 +331,11 @@ class RegressionAPITest(parameterized.TestCase):
         variance_mode,
         # embed_method,
         nn_kwargs,
-        # kern,
         k_kwargs,
+        kern=None,
         verbose=False,
     ):
-        muygps, predictions, mse, variance, sigma_sq = self._do_regress(
+        regressor, predictions, mse, variance = self._do_regress(
             train,
             test,
             nn_count,
@@ -332,22 +345,35 @@ class RegressionAPITest(parameterized.TestCase):
             variance_mode,
             # embed_method,
             nn_kwargs,
-            # kern,
             k_kwargs,
+            kern=kern,
             verbose=verbose,
         )
         self.assertEqual(predictions.shape, test["output"].shape)
-        print(f"finds hyperparameters:")
-        optim_params = muygps.get_optim_params()
-        for p in optim_params:
-            print(f"\t{p} : {optim_params[p]()}")
+        if isinstance(regressor, MuyGPS):
+            self._verify_regressor(regressor, variance, test["output"])
+        else:
+            test_count, _ = test["output"].shape
+            for i, model in enumerate(regressor.models):
+                self._verify_regressor(
+                    model,
+                    variance[:, i] if variance is not None else None,
+                    test["output"][:, i].reshape(test_count, 1),
+                )
         print(f"obtains mse: {mse}")
         self.assertLessEqual(mse, target_mse)
+
+    def _verify_regressor(self, regressor, variance, targets):
+        optim_params = regressor.get_optim_params()
+        if len(optim_params) > 0:
+            print(f"finds hyperparameters:")
+            for p in optim_params:
+                print(f"\t{p} : {optim_params[p]()}")
         if variance is not None:
-            test_count, response_count = test["output"].shape
+            test_count, response_count = targets.shape
             self.assertEqual(variance.shape, (test_count,))
             if response_count > 1:
-                self.assertEqual(sigma_sq.shape, (response_count,))
+                self.assertEqual(regressor.sigma_sq().shape, (response_count,))
 
     def _do_regress(
         self,
@@ -359,6 +385,7 @@ class RegressionAPITest(parameterized.TestCase):
         variance_mode,
         nn_kwargs,
         k_kwargs,
+        kern=None,
         verbose=False,
     ):
         ret = do_regress(
@@ -369,21 +396,22 @@ class RegressionAPITest(parameterized.TestCase):
             batch_size=batch_size,
             loss_method=loss_method,
             variance_mode=variance_mode,
+            kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             verbose=verbose,
         )
         if variance_mode is None:
-            muygps, _, predictions = ret
+            regressor, _, predictions = ret
             variance = None
-            sigma_sq = None
+            # sigma_sq = None
         elif variance_mode == "diagonal":
-            muygps, _, predictions, variance = ret
+            regressor, _, predictions, variance = ret
             # predictions, variance = predictions
-            sigma_sq = (
-                muygps.sigma_sq()
-            )  # np.array([ss() for ss in muygps.sigma_sq])
+            # sigma_sq = (
+            #     muygps.sigma_sq()
+            # )  # np.array([ss() for ss in muygps.sigma_sq])
         else:
             raise ValueError(f"Variance mode {variance_mode} is not supported.")
         mse = mse_fn(predictions, test["output"])
-        return muygps, predictions, mse, variance, sigma_sq
+        return regressor, predictions, mse, variance

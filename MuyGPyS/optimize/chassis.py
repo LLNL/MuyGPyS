@@ -21,6 +21,38 @@ def scipy_optimize_from_indices(
     loss_method="mse",
     verbose=False,
 ):
+    """
+    Optimize a model using scipy directly from the data.
+
+    Use this method if you do not need to retain the distance matrices used for
+    optimization.
+
+    Parameters
+    ----------
+    muygps : MuyGPyS.gp.muygps.MuyGPS
+        The model to be optimized.
+    batch_indices : np.ndarray(int), shape = ``(batch_count,)''
+        The integer indices of the observations to be approximated.
+    batch_nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+        A matrix listing the nearest neighbor indices for all observations
+        in the batch.
+    test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+        The full testing data matrix.
+    train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        The full training data matrix.
+    train_targets : numpy.ndarray(float),
+                shape = ``(train_count, response_count)''
+        Vector-valued responses for each training element.
+    loss_method : str
+        Indicates the loss function to be used.
+    verbose : bool
+        If True, print debug messages.
+
+    Returns
+    -------
+    numpy.ndarray(float), shape = ``(param_count,)''
+        The list of optimized hyperparameters. Mostly useful for validation.
+    """
     crosswise_dists = crosswise_distances(
         test,
         train,
@@ -53,6 +85,42 @@ def scipy_optimize_from_tensors(
     loss_method="mse",
     verbose=False,
 ):
+    """
+    Optimize a model using existing distance matrices.
+
+    Use this method if you need to retain the distance matrices used for later
+    use.
+
+    Parameters
+    ----------
+    muygps : MuyGPyS.gp.muygps.MuyGPS
+        The model to be optimized.
+    batch_indices : np.ndarray(int), shape = ``(batch_count,)''
+        The integer indices of the observations to be approximated.
+    batch_nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+        A matrix listing the nearest neighbor indices for all observations
+        in the batch.
+    crosswise_dists : np.ndarray(float), shape = ``(batch_size, nn_count)''
+        A tensor containing the ``nn_count'' distance vectors between batch
+        element and its nearest neighbors corresponding to each of the batch
+        elements.
+    pairwise_dists : np.ndarray(float),
+                      shape = ``(batch_size, nn_count, nn_count)''
+        A tensor containing the ``nn_count'' x ``nn_count'' distance matrices
+        corresponding to each of the batch elements.
+    train_targets : numpy.ndarray(float),
+                shape = ``(train_count, response_count)''
+        Vector-valued responses for each training element.
+    loss_method : str
+        Indicates the loss function to be used.
+    verbose : bool
+        If True, print debug messages.
+
+    Returns
+    -------
+    numpy.ndarray(float), shape = ``(param_count,)''
+        The list of optimized hyperparameters. Mostly useful for validation.
+    """
     loss_fn = get_loss_func(loss_method)
     optim_params = muygps.get_optim_params()
     for key in optim_params:

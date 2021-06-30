@@ -15,7 +15,7 @@ from MuyGPyS.predict import (
 )
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.uq import train_two_class_interval
-from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 
 from time import perf_counter
 
@@ -167,6 +167,154 @@ def make_classifier(
     return muygps, nbrs_lookup
 
 
+def make_multivariate_classifier(
+    train_data,
+    train_labels,
+    nn_count=30,
+    batch_size=200,
+    loss_method="mse",
+    kern="matern",
+    k_args=list(),
+    nn_kwargs=dict(),
+    verbose=False,
+):
+    """
+    Convenience function for creating MuyGPyS functor and neighbor lookup data
+    structure.
+
+    Expected parameters include keyword argument dicts specifying kernel
+    parameters and nearest neighbor parameters. See the docstrings of the
+    appropriate functions for specifics.
+
+    Parameters
+    ----------
+    train_data : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+        A matrix of row observation vectors.
+    train_labels = numpy.ndarray(float),
+                    shape = ``(train_count, response_count)''
+        A matrix of row label vectors for the training data.
+    nn_count : int
+        The number of nearest neighbors to employ.
+    batch_size : int
+        The batch size for hyperparameter optimization.
+    loss_method : str
+        The loss method to use in hyperparameter optimization. Ignored if all of
+        the parameters specified by ``k_kwargs'' are fixed.
+        NOTE[bwp]: Currently supports only ``mse'' for multivariate regression.
+    kern : str
+        The kernel function to be used.
+        NOTE[bwp]: Currently supports only ``matern'' and ``rbf''.
+    k_kwargs : list(dict), len = ``response_count''
+        A list of hyperparameter dicts. Each dict specifies parameters for the
+        kernel, possibly including kernel type, distance metric, epsilon and
+        sigma hyperparameter specifications, and specifications for kernel
+        hyperparameters. If all of the hyperparameters are fixed or are not
+        given optimization bounds, no optimization will occur. The number of
+        specified kernels must equal the response count of the data.
+    nn_kwargs : dict
+        Parameters for the nearest neighbors wrapper. See
+        `MuyGPyS.neighbors.NN_Wrapper` for the supported methods and their
+        parameters.
+    verbose : Boolean
+        If ``True'', print summary statistics.
+
+    Returns
+    -------
+    muygps : MuyGPyS.gp.MuyGPS
+        A (possibly trained) MuyGPs object.
+    nbrs_lookup : MuyGPyS.neighbors.NN_Wrapper
+        A data structure supporting nearest neighbor queries into
+        ``train_data''.
+
+    Examples
+    --------
+    >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
+    >>> from MuyGPyS.examples.regress import make_regressor
+    >>> train = _make_gaussian_dict(10000, 100, 10, categorial=True)
+    >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+    >>> k_args = [
+    ...         {
+    ...             "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
+    ...             "eps": {"val": 1e-5},
+    ...         },
+    ...         {
+    ...             "length_scale": {"val": 1.5, "bounds": (1e-2, 1e2)}
+    ...             "eps": {"val": 1e-5},
+    ...         },
+    ... ]
+    >>> mmuygps, nbrs_lookup = make_multivariate_classifier(
+    ...         train['input'],
+    ...         train['output'],
+    ...         nn_count=30,
+    ...         batch_size=200,
+    ...         loss_method="mse",
+    ...         kern="rbf",
+    ...         k_args=k_args,
+    ...         nn_kwargs=nn_kwargs,
+    ...         verbose=False,
+    ... )
+    """
+    train_count, response_count = train_labels.shape
+    if response_count != len(k_args):
+        raise ValueError(
+            f"supplied arguments for {len(k_args)} kernels, which does not "
+            f"match expected {response_count} responses!"
+        )
+    time_start = perf_counter()
+
+    nbrs_lookup = NN_Wrapper(
+        train_data,
+        nn_count,
+        **nn_kwargs,
+    )
+    time_nn = perf_counter()
+
+    mmuygps = MMuyGPS(kern, *k_args)
+    if mmuygps.fixed_nosigmasq() is False:
+        # collect batch
+        batch_indices, batch_nn_indices = get_balanced_batch(
+            nbrs_lookup,
+            np.argmax(train_labels, axis=1),
+            batch_size,
+        )
+        time_batch = perf_counter()
+
+        crosswise_dists = crosswise_distances(
+            train_data,
+            train_data,
+            batch_indices,
+            batch_nn_indices,
+            metric=mmuygps.metric,
+        )
+        pairwise_dists = pairwise_distances(
+            train_data, batch_nn_indices, metric=mmuygps.metric
+        )
+        time_tensor = perf_counter()
+
+        # maybe do something with these estimates?
+        for i, muygps in enumerate(mmuygps.models):
+            if muygps.fixed_nosigmasq() is False:
+                estimates = scipy_optimize_from_tensors(
+                    muygps,
+                    batch_indices,
+                    batch_nn_indices,
+                    crosswise_dists,
+                    pairwise_dists,
+                    train_labels[:, i].reshape(train_count, 1),
+                    loss_method=loss_method,
+                    verbose=verbose,
+                )
+        time_opt = perf_counter()
+
+        if verbose is True:
+            print(f"NN lookup creation time: {time_nn - time_start}s")
+            print(f"batch sampling time: {time_batch - time_nn}s")
+            print(f"tensor creation time: {time_tensor - time_batch}s")
+            print(f"hyper opt time: {time_opt - time_tensor}s")
+
+    return mmuygps, nbrs_lookup
+
+
 def do_classify(
     test_data,
     train_data,
@@ -174,6 +322,7 @@ def do_classify(
     nn_count=30,
     batch_size=200,
     loss_method="log",
+    kern=None,
     k_kwargs=dict(),
     nn_kwargs=dict(),
     verbose=False,
@@ -214,12 +363,17 @@ def do_classify(
         `MuyGPyS.examples.classify.example_lambdas` for examples. If None, do
         not perform uncertainty quantifification.
         NOTE[bwp]: Supports only 2-class classification at the moment.
-    k_kwargs : dict
+    kern : str
+        The kernel function to be used. Only relevant for multivariate case
+        where ``k_kwargs'' is a list of hyperparameter dicts.
+        NOTE[bwp]: Currently supports only ``matern'' and ``rbf''.
+    k_kwargs : dict or list(dict)
         Parameters for the kernel, possibly including kernel type, distance
         metric, epsilon and sigma hyperparameter specifications, and
         specifications for kernel hyperparameters. If all of the hyperparameters
         are fixed or are not given optimization bounds, no optimization will
-        occur.
+        occur. If ``kern'' is specified and ``k_kwargs'' is a list of such
+        dicts, will create a multivariate regressor model.
     nn_kwargs : dict
         Parameters for the nearest neighbors wrapper. See
         `MuyGPyS.neighbors.NN_Wrapper` for the supported methods and their
@@ -265,18 +419,31 @@ def do_classify(
     >>> print(f"obtained accuracy {acc}")
     obtained accuracy: 0.973...
     """
-    muygps, nbrs_lookup = make_classifier(
-        train_data,
-        train_labels,
-        nn_count=nn_count,
-        batch_size=batch_size,
-        loss_method=loss_method,
-        k_kwargs=k_kwargs,
-        nn_kwargs=nn_kwargs,
-        verbose=verbose,
-    )
+    if kern is not None and isinstance(k_kwargs, list):
+        classifier, nbrs_lookup = make_multivariate_classifier(
+            train_data,
+            train_labels,
+            nn_count=nn_count,
+            batch_size=batch_size,
+            loss_method=loss_method,
+            kern=kern,
+            k_args=k_kwargs,
+            nn_kwargs=nn_kwargs,
+            verbose=verbose,
+        )
+    else:
+        classifier, nbrs_lookup = make_classifier(
+            train_data,
+            train_labels,
+            nn_count=nn_count,
+            batch_size=batch_size,
+            loss_method=loss_method,
+            k_kwargs=k_kwargs,
+            nn_kwargs=nn_kwargs,
+            verbose=verbose,
+        )
     surrogate_predictions, pred_timing = classify_any(
-        muygps,
+        classifier,
         test_data,
         train_data,
         nbrs_lookup,
@@ -286,7 +453,7 @@ def do_classify(
         print(f"prediction time breakdown:")
         for k in pred_timing:
             print(f"\t{k} time:{pred_timing[k]}s")
-    return muygps, nbrs_lookup, surrogate_predictions
+    return classifier, nbrs_lookup, surrogate_predictions
 
 
 def do_classify_uq(

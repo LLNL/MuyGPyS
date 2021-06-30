@@ -385,7 +385,7 @@ class GPOptimTest(parameterized.TestCase):
         (
             (1001, 10, b, n, nn_kwargs, lm, e, k_kwargs)
             for b in [250]
-            for n in [34]
+            for n in [10]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
             for e in (({"val": 1e-5},))
@@ -484,7 +484,7 @@ class GPOptimTest(parameterized.TestCase):
         (
             (1001, b, n, nn_kwargs, lm, e, k_kwargs)
             for b in [250]
-            for n in [34]
+            for n in [10]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
             for e in (({"val": 1e-5},))

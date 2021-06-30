@@ -74,9 +74,7 @@ class MuyGPS:
         eps : dict
             A hyperparameter dict.
         """
-        self.eps = _init_hyperparameter(
-            self.eps(), self.eps.get_bounds(), **eps
-        )
+        self.eps._set(**eps)
 
     def set_sigma_sq(self, **sigma_sq):
         """
@@ -89,7 +87,7 @@ class MuyGPS:
         sigma_sq : Iterable(dicts)
             An iterable container of hyperparameter dicts.
         """
-        self.sigma_sq = _init_hyperparameter(1.0, "fixed", **sigma_sq)
+        self.sigma_sq._set(**sigma_sq)
 
     def fixed(self):
         """
@@ -132,7 +130,7 @@ class MuyGPS:
             Returns ``True'' if all :math:`\\sigma^2` dimensions are fixed, and
             false otherwise.
         """
-        return self.sigma_sq.get_bounds() == "fixed"
+        return self.sigma_sq() != "learn"
 
     def get_optim_params(self):
         """
@@ -340,8 +338,9 @@ class MuyGPS:
 
         Parameters
         ----------
-        index : np.ndarray(int), shape = ``(batch_count,)''
-            The integer indices of the observations to be approximated.
+        K : np.ndarray(float), shape = ``(batch_size, nn_count, nn_count)''
+            A tensor containing the ``nn_count'' x ``nn_count'' kernel matrices
+            corresponding to each of the batch elements.
         nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
             A matrix listing the nearest neighbor indices for all observations
             in the testing batch.
@@ -378,13 +377,12 @@ class MuyGPS:
 
         Parameters
         ----------
-        index : np.ndarray(int), shape = ``(batch_count,)''
-            The integer indices of the observations to be approximated.
+        K : np.ndarray(float), shape = ``(batch_size, nn_count, nn_count)''
+            A tensor containing the ``nn_count'' x ``nn_count'' kernel matrices
+            corresponding to each of the batch elements.
         nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
             A matrix listing the nearest neighbor indices for all observations
             in the testing batch.
-        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-            The full training data matrix.
         target_col : numpy.ndarray(float), shape = ``(train_count,)''
             The target vector consisting of the target for each nearest
             neighbor.
@@ -437,3 +435,228 @@ class MuyGPS:
             yield Y_0 @ np.linalg.solve(
                 K[j, :, :] + self.eps() * np.eye(nn_count), Y_0
             )
+
+
+class MultivariateMuyGPS:
+    def __init__(
+        self,
+        kern,
+        *model_args,
+    ):
+        self.kern = kern.lower()
+        self.models = [MuyGPS(kern, **args) for args in model_args]
+        self.metric = self.models[0].kernel.metric
+
+    def fixed_nosigmasq(self):
+        """
+        Checks whether all kernel and model parameters are fixed for each model,
+        excluding :math:`\\sigma^2`.
+
+        Returns
+        -------
+        bool
+            Returns ``True'' if all parameters in all models are fixed, and
+            false otherwise.
+        """
+        return bool(np.all([model.fixed_nosigmasq() for model in self.models]))
+
+    def fixed_sigmasq(self):
+        """
+        Checks whether all dimensions of :math:`\\sigma^2` are fixed for each
+        model.
+
+        Returns
+        -------
+        bool
+            Returns ``True'' if :math:`\\sigma^2` is fixed in each model, and
+            false otherwise.
+        """
+        return bool(np.all([model.fixed_sigmasq() for model in self.models]))
+
+    def fixed(self):
+        """
+        Checks whether all kernel and model parameters are fixed.
+
+        This is a convenience utility to determine whether optimization is
+        required.
+
+        Returns
+        -------
+        bool
+            Returns ``True'' if all parameters in all models are fixed, and
+            false otherwise.
+        """
+        return bool(np.all([model.fixed() for model in self.models]))
+
+    def sigma_sq_optim(
+        self,
+        pairwise_dists,
+        nn_indices,
+        targets,
+    ):
+        """
+        Optimize the value of the sigma^2 scale parameter for each response
+        dimension.
+
+        We approximate sigma^2 by way of averaging over the analytic solution
+        from each local kernel.
+
+        sigma^2 = 1/n * Y^T @ K^{-1} @ Y
+
+        Parameters
+        ----------
+        pairwise_dists : np.ndarray(float),
+                         shape = ``(batch_size, nn_count, nn_count)''
+            A tensor containing the ``nn_count'' x ``nn_count'' distance
+            matrices corresponding to each of the batch elements.
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+            A matrix listing the nearest neighbor indices for all observations
+            in the testing batch.
+        targets : numpy.ndarray(float),
+                  shape = ``(train_count, response_count)''
+            Vector-valued responses for each training element.
+
+        Returns
+        -------
+        sigmas : numpy.ndarray(float), shape = ``(response_count,)''
+            The value of sigma^2 for each dimension.
+        """
+        batch_size, nn_count = nn_indices.shape
+        _, response_count = targets.shape
+        if response_count != len(self.models):
+            raise ValueError(
+                f"Response count ({response_count}) does not match the number "
+                f"of models ({len(self.models)})."
+            )
+
+        K = np.zeros((batch_size, nn_count, nn_count))
+        for i, muygps in enumerate(self.models):
+            if muygps.fixed_sigmasq() is False:
+                K = muygps.kernel(pairwise_dists)
+                muygps.set_sigma_sq(
+                    val=sum(muygps._get_sigma_sq(K, targets[:, i], nn_indices))
+                    / (nn_count * batch_size)
+                )
+
+    def regress_from_indices(
+        self,
+        indices,
+        nn_indices,
+        test,
+        train,
+        targets,
+        variance_mode=None,
+    ):
+        """
+        Performs simultaneous regression on a list of observations.
+
+        This is similar to the old regress API in that it implicitly creates and
+        discards the distance and kernel matrices.
+
+        Parameters
+        ----------
+        indices : np.ndarray(int), shape = ``(batch_count,)''
+            The integer indices of the observations to be approximated.
+        nn_indices : numpy.ndarray(int), shape = ``(batch_size, nn_count)''
+            A matrix listing the nearest neighbor indices for all observations
+            in the testing batch.
+        test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
+            The full testing data matrix.
+        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
+            The full training data matrix.
+        targets : numpy.ndarray(float),
+                  shape = ``(train_count, response_count)''
+            Vector-valued responses for each training element.
+        variance_mode : str or None
+            Specifies the type of variance to return. Currently supports
+            ``diagonal'' and None. If None, report no variance term.
+
+        Returns
+        -------
+        responses : numpy.ndarray(float),
+                    shape = ``(batch_count, response_count,)''
+            The predicted response for each of the given indices.
+        diagonal_variance : numpy.ndarray(float),
+                            shape = ``(batch_count, response_count)''
+            The diagonal elements of the posterior variance for each kernel.
+            Only returned where ``variance_mode == "diagonal"''.
+        """
+        crosswise_dists = crosswise_distances(
+            test, train, indices, nn_indices, metric=self.metric
+        )
+        pairwise_dists = pairwise_distances(
+            train, nn_indices, metric=self.metric
+        )
+        batch_targets = targets[nn_indices, :]
+        return self.regress(
+            pairwise_dists,
+            crosswise_dists,
+            batch_targets,
+            variance_mode=variance_mode,
+        )
+
+    def regress(
+        self,
+        pairwise_dists,
+        crosswise_dists,
+        batch_targets,
+        variance_mode=None,
+    ):
+        """
+        Performs simultaneous regression on provided distance tensors and
+        the target matrix.
+
+        Parameters
+        ----------
+        pairwise_dists : np.ndarray(float),
+                        shape = ``(batch_size, nn_count, nn_count)''
+            A tensor containing the ``nn_count'' x ``nn_count'' distance
+            matrices corresponding to each of the batch elements.
+        crosswise_dists : np.ndarray(float), shape = ``(batch_size, nn_count)''
+            A tensor containing the ``nn_count'' distance vectors between batch
+            element and its nearest neighbors corresponding to each of the batch
+            elements.
+        batch_targets : numpy.ndarray(float),
+                  shape = ``(batch_size, nn_count, response_count)''
+            The vector-valued responses for the nearest neighbors of each
+            batch element.
+        variance_mode : str or None
+            Specifies the type of variance to return. Currently supports
+            ``diagonal'' and None. If None, report no variance term.
+
+        Returns
+        -------
+        responses : numpy.ndarray(float),
+                    shape = ``(batch_count, response_count,)''
+            The predicted response for each of the given indices.
+        diagonal_variance : numpy.ndarray(float),
+                            shape = ``(batch_count, response_count)''
+            The diagonal elements of the posterior variance for each kernel.
+            Only returned where ``variance_mode == "diagonal"''.
+        """
+        batch_count, nn_count, response_count = batch_targets.shape
+        responses = np.zeros((batch_count, response_count))
+        if variance_mode is None:
+            pass
+        elif variance_mode == "diagonal":
+            diagonal_variance = np.zeros((batch_count, response_count))
+        else:
+            raise NotImplementedError(
+                f"Variance mode {variance_mode} is not implemented."
+            )
+        for i, model in enumerate(self.models):
+            K = model.kernel(pairwise_dists)
+            Kcross = model.kernel(crosswise_dists)
+            responses[:, i] = model._compute_solve(
+                K,
+                Kcross,
+                batch_targets[:, :, i].reshape(batch_count, nn_count, 1),
+            ).reshape(batch_count)
+            if variance_mode == "diagonal":
+                diagonal_variance[:, i] = model._compute_diagonal_variance(
+                    K, Kcross
+                ).reshape(batch_count)
+        if variance_mode is None:
+            return responses
+        elif variance_mode == "diagonal":
+            return responses, diagonal_variance

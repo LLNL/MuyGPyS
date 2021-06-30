@@ -189,7 +189,7 @@ class HyperparameterTest(parameterized.TestCase):
         (kwargs for kwargs in ({"val": "wut", "bounds": (1e-1, 1e2)},))
     )
     def test_bad_val_string(self, val, bounds):
-        with self.assertRaisesRegex(ValueError, "Unrecognized"):
+        with self.assertRaisesRegex(ValueError, "string hyperparameter"):
             Hyperparameter(val, bounds)
 
     @parameterized.parameters(
@@ -197,13 +197,6 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_bad_val_bounds(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "Unknown"):
-            Hyperparameter(val, bounds)
-
-    @parameterized.parameters(
-        (kwargs for kwargs in ({"val": [1.0], "bounds": (1e-1, 1e2)},))
-    )
-    def test_bad_iterable_val(self, val, bounds):
-        with self.assertRaisesRegex(ValueError, "Nonscalar"):
             Hyperparameter(val, bounds)
 
     @parameterized.parameters(

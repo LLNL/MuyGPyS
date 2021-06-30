@@ -116,6 +116,12 @@ class Hyperparameter:
                         high=np.log(self._bounds[1]),
                     )
                 )
+            elif np.isscalar(val) and val == "learn":
+                pass
+            elif np.isscalar(val) and isinstance(val, str):
+                raise ValueError(
+                    f"string hyperparameter value {val} is not supported."
+                )
             else:
                 any_below = np.any(
                     np.choose(val < self._bounds[0], [False, True])
@@ -492,7 +498,7 @@ class NNGPimpl:
         # print(X @ X_star.T)
         K = self.sigma_w_sq * X @ X_star.T + self.sigma_b_sq
         # print(K)
-        for _ in range(self.L):
+        for _ in range(int(self.L)):
             Kcorr = cov2cor(K)
             Kcorr[Kcorr > 1.0] = 1.0
             theta = np.arccos(Kcorr)
