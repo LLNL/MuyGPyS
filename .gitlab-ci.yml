@@ -87,7 +87,8 @@ test_multivariate:
   tags:
     - quartz
     - shell
-  script python tests/multivariate.py
+  script:
+    - python tests/multivariate.py
 
 test_api_mnist:
   extends: .template_run_rules
