@@ -6,7 +6,7 @@
 from setuptools import setup
 
 setup(name='MuyGPyS',
-      version='0.1',
+      version='0.2.1',
       description='Scalable Approximate Gaussian Process using Local Kriging',
       author='Benjamin W. Priest',
       author_email='priest2@llnl.gov',
