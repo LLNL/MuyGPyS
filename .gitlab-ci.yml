@@ -26,7 +26,7 @@ configure_python:
 
 .template_env_load:
   before_script:
-    - source ${PYTHON_ENVIRONMENT_PATH}/bin/activate
+    - source /g/g13/priest2/.virtualenvs/MuyGPyS/bin/activate
 
 test_data:
   extends: .template_run_rules
