@@ -20,7 +20,7 @@ configure_python:
     - shell
   script:
     - source /g/g13/priest2/.virtualenvs/MuyGPyS/bin/activate
-    - pip uninstall MuyGPyS
+    - pip uninstall -y MuyGPyS
     - pip install -e .
     - python -c "import MuyGPyS"
 
