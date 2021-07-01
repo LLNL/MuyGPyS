@@ -19,13 +19,10 @@ configure_python:
     - quartz
     - shell
   script:
-    - rm -rf ${PYTHON_ENVIRONMENT_PATH}
-    - virtualenv --python=/usr/tce/bin/python3-3.8.2 ${PYTHON_ENVIRONMENT_PATH}
-    - source ${PYTHON_ENVIRONMENT_PATH}/bin/activate
-    - pip install -r requirements.txt
+    - source /g/g13/priest2/.virtualenvs/MuyGPyS/bin/activate
+    - pip uninstall MuyGPyS
     - pip install -e .
     - python -c "import MuyGPyS"
-    - ls /p/lustre1/madstare/
 
 .template_env_load:
   before_script:
