@@ -25,6 +25,7 @@ configure_python:
     - pip install -r requirements.txt
     - pip install -e .
     - python -c "import MuyGPyS"
+    - ls /p/lustre1/madstare/
 
 .template_env_load:
   before_script:
