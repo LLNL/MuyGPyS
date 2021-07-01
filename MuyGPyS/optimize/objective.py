@@ -119,7 +119,13 @@ def loo_crossval(
         response.
     """
     for i, key in enumerate(optim_params):
-        optim_params[key]._set_val(x0[i])
+        lb, ub = optim_params[key].get_bounds()
+        if x0[i] < lb:
+            optim_params[key]._set_val(lb)
+        elif x0[i] > ub:
+            optim_params[key]._set_val(ub)
+        else:
+            optim_params[key]._set_val(x0[i])
 
     K = muygps.kernel(pairwise_dists)
     Kcross = muygps.kernel(crosswise_dists)
