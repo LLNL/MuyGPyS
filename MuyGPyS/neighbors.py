@@ -3,9 +3,11 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+import hnswlib
 import numpy as np
 
 from time import perf_counter
+from sklearn.neighbors import NearestNeighbors
 
 from MuyGPyS.utils import safe_apply
 
@@ -47,8 +49,6 @@ class NN_Wrapper:
         self.nn_count = nn_count
         self.nn_method = nn_method.lower()
         if self.nn_method == "exact":
-            from sklearn.neighbors import NearestNeighbors
-
             exact_kwargs = {
                 k: kwargs[k]
                 for k in kwargs
@@ -69,8 +69,6 @@ class NN_Wrapper:
             print(exact_kwargs["n_jobs"])
             self.nbrs = NearestNeighbors(**exact_kwargs).fit(self.train)
         elif self.nn_method == "hnsw":
-            import hnswlib
-
             self.nbrs = hnswlib.Index(
                 space=kwargs.get("space", "l2"), dim=self.feature_count
             )
