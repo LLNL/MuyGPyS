@@ -9,6 +9,7 @@ import numpy as np
 from scipy import optimize as opt
 
 from MuyGPyS.optimize.objective import get_loss_func, loo_crossval
+from scipy.optimize import optimize
 
 
 def scipy_optimize_from_indices(
@@ -155,5 +156,11 @@ def scipy_optimize_from_tensors(
 
     # set final values
     for i, key in enumerate(optim_params):
-        optim_params[key]._set_val(x0[i])
+        lb, ub = bounds[i]
+        if x0[i] < lb:
+            optim_params[key]._set_val(lb)
+        elif x0[i] > ub:
+            optim_params[key]._set_val(ub)
+        else:
+            optim_params[key]._set_val(x0[i])
     return optres.x
