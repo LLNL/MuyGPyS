@@ -124,10 +124,10 @@ class Hyperparameter:
                 )
             else:
                 any_below = np.any(
-                    np.choose(val < self._bounds[0], [False, True])
+                    np.choose(val < self._bounds[0] - 1e-5, [False, True])
                 )
                 any_above = np.any(
-                    np.choose(val > self._bounds[1], [False, True])
+                    np.choose(val > self._bounds[1] + 1e-5, [False, True])
                 )
                 if any_below == True:
                     raise ValueError(
