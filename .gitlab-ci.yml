@@ -7,11 +7,14 @@ stages:
 
 .template_run_rules:
   rules:
+    - if: $CI_COMMIT_TAG
+      when: never
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: always
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
-
+    - when: never
+    
 configure_python:
   extends: .template_run_rules
   stage: environment
@@ -19,14 +22,16 @@ configure_python:
     - quartz
     - shell
   script:
-    - source /g/g13/priest2/.virtualenvs/MuyGPyS/bin/activate
-    - pip uninstall -y MuyGPyS
+    - if [ ! -d "${PYTHON_ENVIRONMENT_PATH}" ]; then
+        /usr/tce/bin/virtualenv -p /usr/tce/bin/python3-3.8.2 ${PYTHON_ENVIRONMENT_PATH}
+      fi
+    - source ${PYTHON_ENVIRONMENT_PATH}/bin/activate
+    - pip uninstall MuyGPyS
     - pip install -e .
-    - python -c "import MuyGPyS"
-
+    
 .template_env_load:
   before_script:
-    - source /g/g13/priest2/.virtualenvs/MuyGPyS/bin/activate
+    - source ${PYTHON_ENVIRONMENT_PATH}/bin/activate
 
 test_data:
   extends: .template_run_rules
