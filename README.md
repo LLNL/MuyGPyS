@@ -14,7 +14,6 @@ This feature affords the optimization of hyperparameters by way of leave-one-out
 Installation instructions:
 ```
 $ cd /path/to/this/repo
-$ pip install -r requirements.txt
 $ pip install -e .
 ```
 
