@@ -22,9 +22,7 @@ configure_python:
     - quartz
     - shell
   script:
-    - if [ ! -d "${PYTHON_ENVIRONMENT_PATH}" ]; then
-        /usr/tce/bin/virtualenv -p /usr/tce/bin/python3-3.8.2 ${PYTHON_ENVIRONMENT_PATH}
-      fi
+    - if [ ! -d "${PYTHON_ENVIRONMENT_PATH}" ]; then /usr/tce/bin/virtualenv -p /usr/tce/bin/python3-3.8.2 ${PYTHON_ENVIRONMENT_PATH}; fi
     - source ${PYTHON_ENVIRONMENT_PATH}/bin/activate
     - pip uninstall MuyGPyS
     - pip install -e .
