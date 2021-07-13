@@ -333,7 +333,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
         # construct the observation locations
         sim_train = dict()
         sim_test = dict()
-        x = np.linspace(-10.0, 10.0, data_count).reshape(1001, 1)
+        x = np.linspace(-10.0, 10.0, data_count).reshape(data_count, 1)
         sim_train["input"] = x[::2, :]
         sim_test["input"] = x[1::2, :]
         train_count = sim_train["input"].shape[0]
@@ -385,7 +385,7 @@ class GPOptimTest(parameterized.TestCase):
         (
             (1001, 10, b, n, nn_kwargs, lm, e, k_kwargs)
             for b in [250]
-            for n in [10]
+            for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
             for e in (({"val": 1e-5},))
@@ -418,7 +418,7 @@ class GPOptimTest(parameterized.TestCase):
         # construct the observation locations
         sim_train = dict()
         sim_test = dict()
-        x = np.linspace(-10.0, 10.0, data_count).reshape(1001, 1)
+        x = np.linspace(-10.0, 10.0, data_count).reshape(data_count, 1)
         sim_train["input"] = x[::2, :]
         sim_test["input"] = x[1::2, :]
         train_count = sim_train["input"].shape[0]
@@ -484,7 +484,7 @@ class GPOptimTest(parameterized.TestCase):
         (
             (1001, b, n, nn_kwargs, lm, e, k_kwargs)
             for b in [250]
-            for n in [10]
+            for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
             for e in (({"val": 1e-5},))
@@ -516,7 +516,7 @@ class GPOptimTest(parameterized.TestCase):
         # construct the observation locations
         sim_train = dict()
         sim_test = dict()
-        x = np.linspace(-10.0, 10.0, data_count).reshape(1001, 1)
+        x = np.linspace(-10.0, 10.0, data_count).reshape(data_count, 1)
         sim_train["input"] = x[::2, :]
         sim_test["input"] = x[1::2, :]
         train_count = sim_train["input"].shape[0]
