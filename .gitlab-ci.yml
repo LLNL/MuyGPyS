@@ -51,6 +51,16 @@ test_gp:
   script:
     - srun -N1 -ppdebug -A madstare python tests/gp.py
 
+test_kernel:
+  extends: .template_run_rules
+  extends: .template_env_load
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script:
+    - python tests/kernels.py
+  
 test_neighbors:
   extends: .template_run_rules
   extends: .template_env_load
