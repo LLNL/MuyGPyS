@@ -1,5 +1,0 @@
-hnswlib==0.4.0
-numpy
-scipy
-sklearn
-absl-py

@@ -13,4 +13,12 @@ setup(name='MuyGPyS',
       license='MIT',
       packages=['MuyGPyS'],
       python_requires='>=3.6',
+      install_requires=[
+          'numpy',
+          'scipy==1.4.1',
+          'scikit-learn',
+          'absl-py',
+          'pybind11',
+          'hnswlib',
+      ],
       zip_safe=False)
