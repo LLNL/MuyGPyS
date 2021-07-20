@@ -18,6 +18,17 @@ $ pip install -e .
 ```
 
 
+## Building Docs
+
+
+Doc building instructions:
+```
+$ cd /path/to/this/repo/docs
+$ make html
+```
+Then open the file `docs/_build/html/index.html` in your browser of choice.
+
+
 ## The Basics
 
 

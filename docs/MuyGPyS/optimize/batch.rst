@@ -1,0 +1,6 @@
+batch
+===========================
+
+.. default-role:: code
+.. automodule:: MuyGPyS.optimize.batch
+  :members:
