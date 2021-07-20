@@ -3,32 +3,68 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+"""Sampling elements with their nearest neighbors from data
+
+MuyGPyS includes convenience functions for sampling batches of data from 
+existing datasets.
+These batches are returned in the form of row indices, both of the sampled data 
+as well as their nearest neighbors.
+Also included is the ability to sample "balanced" batches, where the data is 
+partitioned by class and we attempt to sample as close to an equal number of 
+items from each class as is possible.
+"""
+
 import numpy as np
+
+from typing import Tuple
+
+from MuyGPyS.neighbors import NN_Wrapper
 
 
 def get_balanced_batch(
-    nbrs_lookup,
-    labels,
-    batch_size,
-):
+    nbrs_lookup: NN_Wrapper,
+    labels: np.ndarray,
+    batch_size: int,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Decide whether to sample a balanced batch or return the full filtered batch.
 
-    Parameters
-    ----------
-    nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
-        Trained nearest neighbor query data structure.
-    labels : numpy.ndarray(int), shape = ``(train_count,)''
-        List of class labels for all training data.
-    batch_size : int
-        The number of batch elements to sample.
+    This method is the go-to method for sampling from classification datasets
+    when one desires a sample with equal representation of every class. The
+    function simply calls :func:`MuyGPyS.optimize.batch.full_filtered_batch` if
+    the supplied list of training data class labels is smaller than the batch
+    count, otherwise calling
+    :func:`MuyGPyS.optimize.batch_sample_balanced_batch`.
+
+    Example:
+        >>> import numpy as np
+        >>> From MuyGPyS.optimize.batch import get_balanced_batch
+        >>> train_features, train_responses = get_train()
+        >>> nn_count = 10
+        >>> nbrs_lookup = NN_Wrapper(train_features, nn_count)
+        >>> batch_count = 200
+        >>> train_labels = np.argmax(train_responses, axis=1)
+        >>> balanced_indices, balanced_nn_indices = get_balanced_batch(
+        ...         nbrs_lookup, train_labels, batch_count
+        >>> )
+
+    Args:
+        nbrs_lookup:
+            Trained nearest neighbor query data structure.
+        labels:
+            List of class labels of shape `(train_count,)` for all training
+            data.
+        batch_size: int
+            The number of batch elements to sample.
 
     Returns
     -------
-    numpy.ndarray(int), shape = ``(batch_count,)''
-        The indices of the sampled training points.
-    numpy.ndarray(int), shape = ``(batch_count, nn_count)''
-        The indices of the nearest neighbors of the sampled training points.
+    indices:
+        The indices of the sampled training points of shape
+        `(batch_count,)`.
+    nn_indices:
+        The indices of the nearest neighbors of the sampled training points
+        of shape `(batch_count, nn_count)`.
     """
     if len(labels) > batch_size:
         return sample_balanced_batch(nbrs_lookup, labels, batch_size)
@@ -37,26 +73,27 @@ def get_balanced_batch(
 
 
 def full_filtered_batch(
-    nbrs_lookup,
-    labels,
-):
+    nbrs_lookup: NN_Wrapper,
+    labels: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Return a batch composed of the entire training set, filtering out elements
     with constant nearest neighbor sets.
 
-    Parameters
-    ----------
-    nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
-        Trained nearest neighbor query data structure.
-    labels : numpy.ndarray(int), shape = ``(train_count,)''
-        List of class labels for all embedded data.
+    Args:
+        nbrs_lookup:
+            Trained nearest neighbor query data structure.
+        labels:
+            List of class labels of shape `(train_count,)` for all embedded
+            data.
 
     Returns
     -------
-    batch_indices : numpy.ndarray(int), shape = ``(batch_count,)''
-        The indices of the sampled training points.
-    batch_nn_indices : numpy.ndarray(int), shape = ``(batch_count, nn_count)''
-        The indices of the nearest neighbors of the sampled training points.
+    indices:
+        The indices of the sampled training points of shape `(batch_count,)`.
+    nn_indices:
+        The indices of the nearest neighbors of the sampled training points of
+        shape `(batch_count, nn_count)`.
     """
     indices = np.array([*range(len(labels))])
     nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
@@ -76,10 +113,10 @@ def full_filtered_batch(
 
 
 def sample_balanced_batch(
-    nbrs_lookup,
-    labels,
-    batch_size,
-):
+    nbrs_lookup: NN_Wrapper,
+    labels: np.ndarray,
+    batch_size: int,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Collect a class-balanced batch of training indices.
 
@@ -87,22 +124,24 @@ def sample_balanced_batch(
     share the same class label, and is balanced so that each class is equally
     represented (where possible.)
 
-    Parameters
-    ----------
-    nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
-        Trained nearest neighbor query data structure.
-    labels : numpy.ndarray(int), shape = ``(train_count,)''
-        List of class labels for all embedded data.
-    batch_size : int
-        The number of batch elements to sample.
+    Args:
+        nbrs_lookup:
+            Trained nearest neighbor query data structure.
+        labels:
+            List of class labels of shape `(train_count,)` for all embedded
+            data.
+        batch_size:
+            The number of batch elements to sample.
 
     Returns
     -------
-    nonconstant_balanced_indices : numpy.ndarray(int),
-                                   shape = ``(batch_count,)''
-        The indices of the sampled training points.
-    batch_nn_indices : numpy.ndarray(int), shape = ``(batch_count, nn_count)''
-        The indices of the nearest neighbors of the sampled training points.
+    nonconstant_balanced_indices:
+        The indices of the sampled training points of shape `(batch_count,)`.
+        These indices are guaranteed to have nearest neighbors with differing
+        class labels.
+    batch_nn_indices:
+        The indices of the nearest neighbors of the sampled training points of
+        shape `(batch_count, nn_count)`.
     """
     indices = np.array([*range(len(labels))])
     nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
@@ -141,28 +180,42 @@ def sample_balanced_batch(
 
 
 def sample_batch(
-    nbrs_lookup,
-    batch_count,
-    train_count,
-):
+    nbrs_lookup: NN_Wrapper,
+    batch_count: int,
+    train_count: int,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Collect a batch of training indices.
 
-    Parameters
-    ----------
-    nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
-        Trained nearest neighbor query data structure.
-    batch_count : int
-        The number of batch elements to sample.
-    train_count : int
-        The total number of training examples.
+    This is a simple sampling method where training examples are selected
+    uniformly at random, without replacement.
+
+    Example:
+        >>> From MuyGPyS.optimize.batch import sample_batch
+        >>> train_features, train_responses = get_train()
+        >>> train_count, _ = train_features.shape
+        >>> nn_count = 10
+        >>> nbrs_lookup = NN_Wrapper(train_features, nn_count)
+        >>> batch_count = 200
+        >>> batch_indices, batch_nn_indices = sample_batch(
+        ...         nbrs_lookup, batch_count, train_count
+        >>> )
+
+    Args:
+        nbrs_lookup:
+            Trained nearest neighbor query data structure.
+        batch_count:
+            The number of batch elements to sample.
+        train_count : int
+            The total number of training examples.
 
     Returns
     -------
-    batch_indices : numpy.ndarray(int), shape = ``(batch_count,)''
-        The indices of the sampled training points.
-    batch_nn_indices : numpy.ndarray(int), shape = ``(batch_count, nn_count)''
-        The indices of the nearest neighbors of the sampled training points.
+    batch_indices:
+        The indices of the sampled training points of shape `(batch_count,)`.
+    batch_nn_indices:
+        The indices of the nearest neighbors of the sampled training points of
+        shape `(batch_count, nn_count)`.
     """
     if train_count > batch_count:
         batch_indices = np.random.choice(
