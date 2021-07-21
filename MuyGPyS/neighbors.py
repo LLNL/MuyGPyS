@@ -72,7 +72,7 @@ class NN_Wrapper:
         train: np.ndarray,
         nn_count: int,
         nn_method: str = "exact",
-        **kwargs: Dict,
+        **kwargs,
     ):
         """
         NOTE[bwp] Will need to replace `train` with a data stream in the future.

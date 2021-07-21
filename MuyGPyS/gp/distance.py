@@ -8,13 +8,12 @@
 Compute pairwise and crosswise distance tensors for the purposes of kernel 
 construction. 
 
-
 See the following example computing the pairwise and crosswise distances between 
 a batch of training data and their nearest neighbors.
 
 Example:
-    >>> from numpy.random import choice
     >>> from MuyGPyS.neighbors import NN_Wrapper
+    >>> from MuyGPyS.optimize.batch import sample_batch
     >>> from MuyGPyS.gp.distance import crosswise_distances
     >>> train_features = load_train_features()
     >>> nn_count = 10
@@ -23,8 +22,9 @@ Example:
     ... )
     >>> train_count, _ = train_features.shape
     >>> batch_count = 50
-    >>> batch_indices = choice(train_count, batch_count, replace=False)
-    >>> batch_nn_indices, nn_dists = nbrs_lookup.get_batch_nns(batch_indices)
+    >>> batch_indices, batch_nn_indices = sample_batch(
+    ...         nbrs_lookup, batch_count, train_count
+    ... )
     >>> pairwise_dists = pairwise_distances(
     ...         train_features, batch_nn_inidices, metric="l2"
     ... )

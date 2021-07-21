@@ -8,4 +8,5 @@ gp
    :caption: Contents:
 
    gp/distance
-
+   gp/kernels
+   gp/muygps
