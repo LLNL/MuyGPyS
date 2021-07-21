@@ -9,7 +9,6 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
-from MuyGPyS.gp.old_muygps import MuyGPS as OldMuyGPS
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.testing.test_utils import (
@@ -36,13 +35,6 @@ class GPInitTest(parameterized.TestCase):
                 "rbf",
                 {
                     "length_scale": {"val": 1.5},
-                },
-            ),
-            (
-                "nngp",
-                {
-                    "sigma_w_sq": {"val": 1.5},
-                    "sigma_b_sq": {"val": 0.5},
                 },
             ),
         )
@@ -86,13 +78,6 @@ class GPInitTest(parameterized.TestCase):
                 },
             ),
             (
-                "nngp",
-                {
-                    "sigma_w_sq": {"val": 1.5, "bounds": (1e-1, 1e2)},
-                    "sigma_b_sq": {"val": 0.5, "bounds": (1e-1, 1e3)},
-                },
-            ),
-            (
                 "matern",
                 {
                     "nu": {"val": 1.0, "bounds": "fixed"},
@@ -103,13 +88,6 @@ class GPInitTest(parameterized.TestCase):
                 "rbf",
                 {
                     "length_scale": {"val": 1.5, "bounds": "fixed"},
-                },
-            ),
-            (
-                "nngp",
-                {
-                    "sigma_w_sq": {"val": 1.5, "bounds": "fixed"},
-                    "sigma_b_sq": {"val": 0.5, "bounds": "fixed"},
                 },
             ),
         )
@@ -162,13 +140,6 @@ class GPInitTest(parameterized.TestCase):
                     "length_scale": {"val": 1e-2, "bounds": (1e-1, 1e2)},
                 },
             ),
-            (
-                "nngp",
-                {
-                    "sigma_w_sq": {"val": 2e2, "bounds": (1e-1, 1e2)},
-                    "sigma_b_sq": {"val": 9e-2, "bounds": (1e-1, 1e3)},
-                },
-            ),
         )
         for e in (
             (
@@ -205,13 +176,6 @@ class GPInitTest(parameterized.TestCase):
                 },
             ),
             (
-                "nngp",
-                {
-                    "sigma_w_sq": {"val": "sample", "bounds": (1e-1, 1e2)},
-                    "sigma_b_sq": {"val": "sample", "bounds": (1e-1, 1e3)},
-                },
-            ),
-            (
                 "matern",
                 {
                     "nu": {"val": "log_sample", "bounds": (1e-2, 5e4)},
@@ -228,13 +192,6 @@ class GPInitTest(parameterized.TestCase):
                         "val": "log_sample",
                         "bounds": (1e-1, 1e2),
                     },
-                },
-            ),
-            (
-                "nngp",
-                {
-                    "sigma_w_sq": {"val": "log_sample", "bounds": (1e-1, 1e2)},
-                    "sigma_b_sq": {"val": "log_sample", "bounds": (1e-1, 1e3)},
                 },
             ),
         )
@@ -556,149 +513,6 @@ class GPSigmaSqTest(parameterized.TestCase):
             )
             self.assertEqual(sigmas.shape, (data_count,))
             self.assertAlmostEqual(muygps.sigma_sq(), np.mean(sigmas), 5)
-
-
-class LegacyConsistencyTest(parameterized.TestCase):
-    @parameterized.parameters(
-        (
-            (1000, 100, f, 10, nn_kwargs, e, k_kwargs)
-            for f in [100, 1]
-            for nn_kwargs in _basic_nn_kwarg_options
-            for e in (({"val": 1e-5},))
-            for k_kwargs in (
-                (
-                    "matern",
-                    "l2",
-                    {
-                        "nu": {"val": 1.0},
-                        "length_scale": {"val": 7.2},
-                    },
-                ),
-                (
-                    "rbf",
-                    "F2",
-                    {
-                        "length_scale": {"val": 1.5},
-                    },
-                ),
-            )
-        )
-    )
-    def test_rbf_matern(
-        self,
-        train_count,
-        test_count,
-        feature_count,
-        nn_count,
-        nn_kwargs,
-        eps,
-        k_kwargs,
-    ):
-        kern, metric, kwargs = k_kwargs
-        oldkwargs = {key: kwargs[key]["val"] for key in kwargs}
-
-        # Prepare the data
-        train = _make_gaussian_matrix(train_count, feature_count)
-        test = _make_gaussian_matrix(test_count, feature_count)
-        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        indices = np.arange(test_count)
-        nn_indices, _ = nbrs_lookup.get_nns(test)
-        # if metric == "l2":
-        #     nn_dists = np.sqrt(nn_dists)
-
-        # the new workflow: create distance matrices then apply kernel
-        nn_dists = crosswise_distances(
-            test, train, indices, nn_indices, metric=metric
-        )
-        metric_dists = pairwise_distances(train, nn_indices, metric=metric)
-        muygps = MuyGPS(kern=kern, eps=eps, **kwargs)
-        K = muygps.kernel(metric_dists)
-        Kcross = muygps.kernel(nn_dists)
-
-        # the old workflow: pass all data to muygps object and let it assemble
-        # kernel
-        oldmuygps = OldMuyGPS(kern=kern, **oldkwargs)
-        OldK, OldKcross = oldmuygps._compute_kernel_tensors(
-            indices, nn_indices, test, train
-        )
-        OldKcross = OldKcross.reshape(test_count, nn_count)
-
-        # compare
-        self.assertTrue(np.allclose(K, OldK))
-        self.assertTrue(np.allclose(Kcross, OldKcross))
-
-    @parameterized.parameters(
-        (
-            (1000, 100, f, 10, nn_kwargs, e, k_kwargs)
-            for f in [100, 5]
-            for nn_kwargs in [
-                {
-                    "nn_method": "hnsw",
-                    "space": "ip",
-                    "ef_construction": 100,
-                    "M": 16,
-                }
-            ]
-            for e in (({"val": 1e-5},))
-            for k_kwargs in (
-                (
-                    "nngp",
-                    "ip",
-                    {
-                        "sigma_w_sq": {"val": 1.5},
-                        "sigma_b_sq": {"val": 0.5},
-                    },
-                ),
-            )
-        )
-    )
-    def test_nngp(
-        self,
-        train_count,
-        test_count,
-        feature_count,
-        nn_count,
-        nn_kwargs,
-        eps,
-        k_kwargs,
-    ):
-        kern, metric, kwargs = k_kwargs
-        oldkwargs = {key: kwargs[key]["val"] for key in kwargs}
-
-        # Prepare the data
-        train = _make_gaussian_matrix(train_count, feature_count)
-        test = _make_gaussian_matrix(test_count, feature_count)
-        train = train / np.linalg.norm(train, axis=1)[:, None]
-        test = test / np.linalg.norm(test, axis=1)[:, None]
-        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
-        indices = np.arange(test_count)
-
-        nn_dists2 = crosswise_distances(
-            test, train, indices, nn_indices, metric=metric
-        )
-
-        # print(np.max(np.abs(nn_dists, nn_dists2)))
-
-        # the new workflow: create distance matrix then apply kernel
-        metric_dists = pairwise_distances(train, nn_indices, metric=metric)
-        muygps = MuyGPS(kern=kern, eps=eps, **kwargs)
-        K, Kcross = muygps.kernel(metric_dists, nn_dists)
-
-        # the old workflow: pass all data to muygps object and let it assemble
-        # kernel
-        oldmuygps = OldMuyGPS(kern=kern, **oldkwargs)
-        OldK, OldKcross = oldmuygps._compute_kernel_tensors(
-            indices, nn_indices, test, train
-        )
-        OldKcross = OldKcross.reshape(test_count, nn_count)
-
-        # compare
-        self.assertTrue(np.allclose(K, OldK))
-        # The square root business in the NNGP produces large errors on the
-        # order of 1e-2. This definitely warrants further investigation.
-        # print(np.max(np.abs(Kcross - OldKcross)))
-        self.assertTrue(np.allclose(Kcross, OldKcross, atol=1e-1))
 
 
 if __name__ == "__main__":

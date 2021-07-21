@@ -259,14 +259,6 @@ class GPSigmaSqBaselineTest(parameterized.TestCase):
                     "rbf",
                     {"length_scale": 1.5, "eps": 0.00001},
                 ),
-                (
-                    "nngp",
-                    {
-                        "sigma_w_sq": 1.5,
-                        "sigma_b_sq": 1.0,
-                        "eps": 0.00001,
-                    },
-                ),
             )
         )
     )

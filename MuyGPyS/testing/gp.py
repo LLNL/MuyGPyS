@@ -7,8 +7,6 @@ import numpy as np
 
 from sklearn.gaussian_process.kernels import Matern, RBF
 
-from MuyGPyS.gp.kernels import NNGPimpl as NNGP
-
 
 class BenchmarkGP:
     """
@@ -26,7 +24,7 @@ class BenchmarkGP:
         kern : str
             The kernel to be used. Each kernel supports different
             hyperparameters that can be specified in kwargs.
-            NOTE[bwp] Currently supports ``matern'', ``rbf'' and ``nngp''.
+            NOTE[bwp] Currently supports ``matern'' and ``rbf''.
         """
         self.kern = kern.lower()
         self.set_params(**kwargs)
@@ -60,15 +58,6 @@ class BenchmarkGP:
         length_scale : float
             Scale parameter multiplied against distance values.
 
-        NNGP Parameters
-        ----------
-        sigma_b_sq : float
-            Variance prior on the bias parameters in a wide neural network under
-            Glorot inigialization in the infinite width limit.
-        sigma_w_sq : float
-            Variance prior on the weight parameters in a wide neural network
-            under Glorot inigialization in the infinite width limit.
-
         Returns
         -------
         unset_params : list(str)
@@ -92,17 +81,6 @@ class BenchmarkGP:
             unset_params = {"eps", "sigma_sq", "length_scale"}.difference(
                 params.keys()
             )
-        elif self.kern == "nngp":
-            self.kernel = NNGP(
-                sigma_b_sq=self.params.get("sigma_b_sq", 0.5),
-                sigma_w_sq=self.params.get("sigma_w_sq", 0.5),
-            )
-            unset_params = {
-                "eps",
-                "sigma_sq",
-                "sigma_b_sq",
-                "sigma_w_sq",
-            }.difference(params.keys())
         else:
             raise NotImplementedError(f"{self.kern} is not implemented yet!")
         return sorted(list(unset_params))
@@ -137,8 +115,6 @@ class BenchmarkGP:
             self.kernel = Matern(**self.params)
         elif self.kern == "rbf":
             self.kernel = RBF(**self.params)
-        elif self.kern == "nngp":
-            self.kernel = NNGP(**self.params)
 
     def optim_bounds(self, names, eps=1e-6):
         """
@@ -165,11 +141,6 @@ class BenchmarkGP:
         elif self.kern == "rbf":
             if "length_scale" in names:
                 ret.append((eps, 40.0))
-        elif self.kern == "nngp":
-            if "sigma_b_sq" in names:
-                ret.append((eps, 2.0))
-            if "sigma_w_sq" in names:
-                ret.append((eps, 2.0))
         return ret
 
     def fit(self, test, train):

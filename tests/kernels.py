@@ -19,7 +19,7 @@ from MuyGPyS.testing.test_utils import (
     _fast_nn_kwarg_options,
 )
 from MuyGPyS.gp.distance import pairwise_distances
-from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern, NNGP, NNGPimpl
+from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern
 
 
 class DistancesTest(parameterized.TestCase):
@@ -353,127 +353,11 @@ class ParamTest(KernelTest):
     def test_matern(self, k_kwargs, alt_kwargs):
         self._test_chassis(Matern, k_kwargs, alt_kwargs)
 
-    @parameterized.parameters(
-        (
-            (k_kwargs, alt_kwargs)
-            for k_kwargs in [
-                {
-                    "sigma_b_sq": {"val": 0.42, "bounds": (1e-4, 5e1)},
-                    "sigma_w_sq": {"val": 1.0, "bounds": (1e-5, 1e1)},
-                }
-            ]
-            for alt_kwargs in [
-                {
-                    "sigma_b_sq": {"val": 1.42, "bounds": (1e-2, 5e3)},
-                    "sigma_w_sq": {"val": 0.32, "bounds": (5e-5, 1e2)},
-                },
-                {
-                    "sigma_b_sq": {"bounds": (1e-2, 5e3)},
-                    "sigma_w_sq": {"val": 0.32},
-                },
-                {
-                    "sigma_b_sq": {"bounds": (1e-2, 5e3)},
-                },
-                {
-                    "sigma_w_sq": {"bounds": (5e-5, 1e2)},
-                },
-            ]
-        )
-    )
-    def test_nngp(self, k_kwargs, alt_kwargs):
-        self._test_chassis(NNGP, k_kwargs, alt_kwargs)
-
     def _test_chassis(self, kern, k_kwargs, alt_kwargs):
         kern_fn = kern(**k_kwargs)
         self._check_params_chassis(kern_fn, **k_kwargs)
         kern_fn.set_params(**alt_kwargs)
         self._check_params_chassis(kern_fn, **alt_kwargs)
-
-
-class NNGPTest(KernelTest):
-    @parameterized.parameters(
-        (
-            (1000, f, nn, 10, nn_kwargs, k_kwargs)
-            for f in [100, 10, 5]
-            for nn in [5, 10, 100]
-            for nn_kwargs in [
-                {
-                    "nn_method": "hnsw",
-                    "space": "ip",
-                    "ef_construction": 100,
-                    "M": 16,
-                }
-            ]
-            for k_kwargs in [
-                {
-                    "sigma_b_sq": {"val": 0.42, "bounds": (1e-4, 5e1)},
-                    "sigma_w_sq": {"val": 1.0, "bounds": (1e-5, 1e1)},
-                },
-                {
-                    "sigma_b_sq": {"val": 1.3, "bounds": (1e-2, 5e3)},
-                    "sigma_w_sq": {"val": 0.2, "bounds": (1e-3, 3e1)},
-                },
-            ]
-            # for f in [100]
-            # for nn in [2]
-            # for nn_kwargs in [
-            #     {
-            #         "nn_method": "hnsw",
-            #         "space": "ip",
-            #         "ef_construction": 100,
-            #         "M": 16,
-            #     }
-            # ]
-            # for k_kwargs in [
-            #     {
-            #         "sigma_b_sq": {"val": 0.42, "bounds": (1e-4, 5e1)},
-            #         "sigma_w_sq": {"val": 1.0, "bounds": (1e-5, 1e1)},
-            #     }
-            # ]
-        )
-    )
-    def test_nngp(
-        self,
-        train_count,
-        feature_count,
-        nn_count,
-        test_count,
-        nn_kwargs,
-        k_kwargs,
-    ):
-        # NOTE[bwp]: Breaks when feature_count is small, as this appears to
-        # cause invalid values in the interior np.arccos call. Punting for now.
-        train = _make_gaussian_matrix(train_count, feature_count)
-        test = _make_gaussian_matrix(test_count, feature_count)
-        train = train / np.linalg.norm(train, axis=1)[:, None]
-        test = test / np.linalg.norm(test, axis=1)[:, None]
-        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
-        ip_dists = pairwise_distances(train, nn_indices, metric="ip")
-        nngp = NNGP(**k_kwargs)
-        self._check_params_chassis(nngp, **k_kwargs)
-        K, Kcross = nngp(ip_dists, nn_dists)
-        self.assertEqual(K.shape, (test_count, nn_count, nn_count))
-        self.assertEqual(Kcross.shape, (test_count, 1, nn_count))
-        # points = train[nn_indices]
-        indices = np.arange(test_count)
-        im_nngp = NNGPimpl(
-            sigma_b_sq=nngp.sigma_b_sq(),
-            sigma_w_sq=nngp.sigma_w_sq(),
-            L=nngp.L(),
-        )
-        im_Kfull = np.array(
-            [
-                im_nngp(np.vstack((mat, vec.reshape(1, feature_count))))
-                for vec, mat in zip(test[indices], train[nn_indices])
-            ]
-        )
-        im_K = im_Kfull[:, :-1, :-1]
-        im_Kcross = im_Kfull[:, -1, :-1].reshape((test_count, 1, nn_count))
-        self.assertEqual(im_K.shape, (test_count, nn_count, nn_count))
-        self.assertEqual(im_Kcross.shape, (test_count, 1, nn_count))
-        self.assertTrue(np.allclose(K, im_K))
-        self.assertTrue(np.allclose(Kcross, im_Kcross))
 
 
 class MaternTest(KernelTest):
