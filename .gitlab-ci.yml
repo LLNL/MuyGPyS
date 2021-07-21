@@ -11,6 +11,8 @@ stages:
       when: never
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
       when: always
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+      when: always
     - when: never
     
 configure_python:
