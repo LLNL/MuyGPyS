@@ -9,11 +9,7 @@ stages:
   rules:
     - if: $CI_COMMIT_TAG
       when: never
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-      when: always
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
-      when: always
-    - when: never
+    - when: always
     
 configure_python:
   extends: .template_run_rules
