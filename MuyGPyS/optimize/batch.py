@@ -24,7 +24,7 @@ from MuyGPyS.neighbors import NN_Wrapper
 def get_balanced_batch(
     nbrs_lookup: NN_Wrapper,
     labels: np.ndarray,
-    batch_size: int,
+    batch_count: int,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Decide whether to sample a balanced batch or return the full filtered batch.
@@ -54,7 +54,7 @@ def get_balanced_batch(
         labels:
             List of class labels of shape `(train_count,)` for all training
             data.
-        batch_size: int
+        batch_count: int
             The number of batch elements to sample.
 
     Returns
@@ -66,8 +66,8 @@ def get_balanced_batch(
         The indices of the nearest neighbors of the sampled training points
         of shape `(batch_count, nn_count)`.
     """
-    if len(labels) > batch_size:
-        return sample_balanced_batch(nbrs_lookup, labels, batch_size)
+    if len(labels) > batch_count:
+        return sample_balanced_batch(nbrs_lookup, labels, batch_count)
     else:
         return full_filtered_batch(nbrs_lookup, labels)
 
@@ -115,7 +115,7 @@ def full_filtered_batch(
 def sample_balanced_batch(
     nbrs_lookup: NN_Wrapper,
     labels: np.ndarray,
-    batch_size: int,
+    batch_count: int,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Collect a class-balanced batch of training indices.
@@ -130,7 +130,7 @@ def sample_balanced_batch(
         labels:
             List of class labels of shape `(train_count,)` for all embedded
             data.
-        batch_size:
+        batch_count:
             The number of batch elements to sample.
 
     Returns
@@ -155,21 +155,21 @@ def sample_balanced_batch(
     )
     classes = np.unique(labels)
     class_count = len(classes)
-    each_batch_size = int(batch_size / class_count)
+    each_batch_count = int(batch_count / class_count)
 
     nonconstant_indices = [
         np.where(np.logical_and(nonconstant_mask, labels == i))[0]
         for i in classes
     ]
 
-    batch_sizes = np.array(
-        [np.min((len(arr), each_batch_size)) for arr in nonconstant_indices]
+    batch_counts = np.array(
+        [np.min((len(arr), each_batch_count)) for arr in nonconstant_indices]
     )
 
     nonconstant_balanced_indices = np.concatenate(
         [
             np.random.choice(
-                nonconstant_indices[i], batch_sizes[i], replace=False
+                nonconstant_indices[i], batch_counts[i], replace=False
             )
             for i in range(class_count)
         ]

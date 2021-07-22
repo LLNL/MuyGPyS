@@ -1,3 +1,5 @@
+.. _MuyGPyS-gp:
+
 gp
 ===================================
 
@@ -9,4 +11,5 @@ gp
 
    gp/distance
    gp/kernels
-   gp/muygps
+   gp/MuyGPS
+   gp/MultivariateMuyGPS

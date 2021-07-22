@@ -1,6 +1,8 @@
-muygps
+.. _MuyGPyS-uq:
+
+uq
 ===========================
 
 .. default-role:: code
-.. automodule:: MuyGPyS.gp.muygps
+.. automodule:: MuyGPyS.uq
   :members:

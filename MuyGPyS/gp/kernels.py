@@ -262,7 +262,7 @@ class Hyperparameter:
                     f"Nonscalar {bounds[1]} of type {type(bounds[1])} is not a "
                     f"supported hyperparameter bound type."
                 )
-            if bounds[0] > bounds[1]:
+            if float(bounds[0]) > float(bounds[1]):
                 raise ValueError(
                     f"Lower bound {bounds[0]} is not lesser than upper bound "
                     f"{bounds[1]}."
@@ -315,7 +315,8 @@ class KernelFn:
     """
     A kernel functor.
 
-    Base class for kernel functors that include a hyperparameter Dict and
+    Base class for kernel functors that include a hyperparameter Dict and a
+    call mechanism.
 
     Args:
         kwargs:
@@ -327,10 +328,11 @@ class KernelFn:
         Initialize dict holding hyperparameters.
         """
         self.hyperparameters = dict()
+        self.metric = ""
 
     def set_params(
         self,
-        **kwargs: Dict[str, Union[float, Tuple[float, float]]],
+        **kwargs,
     ) -> None:
         """
         Reset hyperparameters using hyperparameter dict(s).
@@ -341,6 +343,9 @@ class KernelFn:
         """
         for name in kwargs:
             self.hyperparameters[name]._set(**kwargs[name])
+
+    def __call__(self, squared_dists: np.ndarray) -> np.ndarray:
+        pass
 
     def __str__(self) -> str:
         """
@@ -382,8 +387,10 @@ class RBF(KernelFn):
 
     def __init__(
         self,
-        length_scale: Dict[str, Union[float, Tuple[float, float]]] = dict(),
-        metric: str = "F2",
+        length_scale: Dict[
+            str, Union[str, float, Tuple[float, float]]
+        ] = dict(),
+        metric: Optional[str] = "F2",
     ):
         super().__init__()
         self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
@@ -451,9 +458,11 @@ class Matern(KernelFn):
 
     def __init__(
         self,
-        nu: Dict[str, Union[float, Tuple[float, float]]] = dict(),
-        length_scale: Dict[str, Union[float, Tuple[float, float]]] = dict(),
-        metric: str = "l2",
+        nu: Dict[str, Union[str, float, Tuple[float, float]]] = dict(),
+        length_scale: Dict[
+            str, Union[str, float, Tuple[float, float]]
+        ] = dict(),
+        metric: Optional[str] = "l2",
     ):
         super().__init__()
         self.nu = _init_hyperparameter(1.0, "fixed", **nu)

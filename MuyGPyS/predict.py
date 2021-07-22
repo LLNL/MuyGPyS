@@ -3,43 +3,51 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+"""Convenience functions for prediction workflows.
+"""
+
+import numpy as np
+
+from time import perf_counter
+from typing import Dict, Optional, Tuple, Union
+
 from MuyGPyS.gp.distance import (
     crosswise_distances,
     pairwise_distances,
 )
-import numpy as np
-
-from time import perf_counter
+from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.neighbors import NN_Wrapper
 
 
 def classify_any(
-    muygps,
-    test,
-    train,
-    train_nbrs_lookup,
-    train_labels,
-):
+    surrogate: Union[MuyGPS, MMuyGPS],
+    test: np.ndarray,
+    train: np.ndarray,
+    train_nbrs_lookup: NN_Wrapper,
+    train_labels: np.ndarray,
+) -> Tuple[np.ndarray, Dict[str, float]]:
     """
     Simulatneously predicts the surrogate regression means for each test item.
 
-    Parameters
-    ----------
-    muygps : MuyGPyS.GP.MuyGPS
-        Local kriging approximate GP.
-    test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
-        Testing data.
-    train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-        Training data.
-    train_nbrs_lookup : MuyGPyS.neighbors.NN_Wrapper
-        Trained nearest neighbor query data structure.
-    train_labels : numpy.ndarray(int), shape = ``(train_count, class_count)''
-        One-hot encoding of class labels for all training data.
+    Args:
+        surrogate:
+            Surrogate regressor.
+        test:
+            Test observations of shape `(test_count, feature_count)`.
+        train:
+            Train observations of shape `(train_count, feature_count)`.
+        train_nbrs_lookup:
+            Trained nearest neighbor query data structure.
+        train_labels:
+            One-hot encoding of class labels for all training data of shape
+            `(train_count, class_count)`.
 
     Returns
     -------
-    predictions : numpy.ndarray(float), shape = ``(test_count,)''
-        The predicted labels associated with each test observation.
-    timing : dict
+    predictions:
+        The surrogate predictions of shape `(test_count, class_count)` for each
+        test observation.
+    timing:
         Timing for the subroutines of this function.
     """
     test_count = test.shape[0]
@@ -64,7 +72,7 @@ def classify_any(
     time_agree = perf_counter()
 
     if np.sum(nonconstant_mask) > 0:
-        predictions[nonconstant_mask] = muygps.regress_from_indices(
+        predictions[nonconstant_mask] = surrogate.regress_from_indices(
             np.where(nonconstant_mask == True)[0],
             test_nn_indices[nonconstant_mask, :],
             test,
@@ -82,34 +90,38 @@ def classify_any(
 
 
 def classify_two_class_uq(
-    muygps,
-    test,
-    train,
-    train_nbrs_lookup,
-    train_labels,
-):
+    surrogate: Union[MuyGPS, MMuyGPS],
+    test: np.ndarray,
+    train: np.ndarray,
+    train_nbrs_lookup: NN_Wrapper,
+    train_labels: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray, Dict[str, float]]:
     """
     Simultaneously predicts the surrogate means and variances for each test item
     under the assumption of binary classification.
 
-    Parameters
-    ----------
-    muygps : MuyGPyS.GP.MuyGPS
-        Local kriging approximate GP.
-    test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
-        Testing data.
-    train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-        Training data.
-    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
-        Trained nearest neighbor query data structure.
-    train_labels : numpy.ndarray(int), shape = ``(train_count, class_count)''
-        One-hot encoding of class labels for all training data.
+    Args:
+        surrogate:
+            Surrogate regressor.
+        test:
+            Test observations of shape `(test_count, feature_count)`.
+        train:
+            Train observations of shape `(train_count, feature_count)`.
+        train_nbrs_lookup:
+            Trained nearest neighbor query data structure.
+        train_labels:
+            One-hot encoding of class labels for all training data of shape
+            `(train_count, class_count)`.
 
     Returns
     -------
-    means : numpy.ndarray(float), shape = ``(test_count,)''
-        The predicted labels associated with each test observation.
-    timing : dict
+    means:
+        The surrogate predictions for each test observation of shape
+        `(test_count, 2)`.
+    variances:
+        The posterior variances for each test observation of shape
+        `(test_count,)`
+    timing:
         Timing for the subroutines of this function.
     """
     test_count = test.shape[0]
@@ -136,7 +148,7 @@ def classify_two_class_uq(
         (
             means[nonconstant_mask, :],
             variances[nonconstant_mask],
-        ) = muygps.regress_from_indices(
+        ) = surrogate.regress_from_indices(
             np.where(nonconstant_mask == True)[0],
             test_nn_indices[nonconstant_mask, :],
             test,
@@ -158,44 +170,47 @@ def classify_two_class_uq(
 
 
 def regress_any(
-    muygps,
-    test,
-    train,
-    train_nbrs_lookup,
-    train_targets,
-    variance_mode=None,
-):
+    regressor: Union[MuyGPS, MMuyGPS],
+    test: np.ndarray,
+    train: np.ndarray,
+    train_nbrs_lookup: NN_Wrapper,
+    train_targets: np.ndarray,
+    variance_mode: Optional[str] = None,
+) -> Union[
+    Tuple[np.ndarray, Dict[str, float]],
+    Tuple[Tuple[np.ndarray, np.ndarray], Dict[str, float]],
+]:
     """
     Simultaneously predicts the response for each test item.
 
-    Parameters
-    ----------
-    muygps : MuyGPyS.GP.MuyGPS
-        Local kriging approximate GP.
-    test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
-        Testing data.
-    train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-        Training raining data.
-    train_nbrs_lookup : `MuyGPyS.neighbors.NN_Wrapper'
-        Trained nearest neighbor query data structure.
-    train_targets : numpy.ndarray(float), shape = ``(train_count, class_count)''
-        Observed outputs for all training data.
-    nn_count : int
-        The number of nearest neighbors used for inference
-    variance_mode : str or None
-        Specifies the type of variance to return. Currently supports
-        ``diagonal'' and None. If None, report no variance term.
+    Args:
+        regressor:
+            Regressor object.
+        test:
+            Test observations of shape `(test_count, feature_count)`.
+        train:
+            Train observations of shape `(train_count, feature_count)`.
+        train_nbrs_lookup:
+            Trained nearest neighbor query data structure.
+        train_targets:
+            Observed response for all training data of shape
+            `(train_count, class_count)`.
+        variance_mode : str or None
+            Specifies the type of variance to return. Currently supports
+            `diagonal` and None. If None, report no variance term.
 
     Returns
     -------
-    predictions : numpy.ndarray(float), shape = ``(batch_count, class_count,)''
-        The predicted response for each of the given indices. The form returned
-        when ``variance_mode == None''.
-    predictions : tuple
-        Form returned when ``variance_mode is not None''. A pair of
-        numpy.ndarrays, where the first element is the prediction matrix and the
-        second is the variance object. This object is a vector of independent
-        variances if ``variance_mode == "diagonal"''.
+    means:
+        The predicted response of shape `(test_count, response_count,)` for
+        each of the test examples.
+    variances:
+        The independent posterior variances for each of the test examples. Of
+        shape `(test_count,)` if the argument `regressor` is an instance of
+        :class:`MuyGPyS.gp.muygps.MuyGPS`, and of shape
+        `(test_count, response_count)` if `regressor` is an instance of
+        :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS`. Returned only when
+        `variance_mode == "diagonal"`.
     timing : dict
         Timing for the subroutines of this function.
     """
@@ -208,7 +223,7 @@ def regress_any(
 
     time_agree = perf_counter()
 
-    predictions = muygps.regress_from_indices(
+    predictions = regressor.regress_from_indices(
         np.arange(test_count),
         test_nn_indices,
         test,

@@ -22,7 +22,7 @@ import numpy as np
 
 from sklearn.neighbors import NearestNeighbors
 from time import perf_counter
-from typing import Tuple, Dict
+from typing import Tuple, Optional
 
 from MuyGPyS.utils import safe_apply
 
@@ -99,7 +99,6 @@ class NN_Wrapper:
 
             exact_kwargs["n_neighbors"] = nn_count + 1
             exact_kwargs["n_jobs"] = exact_kwargs.get("n_jobs", -1)
-            print(exact_kwargs["n_jobs"])
             self.nbrs = NearestNeighbors(**exact_kwargs).fit(self.train)
         elif self.nn_method == "hnsw":
             self.nbrs = hnswlib.Index(
@@ -205,7 +204,7 @@ class NN_Wrapper:
     def _get_nns(
         self,
         samples: np.ndarray,
-        nn_count: Tuple[int],
+        nn_count: int,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Get the nearest neighbors for each row of `samples` dataset.

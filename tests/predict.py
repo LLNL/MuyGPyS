@@ -115,7 +115,7 @@ class ClassifyTest(parameterized.TestCase):
         feature_count,
         response_count,
         nn_count,
-        batch_size,
+        batch_count,
         nn_kwargs,
         k_kwargs,
     ):
@@ -148,7 +148,7 @@ class ClassifyTest(parameterized.TestCase):
         indices, nn_indices = get_balanced_batch(
             nbrs_lookup,
             train_labels,
-            batch_size,
+            batch_count,
         )
 
         cutoffs = train_two_class_interval(

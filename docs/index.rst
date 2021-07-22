@@ -8,14 +8,28 @@ MuyGPyS Reference
 
 MuyGPyS is toolkit for training approximate Gaussian Process (GP) models using the MuyGPs (Muyskens, Goumiri, Priest, Schneider) algorithm. 
 
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Package Documentation:
 
    MuyGPyS/neighbors
    MuyGPyS/gp
    MuyGPyS/optimize
 
+.. toctree::
+   :maxdepth: 2
+   :caption: High-level API Documentation:
+
+   MuyGPyS/examples
+   MuyGPyS/predict
+   MuyGPyS/uq
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Resources:
+
+   resources/references
 
 Indices and tables
 ==================

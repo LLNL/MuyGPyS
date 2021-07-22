@@ -1,3 +1,5 @@
+.. _MuyGPyS-neighbors:
+
 neighbors
 ===========================
 

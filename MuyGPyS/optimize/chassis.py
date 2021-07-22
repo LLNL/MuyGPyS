@@ -17,6 +17,7 @@ from MuyGPyS.gp.distance import crosswise_distances, pairwise_distances
 import numpy as np
 
 from scipy import optimize as opt
+from typing import Optional
 
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.objective import get_loss_func, loo_crossval
@@ -38,6 +39,38 @@ def scipy_optimize_from_indices(
     Use this method if you do not need to retain the distance matrices used for
     optimization.
 
+    See the followin example, where we have already created a `batch_indices`
+    vector and a `batch_nn_indices` matrix using
+    :class:`MuyGPyS.neighbors.NN_Wrapper`, and initialized a
+    :class:`MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
+
+    Example:
+        >>> from MuyGPyS.optimize.chassis import scipy_optimize_from_indices
+        >>> scipy_optimize_from_tensors(
+        ...         muygps,
+        ...         batch_indices,
+        ...         batch_nn_indices,
+        ...         train_features,
+        ...         train_features,
+        ...         train_responses,
+        ...         loss_method='mse',
+        ...         verbose=True,
+        ... )
+        parameters to be optimized: ['nu']
+        bounds: [[0.1 1. ]]
+        sampled x0: [0.8858425]
+        optimizer results:
+              fun: 0.4797763813693626
+         hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+              jac: array([-3.06976666e-06])
+          message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
+             nfev: 16
+              nit: 5
+             njev: 8
+           status: 0
+          success: True
+                x: array([0.39963594])
+
     Args:
         muygps:
             The model to be optimized.
@@ -45,7 +78,7 @@ def scipy_optimize_from_indices(
             A vector of integers of shape `(batch_count,)` identifying the
             training batch of observations to be approximated.
         batch_nn_indices:
-            A matrix of integers of shape `(batch_size, nn_count)` listing the
+            A matrix of integers of shape `(batch_count, nn_count)` listing the
             nearest neighbor indices for all observations in the batch.
         test:
             The full floating point testing data matrix of shape
@@ -104,6 +137,40 @@ def scipy_optimize_from_tensors(
     Use this method if you need to retain the distance matrices used for later
     use.
 
+    See the followin example, where we have already created a `batch_indices`
+    vector and a `batch_nn_indices` matrix using
+    :class:`MuyGPyS.neighbors.NN_Wrapper`, a `crosswise_dists`
+    matrix using :func:`MuyGPyS.gp.distance.crosswise_distances` and
+    `pairwise_dists` using :func:`MuyGPyS.gp.distance.pairwise_distances`, and
+    initialized a :class:`MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
+
+    Example:
+        >>> from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
+        >>> scipy_optimize_from_tensors(
+        ...         muygps,
+        ...         batch_indices,
+        ...         batch_nn_indices,
+        ...         crosswise_dists,
+        ...         pairwise_dists,
+        ...         train_responses,
+        ...         loss_method='mse',
+        ...         verbose=True,
+        ... )
+        parameters to be optimized: ['nu']
+        bounds: [[0.1 1. ]]
+        sampled x0: [0.8858425]
+        optimizer results:
+              fun: 0.4797763813693626
+         hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+              jac: array([-3.06976666e-06])
+          message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
+             nfev: 16
+              nit: 5
+             njev: 8
+           status: 0
+          success: True
+                x: array([0.39963594])
+
     Args:
         muygps:
             The model to be optimized.
@@ -111,7 +178,7 @@ def scipy_optimize_from_tensors(
             A vector of integers of shape `(batch_count,)` identifying the
             training batch of observations to be approximated.
         batch_nn_indices:
-            A matrix of integers of shape `(batch_size, nn_count)` listing the
+            A matrix of integers of shape `(batch_count, nn_count)` listing the
             nearest neighbor indices for all observations in the batch.
         crosswise_dists:
             Distance matrix of floats of shape `(batch_count, nn_count)` whose

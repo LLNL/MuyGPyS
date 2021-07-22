@@ -69,6 +69,8 @@ Example:
 
 import numpy as np
 
+from typing import Optional
+
 from sklearn.metrics.pairwise import cosine_similarity
 
 
@@ -77,7 +79,7 @@ def crosswise_distances(
     nn_data: np.ndarray,
     data_indices: np.ndarray,
     nn_indices: np.ndarray,
-    metric: str = "l2",
+    metric: Optional[str] = "l2",
 ) -> np.ndarray:
     """
     Compute a matrix of distances between data and their nearest neighbors.
@@ -103,7 +105,7 @@ def crosswise_distances(
             An integral vector of shape `(batch_count,)` containing the indices
             of the batch.
         nn_indices:
-            An integral matrix of shape (batch_size, nn_count) listing the
+            An integral matrix of shape (batch_count, nn_count) listing the
             nearest neighbor indices for the batch of data points.
         metric:
             The name of the metric to use in order to form distances. Supported
@@ -123,7 +125,7 @@ def crosswise_distances(
     elif metric == "ip":
         return _crosswise_prods(locations, points)
     elif metric == "cosine":
-        return _crosswise_cosine(points)
+        return _crosswise_cosine(locations, points)
     else:
         raise ValueError(f"Metric {metric} is not supported!")
 
@@ -185,7 +187,7 @@ def _crosswise_cosine(locations: np.array, points: np.array) -> np.array:
 def pairwise_distances(
     data: np.ndarray,
     nn_indices: np.ndarray,
-    metric: str = "l2",
+    metric: Optional[str] = "l2",
 ) -> np.ndarray:
     """
     Compute a tensor of pairwise distances among sets of nearest neighbors.
@@ -199,7 +201,7 @@ def pairwise_distances(
             The data matrix of shape `(data_count, feature_count)` containing
             batch elements.
         nn_indices:
-            An integral matrix of shape (batch_size, nn_count) listing the
+            An integral matrix of shape (batch_count, nn_count) listing the
             nearest neighbor indices for the batch of data points.
         metric:
             The name of the metric to use in order to form distances. Supported

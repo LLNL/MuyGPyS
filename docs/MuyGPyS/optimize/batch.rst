@@ -1,3 +1,5 @@
+.. _MuyGPyS-optimize-batch:
+
 batch
 ===========================
 

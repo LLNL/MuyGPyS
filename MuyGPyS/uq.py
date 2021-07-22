@@ -3,50 +3,59 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+"""Convenience functions for uncertainty quantification workflows.
+"""
+
 import numpy as np
+
+from typing import Callable, List, Tuple, Union
+
+from MuyGPyS.gp.muygps import MuyGPS
 
 
 def train_two_class_interval(
-    muygps,
-    batch_indices,
-    batch_nn_indices,
-    train,
-    train_responses,
-    train_labels,
-    objective_fns,
-):
+    surrogate: MuyGPS,
+    batch_indices: np.ndarray,
+    batch_nn_indices: np.ndarray,
+    train: np.ndarray,
+    train_responses: np.ndarray,
+    train_labels: np.ndarray,
+    objective_fns: Union[List[Callable], Tuple[Callable, ...]],
+) -> np.ndarray:
     """
     For 2-class classification problems, get estimate of the confidence
     interval scaling parameter.
 
-    Parameters
-    ----------
-    muygps : MuyGPyS.GP.MuyGPS
-        Local kriging approximate MuyGPS.
-    batch_indices : numpy.ndarray(int), shape = ``(batch_size,)''
-        Batch observation indices.
-    batch_nn_indices : numpy.ndarray(int), shape = ``(n_batch, nn_count)''
-        Indices of the nearest neighbors
-    train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-        The full training data matrix.
-    train_responses : numpy.ndarray(int), shape = ``(train_count, class_count)''
-        One-hot encoding of class labels for all training data.
-    train_labels : numpy.ndarray(int), shape = ``(train_count,)''
-        List of class labels for all training data.
-    objective_fns : list(Callable), shape = ``(objective_count)''
-        List of functions taking four arguments: bit masks alpha and beta - the
-        type 1 and type 2 error counts at each grid location, respectively - and
-        the numbers of correctly and incorrectly classified training examples.
-        Each objective function effervesces a cutoff value that
+    Args:
+        surrogate:
+            Surrogate regressor.
+        batch_indices:
+            Batch observation indices of shape `(batch_count)`.
+        batch_nn_indices:
+            Indices of the nearest neighbors of shape `(batch_count, nn_count)`.
+        train:
+            The full training data matrix of shape
+            `(train_count, feature_count)`.
+        train_responses:
+            One-hot encoding of class labels for all training data of shape
+            `(train_count, class_count)`.
+        train_labels:
+            List of class labels for all training data of shape
+            `(train_count,)`.
+        objective_fns:
+            A collection of `objective_count` functions taking the four
+            arguments bit masks alpha and beta - the type 1 and type 2 error
+            counts at each grid location, respectively - and the numbers of
+            correctly and incorrectly classified training examples. Each
+            objective function effervesces a cutoff value to calibrate UQ
+            for class decision-making.
 
-    Returns
-    -------
-    cutoffs : np.ndarray(float), shape = ``(objective_count,)''
-        Returns the confidence interval scale parameter that minimizes each
-        considered objective function.
+    Returns:
+        A vector of shape `(objective_count)` indicating the confidence interval
+        scale parameter that minimizes each considered objective function.
     """
     targets = train_labels[batch_indices]
-    mean, variance = muygps.regress_from_indices(
+    mean, variance = surrogate.regress_from_indices(
         batch_indices,
         batch_nn_indices,
         train,
