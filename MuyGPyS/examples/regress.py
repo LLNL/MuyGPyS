@@ -3,6 +3,10 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+"""Resources and high-level API for some regression workflows.
+"""
+
+
 from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
 from MuyGPyS.gp.distance import crosswise_distances, pairwise_distances
 
@@ -24,18 +28,21 @@ from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 
 # from scipy import optimize as opt
 from time import perf_counter
+from typing import Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 
 def make_regressor(
-    train_data,
-    train_targets,
-    nn_count=30,
-    batch_size=200,
-    loss_method="mse",
-    k_kwargs=dict(),
-    nn_kwargs=dict(),
-    verbose=False,
-):
+    train_features: np.ndarray,
+    train_targets: np.ndarray,
+    nn_count: int = 30,
+    batch_count: int = 200,
+    loss_method: str = "mse",
+    k_kwargs: Dict = dict(),
+    nn_kwargs: Dict = dict(),
+    verbose: bool = False,
+) -> Tuple[MuyGPS, NN_Wrapper]:
     """
     Convenience function for creating MuyGPyS functor and neighbor lookup data
     structure.
@@ -44,71 +51,72 @@ def make_regressor(
     parameters and nearest neighbor parameters. See the docstrings of the
     appropriate functions for specifics.
 
-    Parameters
-    ----------
-    train_data : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-        A matrix of row observation vectors.
-    train_targets = numpy.ndarray(float),
-                    shape = ``(train_count, response_count)''
-        A matrix of row response vectors for the training data.
-    nn_count : int
-        The number of nearest neighbors to employ.
-    batch_size : int
-        The batch size for hyperparameter optimization.
-    loss_method : str
-        The loss method to use in hyperparameter optimization. Ignored if all of
-        the parameters specified by ``k_kwargs'' are fixed.
-        NOTE[bwp]: Currently supports only ``mse'' for regression.
-    k_kwargs : dict
-        Parameters for the kernel, possibly including kernel type, distance
-        metric, epsilon and sigma hyperparameter specifications, and
-        specifications for kernel hyperparameters. If all of the hyperparameters
-        are fixed or are not given optimization bounds, no optimization will
-        occur.
-    nn_kwargs : dict
-        Parameters for the nearest neighbors wrapper. See
-        `MuyGPyS.neighbors.NN_Wrapper` for the supported methods and their
-        parameters.
-    verbose : Boolean
-        If ``True'', print summary statistics.
+    Example:
+        >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
+        >>> from MuyGPyS.examples.regress import make_regressor
+        >>> train_features, train_responses = make_train()  # stand-in function
+        >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+        >>> k_kwargs = {
+        ...         "kern": "rbf",
+        ...         "metric": "F2",
+        ...         "eps": {"val": 1e-5},
+        ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
+        ... }
+        >>> muygps, nbrs_lookup = make_regressor(
+        ...         train_features,
+        ...         train_responses,
+        ...         nn_count=30,
+        ...         batch_count=200,
+        ...         loss_method="mse",
+        ...         k_kwargs=k_kwargs,
+        ...         nn_kwargs=nn_kwargs,
+        ...         verbose=False,
+        ... )
+
+    Args:
+        train_features:
+            A matrix of shape `(train_count, feature_count)` whose rows consist
+            of observation vectors of the train data.
+        train_targets:
+            A matrix of shape `(train_count, response_count)` whose rows consist
+            of response vectors of the train data.
+        nn_count:
+            The number of nearest neighbors to employ.
+        batch_count:
+            The number of elements to sample batch for hyperparameter
+            optimization.
+        loss_method:
+            The loss method to use in hyperparameter optimization. Ignored if
+            all of the parameters specified by argument `k_kwargs` are fixed.
+            Currently supports only `"mse"` for regression.
+        k_kwargs:
+            Parameters for the kernel, possibly including kernel type, distance
+            metric, epsilon and sigma hyperparameter specifications, and
+            specifications for kernel hyperparameters. See
+            :ref:`MuyGPyS-gp-kernels` for examples and requirements. If all of
+            the hyperparameters are fixed or are not given optimization bounds,
+            no optimization will occur.
+        nn_kwargs:
+            Parameters for the nearest neighbors wrapper. See
+            :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
+            their parameters.
+        verbose : Boolean
+            If `True`, print summary statistics.
 
     Returns
     -------
-    muygps : MuyGPyS.gp.MuyGPS
+    muygps:
         A (possibly trained) MuyGPs object.
-    nbrs_lookup : MuyGPyS.neighbors.NN_Wrapper
+    nbrs_lookup:
         A data structure supporting nearest neighbor queries into
-        ``train_data''.
-
-    Examples
-    --------
-    >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
-    >>> from MuyGPyS.examples.regress import make_regressor
-    >>> train = _make_gaussian_dict(10000, 100, 10)
-    >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
-    >>> k_kwargs = {
-    ...         "kern": "rbf",
-    ...         "metric": "F2",
-    ...         "eps": {"val": 1e-5},
-    ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
-    ... }
-    >>> muygps, nbrs_lookup = make_regressor(
-    ...         train['input'],
-    ...         train['output'],
-    ...         nn_count=30,
-    ...         batch_size=200,
-    ...         loss_method="mse",
-    ...         k_kwargs=k_kwargs,
-    ...         nn_kwargs=nn_kwargs,
-    ...         verbose=False,
-    ... )
+        `train_features`.
     """
-    train_count, _ = train_data.shape
+    train_count, _ = train_features.shape
     _, response_count = train_targets.shape
     time_start = perf_counter()
 
     nbrs_lookup = NN_Wrapper(
-        train_data,
+        train_features,
         nn_count,
         **nn_kwargs,
     )
@@ -132,20 +140,20 @@ def make_regressor(
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup,
-            batch_size,
+            batch_count,
             train_count,
         )
         time_batch = perf_counter()
 
         crosswise_dists = crosswise_distances(
-            train_data,
-            train_data,
+            train_features,
+            train_features,
             batch_indices,
             batch_nn_indices,
             metric=muygps.kernel.metric,
         )
         pairwise_dists = pairwise_distances(
-            train_data, batch_nn_indices, metric=muygps.kernel.metric
+            train_features, batch_nn_indices, metric=muygps.kernel.metric
         )
         time_tensor = perf_counter()
 
@@ -181,16 +189,16 @@ def make_regressor(
 
 
 def make_multivariate_regressor(
-    train_data,
-    train_targets,
-    nn_count=30,
-    batch_size=200,
-    loss_method="mse",
-    kern="matern",
-    k_args=list(),
-    nn_kwargs=dict(),
-    verbose=False,
-):
+    train_features: np.ndarray,
+    train_targets: np.ndarray,
+    nn_count: int = 30,
+    batch_count: int = 200,
+    loss_method: str = "mse",
+    kern: str = "matern",
+    k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
+    nn_kwargs: Dict = dict(),
+    verbose: bool = False,
+) -> Tuple[MMuyGPS, NN_Wrapper]:
     """
     Convenience function for creating a Multivariate MuyGPyS functor and
     neighbor lookup data structure.
@@ -199,74 +207,74 @@ def make_multivariate_regressor(
     kernel parameters and a dict listing nearest neighbor parameters. See the
     docstrings of the appropriate functions for specifics.
 
-    Parameters
-    ----------
-    train_data : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-        A matrix of row observation vectors.
-    train_targets = numpy.ndarray(float),
-                    shape = ``(train_count, response_count)''
-        A matrix of row response vectors for the training data.
-    nn_count : int
-        The number of nearest neighbors to employ.
-    batch_size : int
-        The batch size for hyperparameter optimization.
-    loss_method : str
-        The loss method to use in hyperparameter optimization. Ignored if all of
-        the parameters specified by ``k_kwargs'' are fixed.
-        NOTE[bwp]: Currently supports only ``mse'' for regression.
-    kern : str
-        The kernel function to be used.
-        NOTE[bwp]: Currently supports only ``matern'' and ``rbf''.
-    k_kwargs : list(dict), len = ``response_count''
-        A list of hyperparameter dicts. Each dict specifies parameters for the
-        kernel, possibly including kernel type, distance metric, epsilon and
-        sigma hyperparameter specifications, and specifications for kernel
-        hyperparameters. If all of the hyperparameters are fixed or are not
-        given optimization bounds, no optimization will occur. The number of
-        specified kernels must equal the response count of the data.
-    nn_kwargs : dict
-        Parameters for the nearest neighbors wrapper. See
-        `MuyGPyS.neighbors.NN_Wrapper` for the supported methods and their
-        parameters.
-    verbose : Boolean
-        If ``True'', print summary statistics.
+    Example:
+        >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
+        >>> from MuyGPyS.examples.regress import make_regressor
+        >>> train_features, train_responses = make_train()  # stand-in function
+        >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+        >>> k_args = [
+        ...         {
+        ...             "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
+        ...             "eps": {"val": 1e-5},
+        ...         },
+        ...         {
+        ...             "length_scale": {"val": 1.5, "bounds": (1e-2, 1e2)}
+        ...             "eps": {"val": 1e-5},
+        ...         },
+        ... ]
+        >>> mmuygps, nbrs_lookup = make_multivariate_regressor(
+        ...         train_features,
+        ...         train_responses,
+        ...         nn_count=30,
+        ...         batch_count=200,
+        ...         loss_method="mse",
+        ...         kern="rbf",
+        ...         k_args=k_args,
+        ...         nn_kwargs=nn_kwargs,
+        ...         verbose=False,
+        ... )
+
+    Args:
+        train_features:
+            A matrix of shape `(train_count, feature_count)` whose rows consist
+            of observation vectors of the train data.
+        train_targets:
+            A matrix of shape `(train_count, response_count)` whose rows consist
+            of response vectors of the train data.
+        nn_count:
+            The number of nearest neighbors to employ.
+        batch_count:
+            The number of elements to sample batch for hyperparameter
+            optimization.
+        loss_method:
+            The loss method to use in hyperparameter optimization. Ignored if
+            all of the parameters specified by argument `k_kwargs` are fixed.
+            Currently supports only `"mse"` for regression.
+        kern:
+            The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
+            details.
+        k_args:
+            A list of `response_count` dicts containing kernel initialization
+            keyword arguments. Each dict specifies parameters for the kernel,
+            possibly including epsilon and sigma hyperparameter specifications
+            and specifications for specific kernel hyperparameters. If all of
+            the hyperparameters are fixed or are not given optimization bounds,
+            no optimization will occur.
+        nn_kwargs:
+            Parameters for the nearest neighbors wrapper. See
+            :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
+            their parameters.
+        verbose:
+            If `True`, print summary statistics.
 
     Returns
     -------
-    mmuygps : MuyGPyS.gp.MultivariateMuyGPS
+    mmuygps:
         A Multivariate MuyGPs object with a separate (possibly trained) kernel
         function associated with each response dimension.
-    nbrs_lookup : MuyGPyS.neighbors.NN_Wrapper
+    nbrs_lookup:
         A data structure supporting nearest neighbor queries into
-        ``train_data''.
-
-    Examples
-    --------
-    >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
-    >>> from MuyGPyS.examples.regress import make_regressor
-    >>> train = _make_gaussian_dict(10000, 100, 2)
-    >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
-    >>> k_args = [
-    ...         {
-    ...             "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
-    ...             "eps": {"val": 1e-5},
-    ...         },
-    ...         {
-    ...             "length_scale": {"val": 1.5, "bounds": (1e-2, 1e2)}
-    ...             "eps": {"val": 1e-5},
-    ...         },
-    ... ]
-    >>> mmuygps, nbrs_lookup = make_multivariate_regressor(
-    ...         train['input'],
-    ...         train['output'],
-    ...         nn_count=30,
-    ...         batch_size=200,
-    ...         loss_method="mse",
-    ...         kern="rbf",
-    ...         k_args=k_args,
-    ...         nn_kwargs=nn_kwargs,
-    ...         verbose=False,
-    ... )
+        `train_features`.
     """
     train_count, response_count = train_targets.shape
     if response_count != len(k_args):
@@ -277,7 +285,7 @@ def make_multivariate_regressor(
     time_start = perf_counter()
 
     nbrs_lookup = NN_Wrapper(
-        train_data,
+        train_features,
         nn_count,
         **nn_kwargs,
     )
@@ -293,20 +301,20 @@ def make_multivariate_regressor(
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup,
-            batch_size,
+            batch_count,
             train_count,
         )
         time_batch = perf_counter()
 
         crosswise_dists = crosswise_distances(
-            train_data,
-            train_data,
+            train_features,
+            train_features,
             batch_indices,
             batch_nn_indices,
             metric=mmuygps.metric,
         )
         pairwise_dists = pairwise_distances(
-            train_data, batch_nn_indices, metric=mmuygps.metric
+            train_features, batch_nn_indices, metric=mmuygps.metric
         )
         time_tensor = perf_counter()
 
@@ -342,19 +350,64 @@ def make_multivariate_regressor(
     return mmuygps, nbrs_lookup
 
 
+def _decide_and_make_regressor(
+    train_features: np.ndarray,
+    train_targets: np.ndarray,
+    nn_count: int = 30,
+    batch_count: int = 200,
+    loss_method: str = "mse",
+    variance_mode: Optional[str] = None,
+    kern: Optional[str] = None,
+    k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
+    nn_kwargs: Dict = dict(),
+    verbose: bool = False,
+) -> Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper]:
+    if kern is not None and (
+        isinstance(k_kwargs, list) or isinstance(k_kwargs, tuple)
+    ):
+        return make_multivariate_regressor(
+            train_features,
+            train_targets,
+            nn_count=nn_count,
+            batch_count=batch_count,
+            loss_method=loss_method,
+            kern=kern,
+            k_args=k_kwargs,
+            nn_kwargs=nn_kwargs,
+            verbose=verbose,
+        )
+    else:
+        if isinstance(k_kwargs, dict):
+            return make_regressor(
+                train_features,
+                train_targets,
+                nn_count=nn_count,
+                batch_count=batch_count,
+                loss_method=loss_method,
+                k_kwargs=k_kwargs,
+                nn_kwargs=nn_kwargs,
+                verbose=verbose,
+            )
+        else:
+            raise ValueError(f"Expected k_kwargs to be a dict!")
+
+
 def do_regress(
-    test_data,
-    train_data,
-    train_targets,
-    nn_count=30,
-    batch_size=200,
-    loss_method="mse",
-    variance_mode=None,
-    kern=None,
-    k_kwargs=dict(),
-    nn_kwargs=dict(),
-    verbose=False,
-):
+    test_features: np.ndarray,
+    train_features: np.ndarray,
+    train_targets: np.ndarray,
+    nn_count: int = 30,
+    batch_count: int = 200,
+    loss_method: str = "mse",
+    variance_mode: Optional[str] = None,
+    kern: Optional[str] = None,
+    k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
+    nn_kwargs: Dict = dict(),
+    verbose: bool = False,
+) -> Union[
+    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray],
+    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray],
+]:
     """
     Convenience function initializing a model and performing regression.
 
@@ -363,117 +416,107 @@ def do_regress(
     appropriate functions for specifics.
 
     Also supports workflows relying upon multivariate models. In order to create
-    a multivariate model, specify the ``kern'' argument and pass a list of
-    hyperparameter dicts to ``k_kwargs''.
+    a multivariate model, specify the `kern` argument and pass a list of
+    hyperparameter dicts to `k_kwargs`.
 
-    Parameters
-    ----------
-    test_data : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-        A matrix of row observation vectors of the test data.
-    train_data : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-        A matrix of row observation vectors of the train data.
-    train_targets = numpy.ndarray(float),
-                    shape = ``(train_count, response_count)''
-        A matrix of row response vectors of the train data.
-    nn_count : int
-        The number of nearest neighbors to employ.
-    batch_size : int
-        The batch size for hyperparameter optimization.
-    loss_method : str
-        The loss method to use in hyperparameter optimization. Ignored if all of
-        the parameters specified by ``k_kwargs'' are fixed.
-        NOTE[bwp]: Currently supports only ``mse'' for regression.
-    variance_mode : str or None
-        Specifies the type of variance to return. Currently supports
-        ``diagonal'' and None. If None, report no variance term.
-    kern : str
-        The kernel function to be used. Only relevant for multivariate case
-        where ``k_kwargs'' is a list of hyperparameter dicts.
-        NOTE[bwp]: Currently supports only ``matern'' and ``rbf''.
-    k_kwargs : dict or list(dict)
-        Parameters for the kernel, possibly including kernel type, distance
-        metric, epsilon and sigma hyperparameter specifications, and
-        specifications for kernel hyperparameters. If all of the hyperparameters
-        are fixed or are not given optimization bounds, no optimization will
-        occur. If ``kern'' is specified and ``k_kwargs'' is a list of such
-        dicts, will create a multivariate regressor model.
-    nn_kwargs : dict
-        Parameters for the nearest neighbors wrapper. See
-        `MuyGPyS.neighbors.NN_Wrapper` for the supported methods and their
-        parameters.
-    verbose : Boolean
-        If ``True'', print summary statistics.
+    Example:
+        >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
+        >>> from MuyGPyS.examples.regress import do_regress
+        >>> from MuyGPyS.optimize.objective import mse_fn
+        >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
+        >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+        >>> k_kwargs = {
+        ...         "kern": "rbf",
+        ...         "metric": "F2",
+        ...         "eps": {"val": 1e-5},
+        ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
+        ... }
+        >>> muygps, nbrs_lookup, predictions, variance = do_regress(
+        ...         test['input'],
+        ...         train['input'],
+        ...         train['output'],
+        ...         nn_count=30,
+        ...         batch_count=200,
+        ...         loss_method="mse",
+        ...         variance_mode="diagonal",
+        ...         k_kwargs=k_kwargs,
+        ...         nn_kwargs=nn_kwargs,
+        ...         verbose=False,
+        ... )
+        >>> mse = mse_fn(test['output'], predictions)
+        >>> print(f"obtained mse: {mse}")
+        obtained mse: 0.20842...
+
+    Args:
+        test_features:
+            A matrix of shape `(test_count, feature_count)` whose rows consist
+            of observation vectors of the test data.
+        train_features:
+            A matrix of shape `(train_count, feature_count)` whose rows consist
+            of observation vectors of the train data.
+        train_targets:
+            A matrix of shape `(train_count, response_count)` whose rows consist
+            of response vectors of the train data.
+        nn_count:
+            The number of nearest neighbors to employ.
+        batch_count:
+            The number of elements to sample batch for hyperparameter
+            optimization.
+        loss_method:
+            The loss method to use in hyperparameter optimization. Ignored if
+            all of the parameters specified by argument `k_kwargs` are fixed.
+            Currently supports only `"mse"` for regression.
+        variance_mode:
+            Specifies the type of variance to return. Currently supports
+            `diagonal` and None. If None, report no variance term.
+        kern:
+            The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
+            details. Only used in the multivariate case. If `None`, assume
+            that we are not using a multivariate model.
+        k_kwargs:
+            If given a list or tuple of length `response_count`, assume that the
+            elements are dicts containing kernel initialization keyword
+            arguments for the creation of a multivariate model (see
+            :func:`~MuyGPyS.examples.regress.make_multivariate_regressor`).
+            If given a dict, assume that the elements are keyword arguments to
+            a MuyGPs model (see
+            :func:`~MuyGPyS.examples.regress.make_regressor`).
+        nn_kwargs:
+            Parameters for the nearest neighbors wrapper. See
+            :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
+            their parameters.
+        verbose:
+            If `True`, print summary statistics.
 
     Returns
     -------
-    muygps : MuyGPyS.gp.MuyGPS
+    muygps:
         A (possibly trained) MuyGPs object.
-    nbrs_lookup : MuyGPyS.neighbors.NN_Wrapper
+    nbrs_lookup:
         A data structure supporting nearest neighbor queries into
-        ``train_data''.
-    predictions : numpy.ndarray(float), shape = ``(test_count, response_count)''
+        `train_features`.
+    predictions:
         The predicted response associated with each test observation.
-    variance : numpy.ndarray(float), shape = ``(test_count,)''
+    variance:
         Estimated posterior variance of each test prediction. Only returned if
-        ``variance_mode'' is not None.
-
-    Examples
-    --------
-    >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
-    >>> from MuyGPyS.examples.regress import do_regress
-    >>> from MuyGPyS.optimize.objective import mse_fn
-    >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
-    >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
-    >>> k_kwargs = {
-    ...         "kern": "rbf",
-    ...         "metric": "F2",
-    ...         "eps": {"val": 1e-5},
-    ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
-    ... }
-    >>> muygps, nbrs_lookup, predictions, variance = do_regress(
-    ...         test['input'],
-    ...         train['input'],
-    ...         train['output'],
-    ...         nn_count=30,
-    ...         batch_size=200,
-    ...         loss_method="mse",
-    ...         variance_mode="diagonal",
-    ...         k_kwargs=k_kwargs,
-    ...         nn_kwargs=nn_kwargs,
-    ...         verbose=False,
-    ... )
-    >>> mse = mse_fn(test['output'], predictions)
-    >>> print(f"obtained mse: {mse}")
-    obtained mse: 0.20842...
+        `variance_mode == "diagonal"`.
     """
-    if kern is not None and isinstance(k_kwargs, list):
-        regressor, nbrs_lookup = make_multivariate_regressor(
-            train_data,
-            train_targets,
-            nn_count=nn_count,
-            batch_size=batch_size,
-            loss_method=loss_method,
-            kern=kern,
-            k_args=k_kwargs,
-            nn_kwargs=nn_kwargs,
-            verbose=verbose,
-        )
-    else:
-        regressor, nbrs_lookup = make_regressor(
-            train_data,
-            train_targets,
-            nn_count=nn_count,
-            batch_size=batch_size,
-            loss_method=loss_method,
-            k_kwargs=k_kwargs,
-            nn_kwargs=nn_kwargs,
-            verbose=verbose,
-        )
+    regressor, nbrs_lookup = _decide_and_make_regressor(
+        train_features,
+        train_targets,
+        nn_count=nn_count,
+        batch_count=batch_count,
+        loss_method=loss_method,
+        kern=kern,
+        k_kwargs=k_kwargs,
+        nn_kwargs=nn_kwargs,
+        verbose=verbose,
+    )
 
     predictions, pred_timing = regress_any(
         regressor,
-        test_data,
-        train_data,
+        test_features,
+        train_features,
         nbrs_lookup,
         train_targets,
         variance_mode=variance_mode,

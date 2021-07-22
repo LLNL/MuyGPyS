@@ -84,7 +84,7 @@ class MNISTTest(ClassifyAPITest):
         )
     )
     def test_classify(
-        self, nn_count, batch_size, loss_method, nn_kwargs, k_kwargs
+        self, nn_count, batch_count, loss_method, nn_kwargs, k_kwargs
     ):
         target_accuracy, k_kwargs = k_kwargs
         train = balanced_subsample(self.embedded_40_train, 5000)
@@ -94,7 +94,7 @@ class MNISTTest(ClassifyAPITest):
             test=test,
             target_acc=target_accuracy,
             nn_count=nn_count,
-            batch_size=batch_size,
+            batch_count=batch_count,
             loss_method=loss_method,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
@@ -150,7 +150,7 @@ class StargalTest(ClassifyAPITest):
         )
     )
     def test_classify(
-        self, nn_count, batch_size, loss_method, nn_kwargs, k_kwargs
+        self, nn_count, batch_count, loss_method, nn_kwargs, k_kwargs
     ):
         target_accuracy, k_kwargs = k_kwargs
         train = balanced_subsample(self.embedded_40_train, 5000)
@@ -160,7 +160,7 @@ class StargalTest(ClassifyAPITest):
             test=test,
             target_acc=target_accuracy,
             nn_count=nn_count,
-            batch_size=batch_size,
+            batch_count=batch_count,
             loss_method=loss_method,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
@@ -204,8 +204,8 @@ class StargalTest(ClassifyAPITest):
     def test_classify_uq(
         self,
         nn_count,
-        opt_batch_size,
-        uq_batch_size,
+        opt_batch_count,
+        uq_batch_count,
         loss_method,
         uq_objectives,
         nn_kwargs,
@@ -219,8 +219,8 @@ class StargalTest(ClassifyAPITest):
             test=test,
             target_acc=target_accuracy,
             nn_count=nn_count,
-            opt_batch_size=opt_batch_size,
-            uq_batch_size=uq_batch_size,
+            opt_batch_count=opt_batch_count,
+            uq_batch_count=uq_batch_count,
             loss_method=loss_method,
             uq_objectives=uq_objectives,
             nn_kwargs=nn_kwargs,
@@ -290,7 +290,7 @@ class MultivariateStargalTest(ClassifyAPITest):
         )
     )
     def test_classify(
-        self, nn_count, batch_size, loss_method, nn_kwargs, k_kwargs
+        self, nn_count, batch_count, loss_method, nn_kwargs, k_kwargs
     ):
         target_accuracy, kern, k_kwargs = k_kwargs
         train = balanced_subsample(self.embedded_40_train, 5000)
@@ -300,7 +300,7 @@ class MultivariateStargalTest(ClassifyAPITest):
             test=test,
             target_acc=target_accuracy,
             nn_count=nn_count,
-            batch_size=batch_size,
+            batch_count=batch_count,
             loss_method=loss_method,
             nn_kwargs=nn_kwargs,
             kern=kern,
@@ -366,7 +366,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
     def test_regress(
         self,
         nn_count,
-        batch_size,
+        batch_count,
         variance_mode,
         loss_method,
         nn_kwargs,
@@ -381,7 +381,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             test=test,
             target_mse=target_mse,
             nn_count=nn_count,
-            batch_size=batch_size,
+            batch_count=batch_count,
             loss_method=loss_method,
             variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
@@ -437,7 +437,7 @@ class HeatonTest(RegressionAPITest):
     def test_regress(
         self,
         nn_count,
-        batch_size,
+        batch_count,
         variance_mode,
         loss_method,
         nn_kwargs,
@@ -450,7 +450,7 @@ class HeatonTest(RegressionAPITest):
             test=self.test,
             target_mse=target_mse,
             nn_count=nn_count,
-            batch_size=batch_size,
+            batch_count=batch_count,
             loss_method=loss_method,
             variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
