@@ -350,6 +350,40 @@ def make_multivariate_regressor(
     return mmuygps, nbrs_lookup
 
 
+def _empirical_covariance(train_targets: np.ndarray) -> np.ndarray:
+    """
+    Convenience function computing the empirical covariance kernel between
+    multivariate response variables.
+
+    Args:
+        train_targets:
+            A matrix of shape `(train_count, response_count)` whose rows consist
+            of response vectors of the train data.
+
+    Returns:
+        An empirical covariance matrix of shape
+        `(response_count, response_count)`
+    """
+    return np.cov(train_targets.T)
+
+
+def _empirical_correlation(train_targets: np.ndarray) -> np.ndarray:
+    """
+    Convenience function computing the empirical correlation kernel between
+    multivariate response variables.
+
+    Args:
+        train_targets:
+            A matrix of shape `(train_count, response_count)` whose rows consist
+            of response vectors of the train data.
+
+    Returns:
+        An empirical correlation matrix of shape
+        `(response_count, response_count)`
+    """
+    return np.corrcoef(train_targets.T)
+
+
 def _decide_and_make_regressor(
     train_features: np.ndarray,
     train_targets: np.ndarray,
