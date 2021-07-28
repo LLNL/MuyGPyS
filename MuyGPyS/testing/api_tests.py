@@ -1,7 +1,7 @@
 # Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: MIT
 
 import numpy as np
 from absl.testing import parameterized

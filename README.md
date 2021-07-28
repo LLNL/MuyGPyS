@@ -634,15 +634,14 @@ MuyGPyS has been used the in the following papers (newest first):
 
 ## License
 
-MuyGPyS is distributed under the terms of both the MIT license and the Apache License (Version 2.0).
-Users may choose either license, at their discretion.
+MuyGPyS is distributed under the terms of the MIT license.
 
-All new contributions must be made under both the MIT and Apache-2.0 licenses.
+All new contributions must be made under the MIT license.
 
-See [LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE), [NOTICE](NOTICE), and [COPYRIGHT](COPYRIGHT) for details.
+See [LICENSE-MIT](LICENSE-MIT), [NOTICE](NOTICE), and [COPYRIGHT](COPYRIGHT) for details.
 
-SPDX-License-Identifier: (Apache-2.0 or MIT)
+SPDX-License-Identifier: MIT
 
 ## Release
 
-LLNL-CODE-XXXXXX
+LLNL-CODE-824804
