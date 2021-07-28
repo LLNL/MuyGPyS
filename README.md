@@ -36,9 +36,9 @@ Then open the file `docs/_build/html/index.html` in your browser of choice.
 
 
 `MuyGPyS` expects that each train or test observation corresponds to a row index in feature and response matrices.
-In our examples we assume that data is bundled into `train` and `test` dicts possessing the string keys `"input"` and `"output"`.
-`train["input"]` should be a `(train_count, feature_count)`-shaped `numpy.ndarray` encoding the training observations.
-`train["output"]` should be a `(train_count, response_count)`-shaped `numpy.ndarray` encoding the training targets, i.e. ground truth regression targets or 1-hot encoded class labels.
+In our examples we assume that train data is bundled into a `(train_count, feature_count)` feature matrix `train_features` and a `(train_count, response_count)` response matrix `train_responses`. 
+In classification examples we will instead refer to a `(train_count, class_count)` label matrix `train_labels` whose rows are one-hot encodings.
+Our examples will assume that the data is accessible via imaginary getter functions. 
 
 
 ### Constructing Nearest Neighbor Lookups
@@ -51,10 +51,10 @@ Currently supported implementations include [exact KNN using sklearn](https://sc
 Construct exact and approximate  KNN data example with k = 10
 ```
 >>> from MuyGPyS.neighors import NN_Wrapper 
->>> train, test = load_the_data()
+>>> train_features = load_train_features()  # imaginary getter
 >>> nn_count = 10
->>> exact_nbrs_lookup = NN_Wrapper(train["input"], nn_count, nn_method="exact", algorithm="ball_tree")
->>> approx_nbrs_lookup = NN_Wrapper(train["input"], nn_count, nn_method="hnsw", space="l2", M=16)
+>>> exact_nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="exact", algorithm="ball_tree")
+>>> approx_nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="hnsw", space="l2", M=16)
 ```
 
 These lookup data structures are then usable to find nearest neighbors of queries in the training data.
@@ -70,14 +70,15 @@ Also included is the ability to sample "balanced" batches, where the data is par
 Sampling random and balanced (for classification) batches of 100 elements:
 ```
 >>> from MuyGPyS.optimize.batch import sample_batch, get_balanced_batch
+>>> train_labels = load_train_labels()  # imaginary getter
 >>> batch_count = 200
->>> train_count, _ = train["input"]
+>>> train_count, _ = train_features.shape
 >>> batch_indices, batch_nn_indices = sample_batch(
 ...         exact_nbrs_lookup, batch_count, train_count
 ... )
->>> train_labels = np.argmax(train["output"], axis=1)
+>>> train_lookup = np.argmax(train["output"], axis=1)
 >>> balanced_indices, balanced_nn_indices = get_balanced_batch(
-...         exact_nbrs_lookup, train_labels, batch_count
+...         exact_nbrs_lookup, train_lookup, batch_count
 ... ) # Classification only!
 ```
 
@@ -120,7 +121,7 @@ This snippet constructs a Euclidean distance tensor.
 ```
 >>> from MuyGPyS.gp.distance import pairwise_distances
 >>> pairwise_dists = pairwise_distances(
-...         train['input'], batch_nn_indices, metric="l2"
+...         train_features, batch_nn_indices, metric="l2"
 ... )
 ```
 
@@ -128,8 +129,8 @@ We can similarly construct a matrix coalescing all of the distance vectors betwe
 ```
 >>> from MuyGPyS.gp.distance import crosswise_distances
 >>> crosswise_dists = crosswise_distances(
-...         train['input'],
-...         train['input'],
+...         train_features,
+...         train_features,
 ...         batch_indices,
 ...         batch_nn_indices,
 ...         metric='l2',
@@ -151,7 +152,7 @@ We supply a convenient leave-one-out cross-validation utility that internally re
 ...         batch_nn_indices,
 ...         crosswise_dists,
 ...         pairwise_dists,
-...         train['output'],
+...         train_labels,
 ...         loss_method="mse",
 ...         verbose=True,
 ... )
@@ -178,9 +179,9 @@ If you do not need to keep the distance tensors around for reference, you can us
 ...         muygps,
 ...         batch_indices,
 ...         batch_nn_indices,
-...         train['input'],
-...	    test['input'],
-...	    train['output'],
+...         train_features,
+...	    test_features,
+...	    train_labels,
 ...         loss_method="mse",
 ...         verbose=False,
 ... )
@@ -199,7 +200,8 @@ An example regressor.
 In order to automatically train `sigma_sq`, set `k_kwargs["sigma_sq"] = "learn"`. 
 ```
 >>> from MuyGPyS.examples.regress import make_regressor
->>> train, test = load_regression_dataset()  # hypothetical data load
+>>> train_features, train_responses = load_train()  # imaginary train getter
+>>> test_features, test_responses = load_test()  # imaginary test getter
 >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
 >>> k_kwargs = {
 ...         "kern": "rbf",
@@ -210,8 +212,8 @@ In order to automatically train `sigma_sq`, set `k_kwargs["sigma_sq"] = "learn"`
 ...         "sigma_sq": "learn",
 ... }
 >>> muygps, nbrs_lookup = make_regressor(
-...         train["input"],
-...         train["output"],
+...         train_features,
+...         train_responses,
 ...         nn_count=40,
 ...         batch_size=500,
 ...         loss_method="mse",
@@ -224,7 +226,7 @@ In order to automatically train `sigma_sq`, set `k_kwargs["sigma_sq"] = "learn"`
 An example surrogate classifier.
 ```
 >>> from MuyGPyS.examples.classify import make_classifier
->>> train, test = load_classification_dataset()  # hypothetical data load
+>>> train_features, train_labels = load_train()  # imaginary train getter
 >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
 >>> k_kwargs = {
 ...         "kern": "rbf",
@@ -234,8 +236,8 @@ An example surrogate classifier.
 ...         "length_scale": {"val": 7.2},
 ... }
 >>> muygps, nbrs_lookup = make_classifier(
-...         train["input"],
-...         train["output"],
+...         train_features,
+...         train_labels,
 ...         nn_count=40,
 ...         batch_size=500,
 ...         loss_method="log",
@@ -278,9 +280,9 @@ In order to train, one need only loop over the models contained within the multi
 ...                 model,
 ...                 batch_indices,
 ...                 batch_nn_indices,
-...                 train['input'],
-...	            test['input'],
-...	            train['output'][:, i].reshape(train_count, 1),
+...                 train_features,
+...	            test_features,
+...	            train_responses[:, i].reshape(train_count, 1),
 ...                 loss_method="mse",
 ...                 verbose=False,
 ...         )
@@ -289,7 +291,7 @@ In order to train, one need only loop over the models contained within the multi
 We also support one-line make functions for regression and classification:
 ```
 >>> from MuyGPyS.examples.regress import make_multivariate_regressor
->>> train, test = load_regression_dataset()  # hypothetical data load
+>>> train_features, train_responses = load_train()  # imaginary train getter
 >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
 >>> k_args = [
 ... 	    {
@@ -304,8 +306,8 @@ We also support one-line make functions for regression and classification:
 ...	    },
 ... ]
 >>> muygps, nbrs_lookup = make_multivariate_regressor(
-...         train["input"],
-...         train["output"],
+...         train_features,
+...         train_responses,
 ...         nn_count=40,
 ...         batch_size=500,
 ...         loss_method="mse",
@@ -328,18 +330,18 @@ See below a simple regression workflow, using the data structures built up in th
 >>> indices = np.arange(test_count)
 >>> nn_indices = train_nbrs_lookup.get_nns(test["input"])
 >>> pairwise_dists = pairwise_distances(
-...         train['input'], batch_nn_indices, metric="l2"
+...         train_features, batch_nn_indices, metric="l2"
 ... )
 >>> crosswise_dists = crosswise_distances(
-...         test['input'],
-...         train['input'],
+...         test_features,
+...         train_features,
 ...         indices,
 ...         nn_indices,
 ...         metric='l2',
 ... )
 >>> K = muygps.kernel(pairwise_dists)
 >>> Kcross = muygps.kernel(crosswise_dists)
->>> predictions = muygps.regress(K, Kcross, train['output'][nn_indices, :])
+>>> predictions = muygps.regress(K, Kcross, train_responses[nn_indices, :])
 ```
 
 Again if you do not want to reuse your tensors, you can run the more compact:
@@ -349,9 +351,9 @@ Again if you do not want to reuse your tensors, you can run the more compact:
 >>> muygps.regress_from_indices(
 ...         indices,
 ...	    nn_indices,
-...	    test['input'],
-...	    train['input'],
-...	    train['output'],
+...	    test_features,
+...	    train_features,
+...	    train_responses,
 ... )
 ```
 
@@ -365,7 +367,7 @@ See the `MuyGPyS.examples` high-level API functions for examples.
 
 
 Listed below are several examples using the high-level APIs located in `MuyGPyS.examples.classify` and `MuyGPyS.examples.regress`.
-Note that one need not go through these APIs to use `MuyGPyS`, but they condense many workflows into a single function call.
+Note that one need not go through these APIs to use `MuyGPyS`, but they condense many basic workflows into a single function call.
 In all of these examples, note that if all of the hyperparameters are fixed in `k_kwargs` (i.e. you supply no optimization bounds), the API will perform no optimization and will instead simply predict on the data problem using the provided kernel.
 While these examples all use a single model, one can modify those with multivariate responses to use multivariate models by supplying the additional keyword argument `kern=kernel_name`, for `kernel_name in ['rbf', 'matern']` and providing a list of hyperparameter dicts to the keyword argument `k_kwargs` as above.
 
@@ -385,7 +387,8 @@ Regress on Heaton data with no variance
 >>> import numpy as np
 >>> from MuyGPyS.examples.regress import do_regress
 >>> from MuyGPyS.optimize.objective import mse_fn
->>> train, test = load_heaton()
+>>> train_features, train_responses = load_heaton_train()  # imaginary train getter
+>>> test_features, test_responses = load_heaton_test()  # imaginary test getter
 >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
 >>> k_kwargs = {
 ...         "kern": "rbf",
@@ -395,9 +398,9 @@ Regress on Heaton data with no variance
 ...         "length_scale": {"val": 7.2},
 ... }
 >>> muygps, nbrs_lookup, predictions = do_regress(
-...         test['input'],
-...         train['input'],
-...         train['output'],
+...         test_features,
+...         train_features,
+...         train_responses,
 ...         nn_count=30,
 ...         batch_size=200,
 ...         loss_method="mse",
@@ -431,13 +434,13 @@ prediction time breakdown:
         pred time:10.363597161000001s
 finds hyperparameters:
         nu : 0.8858424985399979
->>> print(f"mse : {mse_fn(predictions, test["output"])}")
+>>> print(f"mse : {mse_fn(predictions, test_responses)}")
 obtains mse: 2.345136495565052
 ```
 
 If one requires the (individual, independent) posterior variances for each of the predictions, one can pass `variance_mode="diagonal"`.
 This mode assumes that each output dimension uses the same model, and so will output an additional vector `variance` with a scalar posterior variance associated with each test point.
-The API also returns a (possibly trained) `MuyGPyS.gp.MuyGPS` instance, whose `sigma_sq` member reports an array of multiplicative scaling parameters associated with the variance of each dimension.
+The API also returns a (possibly trained) `MuyGPyS.gp.MuyGPS` or `MuyGPyS.gp.MultivariateMuyGPS` instance, whose `sigma_sq` member reports an array of multiplicative scaling parameters associated with the variance of each dimension.
 In order to tune `sigma-sq` using the `do_regress` API, pass `k_kwargs["sigma_sq"] = "learn"`.
 Obtaining the tuned posterior variance implies multiplying the returned variance by the scaling parameter along each dimension.
 
@@ -447,7 +450,8 @@ Regress on Heaton data while estimating diagonal variance
 >>> import numpy as np
 >>> from MuyGPyS.examples.regress import do_regress
 >>> from MuyGPyS.optimize.objective import mse_fn
->>> train, test = load_heaton()
+>>> train_features, train_responses = load_heaton_train()  # imaginary train getter
+>>> test_features, test_responses = load_heaton_test()  # imaginary test getter
 >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
 >>> k_kwargs = {
 ...         "kern": "rbf",
@@ -458,9 +462,9 @@ Regress on Heaton data while estimating diagonal variance
 ...	    "sigma_sq": "learn",
 ... }
 >>> muygps, nbrs_lookup, predictions, variance = do_regress(
-...         test['input'],
-...         train['input'],
-...         train['output'],
+...         test_features,
+...         train_features,
+...         train_responses,
 ...         nn_count=30,
 ...         batch_size=200,
 ...         loss_method="mse",
@@ -469,14 +473,13 @@ Regress on Heaton data while estimating diagonal variance
 ...         nn_kwargs=nn_kwargs,
 ...         verbose=False,
 ... )
->>> print(f"mse : {mse_fn(predictions, test["output"])}")
+>>> print(f"mse : {mse_fn(predictions, test_responses)}")
 obtains mse: 2.345136495565052
 >>> print(f"diagonal posterior variance: {variance * muygps.sigma_sq()}")
 diagonal posterior variance: [0.52199482 0.45934382 0.81381388 ... 0.64982631 0.45958342 0.68602048]
 ```
 
-This is presently the only form of posterior variance collection that is supported.
-Computing the independent diagonal posterior variances between the dimensions of multivariate output with different models is not currently supported, but is planned for a future release.
+Independent diagonal variance for each test item is the only form of posterior variance supported for a single model, and independent diagonal variance for each test item along each response dimension is the only form of posterior variacne supported for a multivariate model. 
 Computing the full posterior covariance between the dimensions of multivariate output is not currently supported, but is planned for a future release.
 Computing the full posterior covariance between all inputs is not and will not be supported for scalability reasons. 
 
@@ -498,7 +501,8 @@ Run star-gal with UQ example instructions:
 >>> import numpy as np
 >>> from MuyGPyS.examples.classify import do_classify_uq, do_uq, example_lambdas
 >>> from MuyGPyS.optimize.objective import mse_fn
->>> train, test = load_stargal()
+>>> train_features, train_labels = load_stargal_train()  # imaginary train getter
+>>> test_features, test_labels = load_stargal_test()  # imaginary test getter
 >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
 >>> k_kwargs = {
 ...         "kern": "rbf",
@@ -508,9 +512,9 @@ Run star-gal with UQ example instructions:
 ...         "length_scale": {"val": 7.2},
 ... }
 >>> muygps, nbrs_lookup, surrogate_predictions, masks = do_classify_uq(
-...         test['input'],
-...         train['input'],
-...         train['output'],
+...         test_features,
+...         train_features,
+...         train_labels,
 ...         nn_count=30,
 ...         opt_batch_size=200,
 ...	    uq_batch_size=500,
@@ -521,7 +525,7 @@ Run star-gal with UQ example instructions:
 ...         nn_kwargs=nn_kwargs,
 ...         verbose=False,
 ... )
->>> accuracy, uq = do_uq(surrogate_predictions, test["output"], masks)
+>>> accuracy, uq = do_uq(surrogate_predictions, test_labels, masks)
 >>> print(f"obtained accuracy: {accuracy}")
 obtained accuracy: 0.973...
 >>> print(f"mask uq : \n{uq}")
@@ -536,14 +540,15 @@ mask uq :
 `uq_objectives` expects a list of functions of `alpha`, `beta`, `correct_count`, and `incorrect_count`, where `alpha` and `beta` are the number of type I and type II errors, respectively.
 `MuyGPyS.examples.classify.example_lambdas` lists some options, but you can supply your own.
 
-If uncertainty quantification is not desired, or the classifcation problem in question involves more than two classes, instead use a workflow like that in `MuyGPyS.examples.classify.do_classify`.
+If uncertainty quantification is not desired, or the classifcation problem in question involves more than two classes, see instead an example workflow like that in `MuyGPyS.examples.classify.do_classify`.
 
 Run MNIST without UQ example instructions:
 ```
 >>> import numpy as np
 >>> from MuyGPyS.examples.classify import do_classify
 >>> from MuyGPyS.optimize.objective import mse_fn
->>> train, test = load_mnist()
+>>> train_features, train_labels = load_stargal_train()  # imaginary train getter
+>>> test_features, test_labels = load_stargal_test()  # imaginary test getter
 >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
 >>> k_kwargs = {
 ...         "kern": "rbf",
@@ -553,9 +558,9 @@ Run MNIST without UQ example instructions:
 ...         "length_scale": {"val": 7.2},
 ... }
 >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
-...         test['input'],
-...         train['input'],
-...         train['output'],
+...         test_features,
+...         train_features,
+...         train_labels,
 ...         nn_count=30,
 ...         batch_size=200,
 ...         loss_method="log",
@@ -565,43 +570,10 @@ Run MNIST without UQ example instructions:
 ...         verbose=False,
 ... )
 >>> predicted_labels = np.argmax(surrogate_predictions, axis=1)
->>> true_labels = np.argmax(test['output'], axis=1)
+>>> true_labels = np.argmax(test_labels, axis=1)
 >>> accuracy = np.mean(predicted_labels == true_labels)
 >>> print(f"obtained accuracy: {accuracy}")
 0.97634
-```
-
-
-## Optional workflow modifications for experiment chassis design
-
-
-What follows are some quality-of-life modifications to workflows involving repeated invocations of the regression or classification APIs on the same dataset.
-
-
-
-### Sampling smaller datasets
-
-
-One might want to run trials using a smaller number of samples than the full dataset, perhaps as part of an exploration experiment where you invoke the API many times.
-In addition to possibly invoking `MuyGPyS.embed.embed_all` as above, can use `MuyGPyS.data.utils.subsample` or `MuyGPyS.data.utils.balanced_subsample`.
-The latter utility is reserved for classification, and tries to collect an equal number of samples of each class.
-
-Subsample example:
-```
-In [1] from MuyGPyS.data.utils import subsample
-
-In [2] sub_train = subsample(train, 1000)
-
-In [3] sub_test = subsample(test, 1000)
-```
-
-Balanced subsample example:
-```
-In [1] from MuyGPyS.data.utils import subsample
-
-In [2] sub_train = balanced_subsample(train, 1000)
-
-In [3] sub_test = balanced_subsample(test, 1000)
 ```
 
 
