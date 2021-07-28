@@ -8,15 +8,20 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS.data.utils import normalize, subsample, balanced_subsample
-from MuyGPyS.testing.test_utils import _make_gaussian_dict, _make_gaussian_data
+from MuyGPyS.testing.test_utils import (
+    _normalize,
+    _subsample,
+    _balanced_subsample,
+    _make_gaussian_dict,
+    _make_gaussian_data,
+)
 
 
 class NormalizeTest(parameterized.TestCase):
     @parameterized.parameters(((1000, f) for f in [1000, 100, 2]))
     def test_normalize(self, data_count, feature_count):
         data = np.random.randn(data_count, feature_count)
-        normalized_data = normalize(data)
+        normalized_data = _normalize(data)
         self.assertSequenceAlmostEqual(
             np.linalg.norm(normalized_data, axis=1),
             np.sqrt(feature_count) * np.ones((data_count,)),
@@ -29,7 +34,7 @@ class SampleTest(parameterized.TestCase):
         self, data_count, feature_count, response_count, sample_count
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
-        sub_data = subsample(data, sample_count)
+        sub_data = _subsample(data, sample_count)
         self.assertEqual(sub_data["input"].shape, (sample_count, feature_count))
 
     @parameterized.parameters(
@@ -41,7 +46,7 @@ class SampleTest(parameterized.TestCase):
         data = _make_gaussian_dict(
             data_count, feature_count, response_count, categorical=True
         )
-        sub_data = balanced_subsample(data, sample_count)
+        sub_data = _balanced_subsample(data, sample_count)
         self.assertEqual(sub_data["input"].shape, (sample_count, feature_count))
 
     @parameterized.parameters(((1000, 100, r, 500) for r in [2, 10]))
@@ -51,7 +56,7 @@ class SampleTest(parameterized.TestCase):
         data = _make_gaussian_dict(
             data_count, feature_count, response_count, categorical=True
         )
-        sub_data = balanced_subsample(data, sample_count)
+        sub_data = _balanced_subsample(data, sample_count)
         labels = np.argmax(sub_data["output"], axis=1)
         hist, _ = np.array(np.histogram(labels, bins=response_count))
         self.assertSequenceAlmostEqual(

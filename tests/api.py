@@ -11,10 +11,10 @@ import pickle as pkl
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS.data.utils import balanced_subsample, subsample
 from MuyGPyS.examples.classify import example_lambdas
 from MuyGPyS.testing.api_tests import ClassifyAPITest, RegressionAPITest
 from MuyGPyS.testing.test_utils import (
+    _balanced_subsample,
     _basic_nn_kwarg_options,
 )
 
@@ -87,8 +87,8 @@ class MNISTTest(ClassifyAPITest):
         self, nn_count, batch_count, loss_method, nn_kwargs, k_kwargs
     ):
         target_accuracy, k_kwargs = k_kwargs
-        train = balanced_subsample(self.embedded_40_train, 5000)
-        test = balanced_subsample(self.embedded_40_test, 1000)
+        train = _balanced_subsample(self.embedded_40_train, 5000)
+        test = _balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
             train=train,
             test=test,
@@ -153,8 +153,8 @@ class StargalTest(ClassifyAPITest):
         self, nn_count, batch_count, loss_method, nn_kwargs, k_kwargs
     ):
         target_accuracy, k_kwargs = k_kwargs
-        train = balanced_subsample(self.embedded_40_train, 5000)
-        test = balanced_subsample(self.embedded_40_test, 1000)
+        train = _balanced_subsample(self.embedded_40_train, 5000)
+        test = _balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
             train=train,
             test=test,
@@ -212,8 +212,8 @@ class StargalTest(ClassifyAPITest):
         k_kwargs,
     ):
         target_accuracy, k_kwargs = k_kwargs
-        train = balanced_subsample(self.embedded_40_train, 10000)
-        test = balanced_subsample(self.embedded_40_test, 1000)
+        train = _balanced_subsample(self.embedded_40_train, 10000)
+        test = _balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_uq_test_chassis(
             train=train,
             test=test,
@@ -293,8 +293,8 @@ class MultivariateStargalTest(ClassifyAPITest):
         self, nn_count, batch_count, loss_method, nn_kwargs, k_kwargs
     ):
         target_accuracy, kern, k_kwargs = k_kwargs
-        train = balanced_subsample(self.embedded_40_train, 5000)
-        test = balanced_subsample(self.embedded_40_test, 1000)
+        train = _balanced_subsample(self.embedded_40_train, 5000)
+        test = _balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
             train=train,
             test=test,
@@ -373,8 +373,8 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         k_kwargs,
     ):
         target_mse, kern, k_args = k_kwargs
-        train = balanced_subsample(self.embedded_40_train, 10000)
-        test = balanced_subsample(self.embedded_40_test, 1000)
+        train = _balanced_subsample(self.embedded_40_train, 10000)
+        test = _balanced_subsample(self.embedded_40_test, 1000)
 
         self._do_regress_test_chassis(
             train=train,

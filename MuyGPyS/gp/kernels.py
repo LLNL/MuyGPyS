@@ -43,7 +43,7 @@ Example:
 
 import numpy as np
 
-from typing import Dict, Optional, Tuple, Union
+from typing import cast, Dict, Optional, Tuple, Union
 
 from scipy.special import gamma, kv
 
@@ -197,10 +197,16 @@ class Hyperparameter:
                 )
             else:
                 any_below = np.any(
-                    np.choose(val < self._bounds[0] - 1e-5, [False, True])
+                    np.choose(
+                        cast(float, val) < cast(float, self._bounds[0]) - 1e-5,
+                        [False, True],
+                    )
                 )
                 any_above = np.any(
-                    np.choose(val > self._bounds[1] + 1e-5, [False, True])
+                    np.choose(
+                        cast(float, val) > cast(float, self._bounds[1]) + 1e-5,
+                        [False, True],
+                    )
                 )
                 if any_below == True:
                     raise ValueError(
@@ -212,7 +218,7 @@ class Hyperparameter:
                         f"Hyperparameter value {val} is greater than the "
                         f"optimization upper bound {self._bounds[1]}"
                     )
-        self._val = val
+        self._val = cast(float, val)
 
     def _set_bounds(
         self,

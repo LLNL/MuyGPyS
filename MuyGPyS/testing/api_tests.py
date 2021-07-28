@@ -3,7 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
+from MuyGPyS.neighbors import NN_Wrapper
 import numpy as np
+
+from typing import cast, Callable, Dict, List, Optional, Tuple, Union
+
 from absl.testing import parameterized
 
 from MuyGPyS.examples.classify import (
@@ -19,17 +23,17 @@ from MuyGPyS.optimize.objective import mse_fn
 class ClassifyAPITest(parameterized.TestCase):
     def _do_classify_test_chassis(
         self,
-        train,
-        test,
-        target_acc,
-        nn_count,
-        batch_count,
-        loss_method,
-        nn_kwargs,
-        k_kwargs,
-        kern=None,
-        verbose=False,
-    ):
+        train: Dict[str, np.ndarray],
+        test: Dict[str, np.ndarray],
+        target_acc: float,
+        nn_count: int,
+        batch_count: int,
+        loss_method: str,
+        nn_kwargs: Dict,
+        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        kern: Optional[str] = None,
+        verbose: bool = False,
+    ) -> None:
         (
             muygps,
             surrogate_predictions,
@@ -80,16 +84,16 @@ class ClassifyAPITest(parameterized.TestCase):
 
     def _do_classify(
         self,
-        train,
-        test,
-        nn_count,
-        batch_count,
-        loss_method,
-        nn_kwargs,
-        kern,
-        k_kwargs,
-        verbose=False,
-    ):
+        train: Dict[str, np.ndarray],
+        test: Dict[str, np.ndarray],
+        nn_count: int,
+        batch_count: int,
+        loss_method: str,
+        nn_kwargs: Dict,
+        kern: Optional[str],
+        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        verbose: bool = False,
+    ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, np.ndarray, float]:
         muygps, _, surrogate_predictions = do_classify(
             test["input"],
             train["input"],
@@ -111,18 +115,18 @@ class ClassifyAPITest(parameterized.TestCase):
 
     def _do_classify_uq_test_chassis(
         self,
-        train,
-        test,
-        target_acc,
-        nn_count,
-        opt_batch_count,
-        uq_batch_count,
-        loss_method,
-        uq_objectives,
-        nn_kwargs,
-        k_kwargs,
-        verbose=False,
-    ):
+        train: Dict[str, np.ndarray],
+        test: Dict[str, np.ndarray],
+        target_acc: float,
+        nn_count: int,
+        opt_batch_count: int,
+        uq_batch_count: int,
+        loss_method: str,
+        uq_objectives: Union[List[Callable], Tuple[Callable, ...]],
+        nn_kwargs: Dict,
+        k_kwargs: Dict,
+        verbose: bool = False,
+    ) -> None:
         (
             muygps,
             surrogate_predictions,
@@ -182,17 +186,17 @@ class ClassifyAPITest(parameterized.TestCase):
 
     def _do_classify_uq(
         self,
-        train,
-        test,
-        nn_count,
-        opt_batch_count,
-        uq_batch_count,
-        loss_method,
-        uq_objectives,
-        nn_kwargs,
-        k_kwargs,
-        verbose=False,
-    ):
+        train: Dict[str, np.ndarray],
+        test: Dict[str, np.ndarray],
+        nn_count: int,
+        opt_batch_count: int,
+        uq_batch_count: int,
+        loss_method: str,
+        uq_objectives: Union[List[Callable], Tuple[Callable, ...]],
+        nn_kwargs: Dict,
+        k_kwargs: Dict,
+        verbose: bool = False,
+    ) -> Tuple[MuyGPS, np.ndarray, np.ndarray, np.ndarray, float]:
         muygps, _, surrogate_predictions, masks = do_classify_uq(
             test["input"],
             train["input"],
@@ -217,18 +221,18 @@ class ClassifyAPITest(parameterized.TestCase):
 class RegressionAPITest(parameterized.TestCase):
     def _do_regress_test_chassis(
         self,
-        train,
-        test,
-        target_mse,
-        nn_count,
-        batch_count,
-        loss_method,
-        variance_mode,
-        nn_kwargs,
-        k_kwargs,
-        kern=None,
-        verbose=False,
-    ):
+        train: Dict[str, np.ndarray],
+        test: Dict[str, np.ndarray],
+        target_mse: float,
+        nn_count: int,
+        batch_count: int,
+        loss_method: str,
+        variance_mode: Optional[str],
+        nn_kwargs: Dict,
+        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        kern: Optional[str] = None,
+        verbose: bool = False,
+    ) -> None:
         regressor, predictions, mse, variance = self._do_regress(
             train,
             test,
@@ -269,17 +273,17 @@ class RegressionAPITest(parameterized.TestCase):
 
     def _do_regress(
         self,
-        train,
-        test,
-        nn_count,
-        batch_count,
-        loss_method,
-        variance_mode,
-        nn_kwargs,
-        k_kwargs,
-        kern=None,
-        verbose=False,
-    ):
+        train: Dict[str, np.ndarray],
+        test: Dict[str, np.ndarray],
+        nn_count: int,
+        batch_count: int,
+        loss_method: str,
+        variance_mode: Optional[str],
+        nn_kwargs: Dict,
+        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        kern: Optional[str] = None,
+        verbose: bool = False,
+    ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, float, np.ndarray]:
         ret = do_regress(
             test["input"],
             train["input"],
@@ -294,10 +298,17 @@ class RegressionAPITest(parameterized.TestCase):
             verbose=verbose,
         )
         if variance_mode is None:
-            regressor, _, predictions = ret
+            regressor, _, predictions = cast(
+                Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray], ret
+            )
             variance = None
         elif variance_mode == "diagonal":
-            regressor, _, predictions, variance = ret
+            regressor, _, predictions, variance = cast(
+                Tuple[
+                    Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray
+                ],
+                ret,
+            )
         else:
             raise ValueError(f"Variance mode {variance_mode} is not supported.")
         mse = mse_fn(predictions, test["output"])

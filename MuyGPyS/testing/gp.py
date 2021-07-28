@@ -5,6 +5,8 @@
 
 import numpy as np
 
+from typing import Iterable, List, Optional, Tuple, Union
+
 from sklearn.gaussian_process.kernels import Matern, RBF
 
 
@@ -13,55 +15,51 @@ class BenchmarkGP:
     A basic Gaussian Process.
 
     Performs GP inference and simulation by way of analytic computations.
-    """
 
-    def __init__(self, kern="matern", **kwargs):
-        """
-        Initialize.
-
-        Parameters
-        ----------
-        kern : str
+    Args:
+        kern:
             The kernel to be used. Each kernel supports different
             hyperparameters that can be specified in kwargs.
-            NOTE[bwp] Currently supports ``matern'' and ``rbf''.
+            NOTE[bwp] Currently supports `matern` and `rbf`.
+        **kwargs:
+            Kernel parameters. See :ref:`MuyGPyS-gp-kernels`.
+    """
+
+    def __init__(
+        self,
+        kern: str = "matern",
+        **kwargs,
+    ):
+        """
+        Initialize.
         """
         self.kern = kern.lower()
         self.set_params(**kwargs)
 
-    def set_params(self, **params):
+    def set_params(self, **params) -> List[str]:
         """
         Set the hyperparameters specified by `params`.
 
         NOTE[bwp] this logic should get moved into kernel functors once
         implemented
 
-        Universal Parameters
-        ----------
-        eps : float
-            The homoscedastic noise nugget to be added to the inverted
-            covariance matrix.
-        sigma_sq : np.ndarray(float), shape = ``(response_count)''
-            Scaling parameter to be applied to posterior variance. One element
-            per dimension of the response.
+        Args:
+            eps:
+                The homoscedastic noise nugget to be added to the inverted
+                covariance matrix.
+            sigma_sq:
+                Scaling parameter to be applied to posterior variance. One
+                element per dimension of the response.
+            nu:
+                The smoothness parameter. As `nu` -> infty, the matern kernel
+                converges pointwise to the RBF kernel. Accept only if this is
+                a matern GP.
+            length_scale:
+                Scale parameter multiplied against distance values. Accept if
+                RBF or Matern.
 
-        Matern Parameters
-        ----------
-        nu : float
-            The smoothness parameter. As ``nu'' -> infty, the matern kernel
-            converges pointwise to the RBF kernel.
-        length_scale : float
-            Scale parameter multiplied against distance values.
-
-        RBF Parameters
-        ----------
-        length_scale : float
-            Scale parameter multiplied against distance values.
-
-        Returns
-        -------
-        unset_params : list(str)
-            The set of kernel parameters that have not been fixed by ``params''.
+        Returns:
+            The set of kernel parameters that have not been fixed by `params`.
         """
         self.params = {
             p: params[p] for p in params if p != "eps" and p != "sigma_sq"
@@ -85,22 +83,25 @@ class BenchmarkGP:
             raise NotImplementedError(f"{self.kern} is not implemented yet!")
         return sorted(list(unset_params))
 
-    def set_param_array(self, names, values):
+    def set_param_array(
+        self,
+        names: List[str],
+        values: List[float],
+    ) -> None:
         """
-        Set the hyperparameters specified by elements of ``names'' with the
-        corresponding elements of ``values''.
+        Set the hyperparameters specified by elements of `names` with the
+        corresponding elements of `values`.
 
-        Convenience function for use in concert with ``scipy.optimize''.
+        Convenience function for use in concert with `scipy.optimize`.
 
         NOTE[bwp] this logic should get moved into kernel functors once
         implemented
 
-        Parameters
-        ----------
-        names : list(str)
-            An alphabetically ordered list of parameter names.
-        values : list(float)
-            A corresponding list of parameter values.
+        Args:
+            names:
+                An alphabetically ordered list of parameter names.
+            values:
+                A corresponding list of parameter values.
         """
         names = list(names)
         # this is going to break if we add a hyperparameter that occurs earlier
@@ -116,7 +117,11 @@ class BenchmarkGP:
         elif self.kern == "rbf":
             self.kernel = RBF(**self.params)
 
-    def optim_bounds(self, names, eps=1e-6):
+    def optim_bounds(
+        self,
+        names: Iterable[str],
+        eps: float = 1e-6,
+    ) -> List[Tuple[float, float]]:
         """
         Set the bounds (2-tuples) corresponding to each specified
         hyperparameter.
@@ -124,11 +129,9 @@ class BenchmarkGP:
         NOTE[bwp] this logic should get moved into kernel functors once
         implemented
 
-        Parameters
-        ----------
-        params : dict
-            A dict mapping hyperparameter names to 2-tuples of floats. Floats
-            must be increasing.
+        Args:
+            names:
+                An iterable over hyperparameter names.
         """
         ret = list()
         if "eps" in names:
@@ -143,31 +146,34 @@ class BenchmarkGP:
                 ret.append((eps, 40.0))
         return ret
 
-    def fit(self, test, train):
+    def fit(
+        self,
+        test: np.ndarray,
+        train: np.ndarray,
+    ) -> None:
         """
         Compute the full kernel and precompute the cholesky decomposition.
 
-        Parameters
-        ----------
-        test : numpy.ndarray(float), shape = ``(test_count, feature_count)''
-            The full testing data matrix.
-        train : numpy.ndarray(float), shape = ``(train_count, feature_count)''
-            The full training data matrix.
+        Args:
+            test:
+                The full testing data matrix of shape
+                `(test_count, feature_count)`.
+            train:
+                The full training data matrix of shape
+                `(train_count, feature_count)`.
         """
         self._fit_kernel(np.vstack((test, train)))
         self.test_count = test.shape[0]
         self._cholesky(self.K)
 
-    def fit_train(self, train):
+    def fit_train(self, train: np.ndarray) -> None:
         """
         Compute the training kernel and precompute the cholesky decomposition.
 
-        Parameters
-        ----------
-        test : numpy.ndarray(float), shape = ``(test_count, dim)''
-            The full testing data matrix.
-        train : numpy.ndarray(float), shape = ``(train_count, dim)''
-            The full training data matrix.
+        Args:
+            train:
+                The full training data matrix of shape
+                `(train_count, feature_count)`.
         """
         self._fit_kernel(train)
         self.test_count = 0
@@ -188,29 +194,29 @@ class BenchmarkGP:
 
     def regress(
         self,
-        targets,
-        variance_mode=None,
-    ):
+        targets: np.ndarray,
+        variance_mode: Optional[str] = None,
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Performs simultaneous regression on a list of observations.
 
-        Parameters
-        ----------
-        variance_mode : str or None
-            Specifies the type of variance to return. Currently supports
-            ``diagonal'' and None. If None, report no variance term.
-        targets : numpy.ndarray(float),
-                  shape = ``(train_count, ouput_dim)''
-            Vector-valued responses for each training element.
+        Args:
+            targets:
+                A matrix of shape `(train_count, ouput_dim)` whose rows consist
+                of vector-valued responses for each training element.
+            variance_mode:
+                Specifies the type of variance to return. Currently supports
+                `diagonal` and None. If None, report no variance term.
 
         Returns
         -------
-        responses : numpy.ndarray(float),
-                    shape = ``(batch_count, response_count,)''
-            The predicted response for each of the given indices.
-        diagonal_variance : numpy.ndarray(float), shape = ``(batch_count, )
-            The diagonal elements of the posterior variance. Only returned where
-            ``variance_mode == "diagonal"''.
+        responses:
+            A matrix of shape `(batch_count, response_count)` whose rows consist
+            of the predicted response for each of the given indices.
+        diagonal_variance:
+            A vector of shape `(batch_count,)` consisting of the diagonal
+            elements of the posterior variance. Only returned where
+            `variance_mode == "diagonal"`.
         """
         if self.test_count == 0:
             return np.array([])
