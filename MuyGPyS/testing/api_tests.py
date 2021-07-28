@@ -221,11 +221,9 @@ class RegressionAPITest(parameterized.TestCase):
         test,
         target_mse,
         nn_count,
-        # embed_dim,
         batch_count,
         loss_method,
         variance_mode,
-        # embed_method,
         nn_kwargs,
         k_kwargs,
         kern=None,
@@ -235,11 +233,9 @@ class RegressionAPITest(parameterized.TestCase):
             train,
             test,
             nn_count,
-            # embed_dim,
             batch_count,
             loss_method,
             variance_mode,
-            # embed_method,
             nn_kwargs,
             k_kwargs,
             kern=kern,
@@ -300,13 +296,8 @@ class RegressionAPITest(parameterized.TestCase):
         if variance_mode is None:
             regressor, _, predictions = ret
             variance = None
-            # sigma_sq = None
         elif variance_mode == "diagonal":
             regressor, _, predictions, variance = ret
-            # predictions, variance = predictions
-            # sigma_sq = (
-            #     muygps.sigma_sq()
-            # )  # np.array([ss() for ss in muygps.sigma_sq])
         else:
             raise ValueError(f"Variance mode {variance_mode} is not supported.")
         mse = mse_fn(predictions, test["output"])

@@ -519,8 +519,8 @@ def _get_kernel(kern: str, **kwargs) -> KernelFn:
     parameters.
 
     Args:
-        embed_method:
-            The embedding method to be used. Current supports only `"matern"` and
+        kern:
+            The kernel function to be used. Current supports only `"matern"` and
             `"rbf"`.
         kwargs : dict
             Kernel parameters, possibly including hyperparameter dicts.

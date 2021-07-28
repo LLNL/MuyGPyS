@@ -10,23 +10,14 @@
 from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
 from MuyGPyS.gp.distance import crosswise_distances, pairwise_distances
 
-# import numpy as np
-
-# from MuyGPyS.embed import apply_embedding
-# from MuyGPyS.data.utils import normalize
 from MuyGPyS.optimize.batch import sample_batch
 
 from MuyGPyS.gp.kernels import _init_hyperparameter
 
-# from MuyGPyS.optimize.objective import (
-#     loo_crossval,
-#     get_loss_func,
-# )
 from MuyGPyS.predict import regress_any
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 
-# from scipy import optimize as opt
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 

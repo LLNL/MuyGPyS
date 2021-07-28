@@ -84,8 +84,7 @@ def full_filtered_batch(
         nbrs_lookup:
             Trained nearest neighbor query data structure.
         labels:
-            List of class labels of shape `(train_count,)` for all embedded
-            data.
+            List of class labels of shape `(train_count,)` for all train data.
 
     Returns
     -------
@@ -128,8 +127,7 @@ def sample_balanced_batch(
         nbrs_lookup:
             Trained nearest neighbor query data structure.
         labels:
-            List of class labels of shape `(train_count,)` for all embedded
-            data.
+            List of class labels of shape `(train_count,)` for all train data.
         batch_count:
             The number of batch elements to sample.
 
