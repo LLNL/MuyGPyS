@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'MuyGPyS'
-copyright = '2021, Benjamin W. Priest'
+copyright = '2021, Lawrence Livermore National Security, LLC'
 author = 'Benjamin W. Priest'
 
 # The full version, including alpha/beta/rc tags
