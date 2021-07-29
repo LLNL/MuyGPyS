@@ -8,7 +8,15 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS.examples.classify import example_lambdas, make_masks, do_uq
+
+from MuyGPyS.examples.classify import classify_any
+from MuyGPyS.examples.two_class_classify_uq import (
+    classify_two_class_uq,
+    train_two_class_interval,
+    example_lambdas,
+    make_masks,
+    do_uq,
+)
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import (
@@ -17,15 +25,11 @@ from MuyGPyS.optimize.batch import (
     sample_balanced_batch,
     full_filtered_batch,
 )
-from MuyGPyS.predict import classify_any, classify_two_class_uq
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _make_gaussian_data,
     _basic_nn_kwarg_options,
-)
-from MuyGPyS.uq import (
-    train_two_class_interval,
 )
 
 

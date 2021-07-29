@@ -24,6 +24,7 @@ $ pip install -e .
 Doc building instructions:
 ```
 $ cd /path/to/this/repo/docs
+$ pip install -r requirements.txt
 $ make html
 ```
 Then open the file `docs/_build/html/index.html` in your browser of choice.
@@ -499,7 +500,7 @@ This function returns GP predictions `surrogate_predictions` and a list of index
 Run star-gal with UQ example instructions:
 ```
 >>> import numpy as np
->>> from MuyGPyS.examples.classify import do_classify_uq, do_uq, example_lambdas
+>>> from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq, example_lambdas
 >>> from MuyGPyS.optimize.objective import mse_fn
 >>> train_features, train_labels = load_stargal_train()  # imaginary train getter
 >>> test_features, test_labels = load_stargal_test()  # imaginary test getter
@@ -582,7 +583,15 @@ Run MNIST without UQ example instructions:
 ## Authors
 
 * Benjamin W. Priest (priest2 at llnl dot gov)
-* Amanada Muyskens (muyskens1 at llnl dot gov)
+* Amanada L. Muyskens (muyskens1 at llnl dot gov)
+
+## Papers
+
+MuyGPyS has been used the in the following papers (newest first):
+
+1. [Gaussian Process Classification fo Galaxy Blend Identification in LSST](https://arxiv.org/abs/2107.09246)
+2. [Star-Galaxy Image Separation with Computationally Efficient Gaussian Process Classification](https://arxiv.org/abs/2105.01106)
+3. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
 
 ## Citation
 
@@ -598,16 +607,9 @@ If you use MuyGPyS in a research paper, please reference our article:
 
 ```
 
-## Papers
-
-MuyGPyS has been used the in the following papers (newest first):
-
-1. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
-
 ## License
 
 MuyGPyS is distributed under the terms of the MIT license.
-
 All new contributions must be made under the MIT license.
 
 See [LICENSE-MIT](LICENSE-MIT), [NOTICE](NOTICE), and [COPYRIGHT](COPYRIGHT) for details.

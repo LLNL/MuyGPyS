@@ -3,25 +3,30 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Resources and high-level API for some regression workflows.
+"""Resources and high-level API for a simple regression workflow.
+
+:func:`~MuyGPyS.examples.regress.make_regressor` is a high-level API for 
+creating and training :class:`MuyGPyS.gp.muygps.MuyGPS` objects for regression. 
+:func:`~MuyGPyS.examples.regress.make_multivariate_regressor` is a high-level 
+API for creating and training :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS` 
+objects for regression.
+
+:func:`~MuyGPyS.examples.regress.do_regress` is a high-level api for executing
+a simple, generic regression workflow given data. It calls the maker APIs 
+above and :func:`~MuyGPyS.examples.regress.regress_any`. 
 """
 
-
-from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
-from MuyGPyS.gp.distance import crosswise_distances, pairwise_distances
-
-from MuyGPyS.optimize.batch import sample_batch
-
-from MuyGPyS.gp.kernels import _init_hyperparameter
-
-from MuyGPyS.predict import regress_any
-from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
+import numpy as np
 
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
-import numpy as np
+from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
+from MuyGPyS.gp.distance import crosswise_distances, pairwise_distances
+
+from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.batch import sample_batch
 
 
 def make_regressor(
@@ -126,7 +131,6 @@ def make_regressor(
     muygps = MuyGPS(**k_kwargs)
 
     skip_opt = muygps.fixed_nosigmasq()
-    # skip_sigma = muygps.fixed_sigmasq()
     if skip_opt is False or skip_sigma is False:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
@@ -287,7 +291,6 @@ def make_multivariate_regressor(
 
     skip_opt = mmuygps.fixed_nosigmasq()
     skip_sigma = mmuygps.fixed_sigmasq()
-    # skip_sigma = True
     if skip_opt is False or skip_sigma is False:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
@@ -555,3 +558,75 @@ def do_regress(
         predictions, variance = predictions
         return regressor, nbrs_lookup, predictions, variance
     return regressor, nbrs_lookup, predictions
+
+
+def regress_any(
+    regressor: Union[MuyGPS, MMuyGPS],
+    test: np.ndarray,
+    train: np.ndarray,
+    train_nbrs_lookup: NN_Wrapper,
+    train_targets: np.ndarray,
+    variance_mode: Optional[str] = None,
+) -> Union[
+    Tuple[np.ndarray, Dict[str, float]],
+    Tuple[Tuple[np.ndarray, np.ndarray], Dict[str, float]],
+]:
+    """
+    Simultaneously predicts the response for each test item.
+
+    Args:
+        regressor:
+            Regressor object.
+        test:
+            Test observations of shape `(test_count, feature_count)`.
+        train:
+            Train observations of shape `(train_count, feature_count)`.
+        train_nbrs_lookup:
+            Trained nearest neighbor query data structure.
+        train_targets:
+            Observed response for all training data of shape
+            `(train_count, class_count)`.
+        variance_mode : str or None
+            Specifies the type of variance to return. Currently supports
+            `diagonal` and None. If None, report no variance term.
+
+    Returns
+    -------
+    means:
+        The predicted response of shape `(test_count, response_count,)` for
+        each of the test examples.
+    variances:
+        The independent posterior variances for each of the test examples. Of
+        shape `(test_count,)` if the argument `regressor` is an instance of
+        :class:`MuyGPyS.gp.muygps.MuyGPS`, and of shape
+        `(test_count, response_count)` if `regressor` is an instance of
+        :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS`. Returned only when
+        `variance_mode == "diagonal"`.
+    timing : dict
+        Timing for the subroutines of this function.
+    """
+    test_count = test.shape[0]
+    train_count = train.shape[0]
+
+    time_start = perf_counter()
+    test_nn_indices, _ = train_nbrs_lookup.get_nns(test)
+    time_nn = perf_counter()
+
+    time_agree = perf_counter()
+
+    predictions = regressor.regress_from_indices(
+        np.arange(test_count),
+        test_nn_indices,
+        test,
+        train,
+        train_targets,
+        variance_mode=variance_mode,
+    )
+    time_pred = perf_counter()
+
+    timing = {
+        "nn": time_nn - time_start,
+        "agree": time_agree - time_nn,
+        "pred": time_pred - time_agree,
+    }
+    return predictions, timing

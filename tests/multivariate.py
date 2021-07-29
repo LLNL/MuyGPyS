@@ -8,17 +8,16 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS.examples.classify import make_multivariate_classifier
-from MuyGPyS.examples.regress import make_multivariate_regressor
+from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
+from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
-from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.chassis import (
     scipy_optimize_from_indices,
     scipy_optimize_from_tensors,
 )
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.predict import classify_any, regress_any
 from MuyGPyS.testing.gp import BenchmarkGP
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,

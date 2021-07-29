@@ -10,6 +10,6 @@ Includes the high-level APIs for automated model creation and training, and some
    :maxdepth: 2
    :caption: Contents:
 
-   examples/classify
    examples/regress
-	     
+   examples/classify
+   examples/two_class_classify_uq

@@ -11,7 +11,7 @@ import pickle as pkl
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS.examples.classify import example_lambdas
+from MuyGPyS.examples.two_class_classify_uq import example_lambdas
 from MuyGPyS.testing.api_tests import ClassifyAPITest, RegressionAPITest
 from MuyGPyS.testing.test_utils import (
     _balanced_subsample,

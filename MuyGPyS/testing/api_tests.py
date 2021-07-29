@@ -10,11 +10,8 @@ from typing import cast, Callable, Dict, List, Optional, Tuple, Union
 
 from absl.testing import parameterized
 
-from MuyGPyS.examples.classify import (
-    do_classify,
-    do_classify_uq,
-    do_uq,
-)
+from MuyGPyS.examples.classify import do_classify
+from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq
 from MuyGPyS.examples.regress import do_regress
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize.objective import mse_fn

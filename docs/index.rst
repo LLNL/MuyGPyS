@@ -16,14 +16,7 @@ MuyGPyS is toolkit for training approximate Gaussian Process (GP) models using t
    MuyGPyS/neighbors
    MuyGPyS/gp
    MuyGPyS/optimize
-
-.. toctree::
-   :maxdepth: 2
-   :caption: High-level API Documentation:
-
    MuyGPyS/examples
-   MuyGPyS/predict
-   MuyGPyS/uq
 
 .. toctree::
    :maxdepth: 2
