@@ -9,6 +9,20 @@ MuyGPyS Reference
 MuyGPyS is toolkit for training approximate Gaussian Process (GP) models using the MuyGPs (Muyskens, Goumiri, Priest, Schneider) algorithm. 
 
 
+Citation
+========
+
+If you use MuyGPyS in a research paper, please reference our article::
+
+  @article{muygps2021,
+    title={MuyGPs: Scalable Gaussian Process Hyperparameter Estimation Using Local Cross-Validation},
+    author={Muyskens, Amanda and Priest, Benjamin W. and Goumiri, Im{\`e}ne and Schneider, Michael},
+    journal={arXiv preprint arXiv:2104.14581},
+    year={2021}
+  }
+
+
+
 .. toctree::
    :maxdepth: 2
    :caption: Package Documentation:
