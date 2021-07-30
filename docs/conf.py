@@ -9,14 +9,18 @@
 # Adapted from 
 # http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
 
-import mock
-import sys
+# import mock
+# import sys
 
-MOCK_MODULES = [
+# MOCK_MODULES = [
+#     'numpy', 'scipy', 'scikit-learn', 'absl-py', 'pybind11', 'hnswlib'
+# ]
+# for mod_name in MOCK_MODULES:
+#     sys.modules[mod_name] = mock.Mock()
+
+autodoc_mock_imports = [
     'numpy', 'scipy', 'scikit-learn', 'absl-py', 'pybind11', 'hnswlib'
 ]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
 
 # -- Path setup --------------------------------------------------------------
 
