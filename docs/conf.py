@@ -19,7 +19,7 @@
 #     sys.modules[mod_name] = mock.Mock()
 
 autodoc_mock_imports = [
-    'numpy', 'scipy', 'scikit-learn', 'absl-py', 'pybind11', 'hnswlib'
+    'numpy', 'scipy', 'scikit-learn', 'sklearn', 'absl-py', 'pybind11', 'hnswlib'
 ]
 
 # -- Path setup --------------------------------------------------------------
