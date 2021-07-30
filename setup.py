@@ -44,14 +44,6 @@ setup(
         "Documentation": "https://muygpys.readthedocs.io",
         "Bug Tracker": "https://github.com/LLNL/MuyGPyS/issues",
     },
-    install_requires=[
-        "numpy",
-        "scipy==1.4.1",
-        "scikit-learn",
-        "absl-py",
-        "pybind11",
-        "hnswlib",
-    ],
     classifiers=[
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
