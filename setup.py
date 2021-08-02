@@ -48,7 +48,7 @@ setup(
     version=_get_version(),
     description="Scalable Approximate Gaussian Process using Local Kriging",
     long_description=long_description,
-    long_desription_content_type="text/markdown",
+    long_description_content_type="text/markdown",
     author="Benjamin W. Priest",
     author_email="priest2@llnl.gov",
     license="MIT",
