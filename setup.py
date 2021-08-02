@@ -55,6 +55,8 @@ setup(
     packages=["MuyGPyS"],
     python_requires=">=3.6",
     install_requires=INSTALL_REQUIRES,
+    url="https://github.com/LLNL/MuyGPyS",
+    download_url="https://pypi.org/project/muygpys",
     project_urls={
         "Source Code": "https://github.com/LLNL/MuyGPyS",
         "Documentation": "https://muygpys.readthedocs.io",
