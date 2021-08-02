@@ -44,7 +44,7 @@ def _get_version() -> str:
 
 
 setup(
-    name="muygps",
+    name="muygpys",
     version=_get_version(),
     description="Scalable Approximate Gaussian Process using Local Kriging",
     long_description=long_description,
