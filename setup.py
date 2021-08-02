@@ -6,7 +6,7 @@
 import os
 import sys
 
-from setuptools import setup
+from setuptools import find_packages, setup
 from typing import Dict
 
 
@@ -44,7 +44,7 @@ def _get_version() -> str:
 
 
 setup(
-    name="MuyGPyS",
+    name="muygps",
     version=_get_version(),
     description="Scalable Approximate Gaussian Process using Local Kriging",
     long_description=long_description,
@@ -52,7 +52,7 @@ setup(
     author="Benjamin W. Priest",
     author_email="priest2@llnl.gov",
     license="MIT",
-    packages=["MuyGPyS"],
+    packages=find_packages(),
     python_requires=">=3.6",
     install_requires=INSTALL_REQUIRES,
     url="https://github.com/LLNL/MuyGPyS",
