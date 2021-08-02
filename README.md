@@ -12,10 +12,15 @@ This feature affords the optimization of hyperparameters by way of leave-one-out
 ## Installation
 
 
-Installation instructions:
+Pip installation instructions:
 ```
-$ cd /path/to/this/repo
-$ pip install -e .
+$ pip install muygpys
+```
+
+To install from source, follow these instructions:
+```
+$ git clone git@github.com:LLNL/MuyGPyS.git
+$ pip install -e MuyGPyS
 ```
 
 
@@ -27,7 +32,7 @@ Doc building instructions:
 ```
 $ cd /path/to/this/repo/docs
 $ pip install -r requirements.txt
-$ make html
+$ sphinx-build -b html docs docs/_build/html
 ```
 Then open the file `docs/_build/html/index.html` in your browser of choice.
 
