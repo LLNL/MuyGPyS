@@ -1,6 +1,0 @@
-numpy
-scipy==1.4.1
-scikit-learn
-absl-py
-pybind11
-hnswlib

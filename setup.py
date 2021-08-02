@@ -10,6 +10,19 @@ from setuptools import setup
 from typing import Dict
 
 
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
+    long_description = f.read()
+
+INSTALL_REQUIRES = [
+    "numpy>=1.18.5",
+    "scipy==1.4.1",
+    "scikit-learn>=0.23.2",
+    "absl-py>=0.13.0",
+    "pybind11>=2.5.0",
+    "hnswlib>=0.5.2",
+]
+
 def _get_version() -> str:
     """Returns the package version.
 
@@ -34,11 +47,14 @@ setup(
     name="MuyGPyS",
     version=_get_version(),
     description="Scalable Approximate Gaussian Process using Local Kriging",
+    long_description=long_description,
+    long_desription_content_type="text/markdown",
     author="Benjamin W. Priest",
     author_email="priest2@llnl.gov",
     license="MIT",
     packages=["MuyGPyS"],
     python_requires=">=3.6",
+    install_requires=INSTALL_REQUIRES,
     project_urls={
         "Source Code": "https://github.com/LLNL/MuyGPyS",
         "Documentation": "https://muygpys.readthedocs.io",
