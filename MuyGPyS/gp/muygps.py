@@ -83,15 +83,13 @@ class MuyGPS:
         kwargs:
             Addition parameters to be passed to the kernel, possibly including
             additional hyperparameter dicts and a metric keyword.
-        """
+    """
 
     def __init__(
         self,
         kern: str = "matern",
         eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 1e-5},
-        sigma_sq: Dict[str, Union[float, Tuple[float, float]]] = {
-            "val": 1e0
-        },
+        sigma_sq: Dict[str, Union[float, Tuple[float, float]]] = {"val": 1e0},
         **kwargs,
     ):
         self.kern = kern.lower()
@@ -205,7 +203,7 @@ class MuyGPS:
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
             batch_targets:
-                A tensor of shape `(batch_count, nn_count, response_count)` 
+                A tensor of shape `(batch_count, nn_count, response_count)`
                 whose last dimension lists the vector-valued responses for the
                 nearest neighbors of each batch element.
 
@@ -268,8 +266,8 @@ class MuyGPS:
 
         This is similar to the old regress API in that it implicitly creates and
         discards the distance and kernel tensors and matrices. If these data
-        structures are needed for later reference, instead use 
-        :func:`~MuyGPyS.gp.muygps.MuyGPS.regress`.  
+        structures are needed for later reference, instead use
+        :func:`~MuyGPyS.gp.muygps.MuyGPS.regress`.
 
         Args:
             indices:
@@ -327,42 +325,42 @@ class MuyGPS:
 
         Computes parallelized local solves of systems of linear equations using
         the last two dimensions of `K` along with `Kcross` and `batch_targets`
-        to predict responses in terms of the posterior mean. Also computes the 
-        posterior variance if `variance_mode` is set appropriately. Assumes that 
-        kernel tensor `K` and cross-covariance matrix `Kcross` are already 
-        computed and given as arguments. To implicitly construct these values 
-        from indices (useful if the kernel or distance tensors and matrices are 
-        not needed for later reference) instead use 
-        :func:`~MuyGPyS.gp.muygps.MuyGPS.regress_from_indices`. 
-        
+        to predict responses in terms of the posterior mean. Also computes the
+        posterior variance if `variance_mode` is set appropriately. Assumes that
+        kernel tensor `K` and cross-covariance matrix `Kcross` are already
+        computed and given as arguments. To implicitly construct these values
+        from indices (useful if the kernel or distance tensors and matrices are
+        not needed for later reference) instead use
+        :func:`~MuyGPyS.gp.muygps.MuyGPS.regress_from_indices`.
+
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations, as computed in
-        Equation (3.4) of [muyskens2021muygps]_. For each batch element 
+        Equation (3.4) of [muyskens2021muygps]_. For each batch element
         :math:`\\mathbf{x}_i`, we compute
 
         .. math::
-            \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}) = 
+            \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}) =
                 K_\\theta (\\mathbf{x}_i, X_{N_i})
                 (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
                 Y(X_{N_i}).
 
-        Here :math:`X_{N_i}` is the set of nearest neighbors of 
-        :math:`\\mathbf{x}_i` in the training data, :math:`K_\\theta` is the 
-        kernel functor specified by `self.kernel`, :math:`\\varepsilon I_k` is a 
-        diagonal homoscedastic noise matrix whose diagonal is the value of the 
-        `self.eps` hyperparameter, and :math:`Y(X_{N_i})` is the 
-        `(nn_count, respones_count)` matrix of responses of the nearest 
-        neighbors given by the second two dimensions of the `batch_targets` 
+        Here :math:`X_{N_i}` is the set of nearest neighbors of
+        :math:`\\mathbf{x}_i` in the training data, :math:`K_\\theta` is the
+        kernel functor specified by `self.kernel`, :math:`\\varepsilon I_k` is a
+        diagonal homoscedastic noise matrix whose diagonal is the value of the
+        `self.eps` hyperparameter, and :math:`Y(X_{N_i})` is the
+        `(nn_count, respones_count)` matrix of responses of the nearest
+        neighbors given by the second two dimensions of the `batch_targets`
         argument.
 
-        If `variance_mode == "diagonal"`, also return the local posterior 
-        variances of each prediction, corresponding to the diagonal elements of 
+        If `variance_mode == "diagonal"`, also return the local posterior
+        variances of each prediction, corresponding to the diagonal elements of
         a covariance matrix. For each batch element :math:`\\mathbf{x}_i`, we
         compute
 
         .. math::
             Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})) =
-                K_\\theta (\\mathbf{x}_i, \\mathbf{x}_i) - 
+                K_\\theta (\\mathbf{x}_i, \\mathbf{x}_i) -
                 K_\\theta (\\mathbf{x}_i, X_{N_i})
                 (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
                 K_\\theta (X_{N_i}, \\mathbf{x}_i).
@@ -534,28 +532,27 @@ class MultivariateMuyGPS:
     each response dimension, implemented as individual
     :class:`MuyGPyS.gp.muygps.MuyGPS` objects.
 
-    This class is similar in interface to :class:`MuyGPyS.gp.muygps.MuyGPS`, but 
+    This class is similar in interface to :class:`MuyGPyS.gp.muygps.MuyGPS`, but
     requires a list of hyperparameter dicts at initialization.
 
     Example:
         >>> from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
-        >>> k_args = [
-        ... 	    {
-        ...                 "eps": {"val": 1e-5},
-        ...                 "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
-        ...                 "length_scale": {"val": 7.2},
-        ...	    },
-        ... 	    {
-        ...                 "eps": {"val": 1e-5},
-        ...                 "nu": {"val": 0.67, "bounds": (0.1, 2.5)},
-        ...                 "length_scale": {"val": 7.2},
-        ...	    },
-        ... ]
+        >>> k_kwargs1 = {
+        ...         "eps": {"val": 1e-5},
+        ...         "nu": {"val": 0.67, "bounds": (0.1, 2.5)},
+        ...         "length_scale": {"val": 7.2},
+        ... }
+        >>> k_kwargs2 = {
+        ...         "eps": {"val": 1e-5},
+        ...         "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
+        ...         "length_scale": {"val": 7.2},
+        ... }
+        >>> k_args = [k_kwargs1, k_kwargs2]
         >>> mmuygps = MMuyGPS("matern", *k_args)
 
-    We can realize kernel tensors for each of the models contained within a 
-    `MultivariateMuyGPS` object by iterating over its `models` member. Once we 
-    have computed a `pairwise_dists` tensor and a `crosswise_dists` matrix, it 
+    We can realize kernel tensors for each of the models contained within a
+    `MultivariateMuyGPS` object by iterating over its `models` member. Once we
+    have computed a `pairwise_dists` tensor and a `crosswise_dists` matrix, it
     is straightforward to perform each of these realizations.
 
     Example:
@@ -570,14 +567,14 @@ class MultivariateMuyGPS:
             hyperparameters that can be specified in kwargs. Currently supports
             only `matern` and `rbf`.
         model_args:
-            Dictionaries defining each internal 
+            Dictionaries defining each internal
             :class:`MuyGPyS.gp.muygps.MuyGPS` instance.
     """
 
     def __init__(
         self,
         kern: str,
-        *model_args: Dict,
+        *model_args,
     ):
         self.kern = kern.lower()
         self.models = [MuyGPS(kern, **args) for args in model_args]
@@ -680,9 +677,9 @@ class MultivariateMuyGPS:
         """
         Performs simultaneous regression on a list of observations.
 
-        Implicitly creates and discards the distance tensors and matrices. If 
-        these data structures are needed for later reference, instead use 
-        :func:`~MuyGPyS.gp.muygps.MultivariateMuyGPS.regress`.  
+        Implicitly creates and discards the distance tensors and matrices. If
+        these data structures are needed for later reference, instead use
+        :func:`~MuyGPyS.gp.muygps.MultivariateMuyGPS.regress`.
 
         Args:
             indices:
@@ -740,47 +737,47 @@ class MultivariateMuyGPS:
         the target matrix.
 
         Computes parallelized local solves of systems of linear equations using
-        the kernel realizations, one for each internal model, of the last two 
-        dimensions of `pairwise_dists` along with `crosswise_dists` and 
-        `batch_targets` to predict responses in terms of the posterior mean. 
-        Also computes the posterior variance if `variance_mode` is set 
-        appropriately. Assumes that distance tensor `pairwise_dists` and 
-        crosswise distance matrix `crosswise_dists` are already computed and 
-        given as arguments. To implicitly construct these values from indices 
-        (useful if the distance tensors and matrices are not needed for later 
-        reference) instead use 
-        :func:`~MuyGPyS.gp.muygps.MultivariateMuyGPS.regress_from_indices`. 
-        
+        the kernel realizations, one for each internal model, of the last two
+        dimensions of `pairwise_dists` along with `crosswise_dists` and
+        `batch_targets` to predict responses in terms of the posterior mean.
+        Also computes the posterior variance if `variance_mode` is set
+        appropriately. Assumes that distance tensor `pairwise_dists` and
+        crosswise distance matrix `crosswise_dists` are already computed and
+        given as arguments. To implicitly construct these values from indices
+        (useful if the distance tensors and matrices are not needed for later
+        reference) instead use
+        :func:`~MuyGPyS.gp.muygps.MultivariateMuyGPS.regress_from_indices`.
+
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations by solving a system
-        of linear equations induced by each kernel functor, one per response 
-        dimension, in a generalization of Equation (3.4) of 
+        of linear equations induced by each kernel functor, one per response
+        dimension, in a generalization of Equation (3.4) of
         [muyskens2021muygps]_. For each batch element :math:`\\mathbf{x}_i` we
         compute
 
         .. math::
-            \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})_{:,j} = 
+            \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})_{:,j} =
                 K^{(j)}_\\theta (\\mathbf{x}_i, X_{N_i})
                 (K^{(j)}_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon_j I_k)^{-1}
                 Y(X_{N_i})_{:,j}.
 
-        Here :math:`X_{N_i}` is the set of nearest neighbors of 
-        :math:`\\mathbf{x}_i` in the training data, :math:`K^{(j)}_\\theta` is 
-        the kernel functor associated with the jth internal model, corresponding 
-        to the jth response dimension, :math:`\\varepsilon_j I_k` is a diagonal 
-        homoscedastic noise matrix whose diagonal is the value of the 
-        `self.models[j].eps` hyperparameter, and :math:`Y(X_{N_i})_{:,j}` is the 
-        `(batch_count,)` vector of the jth responses of the neartest neighbors 
+        Here :math:`X_{N_i}` is the set of nearest neighbors of
+        :math:`\\mathbf{x}_i` in the training data, :math:`K^{(j)}_\\theta` is
+        the kernel functor associated with the jth internal model, corresponding
+        to the jth response dimension, :math:`\\varepsilon_j I_k` is a diagonal
+        homoscedastic noise matrix whose diagonal is the value of the
+        `self.models[j].eps` hyperparameter, and :math:`Y(X_{N_i})_{:,j}` is the
+        `(batch_count,)` vector of the jth responses of the neartest neighbors
         given by a slice of the `batch_targets` argument.
 
-        If `variance_mode == "diagonal"`, also return the local posterior 
-        variances of each prediction, corresponding to the diagonal elements of 
+        If `variance_mode == "diagonal"`, also return the local posterior
+        variances of each prediction, corresponding to the diagonal elements of
         a covariance matrix. For each batch element :math:`\\mathbf{x}_i`, we
         compute
 
         .. math::
             Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}))_j =
-                K^{(j)}_\\theta (\\mathbf{x}_i, \\mathbf{x}_i) - 
+                K^{(j)}_\\theta (\\mathbf{x}_i, \\mathbf{x}_i) -
                 K^{(j)}_\\theta (\\mathbf{x}_i, X_{N_i})
                 (K^{(j)}_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
                 K^{(j)}_\\theta (X_{N_i}, \\mathbf{x}_i).
@@ -809,8 +806,8 @@ class MultivariateMuyGPS:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         diagonal_variance:
-            A vector of shape `(batch_count, response_count)` consisting of the 
-            diagonal elements of the posterior variance for each model. Only 
+            A vector of shape `(batch_count, response_count)` consisting of the
+            diagonal elements of the posterior variance for each model. Only
             returned where `variance_mode == "diagonal"`.
         """
         batch_count, nn_count, response_count = batch_targets.shape
