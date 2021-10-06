@@ -118,19 +118,11 @@ def make_regressor(
     )
     time_nn = perf_counter()
 
-    skip_sigma = True
-    if k_kwargs.get("sigma_sq", "learn") == "learn":
-        if k_kwargs.get("sigma_sq") == "learn":
-            skip_sigma = False
-        if response_count == 1:
-            k_kwargs["sigma_sq"] = {"val": 1.0}
-        else:
-            k_kwargs["sigma_sq"] = {"val": [1.0] * response_count}
-
     # create MuyGPs object
     muygps = MuyGPS(**k_kwargs)
 
     skip_opt = muygps.fixed_nosigmasq()
+    skip_sigma = muygps.fixed_sigmasq()
     if skip_opt is False or skip_sigma is False:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
