@@ -203,8 +203,6 @@ def scipy_optimize_from_tensors(
     """
     loss_fn = get_loss_func(loss_method)
     optim_params = muygps.get_optim_params()
-    for key in optim_params:
-        optim_params[key]._set_val("sample")
     x0 = np.array([optim_params[p]() for p in optim_params])
     bounds = np.array([optim_params[p].get_bounds() for p in optim_params])
     if verbose is True:
