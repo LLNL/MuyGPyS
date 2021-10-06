@@ -43,6 +43,9 @@ class MuyGPS:
     vector of :math:`\\sigma^2` indicating the scale parameter associated
     with the posterior variance of each dimension of the response.
 
+    :math:`\\sigma^2` is the only parameter assumed to be a training target by
+    default. All other training targets must be manually specified.
+
     Example:
         >>> from MuyGPyS.gp.muygps import MuyGPS
         >>> k_kwargs = {
@@ -89,13 +92,15 @@ class MuyGPS:
         self,
         kern: str = "matern",
         eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 1e-5},
-        sigma_sq: Dict[str, Union[float, Tuple[float, float]]] = {"val": 1e0},
+        sigma_sq: Dict[str, Union[str, float, Tuple[float, float]]] = {
+            "val": "learn"
+        },
         **kwargs,
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
-        self.sigma_sq = _init_hyperparameter(1.0, "fixed", **sigma_sq)
+        self.sigma_sq = _init_hyperparameter("learn", "fixed", **sigma_sq)
 
     def set_eps(self, **eps) -> None:
         """

@@ -121,6 +121,7 @@ If `"bounds"` is set to `"fixed"`, the hyperparameter will remain fixed during a
 This is the default behavior for all hyperparameters if `"bounds"` is unset by the user.
 
 One sets hyperparameters such as `eps`, `sigma_sq`, as well as kernel-specific hyperparameters, e.g. `nu` and  `length_scale` for the Matern kernel, at initialization as above.
+All hyperparameters other than `sigma_sq` are assumed to be fixed unless otherwise specified.
 
 MuyGPyS depends upon linear operations on specially-constructed tensors in order to efficiently estimate GP realizations.
 Constructing these tensors depends upon the nearest neighbor index matrices that we described above.
@@ -206,6 +207,7 @@ They return only the trained `MuyGPyS.gp.muygps.MuyGPS` model and the `MuyGPyS.n
 
 An example regressor.
 In order to automatically train `sigma_sq`, set `k_kwargs["sigma_sq"] = "learn"`. 
+Note that this is the default behavior, and `sigma_sq` is the only hyperparameter assumed to be a training target by default. 
 ```
 >>> from MuyGPyS.examples.regress import make_regressor
 >>> train_features, train_responses = load_train()  # imaginary train getter
@@ -389,6 +391,7 @@ If one wants to predict on a univariate response as in this example, one must en
 The regression API adds a `sigma_sq` scale parameter for the variance.
 One can set `sigma_sq` using the `hyper_dict` kwarg like other hyperparameters.
 The API expects that `sigma_sq` is a `numpy.ndarray` with a value associated with each dimension of the response, i.e. that `train['output'].shape[1] == len(sigma_sq)`.
+In general, one should only manually set `sigma_sq` if they are certain they know what they are doing. 
 
 Regress on Heaton data with no variance
 ```
@@ -449,7 +452,6 @@ obtains mse: 2.345136495565052
 If one requires the (individual, independent) posterior variances for each of the predictions, one can pass `variance_mode="diagonal"`.
 This mode assumes that each output dimension uses the same model, and so will output an additional vector `variance` with a scalar posterior variance associated with each test point.
 The API also returns a (possibly trained) `MuyGPyS.gp.MuyGPS` or `MuyGPyS.gp.MultivariateMuyGPS` instance, whose `sigma_sq` member reports an array of multiplicative scaling parameters associated with the variance of each dimension.
-In order to tune `sigma-sq` using the `do_regress` API, pass `k_kwargs["sigma_sq"] = "learn"`.
 Obtaining the tuned posterior variance implies multiplying the returned variance by the scaling parameter along each dimension.
 
 
