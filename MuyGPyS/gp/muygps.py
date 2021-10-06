@@ -91,7 +91,7 @@ class MuyGPS:
     def __init__(
         self,
         kern: str = "matern",
-        eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 1e-5},
+        eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
         sigma_sq: Dict[str, Union[str, float, Tuple[float, float]]] = {
             "val": "learn"
         },
