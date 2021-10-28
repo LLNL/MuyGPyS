@@ -39,13 +39,11 @@ class InitTest(parameterized.TestCase):
                         "nu": {"val": 1.0},
                         "length_scale": {"val": 7.2},
                         "eps": {"val": 1e-5},
-                        "sigma_sq": {"val": 1.0},
                     },
                     {
                         "nu": {"val": 1.2},
                         "length_scale": {"val": 2.2},
                         "eps": {"val": 1e-6},
-                        "sigma_sq": {"val": 0.98},
                     },
                 ],
             ),
@@ -56,7 +54,6 @@ class InitTest(parameterized.TestCase):
                         "nu": {"val": 1.0},
                         "length_scale": {"val": 7.2},
                         "eps": {"val": 1e-5},
-                        "sigma_sq": {"val": 1.0},
                     },
                 ],
             ),
@@ -70,7 +67,7 @@ class InitTest(parameterized.TestCase):
         for i, muygps in enumerate(mmuygps.models):
             this_kwargs = model_args[i]
             for param in this_kwargs:
-                if param == "eps" or param == "sigma_sq":
+                if param == "eps":
                     continue
                 self.assertEqual(
                     this_kwargs[param]["val"],
@@ -82,8 +79,7 @@ class InitTest(parameterized.TestCase):
                 )
             self.assertEqual(this_kwargs["eps"]["val"], muygps.eps())
             self.assertEqual("fixed", muygps.eps.get_bounds())
-            self.assertEqual(this_kwargs["sigma_sq"]["val"], muygps.sigma_sq())
-            self.assertEqual("fixed", muygps.sigma_sq.get_bounds())
+            self.assertEqual("unlearned", muygps.sigma_sq())
 
 
 class SigmaSqTest(parameterized.TestCase):
@@ -100,19 +96,16 @@ class SigmaSqTest(parameterized.TestCase):
                             "nu": {"val": 1.0},
                             "length_scale": {"val": 7.2},
                             "eps": {"val": 1e-5},
-                            "sigma_sq": {"val": "learn"},
                         },
                         {
                             "nu": {"val": 1.2},
                             "length_scale": {"val": 2.2},
                             "eps": {"val": 1e-6},
-                            "sigma_sq": {"val": "learn"},
                         },
                         {
                             "nu": {"val": 0.38},
                             "length_scale": {"val": 12.4},
                             "eps": {"val": 1e-6},
-                            "sigma_sq": {"val": "learn"},
                         },
                     ],
                 ),
@@ -152,7 +145,7 @@ class SigmaSqTest(parameterized.TestCase):
                 K, nn_indices, data["output"][:, i]
             )
             self.assertEqual(sigmas.shape, (data_count,))
-            self.assertAlmostEqual(muygps.sigma_sq(), np.mean(sigmas), 5)
+            self.assertAlmostEqual(muygps.sigma_sq()[0], np.mean(sigmas), 5)
 
 
 class OptimTest(parameterized.TestCase):
@@ -233,8 +226,6 @@ class OptimTest(parameterized.TestCase):
             }
             for i in range(response_count)
         ]
-        for i in range(response_count):
-            hyper_dicts[i]["sigma_sq"] = np.array([1.0])
         gps = [BenchmarkGP(kern=kern, **hd) for hd in hyper_dicts]
         for gp in gps:
             gp.fit(sim_test["input"], sim_train["input"])
@@ -331,8 +322,6 @@ class OptimTest(parameterized.TestCase):
             }
             for i in range(response_count)
         ]
-        for i in range(response_count):
-            hyper_dicts[i]["sigma_sq"] = np.array([1.0])
         gps = [BenchmarkGP(kern=kern, **hd) for hd in hyper_dicts]
         for gp in gps:
             gp.fit(sim_test["input"], sim_train["input"])
@@ -560,8 +549,6 @@ class MakeClassifierTest(parameterized.TestCase):
             for key in args[i]:
                 if key == "eps":
                     self.assertEqual(args[i][key]["val"], muygps.eps())
-                elif key == "sigma_sq":
-                    self.assertEqual(args[i][key]["val"], muygps.sigma_sq())
                 elif isinstance(args[i][key]["val"], str):
                     print(
                         f"optimized to find value "
@@ -577,11 +564,12 @@ class MakeClassifierTest(parameterized.TestCase):
 class MakeRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
+            for ssm in ["analytic", None]
             for k_kwargs in (
                 (
                     "matern",
@@ -595,7 +583,6 @@ class MakeRegressorTest(parameterized.TestCase):
                             "nu": {"val": 0.8},
                             "length_scale": {"val": 0.7},
                             "eps": {"val": 1e-5},
-                            "sigma_sq": {"val": "learn"},
                         },
                     ],
                 ),
@@ -611,6 +598,7 @@ class MakeRegressorTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        sigma_method,
         k_kwargs,
     ):
         kern, args = k_kwargs
@@ -631,6 +619,7 @@ class MakeRegressorTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            sigma_method=sigma_method,
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_args=args,
@@ -641,14 +630,6 @@ class MakeRegressorTest(parameterized.TestCase):
             for key in args[i]:
                 if key == "eps":
                     self.assertEqual(args[i][key]["val"], muygps.eps())
-                elif key == "sigma_sq":
-                    if args[i][key]["val"] == "learn":
-                        print(
-                            f"\toptimized sigma_sq to find value "
-                            f"{muygps.sigma_sq()}"
-                        )
-                    else:
-                        self.assertEqual(args[i][key]["val"], muygps.sigma_sq())
                 elif args[i][key]["val"] == "sample":
                     print(
                         f"\toptimized {key} to find value "
@@ -659,6 +640,13 @@ class MakeRegressorTest(parameterized.TestCase):
                         args[i][key]["val"],
                         muygps.kernel.hyperparameters[key](),
                     )
+            if sigma_method == None:
+                self.assertEqual("unlearned", muygps.sigma_sq())
+            else:
+                print(
+                    f"\toptimized sigma_sq to find value "
+                    f"{muygps.sigma_sq()}"
+                )
 
 
 if __name__ == "__main__":

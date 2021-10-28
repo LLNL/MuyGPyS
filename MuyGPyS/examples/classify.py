@@ -118,7 +118,7 @@ def make_classifier(
     time_nn = perf_counter()
 
     muygps = MuyGPS(**k_kwargs)
-    if muygps.fixed_nosigmasq() is False:
+    if muygps.fixed() is False:
         # collect batch
         batch_indices, batch_nn_indices = get_balanced_batch(
             nbrs_lookup,
@@ -264,7 +264,7 @@ def make_multivariate_classifier(
     time_nn = perf_counter()
 
     mmuygps = MMuyGPS(kern, *k_args)
-    if mmuygps.fixed_nosigmasq() is False:
+    if mmuygps.fixed() is False:
         # collect batch
         batch_indices, batch_nn_indices = get_balanced_batch(
             nbrs_lookup,
@@ -287,7 +287,7 @@ def make_multivariate_classifier(
 
         # maybe do something with these estimates?
         for i, muygps in enumerate(mmuygps.models):
-            if muygps.fixed_nosigmasq() is False:
+            if muygps.fixed() is False:
                 estimates = scipy_optimize_from_tensors(
                     muygps,
                     batch_indices,

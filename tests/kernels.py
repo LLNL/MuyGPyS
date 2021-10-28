@@ -19,7 +19,7 @@ from MuyGPyS.testing.test_utils import (
     _fast_nn_kwarg_options,
 )
 from MuyGPyS.gp.distance import pairwise_distances
-from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern
+from MuyGPyS.gp.kernels import Hyperparameter, SigmaSq, RBF, Matern
 
 
 class DistancesTest(parameterized.TestCase):
@@ -115,6 +115,16 @@ class DistancesTest(parameterized.TestCase):
         self.assertTrue(np.allclose(ip_dists, co_dists))
 
 
+class SigmaSqTest(parameterized.TestCase):
+    @parameterized.parameters((kwargs for kwargs in ({"val": np.array([1.0])})))
+    def test_unlearned(self, val):
+        param = SigmaSq()
+        self.assertEqual("unlearned", param())
+        param._set(val)
+        self.assertEqual(val, param())
+        # self._check_in_bounds(bounds, param)
+
+
 class HyperparameterTest(parameterized.TestCase):
     @parameterized.parameters(
         (
@@ -169,7 +179,7 @@ class HyperparameterTest(parameterized.TestCase):
         )
     )
     def test_fixed_sample(self, val, bounds):
-        with self.assertRaisesRegex(ValueError, "Must provide"):
+        with self.assertRaisesRegex(ValueError, "Fixed bounds do not support "):
             Hyperparameter(val, bounds)
 
     @parameterized.parameters(
@@ -186,10 +196,34 @@ class HyperparameterTest(parameterized.TestCase):
             Hyperparameter(val, bounds)
 
     @parameterized.parameters(
+        (
+            kwargs
+            for kwargs in (
+                {"val": np.array([1e-2, 1e1]), "bounds": "fixed"},
+                {"val": np.array([1e3]), "bounds": (1e-1, 1e2)},
+            )
+        )
+    )
+    def test_nonscalar(self, val, bounds):
+        with self.assertRaisesRegex(ValueError, "Nonscalar hyperparameter"):
+            Hyperparameter(val, bounds)
+
+    @parameterized.parameters(
         (kwargs for kwargs in ({"val": "wut", "bounds": (1e-1, 1e2)},))
     )
     def test_bad_val_string(self, val, bounds):
-        with self.assertRaisesRegex(ValueError, "string hyperparameter"):
+        with self.assertRaisesRegex(
+            ValueError, "Unsupported string hyperparameter"
+        ):
+            Hyperparameter(val, bounds)
+
+    @parameterized.parameters(
+        (kwargs for kwargs in ({"val": "sample", "bounds": "fixed"},))
+    )
+    def test_string_on_fixed(self, val, bounds):
+        with self.assertRaisesRegex(
+            ValueError, "Fixed bounds do not support string"
+        ):
             Hyperparameter(val, bounds)
 
     @parameterized.parameters(
