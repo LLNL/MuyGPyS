@@ -120,7 +120,7 @@ If `"bounds"` is set, `"val"` can also take the arguments `"sample"` and `"log_s
 If `"bounds"` is set to `"fixed"`, the hyperparameter will remain fixed during any optimization.
 This is the default behavior for all hyperparameters if `"bounds"` is unset by the user.
 
-One sets hyperparameters such as `eps`, `sigma_sq`, as well as kernel-specific hyperparameters, e.g. `nu` and  `length_scale` for the Matern kernel, at initialization as above.
+One sets the model hyperparameter `eps`, as well as kernel-specific hyperparameters, e.g. `nu` and  `length_scale` for the Matern kernel, at initialization as above.
 All hyperparameters other than `sigma_sq` are assumed to be fixed unless otherwise specified.
 
 MuyGPyS depends upon linear operations on specially-constructed tensors in order to efficiently estimate GP realizations.
@@ -196,6 +196,12 @@ If you do not need to keep the distance tensors around for reference, you can us
 ... )
 ```
 
+As it is a variance scaling parameter that is insensitive to prediction-based optimization, we separately optimize `sigma_sq` by invoking a member function.
+This is usually performed after optimizing other hyperparameters.
+```
+>>> muygps.sigma_sq_optim(K, batch_nn_indices, train_targets)
+```
+
 
 ### One-line model creation
 
@@ -206,8 +212,9 @@ These functions provide convenient mechanisms for specifying and optimizing mode
 They return only the trained `MuyGPyS.gp.muygps.MuyGPS` model and the `MuyGPyS.neighbors.NN_Wrapper` neighbors lookup data structure.
 
 An example regressor.
-In order to automatically train `sigma_sq`, set `k_kwargs["sigma_sq"] = "learn"`. 
-Note that this is the default behavior, and `sigma_sq` is the only hyperparameter assumed to be a training target by default. 
+Note that `sigma_sq` is the only model hyperparameter that will be optimized by default, equivalent to passing the kwarg `sigma_method="analytic"`.
+If for some reason you wand to skip `sigma_sq` optimization, pass `sigma_method=None`.
+All other training targets must be indicated by providing a `"bounds": (lower_bound, upper_bound)` key-value pair to its specification dict. 
 ```
 >>> from MuyGPyS.examples.regress import make_regressor
 >>> train_features, train_responses = load_train()  # imaginary train getter
@@ -219,7 +226,6 @@ Note that this is the default behavior, and `sigma_sq` is the only hyperparamete
 ...         "eps": {"val": 1e-5},
 ...         "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
 ...         "length_scale": {"val": 7.2},
-...         "sigma_sq": "learn",
 ... }
 >>> muygps, nbrs_lookup = make_regressor(
 ...         train_features,
@@ -227,6 +233,7 @@ Note that this is the default behavior, and `sigma_sq` is the only hyperparamete
 ...         nn_count=40,
 ...         batch_size=500,
 ...         loss_method="mse",
+...         sigma_method="analytic",
 ...         k_kwargs=k_kwargs,
 ...         nn_kwargs=nn_kwargs,
 ...         verbose=False,
@@ -234,6 +241,7 @@ Note that this is the default behavior, and `sigma_sq` is the only hyperparamete
 ```
 
 An example surrogate classifier.
+Note that the analytic method for training `sigma_sq` is insensible for classification training, and so no `sigma_sq` method is provided.
 ```
 >>> from MuyGPyS.examples.classify import make_classifier
 >>> train_features, train_labels = load_train()  # imaginary train getter
@@ -321,6 +329,7 @@ We also support one-line make functions for regression and classification:
 ...         nn_count=40,
 ...         batch_size=500,
 ...         loss_method="mse",
+...         sigma_method="analytic",
 ...	    kern="matern",
 ...         k_args=k_args,
 ...         nn_kwargs=nn_kwargs,
@@ -333,7 +342,7 @@ We also support one-line make functions for regression and classification:
 ### Inference
 
 
-With set hyperparameters, we are able to use the `muygps` object to predict the response of test data.
+With set (or learned) hyperparameters, we are able to use the `muygps` object to predict the response of test data.
 Several workflows are supported.
 See below a simple regression workflow, using the data structures built up in this example:
 ```
@@ -387,13 +396,10 @@ While these examples all use a single model, one can modify those with multivari
 The following example performs GP regression on the [Heaton spatial statistics case study dataset](https://github.com/finnlindgren/heatoncomparison).
 In the example, `load_heaton` is a unspecified function that reads in the dataset in the specified dict format.
 In practice, a user can use any conforming dataset.
-If one wants to predict on a univariate response as in this example, one must ensure the data is stored as a matrix rather than as a vector, i.e. that `train['output'].shape = (train_count, 1)`.
-The regression API adds a `sigma_sq` scale parameter for the variance.
-One can set `sigma_sq` using the `hyper_dict` kwarg like other hyperparameters.
-The API expects that `sigma_sq` is a `numpy.ndarray` with a value associated with each dimension of the response, i.e. that `train['output'].shape[1] == len(sigma_sq)`.
-In general, one should only manually set `sigma_sq` if they are certain they know what they are doing. 
+If one wants to predict on a univariate response as in this example, one must ensure the data is stored as a matrix rather than as a vector, i.e. that `train_responses.shape = (train_count, 1)`.
 
-Regress on Heaton data with no variance
+Regress on Heaton data with no variance.
+Note that we have set `sigma_method=None`, as we are not computing posterior variance and thus have no use for the scaling parameter.
 ```
 >>> import numpy as np
 >>> from MuyGPyS.examples.regress import do_regress
@@ -415,6 +421,7 @@ Regress on Heaton data with no variance
 ...         nn_count=30,
 ...         batch_size=200,
 ...         loss_method="mse",
+...         sigma_method=None,
 ...         variance_mode=None,
 ...         k_kwargs=k_kwargs,
 ...         nn_kwargs=nn_kwargs,
@@ -451,8 +458,8 @@ obtains mse: 2.345136495565052
 
 If one requires the (individual, independent) posterior variances for each of the predictions, one can pass `variance_mode="diagonal"`.
 This mode assumes that each output dimension uses the same model, and so will output an additional vector `variance` with a scalar posterior variance associated with each test point.
-The API also returns a (possibly trained) `MuyGPyS.gp.MuyGPS` or `MuyGPyS.gp.MultivariateMuyGPS` instance, whose `sigma_sq` member reports an array of multiplicative scaling parameters associated with the variance of each dimension.
-Obtaining the tuned posterior variance implies multiplying the returned variance by the scaling parameter along each dimension.
+The API also returns a (possibly trained) `MuyGPyS.gp.MuyGPS` or `MuyGPyS.gp.MultivariateMuyGPS` instance, whose `sigma_sq` member reports an array of multiplicative scaling parameters associated with the variance of each dimension, assuming that `sigma_method != None`.
+Obtaining the tuned posterior variance implies multiplying the returned variance by the scaling parameter `sigma_sq` along each dimension.
 
 
 Regress on Heaton data while estimating diagonal variance
@@ -478,6 +485,7 @@ Regress on Heaton data while estimating diagonal variance
 ...         nn_count=30,
 ...         batch_size=200,
 ...         loss_method="mse",
+...         sigma_method="analytic",
 ...         variance_mode="diagonal",
 ...         k_kwargs=k_kwargs,
 ...         nn_kwargs=nn_kwargs,

@@ -35,6 +35,7 @@ def make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    sigma_method: Optional[str] = "analytic",
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
     verbose: bool = False,
@@ -64,6 +65,7 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -85,6 +87,14 @@ def make_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        sigma_method:
+            The optimization method to be employed to learn the `sigma_sq`
+            hyperparameter. Currently supports only `"analytic"` and `None`. If
+            the value is not `None`, the returned
+            :class:`MuyGPyS.gp.muygps.MuyGPS` object will possess a `sigma_sq`
+            member whose value, invoked via `muygps.sigma_sq()`, is a
+            `(response_count,)` vector to be used for scaling posterior
+            variances.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
             metric, epsilon and sigma hyperparameter specifications, and
@@ -121,9 +131,9 @@ def make_regressor(
     # create MuyGPs object
     muygps = MuyGPS(**k_kwargs)
 
-    skip_opt = muygps.fixed_nosigmasq()
-    skip_sigma = muygps.fixed_sigmasq()
-    if skip_opt is False or skip_sigma is False:
+    skip_opt = muygps.fixed()
+    skip_sigma = sigma_method == None
+    if muygps.fixed() is False or skip_sigma is False:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup,
@@ -181,6 +191,7 @@ def make_multivariate_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    sigma_method: Optional[str] = "analytic",
     kern: str = "matern",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
@@ -215,6 +226,7 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         sigma_method="analytic",
         ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
@@ -237,6 +249,14 @@ def make_multivariate_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        sigma_method:
+            The optimization method to be employed to learn the `sigma_sq`
+            hyperparameter. Currently supports only `"analytic"` and `None`. If
+            the value is not `None`, the returned
+            :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS` object will possess a
+            `sigma_sq` member whose value, invoked via `mmuygps.sigma_sq()`, is
+            a `(response_count,)` vector to be used for scaling posterior
+            variances.
         kern:
             The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
             details.
@@ -281,8 +301,8 @@ def make_multivariate_regressor(
     # create MuyGPs object
     mmuygps = MMuyGPS(kern, *k_args)
 
-    skip_opt = mmuygps.fixed_nosigmasq()
-    skip_sigma = mmuygps.fixed_sigmasq()
+    skip_opt = mmuygps.fixed()
+    skip_sigma = sigma_method == None
     if skip_opt is False or skip_sigma is False:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
@@ -307,7 +327,7 @@ def make_multivariate_regressor(
         if skip_opt is False:
             # maybe do something with these estimates?
             for i, muygps in enumerate(mmuygps.models):
-                if muygps.fixed_nosigmasq() is False:
+                if muygps.fixed() is False:
                     estimates = scipy_optimize_from_tensors(
                         muygps,
                         batch_indices,
@@ -376,6 +396,7 @@ def _decide_and_make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    sigma_method: Optional[str] = "mse",
     variance_mode: Optional[str] = None,
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
@@ -391,6 +412,7 @@ def _decide_and_make_regressor(
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            sigma_method=sigma_method,
             kern=kern,
             k_args=k_kwargs,
             nn_kwargs=nn_kwargs,
@@ -404,6 +426,7 @@ def _decide_and_make_regressor(
                 nn_count=nn_count,
                 batch_count=batch_count,
                 loss_method=loss_method,
+                sigma_method=sigma_method,
                 k_kwargs=k_kwargs,
                 nn_kwargs=nn_kwargs,
                 verbose=verbose,
@@ -419,6 +442,7 @@ def do_regress(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    sigma_method: Optional[str] = "analytic",
     variance_mode: Optional[str] = None,
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
@@ -466,6 +490,12 @@ def do_regress(
         >>> mse = mse_fn(test['output'], predictions)
         >>> print(f"obtained mse: {mse}")
         obtained mse: 0.20842...
+        >>> scaled_variance = np.array([
+        ...           variance * ss for ss in muygps.sigma_sq()
+        >>> ])
+        >>> print(f"Variance along first response dimension:\n{scaled_variance[0]}")
+        Variance along first response dimension:
+        [0.0123, 0.02043, 0.0145, ...
 
     Args:
         test_features:
@@ -486,6 +516,14 @@ def do_regress(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        sigma_method:
+            The optimization method to be employed to learn the `sigma_sq`
+            hyperparameter. Currently supports only `"analytic"` and `None`. If
+            the value is not `None`, the returned
+            :class:`MuyGPyS.gp.muygps.MuyGPS` object will possess a `sigma_sq`
+            member whose value, invoked via `muygps.sigma_sq()`, is a
+            `(response_count,)` vector to be used for scaling posterior
+            variances.
         variance_mode:
             Specifies the type of variance to return. Currently supports
             `diagonal` and None. If None, report no variance term.

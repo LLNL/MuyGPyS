@@ -274,14 +274,14 @@ class GPSigmaSqBaselineTest(parameterized.TestCase):
         x = np.linspace(-10.0, 10.0, data_count).reshape(1001, 1)
         sim_train["input"] = x[::2]
         sim_test["input"] = x[1::2]
-        mean_sigma_sq = 0.0
+        mean_sigma_sq = np.array([0.0])
         for i in range(its):
             gp = BenchmarkGP(kern=kern, **hyper_dict)
             gp.fit(sim_train["input"], sim_test["input"])
             y = gp.simulate()
             mean_sigma_sq += gp.get_sigma_sq(y)
         mean_sigma_sq /= its
-        self.assertAlmostEqual(mean_sigma_sq, 1.0, 1)
+        self.assertAlmostEqual(mean_sigma_sq[0], 1.0, 1)
 
 
 class GPSigmaSqOptimTest(parameterized.TestCase):
@@ -331,7 +331,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
         train_count = sim_train["input"].shape[0]
         test_count = sim_test["input"].shape[0]
 
-        mse = 0.0
+        mse = np.array([0.0])
 
         # compute nearest neighbor structure
         nbrs_lookup = NN_Wrapper(sim_train["input"], nn_count, **nn_kwargs)
@@ -369,7 +369,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
         mse /= its
         print(f"optimizes with mse {mse}")
         # Is this a strong enough guarantee?
-        self.assertAlmostEqual(mse, 0.0, 1)
+        self.assertAlmostEqual(mse[0], 0.0, 1)
 
 
 class GPOptimTest(parameterized.TestCase):

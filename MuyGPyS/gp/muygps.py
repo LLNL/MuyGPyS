@@ -18,6 +18,7 @@ from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
     Hyperparameter,
+    SigmaSq,
 )
 
 
@@ -44,7 +45,8 @@ class MuyGPS:
     with the posterior variance of each dimension of the response.
 
     :math:`\\sigma^2` is the only parameter assumed to be a training target by
-    default. All other training targets must be manually specified.
+    default, and is treated differently from all other hyperparameters. All
+    other training targets must be manually specified in `k_kwargs`.
 
     Example:
         >>> from MuyGPyS.gp.muygps import MuyGPS
@@ -81,8 +83,6 @@ class MuyGPS:
             only `matern` and `rbf`.
         eps:
             A hyperparameter dict.
-        sigma_sq:
-            An iterable container of hyperparameter dicts.
         kwargs:
             Addition parameters to be passed to the kernel, possibly including
             additional hyperparameter dicts and a metric keyword.
@@ -92,15 +92,12 @@ class MuyGPS:
         self,
         kern: str = "matern",
         eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
-        sigma_sq: Dict[str, Union[str, float, Tuple[float, float]]] = {
-            "val": "learn"
-        },
         **kwargs,
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
-        self.sigma_sq = _init_hyperparameter("learn", "fixed", **sigma_sq)
+        self.sigma_sq = SigmaSq()
 
     def set_eps(self, **eps) -> None:
         """
@@ -114,18 +111,6 @@ class MuyGPS:
         """
         self.eps._set(**eps)
 
-    def set_sigma_sq(self, **sigma_sq) -> None:
-        """
-        Reset :math:`\\sigma^2` values or bounds.
-
-        Completely resets parameters, as :math:`\\sigma^2` could have changed.
-
-        Args:
-            sigma_sq:
-                An iterable container of hyperparameter dicts.
-        """
-        self.sigma_sq._set(**sigma_sq)
-
     def fixed(self) -> bool:
         """
         Checks whether all kernel and model parameters are fixed.
@@ -136,32 +121,12 @@ class MuyGPS:
         Returns:
             Returns `True` if all parameters are fixed, and `False` otherwise.
         """
-        return self.fixed_nosigmasq() and self.fixed_sigmasq()
-
-    def fixed_nosigmasq(self) -> bool:
-        """
-        Checks whether all kernel and model parameters are fixed, excluding
-        :math:`\\sigma^2`.
-
-        Returns:
-            Returns `True` if all parameters are fixed, and `False` otherwise.
-        """
         for p in self.kernel.hyperparameters:
             if self.kernel.hyperparameters[p].get_bounds() != "fixed":
                 return False
         if self.eps.get_bounds() != "fixed":
             return False
         return True
-
-    def fixed_sigmasq(self) -> bool:
-        """
-        Checks whether all dimensions of :math:`\\sigma^2` are fixed.
-
-        Returns:
-            Returns `True` if all :math:`\\sigma^2` dimensions are fixed, and
-            `False` otherwise.
-        """
-        return self.sigma_sq() != "learn"
 
     def get_optim_params(self) -> Dict[str, Hyperparameter]:
         """
@@ -449,7 +414,8 @@ class MuyGPS:
                 self._get_sigma_sq(K, targets[:, i], nn_indices)
             ) / (nn_count * batch_count)
 
-        self.sigma_sq._set_val(sigma_sq)
+        self.sigma_sq._set(sigma_sq)
+        return self.sigma_sq()
 
     def _get_sigma_sq_series(
         self,
@@ -583,36 +549,13 @@ class MultivariateMuyGPS:
     ):
         self.kern = kern.lower()
         self.models = [MuyGPS(kern, **args) for args in model_args]
-        self.metric = self.models[0].kernel.metric
-
-    def fixed_nosigmasq(self) -> bool:
-        """
-        Checks whether all kernel and model parameters are fixed for each model,
-        excluding :math:`\\sigma^2`.
-
-        Returns:
-            Returns `True` if all parameters in all models are fixed, and
-            `False` otherwise.
-        """
-        return bool(np.all([model.fixed_nosigmasq() for model in self.models]))
-
-    def fixed_sigmasq(self) -> bool:
-        """
-        Checks whether all dimensions of :math:`\\sigma^2` are fixed for each
-        model.
-
-        Returns:
-            Returns `True` if :math:`\\sigma^2` is fixed in each model, and
-            `False` otherwise.
-        """
-        return bool(np.all([model.fixed_sigmasq() for model in self.models]))
+        self.metric = self.models[0].kernel.metric  # this is brittle
+        self.sigma_sq = SigmaSq()
 
     def fixed(self) -> bool:
         """
-        Checks whether all kernel and model parameters are fixed.
-
-        This is a convenience utility to determine whether optimization is
-        required.
+        Checks whether all kernel and model parameters are fixed for each model,
+        excluding :math:`\\sigma^2`.
 
         Returns:
             Returns `True` if all parameters in all models are fixed, and
@@ -662,13 +605,18 @@ class MultivariateMuyGPS:
             )
 
         K = np.zeros((batch_count, nn_count, nn_count))
+        sigma_sqs = np.zeros((response_count,))
         for i, muygps in enumerate(self.models):
-            if muygps.fixed_sigmasq() is False:
-                K = muygps.kernel(pairwise_dists)
-                muygps.set_sigma_sq(
-                    val=sum(muygps._get_sigma_sq(K, targets[:, i], nn_indices))
-                    / (nn_count * batch_count)
-                )
+            K = muygps.kernel(pairwise_dists)
+            sigma_sq = np.zeros(1)
+            sigma_sq[0] = np.array(
+                sum(muygps._get_sigma_sq(K, targets[:, i], nn_indices))
+                / (nn_count * batch_count)
+            )
+            muygps.sigma_sq._set(val=sigma_sq)
+            sigma_sqs[i] = sigma_sq[0]
+        self.sigma_sq._set(sigma_sqs)
+        return self.sigma_sq()
 
     def regress_from_indices(
         self,
