@@ -224,6 +224,7 @@ class RegressionAPITest(parameterized.TestCase):
         nn_count: int,
         batch_count: int,
         loss_method: str,
+        sigma_method: Optional[str],
         variance_mode: Optional[str],
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
@@ -236,6 +237,7 @@ class RegressionAPITest(parameterized.TestCase):
             nn_count,
             batch_count,
             loss_method,
+            sigma_method,
             variance_mode,
             nn_kwargs,
             k_kwargs,
@@ -244,7 +246,9 @@ class RegressionAPITest(parameterized.TestCase):
         )
         self.assertEqual(predictions.shape, test["output"].shape)
         if isinstance(regressor, MuyGPS):
-            self._verify_regressor(regressor, variance, test["output"])
+            self._verify_regressor(
+                regressor, variance, test["output"], sigma_method
+            )
         else:
             test_count, _ = test["output"].shape
             for i, model in enumerate(regressor.models):
@@ -252,11 +256,12 @@ class RegressionAPITest(parameterized.TestCase):
                     model,
                     variance[:, i] if variance is not None else None,
                     test["output"][:, i].reshape(test_count, 1),
+                    sigma_method,
                 )
         print(f"obtains mse: {mse}")
         self.assertLessEqual(mse, target_mse)
 
-    def _verify_regressor(self, regressor, variance, targets):
+    def _verify_regressor(self, regressor, variance, targets, sigma_method):
         optim_params = regressor.get_optim_params()
         if len(optim_params) > 0:
             print(f"finds hyperparameters:")
@@ -265,8 +270,13 @@ class RegressionAPITest(parameterized.TestCase):
         if variance is not None:
             test_count, response_count = targets.shape
             self.assertEqual(variance.shape, (test_count,))
-            if response_count > 1:
-                self.assertEqual(regressor.sigma_sq().shape, (response_count,))
+        if sigma_method is None:
+            self.assertEqual(regressor.sigma_sq(), "unlearned")
+        elif sigma_method.lower() == "analytic":
+            self.assertEqual(regressor.sigma_sq().shape, (response_count,))
+            self.assertEqual(regressor.sigma_sq().dtype, float)
+        else:
+            raise ValueError(f"Unsupported sigma method {sigma_method}")
 
     def _do_regress(
         self,
@@ -275,6 +285,7 @@ class RegressionAPITest(parameterized.TestCase):
         nn_count: int,
         batch_count: int,
         loss_method: str,
+        sigma_method: Optional[str],
         variance_mode: Optional[str],
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
@@ -288,6 +299,7 @@ class RegressionAPITest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            sigma_method=sigma_method,
             variance_mode=variance_mode,
             kern=kern,
             k_kwargs=k_kwargs,

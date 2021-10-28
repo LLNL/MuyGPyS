@@ -132,8 +132,7 @@ def make_regressor(
     muygps = MuyGPS(**k_kwargs)
 
     skip_opt = muygps.fixed()
-    skip_sigma = sigma_method == None
-    if muygps.fixed() is False or skip_sigma is False:
+    if skip_opt is False or sigma_method is not None:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup,
@@ -168,9 +167,12 @@ def make_regressor(
             )
         time_opt = perf_counter()
 
-        if skip_sigma is False:
-            K = muygps.kernel(pairwise_dists)
-            muygps.sigma_sq_optim(K, batch_nn_indices, train_targets)
+        if sigma_method is not None:
+            if sigma_method.lower() == "analytic":
+                K = muygps.kernel(pairwise_dists)
+                muygps.sigma_sq_optim(K, batch_nn_indices, train_targets)
+            else:
+                raise ValueError(f"Unrecognized sigma_method {sigma_method}")
             if verbose is True:
                 print(f"Optimized sigma_sq values " f"{muygps.sigma_sq()}")
         time_sopt = perf_counter()
@@ -302,8 +304,7 @@ def make_multivariate_regressor(
     mmuygps = MMuyGPS(kern, *k_args)
 
     skip_opt = mmuygps.fixed()
-    skip_sigma = sigma_method == None
-    if skip_opt is False or skip_sigma is False:
+    if skip_opt is False or sigma_method is not None:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup,
@@ -340,10 +341,15 @@ def make_multivariate_regressor(
                     )
         time_opt = perf_counter()
 
-        if skip_sigma is False:
-            mmuygps.sigma_sq_optim(
-                pairwise_dists, batch_nn_indices, train_targets
-            )
+        if sigma_method is not None:
+            if sigma_method.lower() == "analytic":
+                mmuygps.sigma_sq_optim(
+                    pairwise_dists, batch_nn_indices, train_targets
+                )
+            else:
+                raise ValueError(f"Unrecognized sigma_method {sigma_method}")
+            if verbose is True:
+                print(f"Optimized sigma_sq values " f"{mmuygps.sigma_sq()}")
         time_sopt = perf_counter()
 
         if verbose is True:
@@ -396,8 +402,7 @@ def _decide_and_make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
-    sigma_method: Optional[str] = "mse",
-    variance_mode: Optional[str] = None,
+    sigma_method: Optional[str] = "analytic",
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
@@ -565,6 +570,7 @@ def do_regress(
         nn_count=nn_count,
         batch_count=batch_count,
         loss_method=loss_method,
+        sigma_method=sigma_method,
         kern=kern,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
