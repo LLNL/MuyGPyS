@@ -168,7 +168,6 @@ def make_regressor(
         time_opt = perf_counter()
 
         if sigma_method is not None:
-            print(f"sigma method: {sigma_method}")
             if sigma_method.lower() == "analytic":
                 K = muygps.kernel(pairwise_dists)
                 muygps.sigma_sq_optim(K, batch_nn_indices, train_targets)
