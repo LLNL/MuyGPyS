@@ -476,7 +476,6 @@ Regress on Heaton data while estimating diagonal variance
 ...         "eps": {"val": 1e-5},
 ...         "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
 ...         "length_scale": {"val": 7.2},
-...	    "sigma_sq": "learn",
 ... }
 >>> muygps, nbrs_lookup, predictions, variance = do_regress(
 ...         test_features,
