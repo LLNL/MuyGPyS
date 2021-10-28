@@ -391,7 +391,7 @@ class HeatonTest(RegressionAPITest):
             (nn, bs, vm, lm, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for vm in [None]
+            for vm in ["diagonal", None]
             # for vm in ["diagonal"]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             # for vm in [None, "diagonal"]
@@ -431,6 +431,11 @@ class HeatonTest(RegressionAPITest):
     ):
         target_mse, k_kwargs = k_kwargs
 
+        if variance_mode is None:
+            sigma_method = None
+        else:
+            sigma_method = "analytic"
+
         self._do_regress_test_chassis(
             train=self.train,
             test=self.test,
@@ -438,6 +443,7 @@ class HeatonTest(RegressionAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            sigma_method=sigma_method,
             variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
