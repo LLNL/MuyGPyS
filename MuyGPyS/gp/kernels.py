@@ -72,7 +72,10 @@ class SigmaSq:
                 The new value of the hyperparameter.
         """
         if not isinstance(val, np.ndarray):
-            self.val = val
+            raise ValueError(
+                f"Expected np.ndarray for SigmaSq value update, not {val}"
+            )
+        self.val = val
 
     def __call__(self) -> np.ndarray:
         """
