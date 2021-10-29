@@ -387,6 +387,7 @@ def classify_two_class_uq(
             train,
             train_labels,
             variance_mode="diagonal",
+            apply_sigma_sq=False,
         )
 
     time_pred = perf_counter()
@@ -449,6 +450,7 @@ def train_two_class_interval(
         train,
         train_responses,
         variance_mode="diagonal",
+        apply_sigma_sq=False,
     )
     predicted_labels = 2 * np.argmax(mean, axis=1) - 1
 

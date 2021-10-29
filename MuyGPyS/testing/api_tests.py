@@ -229,6 +229,7 @@ class RegressionAPITest(parameterized.TestCase):
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         kern: Optional[str] = None,
+        apply_sigma_sq: bool = False,
         verbose: bool = False,
     ) -> None:
         regressor, predictions, mse, variance = self._do_regress(
@@ -242,6 +243,7 @@ class RegressionAPITest(parameterized.TestCase):
             nn_kwargs,
             k_kwargs,
             kern=kern,
+            apply_sigma_sq=apply_sigma_sq,
             verbose=verbose,
         )
         self.assertEqual(predictions.shape, test["output"].shape)
@@ -269,7 +271,10 @@ class RegressionAPITest(parameterized.TestCase):
                 print(f"\t{p} : {optim_params[p]()}")
         if variance is not None:
             test_count, response_count = targets.shape
-            self.assertEqual(variance.shape, (test_count,))
+            if response_count > 1:
+                self.assertEqual(variance.shape, (test_count, response_count))
+            else:
+                self.assertEqual(variance.shape, (test_count,))
         if sigma_method is None:
             self.assertEqual(regressor.sigma_sq(), "unlearned")
         elif sigma_method.lower() == "analytic":
@@ -290,6 +295,7 @@ class RegressionAPITest(parameterized.TestCase):
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         kern: Optional[str] = None,
+        apply_sigma_sq: bool = True,
         verbose: bool = False,
     ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, float, np.ndarray]:
         ret = do_regress(
@@ -304,6 +310,7 @@ class RegressionAPITest(parameterized.TestCase):
             kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
+            apply_sigma_sq=apply_sigma_sq,
             verbose=verbose,
         )
         if variance_mode is None:

@@ -166,6 +166,8 @@ def loo_crossval(
     K = muygps.kernel(pairwise_dists)
     Kcross = muygps.kernel(crosswise_dists)
 
-    predictions = muygps.regress(K, Kcross, batch_nn_targets)
+    predictions = muygps.regress(
+        K, Kcross, batch_nn_targets, apply_sigma_sq=False
+    )
 
     return objective_fn(predictions, batch_targets)

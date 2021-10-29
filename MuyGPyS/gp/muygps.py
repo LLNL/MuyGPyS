@@ -230,6 +230,7 @@ class MuyGPS:
         train: np.ndarray,
         targets: np.ndarray,
         variance_mode: Optional[str] = None,
+        apply_sigma_sq: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Performs simultaneous regression on a list of observations.
@@ -258,6 +259,9 @@ class MuyGPS:
             variance_mode:
                 Specifies the type of variance to return. Currently supports
                 `"diagonal"` and None. If None, report no variance term.
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
 
         Returns
         -------
@@ -266,8 +270,9 @@ class MuyGPS:
             the predicted response for each of the given indices.
         diagonal_variance:
             A vector of shape `(batch_count,)` consisting of the diagonal
-            elements of the posterior variance. Only returned where
-            `variance_mode == "diagonal"`.
+            elements of the posterior variance, or a matrix of shape
+            `(batch_count, response_count)` for a multidimensional response.
+            Only returned where `variance_mode == "diagonal"`.
         """
         crosswise_dists = crosswise_distances(
             test, train, indices, nn_indices, metric=self.kernel.metric
@@ -279,7 +284,11 @@ class MuyGPS:
         Kcross = self.kernel(crosswise_dists)
         batch_targets = targets[nn_indices, :]
         return self.regress(
-            K, Kcross, batch_targets, variance_mode=variance_mode
+            K,
+            Kcross,
+            batch_targets,
+            variance_mode=variance_mode,
+            apply_sigma_sq=apply_sigma_sq,
         )
 
     def regress(
@@ -288,6 +297,7 @@ class MuyGPS:
         Kcross: np.array,
         batch_targets: np.array,
         variance_mode: Optional[str] = None,
+        apply_sigma_sq: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Performs simultaneous regression on provided covariance,
@@ -351,6 +361,9 @@ class MuyGPS:
             variance_mode:
                 Specifies the type of variance to return. Currently supports
                 `"diagonal"` and None. If None, report no variance term.
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
 
         Returns
         -------
@@ -359,14 +372,23 @@ class MuyGPS:
             the predicted response for each of the given indices.
         diagonal_variance:
             A vector of shape `(batch_count,)` consisting of the diagonal
-            elements of the posterior variance. Only returned where
-            `variance_mode == "diagonal"`.
+            elements of the posterior variance, or a matrix of shape
+            `(batch_count, response_count)` for a multidimensional response.
+            Only returned where `variance_mode == "diagonal"`.
         """
         responses = self._compute_solve(K, Kcross, batch_targets)
         if variance_mode is None:
             return responses
         elif variance_mode == "diagonal":
             diagonal_variance = self._compute_diagonal_variance(K, Kcross)
+            if apply_sigma_sq is True and self.sigma_sq() != "unlearned":
+                sigmas = self.sigma_sq()
+                if len(sigmas) == 1:
+                    diagonal_variance *= sigmas
+                else:
+                    diagonal_variance = np.array(
+                        [ss * diagonal_variance for ss in sigmas]
+                    ).T
             return responses, diagonal_variance
         else:
             raise NotImplementedError(
@@ -626,6 +648,7 @@ class MultivariateMuyGPS:
         train: np.ndarray,
         targets: np.ndarray,
         variance_mode: Optional[str] = None,
+        apply_sigma_sq: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Performs simultaneous regression on a list of observations.
@@ -653,7 +676,9 @@ class MultivariateMuyGPS:
             variance_mode:
                 Specifies the type of variance to return. Currently supports
                 `"diagonal"` and None. If None, report no variance term.
-
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
         Returns
         -------
         responses:
@@ -676,6 +701,7 @@ class MultivariateMuyGPS:
             crosswise_dists,
             batch_targets,
             variance_mode=variance_mode,
+            apply_sigma_sq=apply_sigma_sq,
         )
 
     def regress(
@@ -684,6 +710,7 @@ class MultivariateMuyGPS:
         crosswise_dists: np.ndarray,
         batch_targets: np.ndarray,
         variance_mode: Optional[str] = None,
+        apply_sigma_sq: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Performs simultaneous regression on provided distance tensors and
@@ -751,6 +778,9 @@ class MultivariateMuyGPS:
             variance_mode:
                 Specifies the type of variance to return. Currently supports
                 `"diagonal"` and None. If None, report no variance term.
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
 
 
         Returns
@@ -785,6 +815,8 @@ class MultivariateMuyGPS:
                 diagonal_variance[:, i] = model._compute_diagonal_variance(
                     K, Kcross
                 ).reshape(batch_count)
+                if apply_sigma_sq and self.sigma_sq() != "unlearned":
+                    diagonal_variance[:, i] *= self.sigma_sq()[i]
         if variance_mode == "diagonal":
             return responses, diagonal_variance
         return responses

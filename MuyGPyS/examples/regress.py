@@ -452,6 +452,7 @@ def do_regress(
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
+    apply_sigma_sq: bool = True,
     verbose: bool = False,
 ) -> Union[
     Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray],
@@ -548,6 +549,9 @@ def do_regress(
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
             their parameters.
+        apply_sigma_sq:
+            If `True` and `variance_mode is not None`, automatically scale the
+            posterior variances by `sigma_sq`.
         verbose:
             If `True`, print summary statistics.
 
@@ -561,9 +565,16 @@ def do_regress(
     predictions:
         The predicted response associated with each test observation.
     variance:
-        Estimated posterior variance of each test prediction. Only returned if
-        `variance_mode == "diagonal"`.
+        Estimated posterior variance of each test prediction. If
+        `variance_mode == "diagonal"` return a `(test_count, response_count)`
+        matrix where each row is the posterior variance. If
+        `sigma_method is not None` and `apply_sigma_sq is True`, each column
+        of the variance is automatically scaled by the corresponding `sigma_sq`
+        parameter.
     """
+    if sigma_method is None:
+        apply_sigma_sq = False
+
     regressor, nbrs_lookup = _decide_and_make_regressor(
         train_features,
         train_targets,
@@ -584,6 +595,7 @@ def do_regress(
         nbrs_lookup,
         train_targets,
         variance_mode=variance_mode,
+        apply_sigma_sq=apply_sigma_sq,
     )
 
     if verbose is True:
@@ -603,6 +615,7 @@ def regress_any(
     train_nbrs_lookup: NN_Wrapper,
     train_targets: np.ndarray,
     variance_mode: Optional[str] = None,
+    apply_sigma_sq: bool = True,
 ) -> Union[
     Tuple[np.ndarray, Dict[str, float]],
     Tuple[Tuple[np.ndarray, np.ndarray], Dict[str, float]],
@@ -625,6 +638,9 @@ def regress_any(
         variance_mode : str or None
             Specifies the type of variance to return. Currently supports
             `diagonal` and None. If None, report no variance term.
+        apply_sigma_sq:
+            If `True` and `variance_mode is not None`, automatically scale the
+            posterior variances by `sigma_sq`.
 
     Returns
     -------
@@ -657,6 +673,7 @@ def regress_any(
         train,
         train_targets,
         variance_mode=variance_mode,
+        apply_sigma_sq=apply_sigma_sq,
     )
     time_pred = perf_counter()
 
