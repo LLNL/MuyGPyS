@@ -259,6 +259,7 @@ Note that the analytic method for training `sigma_sq` is insensible for classifi
 ...         nn_count=40,
 ...         batch_size=500,
 ...         loss_method="log",
+...         sigma_method=None,
 ...         k_kwargs=k_kwargs,
 ...         nn_kwargs=nn_kwargs, 
 ...         verbose=False,
@@ -302,6 +303,7 @@ In order to train, one need only loop over the models contained within the multi
 ...	            test_features,
 ...	            train_responses[:, i].reshape(train_count, 1),
 ...                 loss_method="mse",
+...                 sigma_method="analytic",
 ...                 verbose=False,
 ...         )
 ```
@@ -360,20 +362,38 @@ See below a simple regression workflow, using the data structures built up in th
 ... )
 >>> K = muygps.kernel(pairwise_dists)
 >>> Kcross = muygps.kernel(crosswise_dists)
->>> predictions = muygps.regress(K, Kcross, train_responses[nn_indices, :])
+>>> predictions, variances = muygps.regress(
+...         K,
+...         Kcross,
+...         train_responses[nn_indices, :],
+...         variance_mode="diagonal",
+...         apply_sigma_sq=True,
+... )
 ```
 
 Again if you do not want to reuse your tensors, you can run the more compact:
 ```
 >>> indices = np.arange(test_count)
 >>> nn_indices = train_nbrs_lookup.get_nns(test["input"])
->>> muygps.regress_from_indices(
+>>> predictions, variance = muygps.regress_from_indices(
 ...         indices,
 ...	    nn_indices,
 ...	    test_features,
 ...	    train_features,
 ...	    train_responses,
+...         variance_mode="diagonal",
+...         apply_sigma_sq=True,
 ... )
+```
+
+These regression examples return predictions (posterior means) and variances for each element of the test dataset.
+These variances are in the form of diagonal and independent variances that encode the uncertaintainty of the model's predictions at each test point.
+To scale the predictions, they should be multiplied by the trained `sigma_sq` scaling parameters, of which there will be one scalar associated with each dimension of the response.
+The kwarg `apply_sigma_sq=True` indicates that this scaling will be performed automatically.
+This is the default behavior, but will be skipped if `sigma_sq` is untrained.
+For a univariate resonse whose variance is obtained with `apply_sigma_sq=False`, the scaled predicted variance is equivalent to
+```
+>>> scaled_variance = variance * muygps.sigma_sq()
 ```
 
 Multivariate models support the same functions.
@@ -400,6 +420,7 @@ If one wants to predict on a univariate response as in this example, one must en
 
 Regress on Heaton data with no variance.
 Note that we have set `sigma_method=None`, as we are not computing posterior variance and thus have no use for the scaling parameter.
+If `sigma_method=None` or `variance_mode=None`, `do_regress` ignores `apply_sigma_sq`.
 ```
 >>> import numpy as np
 >>> from MuyGPyS.examples.regress import do_regress
@@ -426,6 +447,7 @@ Note that we have set `sigma_method=None`, as we are not computing posterior var
 ...         k_kwargs=k_kwargs,
 ...         nn_kwargs=nn_kwargs,
 ...         verbose=True,
+...         apply_sigma_sq=False,
 ... )
 parameters to be optimized: ['nu']
 bounds: [[0.1 1. ]]
@@ -459,8 +481,10 @@ obtains mse: 2.345136495565052
 If one requires the (individual, independent) posterior variances for each of the predictions, one can pass `variance_mode="diagonal"`.
 This mode assumes that each output dimension uses the same model, and so will output an additional vector `variance` with a scalar posterior variance associated with each test point.
 The API also returns a (possibly trained) `MuyGPyS.gp.MuyGPS` or `MuyGPyS.gp.MultivariateMuyGPS` instance, whose `sigma_sq` member reports an array of multiplicative scaling parameters associated with the variance of each dimension, assuming that `sigma_method != None`.
-Obtaining the tuned posterior variance implies multiplying the returned variance by the scaling parameter `sigma_sq` along each dimension.
 
+Obtaining the tuned posterior variance implies multiplying the returned variance by the scaling parameter `sigma_sq` along each dimension.
+This wil be performed automatically if `apply_sigma_sq is True`, which is the default behavior.
+One should only set `apply_sigma_sq=False` if they specifically want the unscaled variance for some reason.
 
 Regress on Heaton data while estimating diagonal variance
 ```
@@ -492,11 +516,10 @@ Regress on Heaton data while estimating diagonal variance
 ... )
 >>> print(f"mse : {mse_fn(predictions, test_responses)}")
 obtains mse: 2.345136495565052
->>> print(f"diagonal posterior variance: {variance * muygps.sigma_sq()}")
-diagonal posterior variance: [0.52199482 0.45934382 0.81381388 ... 0.64982631 0.45958342 0.68602048]
 ```
 
-Independent diagonal variance for each test item is the only form of posterior variance supported for a single model, and independent diagonal variance for each test item along each response dimension is the only form of posterior variacne supported for a multivariate model. 
+Independent diagonal variance for each test item (possibly scaled by different `sigma_sq` values in the case of a multidimensional response) is the only form of posterior variance supported for a single model.
+Similarly independent diagonal variance for each test item along each response dimension is the only form of posterior variacne supported for a multivariate model. 
 Computing the full posterior covariance between the dimensions of multivariate output is not currently supported, but is planned for a future release.
 Computing the full posterior covariance between all inputs is not and will not be supported for scalability reasons. 
 
@@ -512,6 +535,8 @@ The workflow suffices for any conforming 2-class dataset.
 
 What follows is example code surrounding the invocation of `MuyGPyS.examples.classify.do_classify_uq`.
 This function returns GP predictions `surrogate_predictions` and a list of index masks `masks`.  
+
+Note that the `sigma_sq`-specific kwargs do not appear, as `sigma_sq` does not presently appear in classification workflows.
 
 Run star-gal with UQ example instructions:
 ```

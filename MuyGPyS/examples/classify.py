@@ -534,6 +534,7 @@ def classify_any(
             test,
             train,
             train_labels,
+            apply_sigma_sq=False,
         )
     time_pred = perf_counter()
 

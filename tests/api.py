@@ -364,6 +364,13 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
 
+        if variance_mode is None:
+            sigma_method = None
+            apply_sigma_sq = False
+        else:
+            sigma_method = "analytic"
+            apply_sigma_sq = True
+
         self._do_regress_test_chassis(
             train=train,
             test=test,
@@ -371,10 +378,12 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            sigma_method=sigma_method,
             variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_kwargs=k_args,
+            apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )
 
@@ -433,8 +442,10 @@ class HeatonTest(RegressionAPITest):
 
         if variance_mode is None:
             sigma_method = None
+            apply_sigma_sq = False
         else:
             sigma_method = "analytic"
+            apply_sigma_sq = True
 
         self._do_regress_test_chassis(
             train=self.train,
@@ -447,6 +458,7 @@ class HeatonTest(RegressionAPITest):
             variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
+            apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )
 

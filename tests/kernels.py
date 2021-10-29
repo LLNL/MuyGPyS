@@ -116,13 +116,12 @@ class DistancesTest(parameterized.TestCase):
 
 
 class SigmaSqTest(parameterized.TestCase):
-    @parameterized.parameters((kwargs for kwargs in ({"val": np.array([1.0])})))
-    def test_unlearned(self, val):
+    def test_unlearned(self):
         param = SigmaSq()
         self.assertEqual("unlearned", param())
+        val = np.array([1.0])
         param._set(val)
         self.assertEqual(val, param())
-        # self._check_in_bounds(bounds, param)
 
 
 class HyperparameterTest(parameterized.TestCase):

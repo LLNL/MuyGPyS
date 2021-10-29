@@ -468,6 +468,8 @@ class RegressTest(parameterized.TestCase):
         )
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
 
+        self.assertEqual(mmuygps.sigma_sq(), "unlearned")
+
         predictions, _ = regress_any(
             mmuygps,
             test["input"],
@@ -475,6 +477,7 @@ class RegressTest(parameterized.TestCase):
             nbrs_lookup,
             train["output"],
             variance_mode=variance_mode,
+            apply_sigma_sq=False,
         )
         if variance_mode is not None:
             predictions, diagonal_variance = predictions
