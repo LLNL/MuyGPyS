@@ -8,6 +8,9 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS.examples.regress import make_regressor
+from MuyGPyS.examples.classify import make_classifier
+
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
@@ -416,6 +419,172 @@ class GPMathTest(parameterized.TestCase):
                 ),
             )
             self.assertGreater(diagonal_variance[i], 0.0)
+
+
+class MakerTest(parameterized.TestCase):
+    @parameterized.parameters(
+        (
+            (1000, 1000, 10, b, n, nn_kwargs, lm, rt, k_kwargs)
+            for b in [250]
+            for n in [10]
+            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for lm in ["mse"]
+            for rt in [True, False]
+            for k_kwargs in (
+                {
+                    "kern": "matern",
+                    "metric": "l2",
+                    "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
+                    "length_scale": {"val": 1.5},
+                    "eps": {"val": 1e-5},
+                },
+            )
+        )
+    )
+    def test_make_multivariate_classifier(
+        self,
+        train_count,
+        test_count,
+        feature_count,
+        batch_count,
+        nn_count,
+        nn_kwargs,
+        loss_method,
+        return_distances,
+        k_kwargs,
+    ):
+        response_count = 2
+        train, test = _make_gaussian_data(
+            train_count,
+            test_count,
+            feature_count,
+            response_count,
+            categorical=True,
+        )
+
+        classifier_args = make_classifier(
+            train["input"],
+            train["output"],
+            nn_count=nn_count,
+            batch_count=batch_count,
+            loss_method=loss_method,
+            nn_kwargs=nn_kwargs,
+            k_kwargs=k_kwargs,
+            return_distances=return_distances,
+        )
+
+        if len(classifier_args) == 2:
+            muygps, _ = classifier_args
+        elif len(classifier_args) == 4:
+            muygps, _, crosswise_dists, pairwise_dists = classifier_args
+            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
+            self.assertEqual(
+                pairwise_dists.shape, (batch_count, nn_count, nn_count)
+            )
+        print(k_kwargs)
+        for key in k_kwargs:
+            if key == "eps":
+                self.assertEqual(k_kwargs[key]["val"], muygps.eps())
+            elif key == "kern":
+                self.assertEqual(k_kwargs[key], muygps.kern)
+            elif key == "metric":
+                self.assertEqual(k_kwargs[key], muygps.kernel.metric)
+            elif isinstance(k_kwargs[key]["val"], str):
+                print(
+                    f"optimized to find value "
+                    f"{muygps.kernel.hyperparameters[key]()}"
+                )
+            else:
+                self.assertEqual(
+                    k_kwargs[key]["val"],
+                    muygps.kernel.hyperparameters[key](),
+                )
+
+    @parameterized.parameters(
+        (
+            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, rt, k_kwargs)
+            for b in [250]
+            for n in [10]
+            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for lm in ["mse"]
+            for ssm in ["analytic", None]
+            for rt in [True, False]
+            for k_kwargs in (
+                {
+                    "kern": "matern",
+                    "metric": "l2",
+                    "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
+                    "length_scale": {"val": 1.5},
+                    "eps": {"val": 1e-5},
+                },
+            )
+        )
+    )
+    def test_make_multivariate_regressor(
+        self,
+        train_count,
+        test_count,
+        feature_count,
+        batch_count,
+        nn_count,
+        nn_kwargs,
+        loss_method,
+        sigma_method,
+        return_distances,
+        k_kwargs,
+    ):
+        response_count = 1
+        # construct the observation locations
+        train, test = _make_gaussian_data(
+            train_count,
+            test_count,
+            feature_count,
+            response_count,
+            categorical=False,
+        )
+
+        regressor_args = make_regressor(
+            train["input"],
+            train["output"],
+            nn_count=nn_count,
+            batch_count=batch_count,
+            loss_method=loss_method,
+            sigma_method=sigma_method,
+            nn_kwargs=nn_kwargs,
+            k_kwargs=k_kwargs,
+            return_distances=return_distances,
+        )
+
+        if len(regressor_args) == 2:
+            muygps, _ = regressor_args
+        elif len(regressor_args) == 4:
+            muygps, _, crosswise_dists, pairwise_dists = regressor_args
+            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
+            self.assertEqual(
+                pairwise_dists.shape, (batch_count, nn_count, nn_count)
+            )
+
+        for key in k_kwargs:
+            if key == "eps":
+                self.assertEqual(k_kwargs[key]["val"], muygps.eps())
+            elif key == "kern":
+                self.assertEqual(k_kwargs[key], muygps.kern)
+            elif key == "metric":
+                self.assertEqual(k_kwargs[key], muygps.kernel.metric)
+            elif k_kwargs[key]["val"] == "sample":
+                print(
+                    f"\toptimized {key} to find value "
+                    f"{muygps.kernel.hyperparameters[key]()}"
+                )
+            else:
+                self.assertEqual(
+                    k_kwargs[key]["val"],
+                    muygps.kernel.hyperparameters[key](),
+                )
+        if sigma_method == None:
+            self.assertEqual("unlearned", muygps.sigma_sq())
+        else:
+            print(f"\toptimized sigma_sq to find value " f"{muygps.sigma_sq()}")
 
 
 class GPSigmaSqTest(parameterized.TestCase):

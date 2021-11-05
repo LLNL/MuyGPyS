@@ -381,7 +381,9 @@ class MuyGPS:
             return responses
         elif variance_mode == "diagonal":
             diagonal_variance = self._compute_diagonal_variance(K, Kcross)
-            if apply_sigma_sq is True and self.sigma_sq() != "unlearned":
+            if apply_sigma_sq is True and isinstance(
+                self.sigma_sq(), np.ndarray
+            ):
                 sigmas = self.sigma_sq()
                 if len(sigmas) == 1:
                     diagonal_variance *= sigmas
@@ -815,7 +817,7 @@ class MultivariateMuyGPS:
                 diagonal_variance[:, i] = model._compute_diagonal_variance(
                     K, Kcross
                 ).reshape(batch_count)
-                if apply_sigma_sq and self.sigma_sq() != "unlearned":
+                if apply_sigma_sq and isinstance(self.sigma_sq(), np.ndarray):
                     diagonal_variance[:, i] *= self.sigma_sq()[i]
         if variance_mode == "diagonal":
             return responses, diagonal_variance
