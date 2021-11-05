@@ -237,7 +237,20 @@ All other training targets must be indicated by providing a `"bounds": (lower_bo
 ...         k_kwargs=k_kwargs,
 ...         nn_kwargs=nn_kwargs,
 ...         verbose=False,
-... )    
+... )
+>>> # alternatively, we can return the distance tensors if we expect to use them
+>>> muygps, nbrs_lookup, crosswise_dists, pairwise_dists = make_regressor(
+...         train_features,
+...         train_responses,
+...         nn_count=40,
+...         batch_size=500,
+...         loss_method="mse",
+...         sigma_method="analytic",
+...         k_kwargs=k_kwargs,
+...         nn_kwargs=nn_kwargs,
+...         return_distances=return_distances,
+...         verbose=False,
+... )
 ```
 
 An example surrogate classifier.
@@ -263,7 +276,20 @@ Note that the analytic method for training `sigma_sq` is insensible for classifi
 ...         k_kwargs=k_kwargs,
 ...         nn_kwargs=nn_kwargs, 
 ...         verbose=False,
-... )    
+... )
+>>> muygps, nbrs_lookup, crosswise_dists, pairwise_dists = make_classifier(
+...         train_features,
+...         train_labels,
+...         nn_count=40,
+...         batch_size=500,
+...         loss_method="log",
+...         sigma_method=None,
+...         k_kwargs=k_kwargs,
+...         nn_kwargs=nn_kwargs,
+...         return_distances=return_distances,
+...         verbose=False,
+... )
+>>> # alternatively, we can return the distance tensors if we expect to use them
 ```
 
 
@@ -336,7 +362,21 @@ We also support one-line make functions for regression and classification:
 ...         k_args=k_args,
 ...         nn_kwargs=nn_kwargs,
 ...         verbose=False,
-... )    
+... )
+>>> # alternatively, we can get the distances tensors if we need to reuse them
+>>> muygps, nbrs_lookup = make_multivariate_regressor(
+...         train_features,
+...         train_responses,
+...         nn_count=40,
+...         batch_size=500,
+...         loss_method="mse",
+...         sigma_method="analytic",
+...	    kern="matern",
+...         k_args=k_args,
+...         nn_kwargs=nn_kwargs,
+...         return_distances=return_distances,
+...         verbose=False,
+... )
 ```
 
 

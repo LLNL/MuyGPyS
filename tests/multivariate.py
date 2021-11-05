@@ -490,11 +490,12 @@ class RegressTest(parameterized.TestCase):
 class MakeClassifierTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lm, rt, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
+            for rt in [True, False]
             for k_kwargs in (
                 (
                     "matern",
@@ -523,6 +524,7 @@ class MakeClassifierTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        return_distances,
         k_kwargs,
     ):
         kern, args = k_kwargs
@@ -537,7 +539,7 @@ class MakeClassifierTest(parameterized.TestCase):
             categorical=True,
         )
 
-        mmuygps, _ = make_multivariate_classifier(
+        classifier_args = make_multivariate_classifier(
             train["input"],
             train["output"],
             nn_count=nn_count,
@@ -546,7 +548,18 @@ class MakeClassifierTest(parameterized.TestCase):
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_args=args,
+            return_distances=return_distances,
         )
+
+        if len(classifier_args) == 2:
+            mmuygps, _ = classifier_args
+        elif len(classifier_args) == 4:
+            mmuygps, _, crosswise_dists, pairwise_dists = classifier_args
+            print(type(crosswise_dists))
+            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
+            self.assertEqual(
+                pairwise_dists.shape, (batch_count, nn_count, nn_count)
+            )
 
         for i, muygps in enumerate(mmuygps.models):
             for key in args[i]:
@@ -567,12 +580,13 @@ class MakeClassifierTest(parameterized.TestCase):
 class MakeRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, rt, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
             for ssm in ["analytic", None]
+            for rt in [True, False]
             for k_kwargs in (
                 (
                     "matern",
@@ -602,6 +616,7 @@ class MakeRegressorTest(parameterized.TestCase):
         nn_kwargs,
         loss_method,
         sigma_method,
+        return_distances,
         k_kwargs,
     ):
         kern, args = k_kwargs
@@ -616,7 +631,7 @@ class MakeRegressorTest(parameterized.TestCase):
             categorical=False,
         )
 
-        mmuygps, _ = make_multivariate_regressor(
+        regressor_args = make_multivariate_regressor(
             train["input"],
             train["output"],
             nn_count=nn_count,
@@ -626,7 +641,17 @@ class MakeRegressorTest(parameterized.TestCase):
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_args=args,
+            return_distances=return_distances,
         )
+
+        if len(regressor_args) == 2:
+            mmuygps, _ = regressor_args
+        elif len(regressor_args) == 4:
+            mmuygps, _, crosswise_dists, pairwise_dists = regressor_args
+            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
+            self.assertEqual(
+                pairwise_dists.shape, (batch_count, nn_count, nn_count)
+            )
 
         for i, muygps in enumerate(mmuygps.models):
             print(f"For model {i}:")
