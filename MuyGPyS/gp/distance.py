@@ -64,14 +64,141 @@ Example:
     ...         metric="l2"
     ... )
 
+The helper functions :func:`MuyGPyS.gp.distance.make_regress_tensors` and 
+:func:`MuyGPyS.gp.distance.make_train_tensors` wrap these distances tensors and
+also return the nearest neighbors sets' training targets and (in the latter 
+case) the training targets of the training batch. These functions are convenient
+as the distance and target tensors are usually needed together.
 """
 
 
 import numpy as np
 
-from typing import Optional
+from typing import Optional, Tuple
 
 from sklearn.metrics.pairwise import cosine_similarity
+
+
+def make_regress_tensors(
+    metric: str,
+    batch_indices: np.ndarray,
+    batch_nn_indices: np.ndarray,
+    test_features: np.ndarray,
+    train_features: np.ndarray,
+    train_targets: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Create the distance and target tensors for regression.
+
+    Creates the `crosswise_dists`, `pairwise_dists` and `batch_nn_targets`
+    tensors required by :func:`MuyGPyS.gp.MuyGPyS.regress`.
+
+    Args:
+        metric:
+            The metric to be used to compute distances.
+        batch_indices:
+            A vector of integers of shape `(batch_count,)` identifying the
+            training batch of observations to be approximated.
+        batch_nn_indices:
+            A matrix of integers of shape `(batch_count, nn_count)` listing the
+            nearest neighbor indices for all observations in the batch.
+        test_features:
+            The full floating point testing data matrix of shape
+            `(test_count, feature_count)`.
+        train_features:
+            The full floating point training data matrix of shape
+            `(train_count, feature_count)`.
+        train_targets:
+            A matrix of shape `(train_count, feature_count)` whose rows are
+            vector-valued responses for each training element.
+
+    Returns
+    -------
+    crosswise_dists:
+        A matrix of shape `(batch_count, nn_count)` whose rows list the distance
+        of the corresponding batch element to each of its nearest neighbors.
+    pairwise_dists:
+        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        dimensions contain square matrices containing the pairwise distances
+        between the nearest neighbors of the batch elements.
+    batch_nn_targets:
+        Tensor of floats of shape `(batch_count, nn_count, response_count)`
+        containing the expected response for each nearest neighbor of each batch
+        element.
+    """
+    if test_features is None:
+        test_features = train_features
+    crosswise_dists = crosswise_distances(
+        test_features,
+        train_features,
+        batch_indices,
+        batch_nn_indices,
+        metric=metric,
+    )
+    pairwise_dists = pairwise_distances(
+        train_features, batch_nn_indices, metric=metric
+    )
+    batch_nn_targets = train_targets[batch_nn_indices, :]
+    return crosswise_dists, pairwise_dists, batch_nn_targets
+
+
+def make_train_tensors(
+    metric: str,
+    batch_indices: np.ndarray,
+    batch_nn_indices: np.ndarray,
+    train_features: np.ndarray,
+    train_targets: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Create the distance and target tensors needed for training.
+
+    Similar to :func:`~MuyGPyS.gp.data.make_regress_tensors` but returns the
+    additional `batch_targets` matrix, which is only defined for a batch of
+    training data.
+
+    Args:
+        metric:
+            The metric to be used to compute distances.
+        batch_indices:
+            A vector of integers of shape `(batch_count,)` identifying the
+            training batch of observations to be approximated.
+        batch_nn_indices:
+            A matrix of integers of shape `(batch_count, nn_count)` listing the
+            nearest neighbor indices for all observations in the batch.
+        train_features:
+            The full floating point training data matrix of shape
+            `(train_count, feature_count)`.
+        train_targets:
+            A matrix of shape `(train_count, feature_count)` whose rows are
+            vector-valued responses for each training element.
+
+    Returns
+    -------
+    crosswise_dists:
+        A matrix of shape `(batch_count, nn_count)` whose rows list the distance
+        of the corresponding batch element to each of its nearest neighbors.
+    pairwise_dists:
+        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        dimensions contain square matrices containing the pairwise distances
+        between the nearest neighbors of the batch elements.
+    batch_targets:
+        Matrix of floats of shape `(batch_count, response_count)` whose rows
+        give the expected response for each batch element.
+    batch_nn_targets:
+        Tensor of floats of shape `(batch_count, nn_count, response_count)`
+        containing the expected response for each nearest neighbor of each batch
+        element.
+    """
+    crosswise_dists, pairwise_dists, batch_nn_targets = make_regress_tensors(
+        metric,
+        batch_indices,
+        batch_nn_indices,
+        train_features,
+        train_features,
+        train_targets,
+    )
+    batch_targets = train_targets[batch_indices, :]
+    return crosswise_dists, pairwise_dists, batch_targets, batch_nn_targets
 
 
 def crosswise_distances(

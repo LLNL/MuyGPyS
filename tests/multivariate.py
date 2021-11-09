@@ -240,14 +240,16 @@ class OptimTest(parameterized.TestCase):
 
             mmuygps = MMuyGPS(kern, *args)
 
+            batch_targets = sim_train["output"][batch_indices, :]
+            batch_nn_targets = sim_train["output"][batch_nn_indices, :]
+
             for i, muygps in enumerate(mmuygps.models):
                 estimate = scipy_optimize_from_tensors(
                     muygps,
-                    batch_indices,
-                    batch_nn_indices,
+                    batch_targets[:, i].reshape(batch_count, 1),
+                    batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
                     crosswise_dists,
                     pairwise_dists,
-                    sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
                 )[0]
                 mse += np.sum(estimate - target[i]) ** 2
@@ -341,7 +343,6 @@ class OptimTest(parameterized.TestCase):
                     muygps,
                     batch_indices,
                     batch_nn_indices,
-                    sim_train["input"],
                     sim_train["input"],
                     sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
@@ -555,7 +556,6 @@ class MakeClassifierTest(parameterized.TestCase):
             mmuygps, _ = classifier_args
         elif len(classifier_args) == 4:
             mmuygps, _, crosswise_dists, pairwise_dists = classifier_args
-            print(type(crosswise_dists))
             self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
             self.assertEqual(
                 pairwise_dists.shape, (batch_count, nn_count, nn_count)
