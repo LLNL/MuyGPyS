@@ -456,13 +456,15 @@ class GPOptimTest(parameterized.TestCase):
             # set up MuyGPS object
             muygps = MuyGPS(kern=kern, eps=eps, metric=metric, **kwargs)
 
+            batch_targets = sim_train["output"][batch_indices, :]
+            batch_nn_targets = sim_train["output"][batch_nn_indices, :]
+
             estimate = scipy_optimize_from_tensors(
                 muygps,
-                batch_indices,
-                batch_nn_indices,
+                batch_targets,
+                batch_nn_targets,
                 crosswise_dists,
                 pairwise_dists,
-                sim_train["output"],
                 loss_method=loss_method,
             )[0]
 
@@ -546,7 +548,6 @@ class GPOptimTest(parameterized.TestCase):
             muygps,
             batch_indices,
             batch_nn_indices,
-            sim_train["input"],
             sim_train["input"],
             sim_train["output"],
             loss_method=loss_method,

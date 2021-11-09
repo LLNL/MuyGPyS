@@ -19,10 +19,10 @@ above and :func:`~MuyGPyS.examples.classify.classify_any`.
 import numpy as np
 
 from time import perf_counter
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
+from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
-from MuyGPyS.gp.distance import crosswise_distances, pairwise_distances
 
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
@@ -157,26 +157,27 @@ def make_classifier(
         )
         time_batch = perf_counter()
 
-        crosswise_dists = crosswise_distances(
-            train_features,
-            train_features,
+        (
+            crosswise_dists,
+            pairwise_dists,
+            batch_targets,
+            batch_nn_targets,
+        ) = make_train_tensors(
+            muygps.kernel.metric,
             batch_indices,
             batch_nn_indices,
-            metric=muygps.kernel.metric,
-        )
-        pairwise_dists = pairwise_distances(
-            train_features, batch_nn_indices, metric=muygps.kernel.metric
+            train_features,
+            train_labels,
         )
         time_tensor = perf_counter()
 
         # maybe do something with these estimates?
         estimates = scipy_optimize_from_tensors(
             muygps,
-            batch_indices,
-            batch_nn_indices,
+            batch_targets,
+            batch_nn_targets,
             crosswise_dists,
             pairwise_dists,
-            train_labels,
             loss_method=loss_method,
             verbose=verbose,
         )
@@ -338,15 +339,17 @@ def make_multivariate_classifier(
         )
         time_batch = perf_counter()
 
-        crosswise_dists = crosswise_distances(
-            train_features,
-            train_features,
+        (
+            crosswise_dists,
+            pairwise_dists,
+            batch_targets,
+            batch_nn_targets,
+        ) = make_train_tensors(
+            mmuygps.metric,
             batch_indices,
             batch_nn_indices,
-            metric=mmuygps.metric,
-        )
-        pairwise_dists = pairwise_distances(
-            train_features, batch_nn_indices, metric=mmuygps.metric
+            train_features,
+            train_labels,
         )
         time_tensor = perf_counter()
 
@@ -355,11 +358,10 @@ def make_multivariate_classifier(
             if muygps.fixed() is False:
                 estimates = scipy_optimize_from_tensors(
                     muygps,
-                    batch_indices,
-                    batch_nn_indices,
+                    batch_targets[:, i].reshape(batch_count, 1),
+                    batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
                     crosswise_dists,
                     pairwise_dists,
-                    train_labels[:, i].reshape(train_count, 1),
                     loss_method=loss_method,
                     verbose=verbose,
                 )
@@ -561,6 +563,7 @@ def do_classify(
         kern=kern,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
+        return_distances=return_distances,
         verbose=verbose,
     )
     classifier, classifier_args_less1 = _unpack(*classifier_args)
@@ -593,8 +596,8 @@ def do_classify(
 
 def classify_any(
     surrogate: Union[MuyGPS, MMuyGPS],
-    test: np.ndarray,
-    train: np.ndarray,
+    test_features: np.ndarray,
+    train_features: np.ndarray,
     train_nbrs_lookup: NN_Wrapper,
     train_labels: np.ndarray,
 ) -> Tuple[np.ndarray, Dict[str, float]]:
@@ -604,9 +607,9 @@ def classify_any(
     Args:
         surrogate:
             Surrogate regressor.
-        test:
+        test_features:
             Test observations of shape `(test_count, feature_count)`.
-        train:
+        train_features:
             Train observations of shape `(train_count, feature_count)`.
         train_nbrs_lookup:
             Trained nearest neighbor query data structure.
@@ -622,7 +625,7 @@ def classify_any(
     timing:
         Timing for the subroutines of this function.
     """
-    test_count = test.shape[0]
+    test_count = test_features.shape[0]
     class_count = train_labels.shape[1]
 
     # detect one hot encoding, e.g. {0,1}, {-0.1, 0.9}, {-1,1}, ...
@@ -630,7 +633,7 @@ def classify_any(
     predictions = np.full((test_count, class_count), one_hot_false)
 
     time_start = perf_counter()
-    test_nn_indices, _ = train_nbrs_lookup.get_nns(test)
+    test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
@@ -647,8 +650,8 @@ def classify_any(
         predictions[nonconstant_mask] = surrogate.regress_from_indices(
             np.where(nonconstant_mask == True)[0],
             test_nn_indices[nonconstant_mask, :],
-            test,
-            train,
+            test_features,
+            train_features,
             train_labels,
             apply_sigma_sq=False,
         )
