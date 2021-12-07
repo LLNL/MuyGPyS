@@ -34,6 +34,13 @@ If you use MuyGPyS in a research paper, please reference our article::
 
 .. toctree::
    :maxdepth: 2
+   :caption: Examples:
+
+   examples/univariate_regression_tutorial.ipynb
+   examples/regress_api_tutorial.ipynb
+
+.. toctree::
+   :maxdepth: 2
    :caption: Resources:
 
    resources/references

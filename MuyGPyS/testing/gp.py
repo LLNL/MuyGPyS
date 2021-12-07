@@ -193,45 +193,6 @@ class BenchmarkGP:
             optim_params["eps"] = self.eps
         return optim_params
 
-    # def fit(
-    #     self,
-    #     test: np.ndarray,
-    #     train: np.ndarray,
-    # ) -> None:
-    #     """
-    #     Compute the full kernel and precompute the cholesky decomposition.
-
-    #     Args:
-    #         test:
-    #             The full testing data matrix of shape
-    #             `(test_count, feature_count)`.
-    #         train:
-    #             The full training data matrix of shape
-    #             `(train_count, feature_count)`.
-    #     """
-    #     self._fit_kernel(np.vstack((test, train)))
-    #     self.test_count = test.shape[0]
-    #     self._cholesky(self.K)
-
-    # def fit_train(self, train: np.ndarray) -> None:
-    #     """
-    #     Compute the training kernel and precompute the cholesky decomposition.
-
-    #     Args:
-    #         train:
-    #             The full training data matrix of shape
-    #             `(train_count, feature_count)`.
-    #     """
-    #     self._fit_kernel(train)
-    #     self.test_count = 0
-    #     self._cholesky(self.K)
-
-    # def _fit_kernel(self, x):
-    #     self.K = self.kernel(x) + self.eps * np.eye(x.shape[0])
-
-    # def _cholesky(self, K):
-    #     self.cholK = np.linalg.cholesky(K)
-
     def regress(
         self,
         test: np.ndarray,

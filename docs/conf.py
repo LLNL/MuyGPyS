@@ -55,7 +55,12 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx_autodoc_typehints',
+    'nbsphinx',
 ]
+
+# (Dis/En)able notebook execution
+# Uncomment to turn off notebook execution
+#nbsphinx_execute = 'never'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
