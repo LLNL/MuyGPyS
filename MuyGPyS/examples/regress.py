@@ -607,12 +607,6 @@ def do_regress(
         >>> mse = mse_fn(test['output'], predictions)
         >>> print(f"obtained mse: {mse}")
         obtained mse: 0.20842...
-        >>> scaled_variance = np.array([
-        ...           variance * ss for ss in muygps.sigma_sq()
-        >>> ])
-        >>> print(f"Variance along first response dimension:\n{scaled_variance[0]}")
-        Variance along first response dimension:
-        [0.0123, 0.02043, 0.0145, ...
 
     Args:
         test_features:

@@ -336,9 +336,6 @@ class OptimTest(parameterized.TestCase):
                 y = benchmark_sample_from_cholK(cholK)
                 sim_test["output"][:, i] = y[:test_count, 0]
                 sim_train["output"][:, i] = y[test_count:, 0]
-                # y = gp.simulate()
-                # sim_test["output"][:, i] = y[:test_count]
-                # sim_train["output"][:, i] = y[test_count:]
 
             mmuygps = MMuyGPS(kern, *args)
 
