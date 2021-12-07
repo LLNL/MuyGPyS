@@ -228,7 +228,13 @@ class MuyGPS:
         targets: np.ndarray,
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+        return_distances: bool = False,
+    ) -> Union[
+        np.ndarray,
+        Tuple[np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+    ]:
         """
         Performs simultaneous regression on a list of observations.
 
@@ -259,6 +265,12 @@ class MuyGPS:
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
                 Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+            return_distances:
+                If `True`, returns a `(test_count, nn_count)` matrix containing
+                the crosswise distances between the test elements and their
+                nearest neighbor sets and a `(test_count, nn_count, nn_count)`
+                tensor containing the pairwise distances between the test data's
+                nearest neighbor sets.
 
         Returns
         -------
@@ -270,6 +282,15 @@ class MuyGPS:
             elements of the posterior variance, or a matrix of shape
             `(batch_count, response_count)` for a multidimensional response.
             Only returned where `variance_mode == "diagonal"`.
+        crosswise_dists:
+            A matrix of shape `(test_count, nn_count)` whose rows list the
+            distance of the corresponding test element to each of its nearest
+            neighbors. Only returned if `return_distances is True`.
+        pairwise_dists:
+            A tensor of shape `(test_count, nn_count, nn_count,)` whose latter
+            two dimensions contain square matrices containing the pairwise
+            distances between the nearest neighbors of the test elements. Only
+            returned if `return_distances is True`.
         """
         (
             crosswise_dists,
@@ -280,13 +301,21 @@ class MuyGPS:
         )
         K = self.kernel(pairwise_dists)
         Kcross = self.kernel(crosswise_dists)
-        return self.regress(
+        responses = self.regress(
             K,
             Kcross,
             batch_nn_targets,
             variance_mode=variance_mode,
             apply_sigma_sq=apply_sigma_sq,
         )
+        if return_distances is False:
+            return responses
+        else:
+            if variance_mode is None:
+                return responses, crosswise_dists, pairwise_dists
+            else:
+                responses, variances = responses
+                return responses, variances, crosswise_dists, pairwise_dists
 
     def regress(
         self,
@@ -648,7 +677,13 @@ class MultivariateMuyGPS:
         targets: np.ndarray,
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+        return_distances: bool = False,
+    ) -> Union[
+        np.ndarray,
+        Tuple[np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+    ]:
         """
         Performs simultaneous regression on a list of observations.
 
@@ -678,15 +713,30 @@ class MultivariateMuyGPS:
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
                 Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+            return_distances:
+                If `True`, returns a `(test_count, nn_count)` matrix containing
+                the crosswise distances between the test elements and their
+                nearest neighbor sets and a `(test_count, nn_count, nn_count)`
+                tensor containing the pairwise distances between the test data's
+                nearest neighbor sets.
         Returns
         -------
         responses:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
-        diagonal_variance:
+        variance:
             A vector of shape `(batch_count,)` consisting of the diagonal
             elements of the posterior variance. Only returned where
             `variance_mode == "diagonal"`.
+        crosswise_dists:
+            A matrix of shape `(test_count, nn_count)` whose rows list the
+            distance of the corresponding test element to each of its nearest
+            neighbors. Only returned if `return_distances is True`.
+        pairwise_dists:
+            A tensor of shape `(test_count, nn_count, nn_count,)` whose latter
+            two dimensions contain square matrices containing the pairwise
+            distances between the nearest neighbors of the test elements. Only
+            returned if `return_distances is True`.
         """
         (
             crosswise_dists,
@@ -700,20 +750,21 @@ class MultivariateMuyGPS:
             train,
             targets,
         )
-        # crosswise_dists = crosswise_distances(
-        #     test, train, indices, nn_indices, metric=self.metric
-        # )
-        # pairwise_dists = pairwise_distances(
-        #     train, nn_indices, metric=self.metric
-        # )
-        # batch_nn_targets = targets[nn_indices, :]
-        return self.regress(
+        responses = self.regress(
             pairwise_dists,
             crosswise_dists,
             batch_nn_targets,
             variance_mode=variance_mode,
             apply_sigma_sq=apply_sigma_sq,
         )
+        if return_distances is False:
+            return responses
+        else:
+            if variance_mode is None:
+                return responses, crosswise_dists, pairwise_dists
+            else:
+                responses, variances = responses
+                return responses, variances, crosswise_dists, pairwise_dists
 
     def regress(
         self,
