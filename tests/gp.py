@@ -59,7 +59,10 @@ class GPInitTest(parameterized.TestCase):
             )
         self.assertEqual(eps["val"], muygps.eps())
         self.assertEqual("fixed", muygps.eps.get_bounds())
-        self.assertEqual("unlearned", muygps.sigma_sq())
+        if gp_type == MuyGPS:
+            self.assertEqual("unlearned", muygps.sigma_sq())
+        elif gp_type == BenchmarkGP:
+            self.assertEqual(np.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
         (k_kwargs, e, gp)
@@ -113,7 +116,10 @@ class GPInitTest(parameterized.TestCase):
             )
         self.assertEqual(eps["val"], muygps.eps())
         self.assertEqual(eps["bounds"], muygps.eps.get_bounds())
-        self.assertEqual("unlearned", muygps.sigma_sq())
+        if gp_type == MuyGPS:
+            self.assertEqual("unlearned", muygps.sigma_sq())
+        elif gp_type == BenchmarkGP:
+            self.assertEqual(np.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
         (k_kwargs, e, gp)

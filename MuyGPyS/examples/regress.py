@@ -723,6 +723,7 @@ def do_regress(
         train_targets,
         variance_mode=variance_mode,
         apply_sigma_sq=apply_sigma_sq,
+        return_distances=return_distances,
     )
 
     # predictions, prediction_args_less1 = _unpack(*prediction_args)
