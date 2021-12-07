@@ -200,7 +200,7 @@ def scipy_optimize_from_tensors(
     if verbose is True:
         print(f"parameters to be optimized: {[p for p in optim_params]}")
         print(f"bounds: {bounds}")
-        print(f"sampled x0: {x0}")
+        print(f"initial x0: {x0}")
 
     optres = opt.minimize(
         loo_crossval,

@@ -5,9 +5,93 @@
 
 import numpy as np
 
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
+from numpy.linalg.linalg import cholesky
 
-from sklearn.gaussian_process.kernels import Matern, RBF
+# from sklearn.gaussian_process.kernels import Matern, RBF
+from sklearn.metrics import pairwise_distances as skl_pairwise_distances
+
+from MuyGPyS.gp.kernels import (
+    _get_kernel,
+    _init_hyperparameter,
+    Hyperparameter,
+    SigmaSq,
+)
+
+
+def benchmark_select_skl_metric(metric: str) -> str:
+    """
+    Convert `MuyGPyS` metric names to `scikit-learn` equivalents.
+
+    Args:
+        metric:
+            The `MuyGPyS` name of the metric.
+
+    Returns:
+        The equivalent `scikit-learn` name.
+
+    Raises:
+        ValueError:
+            Any value other than `"l2"` or `"F2"` will produce an error.
+    """
+    if metric == "l2":
+        return "l2"
+    elif metric == "F2":
+        return "l1"
+    else:
+        raise ValueError(f"Metric {metric} is not supported!")
+
+
+def benchmark_pairwise_distances(data, metric: str = "l2"):
+    """
+    Create a matrix of pairwise distances among a dataset.
+
+    Takes a full dataset of records of interest `data` and produces distances
+    between each pair of elements in a square matrix.
+
+    Args:
+        data:
+            The data matrix of shape `(data_count, feature_count)` containing
+            batch elements.
+        metric:
+            The name of the metric to use in order to form distances. Supported
+            values are `l2` and `F2`.
+
+    Returns:
+        A square matrix of shape `(data_count, data_count,)` containing the
+        pairwise distances between the nearest neighbors of the batch elements.
+    """
+    return skl_pairwise_distances(
+        data, metric=benchmark_select_skl_metric(metric)
+    )
+
+
+def benchmark_crosswise_distances(test, train, metric: str = "l2"):
+    """
+    Create a matrix of crosswise distances between a test and train set.
+
+    Takes two full datasets of records of interest `test` and `train` and
+    produces distances between each pair of `test` and `train` elements in a
+    matrix.
+
+    Args:
+        test:
+            The data matrix of shape `(test_count, feature_count)` containing
+            test elements.
+        train:
+            The data matrix of shape `(train_count, feature_count)` containing
+            train elements.
+        metric:
+            The name of the metric to use in order to form distances. Supported
+            values are `l2` and `F2`.
+
+    Returns:
+        A matrix of shape `(test_count, train_count,)` containing the crosswise
+        distances between pairs of train and test elements.
+    """
+    return skl_pairwise_distances(
+        test, train, metric=benchmark_select_skl_metric(metric)
+    )
 
 
 class BenchmarkGP:
@@ -21,138 +105,143 @@ class BenchmarkGP:
             The kernel to be used. Each kernel supports different
             hyperparameters that can be specified in kwargs.
             NOTE[bwp] Currently supports `matern` and `rbf`.
-        **kwargs:
+        kwargs:
             Kernel parameters. See :ref:`MuyGPyS-gp-kernels`.
     """
 
     def __init__(
         self,
         kern: str = "matern",
+        eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
         **kwargs,
     ):
         """
         Initialize.
         """
         self.kern = kern.lower()
-        self.set_params(**kwargs)
+        self.kernel = _get_kernel(self.kern, **kwargs)
+        self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
+        self.sigma_sq = SigmaSq()
+        # NOTE[bwp] This is dangerous. Probably need better solution.
+        self._set_sigma_sq(1.0)
 
-    def set_params(self, **params) -> List[str]:
+    def set_eps(self, **eps) -> None:
         """
-        Set the hyperparameters specified by `params`.
+        Reset :math:`\\varepsilon` value or bounds.
 
-        NOTE[bwp] this logic should get moved into kernel functors once
-        implemented
+        Uses existing value and bounds as defaults.
 
         Args:
             eps:
-                The homoscedastic noise nugget to be added to the inverted
-                covariance matrix.
-            sigma_sq:
-                Scaling parameter to be applied to posterior variance. One
-                element per dimension of the response.
-            nu:
-                The smoothness parameter. As `nu` -> infty, the matern kernel
-                converges pointwise to the RBF kernel. Accept only if this is
-                a matern GP.
-            length_scale:
-                Scale parameter multiplied against distance values. Accept if
-                RBF or Matern.
+                A hyperparameter dict.
+        """
+        self.eps._set(**eps)
+
+    def _set_sigma_sq(self, val: float) -> None:
+        """
+        Reset :math:`\\varepsilon` value or bounds.
+
+        This is dangerous to do in general, and it only included for testing
+        purposes. Make sure you know what you are doing before invoking! Uses
+        existing value and bounds as defaults.
+
+        Args:
+            val:
+                A scalar value for `sigma_sq`.
+        """
+        self.sigma_sq._set(np.array([val]))
+
+    def fixed(self) -> bool:
+        """
+        Checks whether all kernel and model parameters are fixed.
+
+        This is a convenience utility to determine whether optimization is
+        required.
 
         Returns:
-            The set of kernel parameters that have not been fixed by `params`.
+            Returns `True` if all parameters are fixed, and `False` otherwise.
         """
-        self.params = {
-            p: params[p] for p in params if p != "eps" and p != "sigma_sq"
+        for p in self.kernel.hyperparameters:
+            if self.kernel.hyperparameters[p].get_bounds() != "fixed":
+                return False
+        if self.eps.get_bounds() != "fixed":
+            return False
+        return True
+
+    def get_optim_params(self) -> Dict[str, Hyperparameter]:
+        """
+        Return a dictionary of references to the unfixed kernel hyperparameters.
+
+        This is a convenience function for obtaining all of the information
+        necessary to optimize hyperparameters. It is important to note that the
+        values of the dictionary are references to the actual hyperparameter
+        objects underying the kernel functor - changing these references will
+        change the kernel.
+
+        Returns:
+            A dict mapping hyperparameter names to references to their objects.
+            Only returns hyperparameters whose bounds are not set as `fixed`.
+            Returned hyperparameters can include `eps`, but not `sigma_sq`,
+            as it is currently optimized via a separate closed-form method.
+        """
+        optim_params = {
+            p: self.kernel.hyperparameters[p]
+            for p in self.kernel.hyperparameters
+            if self.kernel.hyperparameters[p].get_bounds() != "fixed"
         }
-        self.eps = params.get("eps", 0.015)
-        self.sigma_sq = params.get("sigma_sq", np.array(1.0))
-        if self.kern == "matern":
-            self.kernel = Matern(
-                length_scale=self.params.get("length_scale", 10.0),
-                nu=self.params.get("nu", 0.5),
-            )
-            unset_params = {"eps", "sigma_sq", "length_scale", "nu"}.difference(
-                params.keys()
-            )
-        elif self.kern == "rbf":
-            self.kernel = RBF(length_scale=self.params.get("length_scale", 0.5))
-            unset_params = {"eps", "sigma_sq", "length_scale"}.difference(
-                params.keys()
-            )
-        else:
-            raise NotImplementedError(f"{self.kern} is not implemented yet!")
-        return sorted(list(unset_params))
+        if self.eps.get_bounds() != "fixed":
+            optim_params["eps"] = self.eps
+        return optim_params
 
-    def set_param_array(
-        self,
-        names: List[str],
-        values: List[float],
-    ) -> None:
-        """
-        Set the hyperparameters specified by elements of `names` with the
-        corresponding elements of `values`.
+    # def fit(
+    #     self,
+    #     test: np.ndarray,
+    #     train: np.ndarray,
+    # ) -> None:
+    #     """
+    #     Compute the full kernel and precompute the cholesky decomposition.
 
-        Convenience function for use in concert with `scipy.optimize`.
+    #     Args:
+    #         test:
+    #             The full testing data matrix of shape
+    #             `(test_count, feature_count)`.
+    #         train:
+    #             The full training data matrix of shape
+    #             `(train_count, feature_count)`.
+    #     """
+    #     self._fit_kernel(np.vstack((test, train)))
+    #     self.test_count = test.shape[0]
+    #     self._cholesky(self.K)
 
-        NOTE[bwp] this logic should get moved into kernel functors once
-        implemented
+    # def fit_train(self, train: np.ndarray) -> None:
+    #     """
+    #     Compute the training kernel and precompute the cholesky decomposition.
 
-        Args:
-            names:
-                An alphabetically ordered list of parameter names.
-            values:
-                A corresponding list of parameter values.
-        """
-        names = list(names)
-        # this is going to break if we add a hyperparameter that occurs earlier
-        # in alphabetical order.
-        if names[0] == "eps":
-            self.eps = values[0]
-            names = names[1:]
-            values = values[1:]
-        for i, name in enumerate(names):
-            self.params[name] = values[i]
-        if self.kern == "matern":
-            self.kernel = Matern(**self.params)
-        elif self.kern == "rbf":
-            self.kernel = RBF(**self.params)
+    #     Args:
+    #         train:
+    #             The full training data matrix of shape
+    #             `(train_count, feature_count)`.
+    #     """
+    #     self._fit_kernel(train)
+    #     self.test_count = 0
+    #     self._cholesky(self.K)
 
-    def optim_bounds(
-        self,
-        names: Iterable[str],
-        eps: float = 1e-6,
-    ) -> List[Tuple[float, float]]:
-        """
-        Set the bounds (2-tuples) corresponding to each specified
-        hyperparameter.
+    # def _fit_kernel(self, x):
+    #     self.K = self.kernel(x) + self.eps * np.eye(x.shape[0])
 
-        NOTE[bwp] this logic should get moved into kernel functors once
-        implemented
+    # def _cholesky(self, K):
+    #     self.cholK = np.linalg.cholesky(K)
 
-        Args:
-            names:
-                An iterable over hyperparameter names.
-        """
-        ret = list()
-        if "eps" in names:
-            ret.append((eps, 0.2))
-        if self.kern == "matern":
-            if "length_scale" in names:
-                ret.append((eps, 40.0))
-            if "nu" in names:
-                ret.append((eps, 2.0))
-        elif self.kern == "rbf":
-            if "length_scale" in names:
-                ret.append((eps, 40.0))
-        return ret
-
-    def fit(
+    def regress(
         self,
         test: np.ndarray,
         train: np.ndarray,
-    ) -> None:
+        targets: np.ndarray,
+        variance_mode: Optional[str] = None,
+        apply_sigma_sq: bool = True,
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
-        Compute the full kernel and precompute the cholesky decomposition.
+        Performs simultaneous regression on a list of observations.
 
         Args:
             test:
@@ -161,52 +250,15 @@ class BenchmarkGP:
             train:
                 The full training data matrix of shape
                 `(train_count, feature_count)`.
-        """
-        self._fit_kernel(np.vstack((test, train)))
-        self.test_count = test.shape[0]
-        self._cholesky(self.K)
-
-    def fit_train(self, train: np.ndarray) -> None:
-        """
-        Compute the training kernel and precompute the cholesky decomposition.
-
-        Args:
-            train:
-                The full training data matrix of shape
-                `(train_count, feature_count)`.
-        """
-        self._fit_kernel(train)
-        self.test_count = 0
-        self._cholesky(self.K)
-
-    def _fit_kernel(self, x):
-        self.K = self.kernel(x) + self.eps * np.eye(x.shape[0])
-
-    def _cholesky(self, K):
-        self.cholK = np.linalg.cholesky(K)
-
-    def simulate(self):
-        return self.cholK @ np.random.normal(0, 1, size=(self.cholK.shape[0],))
-
-    def get_sigma_sq(self, y):
-        assert y.shape[0] == self.K.shape[0]
-        return (1 / y.shape[0]) * y @ np.linalg.solve(self.K, y)
-
-    def regress(
-        self,
-        targets: np.ndarray,
-        variance_mode: Optional[str] = None,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
-        """
-        Performs simultaneous regression on a list of observations.
-
-        Args:
             targets:
                 A matrix of shape `(train_count, ouput_dim)` whose rows consist
                 of vector-valued responses for each training element.
             variance_mode:
                 Specifies the type of variance to return. Currently supports
                 `diagonal` and None. If None, report no variance term.
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
 
         Returns
         -------
@@ -218,23 +270,112 @@ class BenchmarkGP:
             elements of the posterior variance. Only returned where
             `variance_mode == "diagonal"`.
         """
-        if self.test_count == 0:
-            return np.array([])
-        Kcross = self.K[self.test_count :, : self.test_count]
-        K = self.K[: self.test_count, : self.test_count]
+        crosswise_dists = benchmark_crosswise_distances(
+            test, train, metric=self.kernel.metric
+        )
+        pairwise_dists = benchmark_pairwise_distances(
+            train, metric=self.kernel.metric
+        )
+        Kcross = self.kernel(crosswise_dists)
+        K = self.kernel(pairwise_dists)
         responses = Kcross @ np.linalg.solve(K, targets)
 
         if variance_mode is None:
             return responses
-        elif variance_mode == "diagonal":
-            Kstar = self.K[self.test_count :, self.test_count :]
+        elif variance_mode in ["diagonal", "full"]:
+            test_pairwise_distances = benchmark_pairwise_distances(
+                test, metric=self.kernel.metric
+            )
+            Kstar = self.kernel(test_pairwise_distances)
             variance = Kstar - Kcross @ np.linalg.solve(K, Kcross.T)
-            return responses, np.diagonal(variance)
-        elif variance_mode == "full":
-            Kstar = self.K[self.test_count :, self.test_count :]
-            variance = Kstar - Kcross @ np.linalg.solve(K, Kcross.T)
-            return responses, variance
+            if apply_sigma_sq is True and isinstance(
+                self.sigma_sq(), np.ndarray
+            ):
+                variance *= self.sigma_sq()[0]
+            if variance_mode == "diagonal":
+                return responses, np.diagonal(variance)
+            else:
+                return responses, variance
         else:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
             )
+
+
+def benchmark_sample_full(
+    gp: BenchmarkGP,
+    test: np.ndarray,
+    train: np.ndarray,
+) -> np.ndarray:
+    """
+    Sample from a GP prior for a dataset separated into train and test.
+
+    Args:
+        gp:
+            The gp object
+        test:
+            The full testing data matrix of shape
+            `(test_count, feature_count)`.
+        train:
+            The full training data matrix of shape
+            `(train_count, feature_count)`.
+
+    Returns:
+        A sample from the GP prior for a train/test split.
+    """
+    return benchmark_sample(gp, np.vstack((test, train)))
+
+
+def benchmark_prepare_cholK(
+    gp: BenchmarkGP,
+    data: np.ndarray,
+) -> np.ndarray:
+    """
+    Sample from a GP prior for a dataset.
+
+    Args:
+        gp:
+            The gp object
+        train:
+            The full training data matrix of shape
+            `(train_count, feature_count)`.
+
+    Returns:
+        The Cholesky depcomposition of a dense covariance matrix.
+    """
+    pairwise_dists = benchmark_pairwise_distances(data, metric=gp.kernel.metric)
+    data_count, _ = data.shape
+    Kfull = gp.sigma_sq()[0] * gp.kernel(pairwise_dists) + gp.eps() * np.eye(
+        data_count
+    )
+    return np.linalg.cholesky(Kfull)
+
+
+def benchmark_sample(
+    gp: BenchmarkGP,
+    data: np.ndarray,
+) -> np.ndarray:
+    """
+    Sample from a GP prior for a dataset.
+
+    Args:
+        gp:
+            The gp object
+        train:
+            The full training data matrix of shape
+            `(train_count, feature_count)`.
+    """
+    cholK = benchmark_prepare_cholK(gp, data)
+    return benchmark_sample_from_cholK(cholK)
+
+
+def benchmark_sample_from_cholK(cholK: np.ndarray) -> np.ndarray:
+    data_count, _ = cholK.shape
+    return (cholK @ np.random.normal(0, 1, size=(data_count,))).reshape(
+        data_count, 1
+    )
+
+
+def get_analytic_sigma_sq(K, y):
+    assert y.shape[0] == K.shape[0]
+    return (1 / y.shape[0]) * y @ np.linalg.solve(K, y)

@@ -18,7 +18,12 @@ from MuyGPyS.optimize.chassis import (
     scipy_optimize_from_tensors,
 )
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.testing.gp import BenchmarkGP
+from MuyGPyS.testing.gp import (
+    benchmark_prepare_cholK,
+    benchmark_sample_from_cholK,
+    benchmark_sample_full,
+    BenchmarkGP,
+)
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
@@ -217,26 +222,24 @@ class OptimTest(parameterized.TestCase):
             sim_train["input"], batch_nn_indices, metric=metric
         )
 
-        hyper_dicts = [
-            {
-                key: args[i][key]["val"]
-                if not isinstance(args[i][key]["val"], str)
-                else target[i]
-                for key in args[0]
-            }
-            for i in range(response_count)
+        gp_args = args.copy()
+        for i, m in enumerate(gp_args):
+            m["nu"]["val"] = target[i]
+        gps = [BenchmarkGP(kern=kern, **a) for a in gp_args]
+        cholKs = [
+            benchmark_prepare_cholK(
+                gp, np.vstack((sim_test["input"], sim_train["input"]))
+            )
+            for gp in gps
         ]
-        gps = [BenchmarkGP(kern=kern, **hd) for hd in hyper_dicts]
-        for gp in gps:
-            gp.fit(sim_test["input"], sim_train["input"])
-        for i in range(its):
+        for _ in range(its):
             # Simulate the response
             sim_test["output"] = np.zeros((test_count, response_count))
             sim_train["output"] = np.zeros((train_count, response_count))
-            for i, gp in enumerate(gps):
-                y = gp.simulate()
-                sim_test["output"][:, i] = y[:test_count]
-                sim_train["output"][:, i] = y[test_count:]
+            for i, cholK in enumerate(cholKs):
+                y = benchmark_sample_from_cholK(cholK)
+                sim_test["output"][:, i] = y[:test_count, 0]
+                sim_train["output"][:, i] = y[test_count:, 0]
 
             mmuygps = MMuyGPS(kern, *args)
 
@@ -315,26 +318,27 @@ class OptimTest(parameterized.TestCase):
             nbrs_lookup, batch_count, train_count
         )
 
-        hyper_dicts = [
-            {
-                key: args[i][key]["val"]
-                if not isinstance(args[i][key]["val"], str)
-                else target[i]
-                for key in args[0]
-            }
-            for i in range(response_count)
+        gp_args = args.copy()
+        for i, m in enumerate(gp_args):
+            m["nu"]["val"] = target[i]
+        gps = [BenchmarkGP(kern=kern, **a) for a in gp_args]
+        cholKs = [
+            benchmark_prepare_cholK(
+                gp, np.vstack((sim_test["input"], sim_train["input"]))
+            )
+            for gp in gps
         ]
-        gps = [BenchmarkGP(kern=kern, **hd) for hd in hyper_dicts]
-        for gp in gps:
-            gp.fit(sim_test["input"], sim_train["input"])
-        for i in range(its):
+        for _ in range(its):
             # Simulate the response
             sim_test["output"] = np.zeros((test_count, response_count))
             sim_train["output"] = np.zeros((train_count, response_count))
-            for i, gp in enumerate(gps):
-                y = gp.simulate()
-                sim_test["output"][:, i] = y[:test_count]
-                sim_train["output"][:, i] = y[test_count:]
+            for i, cholK in enumerate(cholKs):
+                y = benchmark_sample_from_cholK(cholK)
+                sim_test["output"][:, i] = y[:test_count, 0]
+                sim_train["output"][:, i] = y[test_count:, 0]
+                # y = gp.simulate()
+                # sim_test["output"][:, i] = y[:test_count]
+                # sim_train["output"][:, i] = y[test_count:]
 
             mmuygps = MMuyGPS(kern, *args)
 

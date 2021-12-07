@@ -206,7 +206,7 @@ def crosswise_distances(
     nn_data: np.ndarray,
     data_indices: np.ndarray,
     nn_indices: np.ndarray,
-    metric: Optional[str] = "l2",
+    metric: str = "l2",
 ) -> np.ndarray:
     """
     Compute a matrix of distances between data and their nearest neighbors.
@@ -314,7 +314,7 @@ def _crosswise_cosine(locations: np.array, points: np.array) -> np.array:
 def pairwise_distances(
     data: np.ndarray,
     nn_indices: np.ndarray,
-    metric: Optional[str] = "l2",
+    metric: str = "l2",
 ) -> np.ndarray:
     """
     Compute a tensor of pairwise distances among sets of nearest neighbors.
@@ -325,7 +325,7 @@ def pairwise_distances(
 
     Args:
         data:
-            The data matrix of shape `(data_count, feature_count)` containing
+            The data matrix of shape `(batch_count, feature_count)` containing
             batch elements.
         nn_indices:
             An integral matrix of shape (batch_count, nn_count) listing the

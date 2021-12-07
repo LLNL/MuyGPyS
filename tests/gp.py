@@ -13,6 +13,7 @@ from MuyGPyS.examples.classify import make_classifier
 
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.testing.gp import BenchmarkGP
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
@@ -25,7 +26,7 @@ from MuyGPyS.testing.test_utils import (
 
 class GPInitTest(parameterized.TestCase):
     @parameterized.parameters(
-        (k_kwargs, e)
+        (k_kwargs, e, gp)
         for k_kwargs in (
             (
                 "matern",
@@ -42,10 +43,11 @@ class GPInitTest(parameterized.TestCase):
             ),
         )
         for e in (({"val": 1e-5},))
+        for gp in (MuyGPS, BenchmarkGP)
     )
-    def test_bounds_defaults_init(self, k_kwargs, eps):
+    def test_bounds_defaults_init(self, k_kwargs, eps, gp_type):
         kern, kwargs = k_kwargs
-        muygps = MuyGPS(kern=kern, eps=eps, **kwargs)
+        muygps = gp_type(kern=kern, eps=eps, **kwargs)
         for param in kwargs:
             self.assertEqual(
                 kwargs[param]["val"],
@@ -60,7 +62,7 @@ class GPInitTest(parameterized.TestCase):
         self.assertEqual("unlearned", muygps.sigma_sq())
 
     @parameterized.parameters(
-        (k_kwargs, e)
+        (k_kwargs, e, gp)
         for k_kwargs in (
             (
                 "matern",
@@ -95,10 +97,11 @@ class GPInitTest(parameterized.TestCase):
                 {"val": 1e-5, "bounds": "fixed"},
             )
         )
+        for gp in (MuyGPS, BenchmarkGP)
     )
-    def test_full_init(self, k_kwargs, eps):
+    def test_full_init(self, k_kwargs, eps, gp_type):
         kern, kwargs = k_kwargs
-        muygps = MuyGPS(kern=kern, eps=eps, **kwargs)
+        muygps = gp_type(kern=kern, eps=eps, **kwargs)
         for param in kwargs:
             self.assertEqual(
                 kwargs[param]["val"],
@@ -113,7 +116,7 @@ class GPInitTest(parameterized.TestCase):
         self.assertEqual("unlearned", muygps.sigma_sq())
 
     @parameterized.parameters(
-        (k_kwargs, e)
+        (k_kwargs, e, gp)
         for k_kwargs in (
             (
                 "matern",
@@ -135,14 +138,15 @@ class GPInitTest(parameterized.TestCase):
                 {"val": 1e-9, "bounds": (1e-8, 1e-2)},
             )
         )
+        for gp in (MuyGPS, BenchmarkGP)
     )
-    def test_oob_init(self, k_kwargs, eps):
+    def test_oob_init(self, k_kwargs, eps, gp_init):
         kern, kwargs = k_kwargs
         with self.assertRaises(ValueError):
-            muygps = MuyGPS(kern=kern, eps=eps, **kwargs)
+            muygps = gp_init(kern=kern, eps=eps, **kwargs)
 
     @parameterized.parameters(
-        (k_kwargs, e, 100)
+        (k_kwargs, e, gp, 100)
         for k_kwargs in (
             (
                 "matern",
@@ -183,11 +187,12 @@ class GPInitTest(parameterized.TestCase):
                 {"val": "log_sample", "bounds": (1e-8, 1e-2)},
             )
         )
+        for gp in (MuyGPS, BenchmarkGP)
     )
-    def test_sample_init(self, k_kwargs, eps, reps):
+    def test_sample_init(self, k_kwargs, eps, gp_type, reps):
         kern, kwargs = k_kwargs
         for _ in range(reps):
-            muygps = MuyGPS(kern=kern, eps=eps, **kwargs)
+            muygps = gp_type(kern=kern, eps=eps, **kwargs)
             for param in kwargs:
                 self._check_in_bounds(
                     kwargs[param]["bounds"],
