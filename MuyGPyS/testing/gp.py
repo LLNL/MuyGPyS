@@ -37,7 +37,7 @@ def benchmark_select_skl_metric(metric: str) -> str:
     if metric == "l2":
         return "l2"
     elif metric == "F2":
-        return "l1"
+        return "sqeuclidean"
     else:
         raise ValueError(f"Metric {metric} is not supported!")
 
