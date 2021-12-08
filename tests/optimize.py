@@ -246,86 +246,37 @@ class BalancedBatchTest(parameterized.TestCase):
             )
 
 
-class OldBaselineTest(parameterized.TestCase):
-    @parameterized.parameters(
-        (
-            (
-                1001,
-                10,
-                ss,
-                k_dict[0],
-                k_dict[1],
-            )
-            for ss in ((1.0, 1e-1), (0.02453, 1e0))
-            for k_dict in (
-                (
-                    "matern",
-                    {
-                        "nu": 0.38,
-                        "length_scale": 1.5,
-                        "eps": 0.0,
-                        # "eps": 0.00001,
-                    },
-                ),
-                # (
-                #     "rbf",
-                #     {"length_scale": 1.5, "eps": 0.00001},
-                # ),
-            )
-        )
-    )
-    def test_baseline_sigma_sq_optim(
-        self,
-        data_count,
-        its,
-        sigma_sq,
-        kern,
-        hyper_dict,
-    ):
-        sigma_sq, tol = sigma_sq
-        sim_train = dict()
-        sim_test = dict()
-        x = np.linspace(-10.0, 10.0, data_count).reshape(1001, 1)
-        sim_train["input"] = x[::2]
-        sim_test["input"] = x[1::2]
-        mrse = 0.0
-        for _ in range(its):
-            gp = OldBenchmarkGP(kern=kern, **hyper_dict)
-            gp.set_params(sigma_sq=sigma_sq)
-            gp.fit(sim_train["input"], sim_test["input"])
-            y = gp.simulate()
-            ss = gp.get_sigma_sq(y)
-            print(gp.sigma_sq, ss)
-            mrse += _sq_rel_err(sigma_sq, ss)
-        mrse /= its
-        self.assertLessEqual(mrse, tol)
-
-
 class GPSigmaSqBaselineTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (
                 1001,
-                10,
+                5,
                 ss,
                 k_kwargs,
             )
-            for ss in [(1.0, 1e-2), (0.02453, 1e0), (19.32, 1e-2)]
-            # for ss in [1.0]
+            for ss in [(1.0, 1e-2), (0.02453, 1e-2), (19.32, 1e-2)]
             for k_kwargs in (
                 {
                     "kern": "matern",
                     "metric": "l2",
                     "nu": {"val": 0.38},
-                    "length_scale": {"val": 1.5},
+                    "length_scale": {"val": 1e-2},
                     "eps": {"val": 1e-5},
                 },
-                # {
-                #     "kern": "rbf",
-                #     "metric": "F2",
-                #     "length_scale": {"val": 1.5},
-                #     "eps": {"val": 1e-5},
-                # },
+                {
+                    "kern": "matern",
+                    "metric": "l2",
+                    "nu": {"val": 2.5},
+                    "length_scale": {"val": 1e-2},
+                    "eps": {"val": 1e-5},
+                },
+                {
+                    "kern": "rbf",
+                    "metric": "F2",
+                    "length_scale": {"val": 1e-2},
+                    "eps": {"val": 1e-5},
+                },
             )
         )
     )
@@ -341,19 +292,15 @@ class GPSigmaSqBaselineTest(parameterized.TestCase):
         mrse = 0.0
         gp = BenchmarkGP(**k_kwargs)
         gp._set_sigma_sq(sigma_sq)
-        # pairwise_dists = benchmark_pairwise_distances(x, metric="l2")
         pairwise_dists = benchmark_pairwise_distances(
             x, metric=gp.kernel.metric
         )
-        K = gp.kernel(pairwise_dists)
+        K = gp.kernel(pairwise_dists) + gp.eps() * np.eye(data_count)
         for _ in range(its):
             y = benchmark_sample(gp, x)[:, 0]
             ss = get_analytic_sigma_sq(K, y)
-            print(y.shape, sigma_sq, gp.sigma_sq(), ss)
             mrse += _sq_rel_err(sigma_sq, ss)
         mrse /= its
-        # this doesn't feel tight enough but I keep hitting edge cases in
-        # testing
         print(f"optimizes with mean relative squared error {mrse}")
         self.assertLessEqual(mrse, tol)
 
@@ -361,26 +308,32 @@ class GPSigmaSqBaselineTest(parameterized.TestCase):
 class GPSigmaSqOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, ss, k_kwargs)
+            (1001, 5, b, n, nn_kwargs, ss, k_kwargs)
             for b in [250]
             for n in [34]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for ss in [1.0, 0.002453, 19.32]
-            # for ss in [1.0]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for ss in ((1.0, 1e-2), (0.002453, 1e-2), (19.32, 1e-2))
             for k_kwargs in (
                 {
                     "kern": "matern",
                     "metric": "l2",
-                    "nu": {"val": 0.38},
-                    "length_scale": {"val": 1.5},
+                    "nu": {"val": 0.3},
+                    "length_scale": {"val": 1e-2},
                     "eps": {"val": 1e-5},
                 },
-                # {
-                #     "kern": "rbf",
-                #     "metric": "F2",
-                #     "length_scale": {"val": 1.5},
-                #     "eps": {"val": 1e-5},
-                # },
+                {
+                    "kern": "matern",
+                    "metric": "l2",
+                    "nu": {"val": 2.5},
+                    "length_scale": {"val": 1e-2},
+                    "eps": {"val": 1e-5},
+                },
+                {
+                    "kern": "rbf",
+                    "metric": "F2",
+                    "length_scale": {"val": 1e-2},
+                    "eps": {"val": 1e-5},
+                },
             )
         )
     )
@@ -394,6 +347,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
         sigma_sq,
         k_kwargs,
     ):
+        sigma_sq, tol = sigma_sq
         muygps = MuyGPS(**k_kwargs)
 
         # construct the observation locations
@@ -431,13 +385,10 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
             muygps.sigma_sq_optim(K, batch_nn_indices, sim_train["output"])
             estimate = muygps.sigma_sq()[0]
 
-            print(sigma_sq, gp.sigma_sq(), estimate)
-
             mrse += _sq_rel_err(sigma_sq, estimate)
         mrse /= its
         print(f"optimizes with mean relative squared error {mrse}")
-        # Is this a strong enough guarantee?
-        self.assertAlmostEqual(mrse, 0.0, 1)
+        self.assertLessEqual(mrse, tol)
 
 
 class GPOptimTest(parameterized.TestCase):
@@ -502,7 +453,7 @@ class GPOptimTest(parameterized.TestCase):
             sim_train["input"], batch_nn_indices, metric=kwargs["metric"]
         )
 
-        for i in range(its):
+        for _ in range(its):
             # Make GP benchmark.
             gp_kwargs = kwargs.copy()
             gp_kwargs["nu"]["val"] = target
