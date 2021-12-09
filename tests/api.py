@@ -67,7 +67,6 @@ class MNISTTest(ClassifyAPITest):
                         "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
                 (
@@ -77,7 +76,6 @@ class MNISTTest(ClassifyAPITest):
                         "metric": "F2",
                         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
             )
@@ -133,7 +131,6 @@ class StargalTest(ClassifyAPITest):
                         "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
                 (
@@ -143,7 +140,6 @@ class StargalTest(ClassifyAPITest):
                         "metric": "F2",
                         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
             )
@@ -185,7 +181,6 @@ class StargalTest(ClassifyAPITest):
                         "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
                 (
@@ -195,7 +190,6 @@ class StargalTest(ClassifyAPITest):
                         "metric": "F2",
                         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                     },
                 ),
             )
@@ -260,13 +254,11 @@ class MultivariateStargalTest(ClassifyAPITest):
                             "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
                             "length_scale": {"val": 1.5},
                             "eps": {"val": 1e-3},
-                            "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                         },
                         {
                             "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
                             "length_scale": {"val": 1.5},
                             "eps": {"val": 1e-3},
-                            "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                         },
                     ],
                 ),
@@ -277,12 +269,10 @@ class MultivariateStargalTest(ClassifyAPITest):
                         {
                             "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
                             "eps": {"val": 1e-3},
-                            "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                         },
                         {
                             "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
                             "eps": {"val": 1e-3},
-                            "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                         },
                     ],
                 ),
@@ -341,14 +331,12 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                             # "nu": {"val": 0.38},
                             "length_scale": {"val": 1.5},
                             "eps": {"val": 1e-3},
-                            "sigma_sq": {"val": "learn"},
                         },
                         {
                             "nu": {"val": 0.5},
                             # "nu": {"val": 0.38},
                             "length_scale": {"val": 1.5},
                             "eps": {"val": 1e-3},
-                            "sigma_sq": {"val": "learn"},
                         },
                     ],
                 ),
@@ -376,6 +364,13 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
 
+        if variance_mode is None:
+            sigma_method = None
+            apply_sigma_sq = False
+        else:
+            sigma_method = "analytic"
+            apply_sigma_sq = True
+
         self._do_regress_test_chassis(
             train=train,
             test=test,
@@ -383,10 +378,12 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            sigma_method=sigma_method,
             variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_kwargs=k_args,
+            apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )
 
@@ -403,7 +400,7 @@ class HeatonTest(RegressionAPITest):
             (nn, bs, vm, lm, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for vm in [None]
+            for vm in ["diagonal", None]
             # for vm in ["diagonal"]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             # for vm in [None, "diagonal"]
@@ -418,7 +415,6 @@ class HeatonTest(RegressionAPITest):
                         "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
                         "eps": {"val": 1e-3},
-                        "sigma_sq": "learn",
                     },
                 ),
                 # (
@@ -428,7 +424,6 @@ class HeatonTest(RegressionAPITest):
                 #         "metric": "F2",
                 #         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
                 #         "eps": {"val": 1e-3},
-                #         "sigma_sq": {"val": 1.0, "bounds": "fixed"},
                 #     },
                 # ),
             )
@@ -445,6 +440,13 @@ class HeatonTest(RegressionAPITest):
     ):
         target_mse, k_kwargs = k_kwargs
 
+        if variance_mode is None:
+            sigma_method = None
+            apply_sigma_sq = False
+        else:
+            sigma_method = "analytic"
+            apply_sigma_sq = True
+
         self._do_regress_test_chassis(
             train=self.train,
             test=self.test,
@@ -452,9 +454,11 @@ class HeatonTest(RegressionAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            sigma_method=sigma_method,
             variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
+            apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )
 

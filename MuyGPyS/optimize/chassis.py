@@ -13,12 +13,11 @@ to optimize a specified subset of the hyperparameters associated with a
 """
 
 
-from MuyGPyS.gp.distance import crosswise_distances, pairwise_distances
 import numpy as np
 
 from scipy import optimize as opt
-from typing import Optional
 
+from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.objective import get_loss_func, loo_crossval
 
@@ -27,8 +26,7 @@ def scipy_optimize_from_indices(
     muygps: MuyGPS,
     batch_indices: np.ndarray,
     batch_nn_indices: np.ndarray,
-    test: np.ndarray,
-    train: np.ndarray,
+    train_features: np.ndarray,
     train_targets: np.ndarray,
     loss_method: str = "mse",
     verbose: bool = False,
@@ -39,7 +37,7 @@ def scipy_optimize_from_indices(
     Use this method if you do not need to retain the distance matrices used for
     optimization.
 
-    See the followin example, where we have already created a `batch_indices`
+    See the following example, where we have already created a `batch_indices`
     vector and a `batch_nn_indices` matrix using
     :class:`MuyGPyS.neighbors.NN_Wrapper`, and initialized a
     :class:`MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
@@ -80,11 +78,7 @@ def scipy_optimize_from_indices(
         batch_nn_indices:
             A matrix of integers of shape `(batch_count, nn_count)` listing the
             nearest neighbor indices for all observations in the batch.
-        test:
-            The full floating point testing data matrix of shape
-            `(test_count, feature_count)`. Can be the same as the training data,
-            and will be in most cases.
-        train:
+        train_features:
             The full floating point training data matrix of shape
             `(train_count, feature_count)`.
         train_targets:
@@ -99,23 +93,24 @@ def scipy_optimize_from_indices(
         The list of optimized hyperparameters of shape `(opt_count)`. Mostly
         useful for validation.
     """
-    crosswise_dists = crosswise_distances(
-        test,
-        train,
+    (
+        crosswise_dists,
+        pairwise_dists,
+        batch_targets,
+        batch_nn_targets,
+    ) = make_train_tensors(
+        muygps.kernel.metric,
         batch_indices,
         batch_nn_indices,
-        metric=muygps.kernel.metric,
-    )
-    pairwise_dists = pairwise_distances(
-        train, batch_nn_indices, metric=muygps.kernel.metric
+        train_features,
+        train_targets,
     )
     return scipy_optimize_from_tensors(
         muygps,
-        batch_indices,
-        batch_nn_indices,
+        batch_targets,
+        batch_nn_targets,
         crosswise_dists,
         pairwise_dists,
-        train_targets,
         loss_method=loss_method,
         verbose=verbose,
     )
@@ -123,11 +118,10 @@ def scipy_optimize_from_indices(
 
 def scipy_optimize_from_tensors(
     muygps: MuyGPS,
-    batch_indices: np.ndarray,
-    batch_nn_indices: np.ndarray,
+    batch_targets: np.ndarray,
+    batch_nn_targets: np.ndarray,
     crosswise_dists: np.ndarray,
     pairwise_dists: np.ndarray,
-    train_targets: np.ndarray,
     loss_method: str = "mse",
     verbose: bool = False,
 ) -> np.ndarray:
@@ -174,12 +168,13 @@ def scipy_optimize_from_tensors(
     Args:
         muygps:
             The model to be optimized.
-        batch_indices:
-            A vector of integers of shape `(batch_count,)` identifying the
-            training batch of observations to be approximated.
-        batch_nn_indices:
-            A matrix of integers of shape `(batch_count, nn_count)` listing the
-            nearest neighbor indices for all observations in the batch.
+        batch_targets:
+            Matrix of floats of shape `(batch_count, response_count)` whose rows
+            give the expected response for each batch element.
+        batch_nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, response_count)`
+            containing the expected response for each nearest neighbor of each
+            batch element.
         crosswise_dists:
             Distance matrix of floats of shape `(batch_count, nn_count)` whose
             rows give the distances between each batch element and its nearest
@@ -189,9 +184,6 @@ def scipy_optimize_from_tensors(
             `(batch_count, nn_count, nn_count)` whose second two dimensions give
             the pairwise distances between the nearest neighbors of each batch
             element.
-        train_targets:
-            Matrix of floats of shape `(batch_count, response_count)` whose rows
-            give the expected response for each  batch element.
         loss_method:
             Indicates the loss function to be used.
         verbose:
@@ -208,10 +200,7 @@ def scipy_optimize_from_tensors(
     if verbose is True:
         print(f"parameters to be optimized: {[p for p in optim_params]}")
         print(f"bounds: {bounds}")
-        print(f"sampled x0: {x0}")
-
-    batch_nn_targets = train_targets[batch_nn_indices, :]
-    batch_targets = train_targets[batch_indices, :]
+        print(f"initial x0: {x0}")
 
     optres = opt.minimize(
         loo_crossval,

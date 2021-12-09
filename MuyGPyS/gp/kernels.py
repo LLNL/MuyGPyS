@@ -48,6 +48,45 @@ from typing import cast, Dict, Optional, Tuple, Union
 from scipy.special import gamma, kv
 
 
+class SigmaSq:
+    """
+    A :math:`\\sigma^2` covariance scale parameter.
+
+    :math:`\\sigma^2` is a scaling parameter that one multiplies with the
+    found diagonal variances of a :class:`MuyGPyS.gp.muygps.MuyGPS` or
+    :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS` regression in order to obtain
+    the predicted posterior variance. Trained values assume a number of
+    dimensions equal to the number of response dimensions, and correspond to
+    scalar scaling parameters along the corresponding dimensions.
+    """
+
+    def __init__(self):
+        self.val = "unlearned"
+
+    def _set(self, val: np.ndarray) -> None:
+        """
+        Value setter.
+
+        Args:
+            val:
+                The new value of the hyperparameter.
+        """
+        if not isinstance(val, np.ndarray):
+            raise ValueError(
+                f"Expected np.ndarray for SigmaSq value update, not {val}"
+            )
+        self.val = val
+
+    def __call__(self) -> np.ndarray:
+        """
+        Value accessor.
+
+        Returns:
+            The current value of the hyperparameter.
+        """
+        return self.val
+
+
 class Hyperparameter:
     """
     A MuyGPs kernel or model Hyperparameter.
@@ -122,12 +161,13 @@ class Hyperparameter:
             ValueError:
                 Any `bounds` string other than `"fixed"` will produce an error.
             ValueError:
-                A non-iterable non-string type for `bounds` will produce an
-                error.
+                A non-numeric, non-numeric, or non-string type for `bounds` will
+                produce an error.
             ValueError:
                 A `bounds` iterable of len other than 2 will produce an error.
             ValueError:
-                Iterable `bounds` values of non-numeric types will produce an error.
+                Iterable `bounds` values of non-numeric types will produce an
+                error.
             ValueError:
                 A lower bound that is not less than an upper bound will produce
                 an error.
@@ -154,9 +194,13 @@ class Hyperparameter:
 
         Args:
             val:
-                A valid value or the strings `"sample"` or `"log_sample"`.
+                A valid scalar value or the strings `"sample"` or
+                `"log_sample"`.
 
         Raises:
+            ValueError:
+                A non-scalar, non-numeric and non-string val will produce an
+                error.
             ValueError:
                 `val == "sample" or val == "log_sample"` will produce an error
                 if `bounds == "fixed"`.
@@ -168,32 +212,32 @@ class Hyperparameter:
                 produce an error.
         """
         if not isinstance(val, str):
-            val = np.squeeze(val).astype(float)
-        if self._bounds == "fixed":
-            if np.isscalar(val) and (val == "sample" or val == "log_sample"):
+            if not np.isscalar(val):
                 raise ValueError(
-                    f"Must provide optimization bounds in order to sample a "
-                    f"hyperparameter value."
+                    f"Nonscalar hyperparameter value {val} is not allowed."
+                )
+            val = np.squeeze(val).astype(float)
+        else:
+            if val != "sample" and val != "log_sample":
+                raise ValueError(
+                    f"Unsupported string hyperparameter value {val}."
+                )
+        if self._bounds == "fixed":
+            if val == "sample" or val == "log_sample":
+                raise ValueError(
+                    f"Fixed bounds do not support string value ({val}) prompts."
                 )
         else:
-            # NOTE[bwp] Do we want to support the sampling of vector-valued
-            # hyperparameters?
-            if np.isscalar(val) and val == "sample":
+            if val == "sample":
                 val = np.random.uniform(
                     low=self._bounds[0], high=self._bounds[1]
                 )
-            elif np.isscalar(val) and val == "log_sample":
+            elif val == "log_sample":
                 val = np.exp(
                     np.random.uniform(
                         low=np.log(self._bounds[0]),
                         high=np.log(self._bounds[1]),
                     )
-                )
-            elif np.isscalar(val) and val == "learn":
-                pass
-            elif np.isscalar(val) and isinstance(val, str):
-                raise ValueError(
-                    f"string hyperparameter value {val} is not supported."
                 )
             else:
                 any_below = np.any(
@@ -273,6 +317,7 @@ class Hyperparameter:
                     f"Lower bound {bounds[0]} is not lesser than upper bound "
                     f"{bounds[1]}."
                 )
+            bounds = (float(bounds[0]), float(bounds[1]))
         self._bounds = bounds
 
     def __call__(self) -> float:

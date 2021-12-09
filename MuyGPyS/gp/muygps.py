@@ -10,14 +10,12 @@ import numpy as np
 
 from typing import Dict, Generator, Optional, Tuple, Union
 
-from MuyGPyS.gp.distance import (
-    crosswise_distances,
-    pairwise_distances,
-)
+from MuyGPyS.gp.distance import make_regress_tensors
 from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
     Hyperparameter,
+    SigmaSq,
 )
 
 
@@ -44,7 +42,8 @@ class MuyGPS:
     with the posterior variance of each dimension of the response.
 
     :math:`\\sigma^2` is the only parameter assumed to be a training target by
-    default. All other training targets must be manually specified.
+    default, and is treated differently from all other hyperparameters. All
+    other training targets must be manually specified in `k_kwargs`.
 
     Example:
         >>> from MuyGPyS.gp.muygps import MuyGPS
@@ -74,15 +73,13 @@ class MuyGPS:
         >>> Kcross = muygps.kernel(crosswise_dists)
 
 
-    Args
+    Args:
         kern:
             The kernel to be used. Each kernel supports different
             hyperparameters that can be specified in kwargs. Currently supports
             only `matern` and `rbf`.
         eps:
             A hyperparameter dict.
-        sigma_sq:
-            An iterable container of hyperparameter dicts.
         kwargs:
             Addition parameters to be passed to the kernel, possibly including
             additional hyperparameter dicts and a metric keyword.
@@ -92,15 +89,12 @@ class MuyGPS:
         self,
         kern: str = "matern",
         eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
-        sigma_sq: Dict[str, Union[str, float, Tuple[float, float]]] = {
-            "val": "learn"
-        },
         **kwargs,
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
-        self.sigma_sq = _init_hyperparameter("learn", "fixed", **sigma_sq)
+        self.sigma_sq = SigmaSq()
 
     def set_eps(self, **eps) -> None:
         """
@@ -114,18 +108,6 @@ class MuyGPS:
         """
         self.eps._set(**eps)
 
-    def set_sigma_sq(self, **sigma_sq) -> None:
-        """
-        Reset :math:`\\sigma^2` values or bounds.
-
-        Completely resets parameters, as :math:`\\sigma^2` could have changed.
-
-        Args:
-            sigma_sq:
-                An iterable container of hyperparameter dicts.
-        """
-        self.sigma_sq._set(**sigma_sq)
-
     def fixed(self) -> bool:
         """
         Checks whether all kernel and model parameters are fixed.
@@ -136,32 +118,12 @@ class MuyGPS:
         Returns:
             Returns `True` if all parameters are fixed, and `False` otherwise.
         """
-        return self.fixed_nosigmasq() and self.fixed_sigmasq()
-
-    def fixed_nosigmasq(self) -> bool:
-        """
-        Checks whether all kernel and model parameters are fixed, excluding
-        :math:`\\sigma^2`.
-
-        Returns:
-            Returns `True` if all parameters are fixed, and `False` otherwise.
-        """
         for p in self.kernel.hyperparameters:
             if self.kernel.hyperparameters[p].get_bounds() != "fixed":
                 return False
         if self.eps.get_bounds() != "fixed":
             return False
         return True
-
-    def fixed_sigmasq(self) -> bool:
-        """
-        Checks whether all dimensions of :math:`\\sigma^2` are fixed.
-
-        Returns:
-            Returns `True` if all :math:`\\sigma^2` dimensions are fixed, and
-            `False` otherwise.
-        """
-        return self.sigma_sq() != "learn"
 
     def get_optim_params(self) -> Dict[str, Hyperparameter]:
         """
@@ -192,7 +154,7 @@ class MuyGPS:
         self,
         K: np.ndarray,
         Kcross: np.ndarray,
-        batch_targets: np.ndarray,
+        batch_nn_targets: np.ndarray,
     ) -> np.ndarray:
         """
         Simultaneously solve all of the GP inference systems of linear
@@ -207,7 +169,7 @@ class MuyGPS:
                 A tensor of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
-            batch_targets:
+            batch_nn_targets:
                 A tensor of shape `(batch_count, nn_count, response_count)`
                 whose last dimension lists the vector-valued responses for the
                 nearest neighbors of each batch element.
@@ -216,9 +178,9 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` listing the
             predicted response for each of the batch elements.
         """
-        batch_count, nn_count, response_count = batch_targets.shape
+        batch_count, nn_count, response_count = batch_nn_targets.shape
         responses = Kcross.reshape(batch_count, 1, nn_count) @ np.linalg.solve(
-            K + self.eps() * np.eye(nn_count), batch_targets
+            K + self.eps() * np.eye(nn_count), batch_nn_targets
         )
         return responses.reshape(batch_count, response_count)
 
@@ -265,7 +227,14 @@ class MuyGPS:
         train: np.ndarray,
         targets: np.ndarray,
         variance_mode: Optional[str] = None,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+        apply_sigma_sq: bool = True,
+        return_distances: bool = False,
+    ) -> Union[
+        np.ndarray,
+        Tuple[np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+    ]:
         """
         Performs simultaneous regression on a list of observations.
 
@@ -293,6 +262,15 @@ class MuyGPS:
             variance_mode:
                 Specifies the type of variance to return. Currently supports
                 `"diagonal"` and None. If None, report no variance term.
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+            return_distances:
+                If `True`, returns a `(test_count, nn_count)` matrix containing
+                the crosswise distances between the test elements and their
+                nearest neighbor sets and a `(test_count, nn_count, nn_count)`
+                tensor containing the pairwise distances between the test data's
+                nearest neighbor sets.
 
         Returns
         -------
@@ -301,42 +279,65 @@ class MuyGPS:
             the predicted response for each of the given indices.
         diagonal_variance:
             A vector of shape `(batch_count,)` consisting of the diagonal
-            elements of the posterior variance. Only returned where
-            `variance_mode == "diagonal"`.
+            elements of the posterior variance, or a matrix of shape
+            `(batch_count, response_count)` for a multidimensional response.
+            Only returned where `variance_mode == "diagonal"`.
+        crosswise_dists:
+            A matrix of shape `(test_count, nn_count)` whose rows list the
+            distance of the corresponding test element to each of its nearest
+            neighbors. Only returned if `return_distances is True`.
+        pairwise_dists:
+            A tensor of shape `(test_count, nn_count, nn_count,)` whose latter
+            two dimensions contain square matrices containing the pairwise
+            distances between the nearest neighbors of the test elements. Only
+            returned if `return_distances is True`.
         """
-        crosswise_dists = crosswise_distances(
-            test, train, indices, nn_indices, metric=self.kernel.metric
-        )
-        pairwise_dists = pairwise_distances(
-            train, nn_indices, metric=self.kernel.metric
+        (
+            crosswise_dists,
+            pairwise_dists,
+            batch_nn_targets,
+        ) = make_regress_tensors(
+            self.kernel.metric, indices, nn_indices, test, train, targets
         )
         K = self.kernel(pairwise_dists)
         Kcross = self.kernel(crosswise_dists)
-        batch_targets = targets[nn_indices, :]
-        return self.regress(
-            K, Kcross, batch_targets, variance_mode=variance_mode
+        responses = self.regress(
+            K,
+            Kcross,
+            batch_nn_targets,
+            variance_mode=variance_mode,
+            apply_sigma_sq=apply_sigma_sq,
         )
+        if return_distances is False:
+            return responses
+        else:
+            if variance_mode is None:
+                return responses, crosswise_dists, pairwise_dists
+            else:
+                responses, variances = responses
+                return responses, variances, crosswise_dists, pairwise_dists
 
     def regress(
         self,
         K: np.array,
         Kcross: np.array,
-        batch_targets: np.array,
+        batch_nn_targets: np.array,
         variance_mode: Optional[str] = None,
+        apply_sigma_sq: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Performs simultaneous regression on provided covariance,
         cross-covariance, and target.
 
         Computes parallelized local solves of systems of linear equations using
-        the last two dimensions of `K` along with `Kcross` and `batch_targets`
-        to predict responses in terms of the posterior mean. Also computes the
-        posterior variance if `variance_mode` is set appropriately. Assumes that
-        kernel tensor `K` and cross-covariance matrix `Kcross` are already
-        computed and given as arguments. To implicitly construct these values
-        from indices (useful if the kernel or distance tensors and matrices are
-        not needed for later reference) instead use
-        :func:`~MuyGPyS.gp.muygps.MuyGPS.regress_from_indices`.
+        the last two dimensions of `K` along with `Kcross` and
+        `batch_nn_targets` to predict responses in terms of the posterior mean.
+        Also computes the posterior variance if `variance_mode` is set
+        appropriately. Assumes that kernel tensor `K` and cross-covariance
+        matrix `Kcross` are already computed and given as arguments. To
+        implicitly construct these values from indices (useful if the kernel or
+        distance tensors and matrices are not needed for later reference)
+        instead use :func:`~MuyGPyS.gp.muygps.MuyGPS.regress_from_indices`.
 
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations, as computed in
@@ -355,7 +356,7 @@ class MuyGPS:
         diagonal homoscedastic noise matrix whose diagonal is the value of the
         `self.eps` hyperparameter, and :math:`Y(X_{N_i})` is the
         `(nn_count, respones_count)` matrix of responses of the nearest
-        neighbors given by the second two dimensions of the `batch_targets`
+        neighbors given by the second two dimensions of the `batch_nn_targets`
         argument.
 
         If `variance_mode == "diagonal"`, also return the local posterior
@@ -379,13 +380,16 @@ class MuyGPS:
                 A tensor of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
-            batch_targets:
+            batch_nn_targets:
                 A tensor of shape `(batch_count, nn_count, response_count)` whose
                 last dimension lists the vector-valued responses for the
                 nearest neighbors of each batch element.
             variance_mode:
                 Specifies the type of variance to return. Currently supports
                 `"diagonal"` and None. If None, report no variance term.
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
 
         Returns
         -------
@@ -394,14 +398,25 @@ class MuyGPS:
             the predicted response for each of the given indices.
         diagonal_variance:
             A vector of shape `(batch_count,)` consisting of the diagonal
-            elements of the posterior variance. Only returned where
-            `variance_mode == "diagonal"`.
+            elements of the posterior variance, or a matrix of shape
+            `(batch_count, response_count)` for a multidimensional response.
+            Only returned where `variance_mode == "diagonal"`.
         """
-        responses = self._compute_solve(K, Kcross, batch_targets)
+        responses = self._compute_solve(K, Kcross, batch_nn_targets)
         if variance_mode is None:
             return responses
         elif variance_mode == "diagonal":
             diagonal_variance = self._compute_diagonal_variance(K, Kcross)
+            if apply_sigma_sq is True and isinstance(
+                self.sigma_sq(), np.ndarray
+            ):
+                sigmas = self.sigma_sq()
+                if len(sigmas) == 1:
+                    diagonal_variance *= sigmas
+                else:
+                    diagonal_variance = np.array(
+                        [ss * diagonal_variance for ss in sigmas]
+                    ).T
             return responses, diagonal_variance
         else:
             raise NotImplementedError(
@@ -449,7 +464,8 @@ class MuyGPS:
                 self._get_sigma_sq(K, targets[:, i], nn_indices)
             ) / (nn_count * batch_count)
 
-        self.sigma_sq._set_val(sigma_sq)
+        self.sigma_sq._set(sigma_sq)
+        return self.sigma_sq()
 
     def _get_sigma_sq_series(
         self,
@@ -583,36 +599,13 @@ class MultivariateMuyGPS:
     ):
         self.kern = kern.lower()
         self.models = [MuyGPS(kern, **args) for args in model_args]
-        self.metric = self.models[0].kernel.metric
-
-    def fixed_nosigmasq(self) -> bool:
-        """
-        Checks whether all kernel and model parameters are fixed for each model,
-        excluding :math:`\\sigma^2`.
-
-        Returns:
-            Returns `True` if all parameters in all models are fixed, and
-            `False` otherwise.
-        """
-        return bool(np.all([model.fixed_nosigmasq() for model in self.models]))
-
-    def fixed_sigmasq(self) -> bool:
-        """
-        Checks whether all dimensions of :math:`\\sigma^2` are fixed for each
-        model.
-
-        Returns:
-            Returns `True` if :math:`\\sigma^2` is fixed in each model, and
-            `False` otherwise.
-        """
-        return bool(np.all([model.fixed_sigmasq() for model in self.models]))
+        self.metric = self.models[0].kernel.metric  # this is brittle
+        self.sigma_sq = SigmaSq()
 
     def fixed(self) -> bool:
         """
-        Checks whether all kernel and model parameters are fixed.
-
-        This is a convenience utility to determine whether optimization is
-        required.
+        Checks whether all kernel and model parameters are fixed for each model,
+        excluding :math:`\\sigma^2`.
 
         Returns:
             Returns `True` if all parameters in all models are fixed, and
@@ -662,13 +655,18 @@ class MultivariateMuyGPS:
             )
 
         K = np.zeros((batch_count, nn_count, nn_count))
+        sigma_sqs = np.zeros((response_count,))
         for i, muygps in enumerate(self.models):
-            if muygps.fixed_sigmasq() is False:
-                K = muygps.kernel(pairwise_dists)
-                muygps.set_sigma_sq(
-                    val=sum(muygps._get_sigma_sq(K, targets[:, i], nn_indices))
-                    / (nn_count * batch_count)
-                )
+            K = muygps.kernel(pairwise_dists)
+            sigma_sq = np.zeros(1)
+            sigma_sq[0] = np.array(
+                sum(muygps._get_sigma_sq(K, targets[:, i], nn_indices))
+                / (nn_count * batch_count)
+            )
+            muygps.sigma_sq._set(val=sigma_sq)
+            sigma_sqs[i] = sigma_sq[0]
+        self.sigma_sq._set(sigma_sqs)
+        return self.sigma_sq()
 
     def regress_from_indices(
         self,
@@ -678,7 +676,14 @@ class MultivariateMuyGPS:
         train: np.ndarray,
         targets: np.ndarray,
         variance_mode: Optional[str] = None,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+        apply_sigma_sq: bool = True,
+        return_distances: bool = False,
+    ) -> Union[
+        np.ndarray,
+        Tuple[np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+    ]:
         """
         Performs simultaneous regression on a list of observations.
 
@@ -705,37 +710,69 @@ class MultivariateMuyGPS:
             variance_mode:
                 Specifies the type of variance to return. Currently supports
                 `"diagonal"` and None. If None, report no variance term.
-
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+            return_distances:
+                If `True`, returns a `(test_count, nn_count)` matrix containing
+                the crosswise distances between the test elements and their
+                nearest neighbor sets and a `(test_count, nn_count, nn_count)`
+                tensor containing the pairwise distances between the test data's
+                nearest neighbor sets.
         Returns
         -------
         responses:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
-        diagonal_variance:
+        variance:
             A vector of shape `(batch_count,)` consisting of the diagonal
             elements of the posterior variance. Only returned where
             `variance_mode == "diagonal"`.
+        crosswise_dists:
+            A matrix of shape `(test_count, nn_count)` whose rows list the
+            distance of the corresponding test element to each of its nearest
+            neighbors. Only returned if `return_distances is True`.
+        pairwise_dists:
+            A tensor of shape `(test_count, nn_count, nn_count,)` whose latter
+            two dimensions contain square matrices containing the pairwise
+            distances between the nearest neighbors of the test elements. Only
+            returned if `return_distances is True`.
         """
-        crosswise_dists = crosswise_distances(
-            test, train, indices, nn_indices, metric=self.metric
+        (
+            crosswise_dists,
+            pairwise_dists,
+            batch_nn_targets,
+        ) = make_regress_tensors(
+            self.metric,
+            indices,
+            nn_indices,
+            test,
+            train,
+            targets,
         )
-        pairwise_dists = pairwise_distances(
-            train, nn_indices, metric=self.metric
-        )
-        batch_targets = targets[nn_indices, :]
-        return self.regress(
+        responses = self.regress(
             pairwise_dists,
             crosswise_dists,
-            batch_targets,
+            batch_nn_targets,
             variance_mode=variance_mode,
+            apply_sigma_sq=apply_sigma_sq,
         )
+        if return_distances is False:
+            return responses
+        else:
+            if variance_mode is None:
+                return responses, crosswise_dists, pairwise_dists
+            else:
+                responses, variances = responses
+                return responses, variances, crosswise_dists, pairwise_dists
 
     def regress(
         self,
         pairwise_dists: np.ndarray,
         crosswise_dists: np.ndarray,
-        batch_targets: np.ndarray,
+        batch_nn_targets: np.ndarray,
         variance_mode: Optional[str] = None,
+        apply_sigma_sq: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Performs simultaneous regression on provided distance tensors and
@@ -744,7 +781,7 @@ class MultivariateMuyGPS:
         Computes parallelized local solves of systems of linear equations using
         the kernel realizations, one for each internal model, of the last two
         dimensions of `pairwise_dists` along with `crosswise_dists` and
-        `batch_targets` to predict responses in terms of the posterior mean.
+        `batch_nn_targets` to predict responses in terms of the posterior mean.
         Also computes the posterior variance if `variance_mode` is set
         appropriately. Assumes that distance tensor `pairwise_dists` and
         crosswise distance matrix `crosswise_dists` are already computed and
@@ -773,7 +810,7 @@ class MultivariateMuyGPS:
         homoscedastic noise matrix whose diagonal is the value of the
         `self.models[j].eps` hyperparameter, and :math:`Y(X_{N_i})_{:,j}` is the
         `(batch_count,)` vector of the jth responses of the neartest neighbors
-        given by a slice of the `batch_targets` argument.
+        given by a slice of the `batch_nn_targets` argument.
 
         If `variance_mode == "diagonal"`, also return the local posterior
         variances of each prediction, corresponding to the diagonal elements of
@@ -796,13 +833,16 @@ class MultivariateMuyGPS:
                 A matrix of shape `(batch_count, nn_count)` whose rows list the
                 distance between each batch element element and its nearest
                 neighbors.
-            batch_targets:
+            batch_nn_targets:
                 A tensor of shape `(batch_count, nn_count, response_count)`
                 listing the vector-valued responses for the nearest neighbors
                 of each batch element.
             variance_mode:
                 Specifies the type of variance to return. Currently supports
                 `"diagonal"` and None. If None, report no variance term.
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
 
 
         Returns
@@ -815,7 +855,7 @@ class MultivariateMuyGPS:
             diagonal elements of the posterior variance for each model. Only
             returned where `variance_mode == "diagonal"`.
         """
-        batch_count, nn_count, response_count = batch_targets.shape
+        batch_count, nn_count, response_count = batch_nn_targets.shape
         responses = np.zeros((batch_count, response_count))
         if variance_mode is None:
             pass
@@ -831,12 +871,14 @@ class MultivariateMuyGPS:
             responses[:, i] = model._compute_solve(
                 K,
                 Kcross,
-                batch_targets[:, :, i].reshape(batch_count, nn_count, 1),
+                batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
             ).reshape(batch_count)
             if variance_mode == "diagonal":
                 diagonal_variance[:, i] = model._compute_diagonal_variance(
                     K, Kcross
                 ).reshape(batch_count)
+                if apply_sigma_sq and isinstance(self.sigma_sq(), np.ndarray):
+                    diagonal_variance[:, i] *= self.sigma_sq()[i]
         if variance_mode == "diagonal":
             return responses, diagonal_variance
         return responses

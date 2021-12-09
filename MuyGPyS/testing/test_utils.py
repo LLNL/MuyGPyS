@@ -5,7 +5,7 @@
 
 import numpy as np
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 _basic_nn_kwarg_options = (
     {"nn_method": "exact", "algorithm": "ball_tree"},
@@ -36,6 +36,24 @@ _fast_nn_kwarg_options = (
         "M": 16,
     },
 )
+
+
+def _sq_rel_err(
+    tru: Union[float, np.ndarray], est: Union[float, np.ndarray]
+) -> float:
+    """
+    Compute the relative squared error between two arguments.
+
+    Args:
+        tru:
+            The approximated quantity.
+        est:
+            The estimate to be evaluated.
+
+    Returns:
+        An i.i.d. Gaussian matrix of shape `(data_count, feature_count)`.
+    """
+    return ((tru - est) / tru) ** 2
 
 
 def _make_gaussian_matrix(

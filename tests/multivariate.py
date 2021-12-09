@@ -18,7 +18,12 @@ from MuyGPyS.optimize.chassis import (
     scipy_optimize_from_tensors,
 )
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.testing.gp import BenchmarkGP
+from MuyGPyS.testing.gp import (
+    benchmark_prepare_cholK,
+    benchmark_sample_from_cholK,
+    benchmark_sample_full,
+    BenchmarkGP,
+)
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
@@ -39,13 +44,11 @@ class InitTest(parameterized.TestCase):
                         "nu": {"val": 1.0},
                         "length_scale": {"val": 7.2},
                         "eps": {"val": 1e-5},
-                        "sigma_sq": {"val": 1.0},
                     },
                     {
                         "nu": {"val": 1.2},
                         "length_scale": {"val": 2.2},
                         "eps": {"val": 1e-6},
-                        "sigma_sq": {"val": 0.98},
                     },
                 ],
             ),
@@ -56,7 +59,6 @@ class InitTest(parameterized.TestCase):
                         "nu": {"val": 1.0},
                         "length_scale": {"val": 7.2},
                         "eps": {"val": 1e-5},
-                        "sigma_sq": {"val": 1.0},
                     },
                 ],
             ),
@@ -70,7 +72,7 @@ class InitTest(parameterized.TestCase):
         for i, muygps in enumerate(mmuygps.models):
             this_kwargs = model_args[i]
             for param in this_kwargs:
-                if param == "eps" or param == "sigma_sq":
+                if param == "eps":
                     continue
                 self.assertEqual(
                     this_kwargs[param]["val"],
@@ -82,8 +84,7 @@ class InitTest(parameterized.TestCase):
                 )
             self.assertEqual(this_kwargs["eps"]["val"], muygps.eps())
             self.assertEqual("fixed", muygps.eps.get_bounds())
-            self.assertEqual(this_kwargs["sigma_sq"]["val"], muygps.sigma_sq())
-            self.assertEqual("fixed", muygps.sigma_sq.get_bounds())
+            self.assertEqual("unlearned", muygps.sigma_sq())
 
 
 class SigmaSqTest(parameterized.TestCase):
@@ -100,19 +101,16 @@ class SigmaSqTest(parameterized.TestCase):
                             "nu": {"val": 1.0},
                             "length_scale": {"val": 7.2},
                             "eps": {"val": 1e-5},
-                            "sigma_sq": {"val": "learn"},
                         },
                         {
                             "nu": {"val": 1.2},
                             "length_scale": {"val": 2.2},
                             "eps": {"val": 1e-6},
-                            "sigma_sq": {"val": "learn"},
                         },
                         {
                             "nu": {"val": 0.38},
                             "length_scale": {"val": 12.4},
                             "eps": {"val": 1e-6},
-                            "sigma_sq": {"val": "learn"},
                         },
                     ],
                 ),
@@ -152,7 +150,7 @@ class SigmaSqTest(parameterized.TestCase):
                 K, nn_indices, data["output"][:, i]
             )
             self.assertEqual(sigmas.shape, (data_count,))
-            self.assertAlmostEqual(muygps.sigma_sq(), np.mean(sigmas), 5)
+            self.assertAlmostEqual(muygps.sigma_sq()[0], np.mean(sigmas), 5)
 
 
 class OptimTest(parameterized.TestCase):
@@ -224,39 +222,37 @@ class OptimTest(parameterized.TestCase):
             sim_train["input"], batch_nn_indices, metric=metric
         )
 
-        hyper_dicts = [
-            {
-                key: args[i][key]["val"]
-                if not isinstance(args[i][key]["val"], str)
-                else target[i]
-                for key in args[0]
-            }
-            for i in range(response_count)
+        gp_args = args.copy()
+        for i, m in enumerate(gp_args):
+            m["nu"]["val"] = target[i]
+        gps = [BenchmarkGP(kern=kern, **a) for a in gp_args]
+        cholKs = [
+            benchmark_prepare_cholK(
+                gp, np.vstack((sim_test["input"], sim_train["input"]))
+            )
+            for gp in gps
         ]
-        for i in range(response_count):
-            hyper_dicts[i]["sigma_sq"] = np.array([1.0])
-        gps = [BenchmarkGP(kern=kern, **hd) for hd in hyper_dicts]
-        for gp in gps:
-            gp.fit(sim_test["input"], sim_train["input"])
-        for i in range(its):
+        for _ in range(its):
             # Simulate the response
             sim_test["output"] = np.zeros((test_count, response_count))
             sim_train["output"] = np.zeros((train_count, response_count))
-            for i, gp in enumerate(gps):
-                y = gp.simulate()
-                sim_test["output"][:, i] = y[:test_count]
-                sim_train["output"][:, i] = y[test_count:]
+            for i, cholK in enumerate(cholKs):
+                y = benchmark_sample_from_cholK(cholK)
+                sim_test["output"][:, i] = y[:test_count, 0]
+                sim_train["output"][:, i] = y[test_count:, 0]
 
             mmuygps = MMuyGPS(kern, *args)
+
+            batch_targets = sim_train["output"][batch_indices, :]
+            batch_nn_targets = sim_train["output"][batch_nn_indices, :]
 
             for i, muygps in enumerate(mmuygps.models):
                 estimate = scipy_optimize_from_tensors(
                     muygps,
-                    batch_indices,
-                    batch_nn_indices,
+                    batch_targets[:, i].reshape(batch_count, 1),
+                    batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
                     crosswise_dists,
                     pairwise_dists,
-                    sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
                 )[0]
                 mse += np.sum(estimate - target[i]) ** 2
@@ -322,28 +318,24 @@ class OptimTest(parameterized.TestCase):
             nbrs_lookup, batch_count, train_count
         )
 
-        hyper_dicts = [
-            {
-                key: args[i][key]["val"]
-                if not isinstance(args[i][key]["val"], str)
-                else target[i]
-                for key in args[0]
-            }
-            for i in range(response_count)
+        gp_args = args.copy()
+        for i, m in enumerate(gp_args):
+            m["nu"]["val"] = target[i]
+        gps = [BenchmarkGP(kern=kern, **a) for a in gp_args]
+        cholKs = [
+            benchmark_prepare_cholK(
+                gp, np.vstack((sim_test["input"], sim_train["input"]))
+            )
+            for gp in gps
         ]
-        for i in range(response_count):
-            hyper_dicts[i]["sigma_sq"] = np.array([1.0])
-        gps = [BenchmarkGP(kern=kern, **hd) for hd in hyper_dicts]
-        for gp in gps:
-            gp.fit(sim_test["input"], sim_train["input"])
-        for i in range(its):
+        for _ in range(its):
             # Simulate the response
             sim_test["output"] = np.zeros((test_count, response_count))
             sim_train["output"] = np.zeros((train_count, response_count))
-            for i, gp in enumerate(gps):
-                y = gp.simulate()
-                sim_test["output"][:, i] = y[:test_count]
-                sim_train["output"][:, i] = y[test_count:]
+            for i, cholK in enumerate(cholKs):
+                y = benchmark_sample_from_cholK(cholK)
+                sim_test["output"][:, i] = y[:test_count, 0]
+                sim_train["output"][:, i] = y[test_count:, 0]
 
             mmuygps = MMuyGPS(kern, *args)
 
@@ -352,7 +344,6 @@ class OptimTest(parameterized.TestCase):
                     muygps,
                     batch_indices,
                     batch_nn_indices,
-                    sim_train["input"],
                     sim_train["input"],
                     sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
@@ -479,6 +470,8 @@ class RegressTest(parameterized.TestCase):
         )
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
 
+        self.assertEqual(mmuygps.sigma_sq(), "unlearned")
+
         predictions, _ = regress_any(
             mmuygps,
             test["input"],
@@ -486,6 +479,7 @@ class RegressTest(parameterized.TestCase):
             nbrs_lookup,
             train["output"],
             variance_mode=variance_mode,
+            apply_sigma_sq=False,
         )
         if variance_mode is not None:
             predictions, diagonal_variance = predictions
@@ -498,11 +492,12 @@ class RegressTest(parameterized.TestCase):
 class MakeClassifierTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lm, rt, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
+            for rt in [True, False]
             for k_kwargs in (
                 (
                     "matern",
@@ -531,6 +526,7 @@ class MakeClassifierTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        return_distances,
         k_kwargs,
     ):
         kern, args = k_kwargs
@@ -545,7 +541,7 @@ class MakeClassifierTest(parameterized.TestCase):
             categorical=True,
         )
 
-        mmuygps, _ = make_multivariate_classifier(
+        classifier_args = make_multivariate_classifier(
             train["input"],
             train["output"],
             nn_count=nn_count,
@@ -554,14 +550,22 @@ class MakeClassifierTest(parameterized.TestCase):
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_args=args,
+            return_distances=return_distances,
         )
+
+        if len(classifier_args) == 2:
+            mmuygps, _ = classifier_args
+        elif len(classifier_args) == 4:
+            mmuygps, _, crosswise_dists, pairwise_dists = classifier_args
+            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
+            self.assertEqual(
+                pairwise_dists.shape, (batch_count, nn_count, nn_count)
+            )
 
         for i, muygps in enumerate(mmuygps.models):
             for key in args[i]:
                 if key == "eps":
                     self.assertEqual(args[i][key]["val"], muygps.eps())
-                elif key == "sigma_sq":
-                    self.assertEqual(args[i][key]["val"], muygps.sigma_sq())
                 elif isinstance(args[i][key]["val"], str):
                     print(
                         f"optimized to find value "
@@ -577,11 +581,13 @@ class MakeClassifierTest(parameterized.TestCase):
 class MakeRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, rt, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
+            for ssm in ["analytic", None]
+            for rt in [True, False]
             for k_kwargs in (
                 (
                     "matern",
@@ -595,7 +601,6 @@ class MakeRegressorTest(parameterized.TestCase):
                             "nu": {"val": 0.8},
                             "length_scale": {"val": 0.7},
                             "eps": {"val": 1e-5},
-                            "sigma_sq": {"val": "learn"},
                         },
                     ],
                 ),
@@ -611,6 +616,8 @@ class MakeRegressorTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        sigma_method,
+        return_distances,
         k_kwargs,
     ):
         kern, args = k_kwargs
@@ -625,30 +632,33 @@ class MakeRegressorTest(parameterized.TestCase):
             categorical=False,
         )
 
-        mmuygps, _ = make_multivariate_regressor(
+        regressor_args = make_multivariate_regressor(
             train["input"],
             train["output"],
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            sigma_method=sigma_method,
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_args=args,
+            return_distances=return_distances,
         )
+
+        if len(regressor_args) == 2:
+            mmuygps, _ = regressor_args
+        elif len(regressor_args) == 4:
+            mmuygps, _, crosswise_dists, pairwise_dists = regressor_args
+            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
+            self.assertEqual(
+                pairwise_dists.shape, (batch_count, nn_count, nn_count)
+            )
 
         for i, muygps in enumerate(mmuygps.models):
             print(f"For model {i}:")
             for key in args[i]:
                 if key == "eps":
                     self.assertEqual(args[i][key]["val"], muygps.eps())
-                elif key == "sigma_sq":
-                    if args[i][key]["val"] == "learn":
-                        print(
-                            f"\toptimized sigma_sq to find value "
-                            f"{muygps.sigma_sq()}"
-                        )
-                    else:
-                        self.assertEqual(args[i][key]["val"], muygps.sigma_sq())
                 elif args[i][key]["val"] == "sample":
                     print(
                         f"\toptimized {key} to find value "
@@ -659,6 +669,13 @@ class MakeRegressorTest(parameterized.TestCase):
                         args[i][key]["val"],
                         muygps.kernel.hyperparameters[key](),
                     )
+            if sigma_method == None:
+                self.assertEqual("unlearned", muygps.sigma_sq())
+            else:
+                print(
+                    f"\toptimized sigma_sq to find value "
+                    f"{muygps.sigma_sq()}"
+                )
 
 
 if __name__ == "__main__":

@@ -21,8 +21,8 @@ import numpy as np
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
+from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
-from MuyGPyS.gp.distance import crosswise_distances, pairwise_distances
 
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
@@ -35,10 +35,14 @@ def make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    sigma_method: Optional[str] = "analytic",
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
+    return_distances: bool = False,
     verbose: bool = False,
-) -> Tuple[MuyGPS, NN_Wrapper]:
+) -> Union[
+    Tuple[MuyGPS, NN_Wrapper], Tuple[MuyGPS, NN_Wrapper, np.ndarray, np.ndarray]
+]:
     """
     Convenience function for creating MuyGPyS functor and neighbor lookup data
     structure.
@@ -64,8 +68,22 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
+        ...         verbose=False,
+        ... )
+        >>> # Can alternately return distance tensors for reuse
+        >>> muygps, nbrs_lookup, crosswise_dists, pairwise_dists = make_regressor(
+        ...         train_features,
+        ...         train_responses,
+        ...         nn_count=30,
+        ...         batch_count=200,
+        ...         loss_method="mse",
+        ...         sigma_method="analytic",
+        ...         k_kwargs=k_kwargs,
+        ...         nn_kwargs=nn_kwargs,
+        ...         return_distances=True,
         ...         verbose=False,
         ... )
 
@@ -85,6 +103,14 @@ def make_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        sigma_method:
+            The optimization method to be employed to learn the `sigma_sq`
+            hyperparameter. Currently supports only `"analytic"` and `None`. If
+            the value is not `None`, the returned
+            :class:`MuyGPyS.gp.muygps.MuyGPS` object will possess a `sigma_sq`
+            member whose value, invoked via `muygps.sigma_sq()`, is a
+            `(response_count,)` vector to be used for scaling posterior
+            variances.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
             metric, epsilon and sigma hyperparameter specifications, and
@@ -96,7 +122,13 @@ def make_regressor(
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
             their parameters.
-        verbose : Boolean
+        return_distances:
+            If `True` and any training occurs, returns a
+            `(batch_count, nn_count)` matrix containing the crosswise distances
+            between the batch's elements and their nearest neighbor sets and a
+            `(batch_count, nn_count, nn_count)` matrix containing the pairwise
+            distances between the batch's nearest neighbor sets.
+        verbose:
             If `True`, print summary statistics.
 
     Returns
@@ -106,6 +138,15 @@ def make_regressor(
     nbrs_lookup:
         A data structure supporting nearest neighbor queries into
         `train_features`.
+    crosswise_dists:
+        A matrix of shape `(batch_count, nn_count)` whose rows list the distance
+        of the corresponding batch element to each of its nearest neighbors.
+        Only returned if `return_distances is True`.
+    pairwise_dists:
+        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        dimensions contain square matrices containing the pairwise distances
+        between the nearest neighbors of the batch elements. Only returned if
+        `return_distances is True`.
     """
     train_count, _ = train_features.shape
     _, response_count = train_targets.shape
@@ -121,9 +162,8 @@ def make_regressor(
     # create MuyGPs object
     muygps = MuyGPS(**k_kwargs)
 
-    skip_opt = muygps.fixed_nosigmasq()
-    skip_sigma = muygps.fixed_sigmasq()
-    if skip_opt is False or skip_sigma is False:
+    skip_opt = muygps.fixed()
+    if skip_opt is False or sigma_method is not None:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup,
@@ -132,35 +172,40 @@ def make_regressor(
         )
         time_batch = perf_counter()
 
-        crosswise_dists = crosswise_distances(
-            train_features,
-            train_features,
+        (
+            crosswise_dists,
+            pairwise_dists,
+            batch_targets,
+            batch_nn_targets,
+        ) = make_train_tensors(
+            muygps.kernel.metric,
             batch_indices,
             batch_nn_indices,
-            metric=muygps.kernel.metric,
+            train_features,
+            train_targets,
         )
-        pairwise_dists = pairwise_distances(
-            train_features, batch_nn_indices, metric=muygps.kernel.metric
-        )
+
         time_tensor = perf_counter()
 
         if skip_opt is False:
             # maybe do something with these estimates?
             estimates = scipy_optimize_from_tensors(
                 muygps,
-                batch_indices,
-                batch_nn_indices,
+                batch_targets,
+                batch_nn_targets,
                 crosswise_dists,
                 pairwise_dists,
-                train_targets,
                 loss_method=loss_method,
                 verbose=verbose,
             )
         time_opt = perf_counter()
 
-        if skip_sigma is False:
-            K = muygps.kernel(pairwise_dists)
-            muygps.sigma_sq_optim(K, batch_nn_indices, train_targets)
+        if sigma_method is not None:
+            if sigma_method.lower() == "analytic":
+                K = muygps.kernel(pairwise_dists)
+                muygps.sigma_sq_optim(K, batch_nn_indices, train_targets)
+            else:
+                raise ValueError(f"Unrecognized sigma_method {sigma_method}")
             if verbose is True:
                 print(f"Optimized sigma_sq values " f"{muygps.sigma_sq()}")
         time_sopt = perf_counter()
@@ -172,6 +217,9 @@ def make_regressor(
             print(f"hyper opt time: {time_opt - time_tensor}s")
             print(f"sigma_sq opt time: {time_sopt - time_opt}s")
 
+        if return_distances is True:
+            return muygps, nbrs_lookup, crosswise_dists, pairwise_dists
+
     return muygps, nbrs_lookup
 
 
@@ -181,11 +229,16 @@ def make_multivariate_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    sigma_method: Optional[str] = "analytic",
     kern: str = "matern",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
+    return_distances: bool = False,
     verbose: bool = False,
-) -> Tuple[MMuyGPS, NN_Wrapper]:
+) -> Union[
+    Tuple[MMuyGPS, NN_Wrapper],
+    Tuple[MMuyGPS, NN_Wrapper, np.ndarray, np.ndarray],
+]:
     """
     Convenience function for creating a Multivariate MuyGPyS functor and
     neighbor lookup data structure.
@@ -215,9 +268,24 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         sigma_method="analytic",
         ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
+        ...         verbose=False,
+        ... )
+        >>> # Can alternately return distance tensors for reuse
+        >>> mmuygps, nbrs_lookup = make_multivariate_regressor(
+        ...         train_features,
+        ...         train_responses,
+        ...         nn_count=30,
+        ...         batch_count=200,
+        ...         loss_method="mse",
+        ...         sigma_method="analytic",
+        ...         kern="rbf",
+        ...         k_args=k_args,
+        ...         nn_kwargs=nn_kwargs,
+        ...         return_distances=return_distances,
         ...         verbose=False,
         ... )
 
@@ -237,6 +305,14 @@ def make_multivariate_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        sigma_method:
+            The optimization method to be employed to learn the `sigma_sq`
+            hyperparameter. Currently supports only `"analytic"` and `None`. If
+            the value is not `None`, the returned
+            :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS` object will possess a
+            `sigma_sq` member whose value, invoked via `mmuygps.sigma_sq()`, is
+            a `(response_count,)` vector to be used for scaling posterior
+            variances.
         kern:
             The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
             details.
@@ -251,6 +327,12 @@ def make_multivariate_regressor(
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
             their parameters.
+        return_distances:
+            If `True` and any training occurs, returns a
+            `(batch_count, nn_count)` matrix containing the crosswise distances
+            between the batch's elements and their nearest neighbor sets and a
+            `(batch_count, nn_count, nn_count)` matrix containing the pairwise
+            distances between the batch's nearest neighbor sets.
         verbose:
             If `True`, print summary statistics.
 
@@ -262,6 +344,15 @@ def make_multivariate_regressor(
     nbrs_lookup:
         A data structure supporting nearest neighbor queries into
         `train_features`.
+    crosswise_dists:
+        A matrix of shape `(batch_count, nn_count)` whose rows list the distance
+        of the corresponding batch element to each of its nearest neighbors.
+        Only returned if `return_distances is True`.
+    pairwise_dists:
+        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        dimensions contain square matrices containing the pairwise distances
+        between the nearest neighbors of the batch elements. Only returned if
+        `return_distances is True`.
     """
     train_count, response_count = train_targets.shape
     if response_count != len(k_args):
@@ -281,9 +372,8 @@ def make_multivariate_regressor(
     # create MuyGPs object
     mmuygps = MMuyGPS(kern, *k_args)
 
-    skip_opt = mmuygps.fixed_nosigmasq()
-    skip_sigma = mmuygps.fixed_sigmasq()
-    if skip_opt is False or skip_sigma is False:
+    skip_opt = mmuygps.fixed()
+    if skip_opt is False or sigma_method is not None:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup,
@@ -292,38 +382,46 @@ def make_multivariate_regressor(
         )
         time_batch = perf_counter()
 
-        crosswise_dists = crosswise_distances(
-            train_features,
-            train_features,
+        (
+            crosswise_dists,
+            pairwise_dists,
+            batch_targets,
+            batch_nn_targets,
+        ) = make_train_tensors(
+            mmuygps.metric,
             batch_indices,
             batch_nn_indices,
-            metric=mmuygps.metric,
-        )
-        pairwise_dists = pairwise_distances(
-            train_features, batch_nn_indices, metric=mmuygps.metric
+            train_features,
+            train_targets,
         )
         time_tensor = perf_counter()
 
         if skip_opt is False:
             # maybe do something with these estimates?
             for i, muygps in enumerate(mmuygps.models):
-                if muygps.fixed_nosigmasq() is False:
+                if muygps.fixed() is False:
                     estimates = scipy_optimize_from_tensors(
                         muygps,
-                        batch_indices,
-                        batch_nn_indices,
+                        batch_targets[:, i].reshape(batch_count, 1),
+                        batch_nn_targets[:, :, i].reshape(
+                            batch_count, nn_count, 1
+                        ),
                         crosswise_dists,
                         pairwise_dists,
-                        train_targets[:, i].reshape(train_count, 1),
                         loss_method=loss_method,
                         verbose=verbose,
                     )
         time_opt = perf_counter()
 
-        if skip_sigma is False:
-            mmuygps.sigma_sq_optim(
-                pairwise_dists, batch_nn_indices, train_targets
-            )
+        if sigma_method is not None:
+            if sigma_method.lower() == "analytic":
+                mmuygps.sigma_sq_optim(
+                    pairwise_dists, batch_nn_indices, train_targets
+                )
+            else:
+                raise ValueError(f"Unrecognized sigma_method {sigma_method}")
+            if verbose is True:
+                print(f"Optimized sigma_sq values " f"{mmuygps.sigma_sq()}")
         time_sopt = perf_counter()
 
         if verbose is True:
@@ -332,6 +430,9 @@ def make_multivariate_regressor(
             print(f"tensor creation time: {time_tensor - time_batch}s")
             print(f"hyper opt time: {time_opt - time_tensor}s")
             print(f"sigma_sq opt time: {time_sopt - time_opt}s")
+
+        if return_distances is True:
+            return mmuygps, nbrs_lookup, crosswise_dists, pairwise_dists
 
     return mmuygps, nbrs_lookup
 
@@ -376,12 +477,16 @@ def _decide_and_make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
-    variance_mode: Optional[str] = None,
+    sigma_method: Optional[str] = "analytic",
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
+    return_distances: bool = False,
     verbose: bool = False,
-) -> Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper]:
+) -> Union[
+    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper],
+    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray],
+]:
     if kern is not None and (
         isinstance(k_kwargs, list) or isinstance(k_kwargs, tuple)
     ):
@@ -391,9 +496,11 @@ def _decide_and_make_regressor(
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            sigma_method=sigma_method,
             kern=kern,
             k_args=k_kwargs,
             nn_kwargs=nn_kwargs,
+            return_distances=return_distances,
             verbose=verbose,
         )
     else:
@@ -404,12 +511,18 @@ def _decide_and_make_regressor(
                 nn_count=nn_count,
                 batch_count=batch_count,
                 loss_method=loss_method,
+                sigma_method=sigma_method,
                 k_kwargs=k_kwargs,
                 nn_kwargs=nn_kwargs,
+                return_distances=return_distances,
                 verbose=verbose,
             )
         else:
             raise ValueError(f"Expected k_kwargs to be a dict!")
+
+
+def _unpack(first, *rest):
+    return first, rest
 
 
 def do_regress(
@@ -419,14 +532,28 @@ def do_regress(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    sigma_method: Optional[str] = "analytic",
     variance_mode: Optional[str] = None,
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
+    apply_sigma_sq: bool = True,
+    return_distances: bool = False,
     verbose: bool = False,
 ) -> Union[
     Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray],
     Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray],
+    Tuple[
+        Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray, np.ndarray
+    ],
+    Tuple[
+        Union[MuyGPS, MMuyGPS],
+        NN_Wrapper,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+    ],
 ]:
     """
     Convenience function initializing a model and performing regression.
@@ -463,6 +590,20 @@ def do_regress(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
+        >>> # Can alternately return distance tensors for reuse
+        >>> muygps, nbrs_lookup, predictions, variance, crosswise_dists, pairwise_dists = do_regress(
+        ...         test['input'],
+        ...         train['input'],
+        ...         train['output'],
+        ...         nn_count=30,
+        ...         batch_count=200,
+        ...         loss_method="mse",
+        ...         variance_mode="diagonal",
+        ...         k_kwargs=k_kwargs,
+        ...         nn_kwargs=nn_kwargs,
+        ...         return_distances=True,
+        ...         verbose=False,
+        ... )
         >>> mse = mse_fn(test['output'], predictions)
         >>> print(f"obtained mse: {mse}")
         obtained mse: 0.20842...
@@ -486,6 +627,14 @@ def do_regress(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        sigma_method:
+            The optimization method to be employed to learn the `sigma_sq`
+            hyperparameter. Currently supports only `"analytic"` and `None`. If
+            the value is not `None`, the returned
+            :class:`MuyGPyS.gp.muygps.MuyGPS` object will possess a `sigma_sq`
+            member whose value, invoked via `muygps.sigma_sq()`, is a
+            `(response_count,)` vector to be used for scaling posterior
+            variances.
         variance_mode:
             Specifies the type of variance to return. Currently supports
             `diagonal` and None. If None, report no variance term.
@@ -505,6 +654,15 @@ def do_regress(
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
             their parameters.
+        apply_sigma_sq:
+            If `True` and `variance_mode is not None`, automatically scale the
+            posterior variances by `sigma_sq`.
+        return_distances:
+            If `True`, returns a `(test_count, nn_count)` matrix containing the
+            crosswise distances between the test elements and their nearest
+            neighbor sets and a `(test_count, nn_count, nn_count)` tensor
+            containing the pairwise distances between the test's nearest
+            neighbor sets.
         verbose:
             If `True`, print summary statistics.
 
@@ -518,50 +676,110 @@ def do_regress(
     predictions:
         The predicted response associated with each test observation.
     variance:
-        Estimated posterior variance of each test prediction. Only returned if
-        `variance_mode == "diagonal"`.
+        Estimated posterior variance of each test prediction. If
+        `variance_mode == "diagonal"` return a `(test_count, response_count)`
+        matrix where each row is the posterior variance. If
+        `sigma_method is not None` and `apply_sigma_sq is True`, each column
+        of the variance is automatically scaled by the corresponding `sigma_sq`
+        parameter.
+    crosswise_dists:
+        A matrix of shape `(test_count, nn_count)` whose rows list the distance
+        of the corresponding test element to each of its nearest neighbors.
+        Only returned if `return_distances is True`.
+    pairwise_dists:
+        A tensor of shape `(test_count, nn_count, nn_count,)` whose latter two
+        dimensions contain square matrices containing the pairwise distances
+        between the nearest neighbors of the test elements. Only returned if
+        `return_distances is True`.
     """
-    regressor, nbrs_lookup = _decide_and_make_regressor(
+    if sigma_method is None:
+        apply_sigma_sq = False
+
+    regressor_args = _decide_and_make_regressor(
         train_features,
         train_targets,
         nn_count=nn_count,
         batch_count=batch_count,
         loss_method=loss_method,
+        sigma_method=sigma_method,
         kern=kern,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
+        return_distances=False,
         verbose=verbose,
     )
+    regressor, regressor_args_less1 = _unpack(*regressor_args)
+    nbrs_lookup, regressor_args_less2 = _unpack(*regressor_args_less1)
+    if len(regressor_args_less2) > 0:
+        # Should not get here
+        # crosswise_dists, pairwise_dists = regressor_args_less2
+        pass
 
-    predictions, pred_timing = regress_any(
+    prediction_args, pred_timing = regress_any(
         regressor,
         test_features,
         train_features,
         nbrs_lookup,
         train_targets,
         variance_mode=variance_mode,
+        apply_sigma_sq=apply_sigma_sq,
+        return_distances=return_distances,
     )
 
+    # predictions, prediction_args_less1 = _unpack(*prediction_args)
     if verbose is True:
         print(f"prediction time breakdown:")
         for k in pred_timing:
             print(f"\t{k} time:{pred_timing[k]}s")
-    if variance_mode is not None:
-        predictions, variance = predictions
+
+    if variance_mode is None and len(regressor_args_less2) == 0:
+        return regressor, nbrs_lookup, prediction_args
+    elif variance_mode is not None and return_distances is False:
+        predictions, prediction_args_less1 = _unpack(*prediction_args)
+        variance, prediction_args_less2 = _unpack(*prediction_args_less1)
         return regressor, nbrs_lookup, predictions, variance
-    return regressor, nbrs_lookup, predictions
+    elif variance_mode is None and len(regressor_args_less2) > 0:
+        predictions, prediction_args_less1 = _unpack(*prediction_args)
+        crosswise_dists, prediction_args_less2 = _unpack(*prediction_args_less1)
+        pairwise_dists, prediction_args_less3 = _unpack(*prediction_args_less2)
+        return (
+            regressor,
+            nbrs_lookup,
+            predictions,
+            crosswise_dists,
+            pairwise_dists,
+        )
+    else:
+        predictions, prediction_args_less1 = _unpack(*prediction_args)
+        variance, prediction_args_less2 = _unpack(*prediction_args_less1)
+        crosswise_dists, prediction_args_less3 = _unpack(*prediction_args_less2)
+        pairwise_dists, prediction_args_less4 = _unpack(*prediction_args_less3)
+        return (
+            regressor,
+            nbrs_lookup,
+            predictions,
+            variance,
+            crosswise_dists,
+            pairwise_dists,
+        )
 
 
 def regress_any(
     regressor: Union[MuyGPS, MMuyGPS],
-    test: np.ndarray,
-    train: np.ndarray,
+    test_features: np.ndarray,
+    train_features: np.ndarray,
     train_nbrs_lookup: NN_Wrapper,
     train_targets: np.ndarray,
     variance_mode: Optional[str] = None,
+    apply_sigma_sq: bool = True,
+    return_distances: bool = False,
 ) -> Union[
     Tuple[np.ndarray, Dict[str, float]],
     Tuple[Tuple[np.ndarray, np.ndarray], Dict[str, float]],
+    Tuple[Tuple[np.ndarray, np.ndarray, np.ndarray], Dict[str, float]],
+    Tuple[
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], Dict[str, float]
+    ],
 ]:
     """
     Simultaneously predicts the response for each test item.
@@ -569,9 +787,9 @@ def regress_any(
     Args:
         regressor:
             Regressor object.
-        test:
+        test_features:
             Test observations of shape `(test_count, feature_count)`.
-        train:
+        train_features:
             Train observations of shape `(train_count, feature_count)`.
         train_nbrs_lookup:
             Trained nearest neighbor query data structure.
@@ -581,6 +799,15 @@ def regress_any(
         variance_mode : str or None
             Specifies the type of variance to return. Currently supports
             `diagonal` and None. If None, report no variance term.
+        apply_sigma_sq:
+            If `True` and `variance_mode is not None`, automatically scale the
+            posterior variances by `sigma_sq`.
+        return_distances:
+            If `True`, returns a `(test_count, nn_count)` matrix containing the
+            crosswise distances between the test elements and their nearest
+            neighbor sets and a `(test_count, nn_count, nn_count)` tensor
+            containing the pairwise distances between the test data's nearest
+            neighbor sets.
 
     Returns
     -------
@@ -594,14 +821,23 @@ def regress_any(
         `(test_count, response_count)` if `regressor` is an instance of
         :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS`. Returned only when
         `variance_mode == "diagonal"`.
+    crosswise_dists:
+        A matrix of shape `(test_count, nn_count)` whose rows list the distance
+        of the corresponding test element to each of its nearest neighbors.
+        Only returned if `return_distances is True`.
+    pairwise_dists:
+        A tensor of shape `(test_count, nn_count, nn_count,)` whose latter two
+        dimensions contain square matrices containing the pairwise distances
+        between the nearest neighbors of the test elements. Only returned if
+        `return_distances is True`.
     timing : dict
         Timing for the subroutines of this function.
     """
-    test_count = test.shape[0]
-    train_count = train.shape[0]
+    test_count = test_features.shape[0]
+    train_count = train_features.shape[0]
 
     time_start = perf_counter()
-    test_nn_indices, _ = train_nbrs_lookup.get_nns(test)
+    test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
     time_agree = perf_counter()
@@ -609,10 +845,12 @@ def regress_any(
     predictions = regressor.regress_from_indices(
         np.arange(test_count),
         test_nn_indices,
-        test,
-        train,
+        test_features,
+        train_features,
         train_targets,
         variance_mode=variance_mode,
+        apply_sigma_sq=apply_sigma_sq,
+        return_distances=return_distances,
     )
     time_pred = perf_counter()
 

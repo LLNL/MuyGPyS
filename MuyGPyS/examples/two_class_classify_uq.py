@@ -323,8 +323,8 @@ def do_uq(
 
 def classify_two_class_uq(
     surrogate: Union[MuyGPS, MMuyGPS],
-    test: np.ndarray,
-    train: np.ndarray,
+    test_features: np.ndarray,
+    train_features: np.ndarray,
     train_nbrs_lookup: NN_Wrapper,
     train_labels: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, Dict[str, float]]:
@@ -335,9 +335,9 @@ def classify_two_class_uq(
     Args:
         surrogate:
             Surrogate regressor.
-        test:
+        test_features:
             Test observations of shape `(test_count, feature_count)`.
-        train:
+        train_features:
             Train observations of shape `(train_count, feature_count)`.
         train_nbrs_lookup:
             Trained nearest neighbor query data structure.
@@ -356,14 +356,14 @@ def classify_two_class_uq(
     timing:
         Timing for the subroutines of this function.
     """
-    test_count = test.shape[0]
-    train_count = train.shape[0]
+    test_count = test_features.shape[0]
+    train_count = train_features.shape[0]
 
     means = np.zeros((test_count, 2))
     variances = np.zeros(test_count)
 
     time_start = perf_counter()
-    test_nn_indices, _ = train_nbrs_lookup.get_nns(test)
+    test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
@@ -383,10 +383,11 @@ def classify_two_class_uq(
         ) = surrogate.regress_from_indices(
             np.where(nonconstant_mask == True)[0],
             test_nn_indices[nonconstant_mask, :],
-            test,
-            train,
+            test_features,
+            train_features,
             train_labels,
             variance_mode="diagonal",
+            apply_sigma_sq=False,
         )
 
     time_pred = perf_counter()
@@ -404,7 +405,7 @@ def train_two_class_interval(
     surrogate: MuyGPS,
     batch_indices: np.ndarray,
     batch_nn_indices: np.ndarray,
-    train: np.ndarray,
+    train_features: np.ndarray,
     train_responses: np.ndarray,
     train_labels: np.ndarray,
     objective_fns: Union[List[Callable], Tuple[Callable, ...]],
@@ -445,10 +446,11 @@ def train_two_class_interval(
     mean, variance = surrogate.regress_from_indices(
         batch_indices,
         batch_nn_indices,
-        train,
-        train,
+        train_features,
+        train_features,
         train_responses,
         variance_mode="diagonal",
+        apply_sigma_sq=False,
     )
     predicted_labels = 2 * np.argmax(mean, axis=1) - 1
 
