@@ -306,8 +306,8 @@ def benchmark_prepare_cholK(
     """
     pairwise_dists = benchmark_pairwise_distances(data, metric=gp.kernel.metric)
     data_count, _ = data.shape
-    Kfull = gp.sigma_sq()[0] * gp.kernel(pairwise_dists) + gp.eps() * np.eye(
-        data_count
+    Kfull = gp.sigma_sq()[0] * (
+        gp.kernel(pairwise_dists) + gp.eps() * np.eye(data_count)
     )
     return np.linalg.cholesky(Kfull)
 

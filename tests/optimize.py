@@ -28,7 +28,6 @@ from MuyGPyS.testing.gp import (
     BenchmarkGP,
     get_analytic_sigma_sq,
 )
-from MuyGPyS.testing.oldgp import BenchmarkGP as OldBenchmarkGP
 
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
@@ -255,26 +254,26 @@ class GPSigmaSqBaselineTest(parameterized.TestCase):
                 ss,
                 k_kwargs,
             )
-            for ss in [(1.0, 1e-2), (0.02453, 1e-2), (19.32, 1e-2)]
+            for ss in [(1.0, 5e-2), (0.02453, 5e-2), (19.32, 5e-2)]
             for k_kwargs in (
                 {
                     "kern": "matern",
                     "metric": "l2",
                     "nu": {"val": 0.38},
-                    "length_scale": {"val": 1e-2},
+                    "length_scale": {"val": 1.5},
                     "eps": {"val": 1e-5},
                 },
                 {
                     "kern": "matern",
                     "metric": "l2",
                     "nu": {"val": 2.5},
-                    "length_scale": {"val": 1e-2},
+                    "length_scale": {"val": 1.5},
                     "eps": {"val": 1e-5},
                 },
                 {
                     "kern": "rbf",
                     "metric": "F2",
-                    "length_scale": {"val": 1e-2},
+                    "length_scale": {"val": 1.5},
                     "eps": {"val": 1e-5},
                 },
             )
@@ -312,7 +311,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
             for b in [250]
             for n in [34]
             for nn_kwargs in _basic_nn_kwarg_options
-            for ss in ((1.0, 1e-2), (0.002453, 1e-2), (19.32, 1e-2))
+            for ss in ((1.0, 5e-2), (0.002453, 5e-2), (19.32, 5e-2))
             for k_kwargs in (
                 {
                     "kern": "matern",
