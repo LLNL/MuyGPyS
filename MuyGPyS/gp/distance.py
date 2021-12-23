@@ -246,9 +246,11 @@ def crosswise_distances(
     locations = data[data_indices]
     points = nn_data[nn_indices]
     if metric == "l2":
-        return _crosswise_l2(locations, points)
+        diffs = _crosswise_diffs(locations, points)
+        return _l2(diffs)
     elif metric == "F2":
-        return _crosswise_F2(locations, points)
+        diffs = _crosswise_diffs(locations, points)
+        return _F2(diffs)
     elif metric == "ip":
         return _crosswise_prods(locations, points)
     elif metric == "cosine":
@@ -258,12 +260,7 @@ def crosswise_distances(
 
 
 def _crosswise_diffs(locations: np.array, points: np.array) -> np.array:
-    return np.array(
-        [
-            [locations[i, :] - points[i, j, :] for j in range(points.shape[1])]
-            for i in range(points.shape[0])
-        ]
-    )
+    return locations[:, None, :] - points
 
 
 def _crosswise_F2(locations: np.array, points: np.array) -> np.array:
