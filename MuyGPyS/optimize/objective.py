@@ -11,9 +11,10 @@ indicating them to optimization.
 
 import numpy as np
 
+from typing import Callable, Dict, List, Tuple, Union
+
 from scipy.special import softmax
 from sklearn.metrics import log_loss
-from typing import Callable, Dict
 
 from MuyGPyS.gp.muygps import MuyGPS
 
@@ -106,8 +107,8 @@ def mse_fn(
 def loo_crossval(
     x0: np.ndarray,
     objective_fn: Callable,
-    muygps: MuyGPS,
-    optim_params: Dict,
+    kernel_fn: Callable,
+    predict_fn: Callable,
     pairwise_dists: np.ndarray,
     crosswise_dists: np.ndarray,
     batch_nn_targets: np.ndarray,
@@ -126,13 +127,12 @@ def loo_crossval(
             The function to be optimized. Can be any function that accepts two
             `numpy.ndarray` objects indicating the prediction and target values,
             in that order.
-        muygps:
-            The MuyGPS object.
-        optim_params:
-            Dictionary of references of unfixed hyperparameters belonging to the
-            MuyGPS object. Keys should be strings, and values should be objects
-            of type :class:`MuyGPyS.gp.kernels.Hyperparameter`. Must have an
-            `opt_count` number of key-value pairs, matching the shape of `x0`.
+        kernel_fn:
+            A function that realizes kernel tensors given a list of the free
+            parameters.
+        predict_fn:
+            A function that realizes MuyGPs prediction given an epsilon value.
+            The given value is unused if epsilon is fixed.
         pairwise_dists:
             Distance tensor of floats of shape
             `(batch_count, nn_count, nn_count)` whose second two dimensions give
@@ -154,20 +154,14 @@ def loo_crossval(
         The evaluation of `objective_fn` on the predicted versus expected
         response.
     """
-    for i, key in enumerate(optim_params):
-        lb, ub = optim_params[key].get_bounds()
-        if x0[i] < lb:
-            optim_params[key]._set_val(lb)
-        elif x0[i] > ub:
-            optim_params[key]._set_val(ub)
-        else:
-            optim_params[key]._set_val(x0[i])
+    K = kernel_fn(pairwise_dists, x0)
+    Kcross = kernel_fn(crosswise_dists, x0)
 
-    K = muygps.kernel(pairwise_dists)
-    Kcross = muygps.kernel(crosswise_dists)
-
-    predictions = muygps.regress(
-        K, Kcross, batch_nn_targets, apply_sigma_sq=False
+    predictions = predict_fn(
+        K,
+        Kcross,
+        batch_nn_targets,
+        x0[-1],
     )
 
     return objective_fn(predictions, batch_targets)

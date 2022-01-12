@@ -189,7 +189,7 @@ def make_regressor(
 
         if skip_opt is False:
             # maybe do something with these estimates?
-            estimates = scipy_optimize_from_tensors(
+            muygps = scipy_optimize_from_tensors(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
@@ -400,7 +400,7 @@ def make_multivariate_regressor(
             # maybe do something with these estimates?
             for i, muygps in enumerate(mmuygps.models):
                 if muygps.fixed() is False:
-                    estimates = scipy_optimize_from_tensors(
+                    mmuygps.models[i] = scipy_optimize_from_tensors(
                         muygps,
                         batch_targets[:, i].reshape(batch_count, 1),
                         batch_nn_targets[:, :, i].reshape(

@@ -341,7 +341,9 @@ class GPMathTest(parameterized.TestCase):
         K, Kcross = muygps.kernel(F2_dists), muygps.kernel(nn_dists)
         # solve GP regression
         train_targets = train["output"][nn_indices]
-        responses = muygps._compute_solve(K, Kcross, train_targets)
+        responses = muygps._compute_solve(
+            K, Kcross, train_targets, muygps.eps()
+        )
 
         # validate
         self.assertEqual(responses.shape, (test_count, response_count))
@@ -415,7 +417,9 @@ class GPMathTest(parameterized.TestCase):
 
         # make kernels and variance
         K, Kcross = muygps.kernel(F2_dists), muygps.kernel(nn_dists)
-        diagonal_variance = muygps._compute_diagonal_variance(K, Kcross)
+        diagonal_variance = muygps._compute_diagonal_variance(
+            K, Kcross, muygps.eps()
+        )
 
         # validate
         self.assertEqual(diagonal_variance.shape, (test_count,))
