@@ -22,7 +22,7 @@ from scipy import optimize as opt
 
 from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.optimize.objective_f import get_loss_func, loo_crossval
+from MuyGPyS.optimize.objective import get_loss_func, loo_crossval
 
 
 def scipy_optimize_from_indices(
