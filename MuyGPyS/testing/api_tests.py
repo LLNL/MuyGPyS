@@ -73,15 +73,15 @@ class ClassifyAPITest(parameterized.TestCase):
             )
         print(f"Finds hyperparameters:")
         if isinstance(muygps, MuyGPS):
-            optim_params = muygps.get_optim_params()
-            for p in optim_params:
-                print(f"\t{p} : {optim_params[p]()}")
+            param_names, param_vals, _ = muygps.get_optim_params()
+            for i, p in enumerate(param_names):
+                print(f"\t{p} : {param_vals[i]}")
         elif isinstance(muygps, MMuyGPS):
             for i, model in enumerate(muygps.models):
                 print(f"model {i}:")
-                optim_params = model.get_optim_params()
-                for p in optim_params:
-                    print(f"\t{p} : {optim_params[p]()}")
+                param_names, param_vals, _ = model.get_optim_params()
+                for i, p in enumerate(param_names):
+                    print(f"\t{p} : {param_vals[i]}")
         print(f"obtains accuracy: {acc}")
         self.assertGreaterEqual(acc, target_acc)
         if crosswise_dists is not None:
@@ -212,9 +212,9 @@ class ClassifyAPITest(parameterized.TestCase):
                 np.unique(np.argmax(train["output"], axis=1)),
             )
         print(f"Finds hyperparameters:")
-        optim_params = muygps.get_optim_params()
-        for p in optim_params:
-            print(f"\t{p} : {optim_params[p]()}")
+        param_names, param_vals, _ = muygps.get_optim_params()
+        for i, p in enumerate(param_names):
+            print(f"\t{p} : {param_vals[i]}")
         print(f"obtains accuracy: {acc}")
         self.assertGreaterEqual(acc, target_acc)
         accuracy, uq = do_uq(surrogate_predictions, test["output"], masks)
@@ -331,11 +331,11 @@ class RegressionAPITest(parameterized.TestCase):
             )
 
     def _verify_regressor(self, regressor, variance, targets, sigma_method):
-        optim_params = regressor.get_optim_params()
-        if len(optim_params) > 0:
+        param_names, param_vals, _ = regressor.get_optim_params()
+        if len(param_names) > 0:
             print(f"finds hyperparameters:")
-            for p in optim_params:
-                print(f"\t{p} : {optim_params[p]()}")
+            for i, p in enumerate(param_names):
+                print(f"\t{p} : {param_vals[i]}")
         if variance is not None:
             test_count, response_count = targets.shape
             if response_count > 1:

@@ -247,14 +247,15 @@ class OptimTest(parameterized.TestCase):
             batch_nn_targets = sim_train["output"][batch_nn_indices, :]
 
             for i, muygps in enumerate(mmuygps.models):
-                estimate = scipy_optimize_from_tensors(
+                mmuygps.models[i] = scipy_optimize_from_tensors(
                     muygps,
                     batch_targets[:, i].reshape(batch_count, 1),
                     batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
                     crosswise_dists,
                     pairwise_dists,
                     loss_method=loss_method,
-                )[0]
+                )
+                estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
                 mse += np.sum(estimate - target[i]) ** 2
         mse /= its * response_count
         print(f"optimizes with mse {mse}")
@@ -340,14 +341,15 @@ class OptimTest(parameterized.TestCase):
             mmuygps = MMuyGPS(kern, *args)
 
             for i, muygps in enumerate(mmuygps.models):
-                estimate = scipy_optimize_from_indices(
+                mmuygps.models[i] = scipy_optimize_from_indices(
                     muygps,
                     batch_indices,
                     batch_nn_indices,
                     sim_train["input"],
                     sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
-                )[0]
+                )
+                estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
                 mse += np.sum(estimate - target[i]) ** 2
         mse /= its * response_count
         print(f"optimizes with mse {mse}")

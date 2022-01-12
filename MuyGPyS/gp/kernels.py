@@ -327,7 +327,7 @@ class Hyperparameter:
         Returns:
             The current value of the hyperparameter.
         """
-        return self._val
+        return np.float64(self._val)
 
     def get_bounds(self) -> Union[str, Tuple[float, float]]:
         """
@@ -394,6 +394,10 @@ class KernelFn:
         """
         for name in kwargs:
             self.hyperparameters[name]._set(**kwargs[name])
+
+    @staticmethod
+    def fn(self, dists: np.ndarray) -> np.ndarray:
+        pass
 
     def __call__(self, squared_dists: np.ndarray) -> np.ndarray:
         pass
@@ -464,7 +468,11 @@ class RBF(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return np.exp(-squared_dists / (2 * self.length_scale() ** 2))
+        return self.fn(squared_dists, length_scale=self.length_scale())
+
+    @staticmethod
+    def fn(squared_dists: np.ndarray, length_scale: float) -> np.ndarray:
+        return np.exp(-squared_dists / (2 * length_scale ** 2))
 
 
 class Matern(KernelFn):
@@ -541,9 +549,11 @@ class Matern(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        nu = self.nu()
-        # length_scale = self.length_scale()
-        dists = dists / self.length_scale()
+        return self.fn(dists, nu=self.nu(), length_scale=self.length_scale())
+
+    @staticmethod
+    def fn(dists: np.ndarray, nu: float, length_scale: float) -> np.ndarray:
+        dists = dists / length_scale
         if nu == 0.5:
             K = np.exp(-dists)
         elif nu == 1.5:
