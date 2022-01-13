@@ -119,67 +119,33 @@ class MuyGPS:
             Returns `True` if all parameters are fixed, and `False` otherwise.
         """
         for p in self.kernel.hyperparameters:
-            if self.kernel.hyperparameters[p].get_bounds() != "fixed":
+            if not self.kernel.hyperparameters[p].fixed():
                 return False
-        if self.eps.get_bounds() != "fixed":
+        if not self.eps.fixed():
             return False
         return True
 
     def get_optim_params(
         self,
-    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
+    ) -> Tuple[List[str], np.ndarray, np.ndarray]:
         """
-        Return a dictionary of references to the unfixed kernel hyperparameters.
+        Return lists of unfixed hyperparameter names, values, and bounds.
 
-        This is a convenience function for obtaining all of the information
-        necessary to optimize hyperparameters. It is important to note that the
-        values of the dictionary are references to the actual hyperparameter
-        objects underying the kernel functor - changing these references will
-        change the kernel.
-
-        Returns:
-            A dict mapping hyperparameter names to references to their objects.
-            Only returns hyperparameters whose bounds are not set as `fixed`.
-            Returned hyperparameters can include `eps`, but not `sigma_sq`,
-            as it is currently optimized via a separate closed-form method.
+        Returns
+        -------
+            names:
+                A list of unfixed hyperparameter names.
+            params:
+                A list of unfixed hyperparameter values.
+            bounds:
+                A list of unfixed hyperparameter bound tuples.
         """
-        names = []
-        params = []
-        bounds = []
-        for p in self.kernel.hyperparameters:
-            hp = self.kernel.hyperparameters[p]
-            if hp.get_bounds() != "fixed":
-                names.append(p)
-                params.append(hp())
-                bounds.append(hp.get_bounds())
-        if self.eps.get_bounds() != "fixed":
+        names, params, bounds = self.kernel.get_optim_params()
+        if not self.eps.fixed():
             names.append("eps")
             params.append(self.eps())
             bounds.append(self.eps.get_bounds())
         return names, np.array(params), np.array(bounds)
-
-    def get_fixed_kernel_params(self) -> Dict[str, float]:
-        """
-        Return a dictionary of references to the fixed kernel hyperparameters.
-
-        This is a convenience function for obtaining all of the information
-        necessary to optimize hyperparameters. It is important to note that the
-        values of the dictionary are references to the actual hyperparameter
-        objects underying the kernel functor - changing these references will
-        change the kernel.
-
-        Returns:
-            A dict mapping hyperparameter names to references to their objects.
-            Only returns hyperparameters whose bounds are set as `fixed`.
-            Returned hyperparameters can include `eps`, but not `sigma_sq`,
-            as it is currently optimized via a separate closed-form method.
-        """
-        fixed_params = {
-            p: self.kernel.hyperparameters[p]()
-            for p in self.kernel.hyperparameters
-            if self.kernel.hyperparameters[p].get_bounds() == "fixed"
-        }
-        return fixed_params
 
     @staticmethod
     def _compute_solve(
@@ -301,7 +267,8 @@ class MuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained() is False`.
             return_distances:
                 If `True`, returns a `(test_count, nn_count)` matrix containing
                 the crosswise distances between the test elements and their
@@ -426,7 +393,8 @@ class MuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained() is False`.
 
         Returns
         -------
@@ -446,7 +414,7 @@ class MuyGPS:
             self.eps(),
             self.sigma_sq(),
             variance_mode=variance_mode,
-            apply_sigma_sq=apply_sigma_sq,
+            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained()),
         )
 
     @staticmethod
@@ -466,7 +434,7 @@ class MuyGPS:
             diagonal_variance = MuyGPS._compute_diagonal_variance(
                 K, Kcross, eps
             )
-            if apply_sigma_sq is True and isinstance(sigma_sq, np.ndarray):
+            if apply_sigma_sq is True:
                 if len(sigma_sq) == 1:
                     diagonal_variance *= sigma_sq
                 else:
@@ -478,6 +446,33 @@ class MuyGPS:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
             )
+
+    def get_opt_fn(self):
+        """
+        Return a regress function for use in optimization.
+
+        Returns:
+            A function implementing regression, where `eps` is either fixed or
+            takes updating values during optimization. The function expects a
+            list of current hyperparameter values for unfixed parameters, which
+            are expected to occur in a certain order matching how they are set
+            in `~MuyGPyS.gp.muygps.MuyGPS.get_optim_params()`.
+        """
+        if not self.eps.fixed():
+
+            def caller_fn(K, Kcross, batch_nn_targets, x0):
+                return self._regress(
+                    K, Kcross, batch_nn_targets, x0[-1], self.sigma_sq()
+                )
+
+        else:
+
+            def caller_fn(K, Kcross, batch_nn_targets, x0):
+                return self._regress(
+                    K, Kcross, batch_nn_targets, self.eps(), self.sigma_sq()
+                )
+
+        return caller_fn
 
     def sigma_sq_optim(
         self,
@@ -799,7 +794,8 @@ class MultivariateMuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained() is False`.
             return_distances:
                 If `True`, returns a `(test_count, nn_count)` matrix containing
                 the crosswise distances between the test elements and their
@@ -929,7 +925,8 @@ class MultivariateMuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.leanred() is False`.
 
 
         Returns
@@ -949,7 +946,7 @@ class MultivariateMuyGPS:
             batch_nn_targets,
             self.sigma_sq,
             variance_mode=variance_mode,
-            apply_sigma_sq=apply_sigma_sq,
+            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained()),
         )
 
     @staticmethod
@@ -985,7 +982,7 @@ class MultivariateMuyGPS:
                 diagonal_variance[:, i] = model._compute_diagonal_variance(
                     K, Kcross, model.eps()
                 ).reshape(batch_count)
-                if apply_sigma_sq and isinstance(sigma_sq(), np.ndarray):
+                if apply_sigma_sq:
                     diagonal_variance[:, i] *= sigma_sq()[i]
         if variance_mode == "diagonal":
             return responses, diagonal_variance

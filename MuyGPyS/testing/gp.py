@@ -122,8 +122,6 @@ class BenchmarkGP:
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
         self.sigma_sq = SigmaSq()
-        # NOTE[bwp] This is dangerous. Probably need better solution.
-        self._set_sigma_sq(1.0)
 
     def set_eps(self, **eps) -> None:
         """
@@ -162,9 +160,9 @@ class BenchmarkGP:
             Returns `True` if all parameters are fixed, and `False` otherwise.
         """
         for p in self.kernel.hyperparameters:
-            if self.kernel.hyperparameters[p].get_bounds() != "fixed":
+            if not self.kernel.hyperparameters[p].fixed():
                 return False
-        if self.eps.get_bounds() != "fixed":
+        if not self.eps.fixed():
             return False
         return True
 
@@ -187,9 +185,9 @@ class BenchmarkGP:
         optim_params = {
             p: self.kernel.hyperparameters[p]
             for p in self.kernel.hyperparameters
-            if self.kernel.hyperparameters[p].get_bounds() != "fixed"
+            if not self.kernel.hyperparameters[p].fixed()
         }
-        if self.eps.get_bounds() != "fixed":
+        if not self.eps.fixed():
             optim_params["eps"] = self.eps
         return optim_params
 
@@ -249,9 +247,7 @@ class BenchmarkGP:
             )
             Kstar = self.kernel(test_pairwise_distances)
             variance = Kstar - Kcross @ np.linalg.solve(K, Kcross.T)
-            if apply_sigma_sq is True and isinstance(
-                self.sigma_sq(), np.ndarray
-            ):
+            if apply_sigma_sq is True and self.sigma_sq.trained() is True:
                 variance *= self.sigma_sq()[0]
             if variance_mode == "diagonal":
                 return responses, np.diagonal(variance)

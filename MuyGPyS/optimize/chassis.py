@@ -196,12 +196,9 @@ def scipy_optimize_from_tensors(
     """
     loss_fn = get_loss_func(loss_method)
     x0_names, x0, bounds = muygps.get_optim_params()
-    fixed_kernel_params = muygps.get_fixed_kernel_params()
 
-    kernel_fn = _make_kernel_fn(muygps.kernel.fn, x0_names, fixed_kernel_params)
-    predict_fn = _make_predict_fn(
-        muygps._regress, None if x0_names[-1] == "eps" else muygps.eps()
-    )
+    kernel_fn = muygps.kernel.get_opt_fn()
+    predict_fn = muygps.get_opt_fn()
 
     if verbose is True:
         print(f"parameters to be optimized: {x0_names}")
@@ -243,33 +240,3 @@ def scipy_optimize_from_tensors(
             ret.kernel.hyperparameters[key]._set_val(val)
 
     return ret
-
-
-def _make_kernel_fn(fn, x0_names, fixed_params):
-    if x0_names[-1] == "eps":
-
-        def fn_caller(dists, x0):
-            return fn(
-                dists, **dict(zip(x0_names[:-1], x0[:-1])), **fixed_params
-            )
-
-    else:
-
-        def fn_caller(dists, x0):
-            return fn(dists, **dict(zip(x0_names, x0)), **fixed_params)
-
-    return fn_caller
-
-
-def _make_predict_fn(fn, eps: Optional[float] = None) -> Callable:
-    if eps is None:
-        # Here we take eps (x0) as an argument
-        def fn_caller(K, Kcross, batch_nn_targets, x0):
-            return fn(K, Kcross, batch_nn_targets, x0, "unlearned")
-
-    else:
-        # In this case, ignore x0 because it is fixed
-        def fn_caller(K, Kcross, batch_nn_targets, x0):
-            return fn(K, Kcross, batch_nn_targets, eps, "unlearned")
-
-    return fn_caller

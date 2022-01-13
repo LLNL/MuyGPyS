@@ -116,10 +116,11 @@ class DistancesTest(parameterized.TestCase):
 
 
 class SigmaSqTest(parameterized.TestCase):
-    def test_unlearned(self):
+    def test_untrained(self):
         param = SigmaSq()
-        self.assertEqual("unlearned", param())
-        val = np.array([1.0])
+        self.assertFalse(param.trained())
+        self.assertEqual(np.array([1.0]), param())
+        val = np.array([5.0])
         param._set(val)
         self.assertEqual(val, param())
 
@@ -152,7 +153,7 @@ class HyperparameterTest(parameterized.TestCase):
     def test_fixed_init(self, val, bounds):
         param = Hyperparameter(val, bounds)
         self.assertEqual(val, param())
-        self.assertEqual("fixed", param.get_bounds())
+        self.assertTrue(param.fixed())
 
     @parameterized.parameters(
         (
@@ -282,9 +283,13 @@ class KernelTest(parameterized.TestCase):
         if val is not None:
             self.assertEqual(val, kern_fn.hyperparameters[param]())
         if bounds is not None:
-            self.assertEqual(
-                bounds, kern_fn.hyperparameters[param].get_bounds()
-            )
+            if bounds == "fixed":
+                self.assertTrue(kern_fn.hyperparameters[param].fixed())
+            else:
+                self.assertFalse(kern_fn.hyperparameters[param].fixed())
+                self.assertEqual(
+                    bounds, kern_fn.hyperparameters[param].get_bounds()
+                )
 
 
 class RBFTest(KernelTest):

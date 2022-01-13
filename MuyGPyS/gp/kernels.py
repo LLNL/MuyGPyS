@@ -43,7 +43,7 @@ Example:
 
 import numpy as np
 
-from typing import cast, Dict, Optional, Tuple, Union
+from typing import cast, Callable, Dict, List, Optional, Tuple, Union
 
 from scipy.special import gamma, kv
 
@@ -61,7 +61,8 @@ class SigmaSq:
     """
 
     def __init__(self):
-        self.val = "unlearned"
+        self.val = np.array([1.0])
+        self._trained = False
 
     def _set(self, val: np.ndarray) -> None:
         """
@@ -76,6 +77,7 @@ class SigmaSq:
                 f"Expected np.ndarray for SigmaSq value update, not {val}"
             )
         self.val = val
+        self._trained = True
 
     def __call__(self) -> np.ndarray:
         """
@@ -85,6 +87,15 @@ class SigmaSq:
             The current value of the hyperparameter.
         """
         return self.val
+
+    def trained(self) -> bool:
+        """
+        Report whether the value has been set.
+
+        Returns:
+            `True` if trained, `False` otherwise.
+        """
+        return self._trained
 
 
 class Hyperparameter:
@@ -222,8 +233,8 @@ class Hyperparameter:
                 raise ValueError(
                     f"Unsupported string hyperparameter value {val}."
                 )
-        if self._bounds == "fixed":
-            if val == "sample" or val == "log_sample":
+        if self.fixed() is True:
+            if isinstance(val, str):
                 raise ValueError(
                     f"Fixed bounds do not support string value ({val}) prompts."
                 )
@@ -318,7 +329,11 @@ class Hyperparameter:
                     f"{bounds[1]}."
                 )
             bounds = (float(bounds[0]), float(bounds[1]))
-        self._bounds = bounds
+            self._bounds = bounds
+            self._fixed = False
+        else:
+            self._bounds = (0.0, 0.0)  # default value
+            self._fixed = True
 
     def __call__(self) -> float:
         """
@@ -329,14 +344,24 @@ class Hyperparameter:
         """
         return np.float64(self._val)
 
-    def get_bounds(self) -> Union[str, Tuple[float, float]]:
+    def get_bounds(self) -> Tuple[float, float]:
         """
         Bounds accessor.
 
         Returns:
-            The string `"fixed"` or the lower and upper bound tuple.
+            The lower and upper bound tuple.
         """
         return self._bounds
+
+    def fixed(self) -> bool:
+        """
+        Report whether the parameter is fixed, and is to be ignored during
+        optimization.
+
+        Returns:
+            `True` if fixed, `False` otherwise.
+        """
+        return self._fixed
 
 
 def _init_hyperparameter(
@@ -381,10 +406,7 @@ class KernelFn:
         self.hyperparameters = dict()
         self.metric = ""
 
-    def set_params(
-        self,
-        **kwargs,
-    ) -> None:
+    def set_params(self, **kwargs) -> None:
         """
         Reset hyperparameters using hyperparameter dict(s).
 
@@ -395,11 +417,15 @@ class KernelFn:
         for name in kwargs:
             self.hyperparameters[name]._set(**kwargs[name])
 
-    @staticmethod
-    def fn(self, dists: np.ndarray) -> np.ndarray:
+    def __call__(self, dists: np.ndarray) -> np.ndarray:
         pass
 
-    def __call__(self, squared_dists: np.ndarray) -> np.ndarray:
+    def get_optim_params(
+        self,
+    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
+        pass
+
+    def get_opt_fn(self) -> Callable:
         pass
 
     def __str__(self) -> str:
@@ -468,11 +494,58 @@ class RBF(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self.fn(squared_dists, length_scale=self.length_scale())
+        return self._fn(squared_dists, length_scale=self.length_scale())
 
     @staticmethod
-    def fn(squared_dists: np.ndarray, length_scale: float) -> np.ndarray:
+    def _fn(squared_dists: np.ndarray, length_scale: float) -> np.ndarray:
         return np.exp(-squared_dists / (2 * length_scale ** 2))
+
+    def get_optim_params(
+        self,
+    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
+        """
+        Report lists of unfixed hyperparameter names, values, and bounds.
+
+        Returns
+        -------
+            names:
+                A list of unfixed hyperparameter names.
+            params:
+                A list of unfixed hyperparameter values.
+            bounds:
+                A list of unfixed hyperparameter bound tuples.
+        """
+        names = []
+        params = []
+        bounds = []
+        if not self.length_scale.fixed():
+            names.append("length_scale")
+            params.append(self.length_scale())
+            bounds.append(self.length_scale.get_bounds())
+        return names, params, bounds
+
+    def get_opt_fn(self) -> Callable:
+        """
+        Return a kernel function with fixed parameters set.
+
+        Returns:
+            A function implementing the kernel where all fixed parameters are
+            set. The function expects a list of current hyperparameter values
+            for unfixed parameters, which are expected to occur in a certain
+            order matching how they are set in
+            :func:`~MuyGPyS.gp.kernel.RBF.get_optim_params()`.
+        """
+        if not self.length_scale.fixed():
+
+            def caller_fn(dists, x0):
+                return self._fn(dists, length_scale=x0[0])
+
+        else:
+
+            def caller_fn(dists, x0):
+                return self._fn(dists, length_scale=self.length_scale())
+
+        return caller_fn
 
 
 class Matern(KernelFn):
@@ -549,10 +622,10 @@ class Matern(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self.fn(dists, nu=self.nu(), length_scale=self.length_scale())
+        return self._fn(dists, nu=self.nu(), length_scale=self.length_scale())
 
     @staticmethod
-    def fn(dists: np.ndarray, nu: float, length_scale: float) -> np.ndarray:
+    def _fn(dists: np.ndarray, nu: float, length_scale: float) -> np.ndarray:
         dists = dists / length_scale
         if nu == 0.5:
             K = np.exp(-dists)
@@ -572,6 +645,73 @@ class Matern(KernelFn):
             K *= tmp ** nu
             K *= kv(nu, tmp)
         return K
+
+    def get_optim_params(
+        self,
+    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
+        """
+        Report lists of unfixed hyperparameter names, values, and bounds.
+
+        Returns
+        -------
+            names:
+                A list of unfixed hyperparameter names.
+            params:
+                A list of unfixed hyperparameter values.
+            bounds:
+                A list of unfixed hyperparameter bound tuples.
+        """
+        names = []
+        params = []
+        bounds = []
+        if not self.nu.fixed():
+            names.append("nu")
+            params.append(self.nu())
+            bounds.append(self.nu.get_bounds())
+        if not self.length_scale.fixed():
+            names.append("length_scale")
+            params.append(self.length_scale())
+            bounds.append(self.length_scale.get_bounds())
+        return names, params, bounds
+
+    def get_opt_fn(self) -> Callable:
+        """
+        Return a kernel function with fixed parameters set.
+
+        Returns:
+            A function implementing the kernel where all fixed parameters are
+            set. The function expects a list of current hyperparameter values
+            for unfixed parameters, which are expected to occur in a certain
+            order matching how they are set in
+            :func:`~MuyGPyS.gp.kernel.Matern.get_optim_params()`.
+        """
+        nu_fixed = self.nu.fixed()
+        ls_fixed = self.length_scale.fixed()
+        if nu_fixed is False and ls_fixed is True:
+
+            def caller_fn(dists, x0):
+                return self._fn(
+                    dists, nu=x0[0], length_scale=self.length_scale()
+                )
+
+        elif nu_fixed is False and ls_fixed is False:
+
+            def caller_fn(dists, x0):
+                return self._fn(dists, nu=x0[0], length_scale=x0[1])
+
+        elif nu_fixed is True and ls_fixed is False:
+
+            def caller_fn(dists, x0):
+                return self._fn(dists, nu=self.nu(), length_scale=x0[0])
+
+        else:
+
+            def caller_fn(dists, x0):
+                return self._fn(
+                    dists, nu=self.nu(), length_scale=self.length_scale()
+                )
+
+        return caller_fn
 
 
 def _get_kernel(kern: str, **kwargs) -> KernelFn:
