@@ -129,19 +129,16 @@ class MuyGPS:
         self,
     ) -> Tuple[List[str], np.ndarray, np.ndarray]:
         """
-        Return a dictionary of references to the unfixed kernel hyperparameters.
+        Return lists of unfixed hyperparameter names, values, and bounds.
 
-        This is a convenience function for obtaining all of the information
-        necessary to optimize hyperparameters. It is important to note that the
-        values of the dictionary are references to the actual hyperparameter
-        objects underying the kernel functor - changing these references will
-        change the kernel.
-
-        Returns:
-            A dict mapping hyperparameter names to references to their objects.
-            Only returns hyperparameters whose bounds are not set as `fixed`.
-            Returned hyperparameters can include `eps`, but not `sigma_sq`,
-            as it is currently optimized via a separate closed-form method.
+        Returns
+        -------
+            names:
+                A list of unfixed hyperparameter names.
+            params:
+                A list of unfixed hyperparameter values.
+            bounds:
+                A list of unfixed hyperparameter bound tuples.
         """
         names, params, bounds = self.kernel.get_optim_params()
         if not self.eps.fixed():
@@ -451,6 +448,16 @@ class MuyGPS:
             )
 
     def get_opt_fn(self):
+        """
+        Return a regress function for use in optimization.
+
+        Returns:
+            A function implementing regression, where `eps` is either fixed or
+            takes updating values during optimization. The function expects a
+            list of current hyperparameter values for unfixed parameters, which
+            are expected to occur in a certain order matching how they are set
+            in `~MuyGPyS.gp.muygps.MuyGPS.get_optim_params()`.
+        """
         if not self.eps.fixed():
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):

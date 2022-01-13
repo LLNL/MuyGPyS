@@ -89,6 +89,12 @@ class SigmaSq:
         return self.val
 
     def trained(self) -> bool:
+        """
+        Report whether the value has been set.
+
+        Returns:
+            `True` if trained, `False` otherwise.
+        """
         return self._trained
 
 
@@ -338,7 +344,7 @@ class Hyperparameter:
         """
         return np.float64(self._val)
 
-    def get_bounds(self) -> Union[str, Tuple[float, float]]:
+    def get_bounds(self) -> Tuple[float, float]:
         """
         Bounds accessor.
 
@@ -348,6 +354,13 @@ class Hyperparameter:
         return self._bounds
 
     def fixed(self) -> bool:
+        """
+        Report whether the parameter is fixed, and is to be ignored during
+        optimization.
+
+        Returns:
+            `True` if fixed, `False` otherwise.
+        """
         return self._fixed
 
 
@@ -409,7 +422,7 @@ class KernelFn:
 
     def get_optim_params(
         self,
-    ) -> Tuple[List[str], List[float], List[Union[str, Tuple[float, float]]]]:
+    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         pass
 
     def get_opt_fn(self) -> Callable:
@@ -489,7 +502,19 @@ class RBF(KernelFn):
 
     def get_optim_params(
         self,
-    ) -> Tuple[List[str], List[float], List[Union[str, Tuple[float, float]]]]:
+    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
+        """
+        Report lists of unfixed hyperparameter names, values, and bounds.
+
+        Returns
+        -------
+            names:
+                A list of unfixed hyperparameter names.
+            params:
+                A list of unfixed hyperparameter values.
+            bounds:
+                A list of unfixed hyperparameter bound tuples.
+        """
         names = []
         params = []
         bounds = []
@@ -500,6 +525,16 @@ class RBF(KernelFn):
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:
+        """
+        Return a kernel function with fixed parameters set.
+
+        Returns:
+            A function implementing the kernel where all fixed parameters are
+            set. The function expects a list of current hyperparameter values
+            for unfixed parameters, which are expected to occur in a certain
+            order matching how they are set in
+            :func:`~MuyGPyS.gp.kernel.RBF.get_optim_params()`.
+        """
         if not self.length_scale.fixed():
 
             def caller_fn(dists, x0):
@@ -613,7 +648,19 @@ class Matern(KernelFn):
 
     def get_optim_params(
         self,
-    ) -> Tuple[List[str], List[float], List[Union[str, Tuple[float, float]]]]:
+    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
+        """
+        Report lists of unfixed hyperparameter names, values, and bounds.
+
+        Returns
+        -------
+            names:
+                A list of unfixed hyperparameter names.
+            params:
+                A list of unfixed hyperparameter values.
+            bounds:
+                A list of unfixed hyperparameter bound tuples.
+        """
         names = []
         params = []
         bounds = []
@@ -628,6 +675,16 @@ class Matern(KernelFn):
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:
+        """
+        Return a kernel function with fixed parameters set.
+
+        Returns:
+            A function implementing the kernel where all fixed parameters are
+            set. The function expects a list of current hyperparameter values
+            for unfixed parameters, which are expected to occur in a certain
+            order matching how they are set in
+            :func:`~MuyGPyS.gp.kernel.Matern.get_optim_params()`.
+        """
         nu_fixed = self.nu.fixed()
         ls_fixed = self.length_scale.fixed()
         if nu_fixed is False and ls_fixed is True:
