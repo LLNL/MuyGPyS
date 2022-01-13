@@ -43,7 +43,7 @@ Example:
 
 import numpy as np
 
-from typing import cast, Dict, Optional, Tuple, Union
+from typing import cast, Callable, Dict, List, Optional, Tuple, Union
 
 from scipy.special import gamma, kv
 
@@ -381,10 +381,7 @@ class KernelFn:
         self.hyperparameters = dict()
         self.metric = ""
 
-    def set_params(
-        self,
-        **kwargs,
-    ) -> None:
+    def set_params(self, **kwargs) -> None:
         """
         Reset hyperparameters using hyperparameter dict(s).
 
@@ -395,11 +392,15 @@ class KernelFn:
         for name in kwargs:
             self.hyperparameters[name]._set(**kwargs[name])
 
-    @staticmethod
-    def fn(self, dists: np.ndarray) -> np.ndarray:
+    def __call__(self, dists: np.ndarray) -> np.ndarray:
         pass
 
-    def __call__(self, squared_dists: np.ndarray) -> np.ndarray:
+    def get_optim_params(
+        self,
+    ) -> Tuple[List[str], List[float], List[Union[str, Tuple[float, float]]]]:
+        pass
+
+    def get_opt_fn(self) -> Callable:
         pass
 
     def __str__(self) -> str:
@@ -468,11 +469,36 @@ class RBF(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self.fn(squared_dists, length_scale=self.length_scale())
+        return self._fn(squared_dists, length_scale=self.length_scale())
 
     @staticmethod
-    def fn(squared_dists: np.ndarray, length_scale: float) -> np.ndarray:
+    def _fn(squared_dists: np.ndarray, length_scale: float) -> np.ndarray:
         return np.exp(-squared_dists / (2 * length_scale ** 2))
+
+    def get_optim_params(
+        self,
+    ) -> Tuple[List[str], List[float], List[Union[str, Tuple[float, float]]]]:
+        names = []
+        params = []
+        bounds = []
+        if self.length_scale.get_bounds() != "fixed":
+            names.append("length_scale")
+            params.append(self.length_scale())
+            bounds.append(self.length_scale.get_bounds())
+        return names, params, bounds
+
+    def get_opt_fn(self) -> Callable:
+        if self.length_scale.get_bounds() != "fixed":
+
+            def caller_fn(dists, x0):
+                return self._fn(dists, length_scale=x0[0])
+
+        else:
+
+            def caller_fn(dists, x0):
+                return self._fn(dists, length_scale=self.length_scale())
+
+        return caller_fn
 
 
 class Matern(KernelFn):
@@ -549,10 +575,10 @@ class Matern(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self.fn(dists, nu=self.nu(), length_scale=self.length_scale())
+        return self._fn(dists, nu=self.nu(), length_scale=self.length_scale())
 
     @staticmethod
-    def fn(dists: np.ndarray, nu: float, length_scale: float) -> np.ndarray:
+    def _fn(dists: np.ndarray, nu: float, length_scale: float) -> np.ndarray:
         dists = dists / length_scale
         if nu == 0.5:
             K = np.exp(-dists)
@@ -572,6 +598,51 @@ class Matern(KernelFn):
             K *= tmp ** nu
             K *= kv(nu, tmp)
         return K
+
+    def get_optim_params(
+        self,
+    ) -> Tuple[List[str], List[float], List[Union[str, Tuple[float, float]]]]:
+        names = []
+        params = []
+        bounds = []
+        if self.nu.get_bounds() != "fixed":
+            names.append("nu")
+            params.append(self.nu())
+            bounds.append(self.nu.get_bounds())
+        if self.length_scale.get_bounds() != "fixed":
+            names.append("length_scale")
+            params.append(self.length_scale())
+            bounds.append(self.length_scale.get_bounds())
+        return names, params, bounds
+
+    def get_opt_fn(self) -> Callable:
+        nu_fixed = self.nu.get_bounds() == "fixed"
+        ls_fixed = self.length_scale.get_bounds() == "fixed"
+        if nu_fixed is False and ls_fixed is True:
+
+            def caller_fn(dists, x0):
+                return self._fn(
+                    dists, nu=x0[0], length_scale=self.length_scale()
+                )
+
+        elif nu_fixed is False and ls_fixed is False:
+
+            def caller_fn(dists, x0):
+                return self._fn(dists, nu=x0[0], length_scale=x0[1])
+
+        elif nu_fixed is True and ls_fixed is False:
+
+            def caller_fn(dists, x0):
+                return self._fn(dists, nu=self.nu(), length_scale=x0[0])
+
+        else:
+
+            def caller_fn(dists, x0):
+                return self._fn(
+                    dists, nu=self.nu(), length_scale=self.length_scale()
+                )
+
+        return caller_fn
 
 
 def _get_kernel(kern: str, **kwargs) -> KernelFn:

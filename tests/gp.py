@@ -486,6 +486,7 @@ class MakerTest(parameterized.TestCase):
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             return_distances=return_distances,
+            verbose=False,
         )
 
         if len(classifier_args) == 2:

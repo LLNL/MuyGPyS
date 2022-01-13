@@ -127,7 +127,7 @@ class MuyGPS:
 
     def get_optim_params(
         self,
-    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
+    ) -> Tuple[List[str], np.ndarray, np.ndarray]:
         """
         Return a dictionary of references to the unfixed kernel hyperparameters.
 
@@ -143,43 +143,12 @@ class MuyGPS:
             Returned hyperparameters can include `eps`, but not `sigma_sq`,
             as it is currently optimized via a separate closed-form method.
         """
-        names = []
-        params = []
-        bounds = []
-        for p in self.kernel.hyperparameters:
-            hp = self.kernel.hyperparameters[p]
-            if hp.get_bounds() != "fixed":
-                names.append(p)
-                params.append(hp())
-                bounds.append(hp.get_bounds())
+        names, params, bounds = self.kernel.get_optim_params()
         if self.eps.get_bounds() != "fixed":
             names.append("eps")
             params.append(self.eps())
             bounds.append(self.eps.get_bounds())
         return names, np.array(params), np.array(bounds)
-
-    def get_fixed_kernel_params(self) -> Dict[str, float]:
-        """
-        Return a dictionary of references to the fixed kernel hyperparameters.
-
-        This is a convenience function for obtaining all of the information
-        necessary to optimize hyperparameters. It is important to note that the
-        values of the dictionary are references to the actual hyperparameter
-        objects underying the kernel functor - changing these references will
-        change the kernel.
-
-        Returns:
-            A dict mapping hyperparameter names to references to their objects.
-            Only returns hyperparameters whose bounds are set as `fixed`.
-            Returned hyperparameters can include `eps`, but not `sigma_sq`,
-            as it is currently optimized via a separate closed-form method.
-        """
-        fixed_params = {
-            p: self.kernel.hyperparameters[p]()
-            for p in self.kernel.hyperparameters
-            if self.kernel.hyperparameters[p].get_bounds() == "fixed"
-        }
-        return fixed_params
 
     @staticmethod
     def _compute_solve(
@@ -478,6 +447,23 @@ class MuyGPS:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
             )
+
+    def get_opt_fn(self):
+        if self.eps.get_bounds() != "fixed":
+
+            def caller_fn(K, Kcross, batch_nn_targets, x0):
+                return self._regress(
+                    K, Kcross, batch_nn_targets, x0, "unlearned"
+                )
+
+        else:
+
+            def caller_fn(K, Kcross, batch_nn_targets, x0):
+                return self._regress(
+                    K, Kcross, batch_nn_targets, self.eps(), "unlearned"
+                )
+
+        return caller_fn
 
     def sigma_sq_optim(
         self,
