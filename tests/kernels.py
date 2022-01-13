@@ -116,10 +116,11 @@ class DistancesTest(parameterized.TestCase):
 
 
 class SigmaSqTest(parameterized.TestCase):
-    def test_unlearned(self):
+    def test_untrained(self):
         param = SigmaSq()
-        self.assertEqual("unlearned", param())
-        val = np.array([1.0])
+        self.assertFalse(param.trained())
+        self.assertEqual(np.array([1.0]), param())
+        val = np.array([5.0])
         param._set(val)
         self.assertEqual(val, param())
 

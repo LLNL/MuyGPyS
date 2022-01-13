@@ -61,7 +61,8 @@ class SigmaSq:
     """
 
     def __init__(self):
-        self.val = "unlearned"
+        self.val = np.array([1.0])
+        self._trained = False
 
     def _set(self, val: np.ndarray) -> None:
         """
@@ -76,6 +77,7 @@ class SigmaSq:
                 f"Expected np.ndarray for SigmaSq value update, not {val}"
             )
         self.val = val
+        self._trained = True
 
     def __call__(self) -> np.ndarray:
         """
@@ -85,6 +87,9 @@ class SigmaSq:
             The current value of the hyperparameter.
         """
         return self.val
+
+    def trained(self) -> bool:
+        return self._trained
 
 
 class Hyperparameter:

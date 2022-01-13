@@ -270,7 +270,8 @@ class MuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained() is False`.
             return_distances:
                 If `True`, returns a `(test_count, nn_count)` matrix containing
                 the crosswise distances between the test elements and their
@@ -395,7 +396,8 @@ class MuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained() is False`.
 
         Returns
         -------
@@ -415,7 +417,7 @@ class MuyGPS:
             self.eps(),
             self.sigma_sq(),
             variance_mode=variance_mode,
-            apply_sigma_sq=apply_sigma_sq,
+            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained()),
         )
 
     @staticmethod
@@ -435,7 +437,7 @@ class MuyGPS:
             diagonal_variance = MuyGPS._compute_diagonal_variance(
                 K, Kcross, eps
             )
-            if apply_sigma_sq is True and isinstance(sigma_sq, np.ndarray):
+            if apply_sigma_sq is True:
                 if len(sigma_sq) == 1:
                     diagonal_variance *= sigma_sq
                 else:
@@ -453,14 +455,14 @@ class MuyGPS:
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
                 return self._regress(
-                    K, Kcross, batch_nn_targets, x0, "unlearned"
+                    K, Kcross, batch_nn_targets, x0[-1], self.sigma_sq()
                 )
 
         else:
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
                 return self._regress(
-                    K, Kcross, batch_nn_targets, self.eps(), "unlearned"
+                    K, Kcross, batch_nn_targets, self.eps(), self.sigma_sq()
                 )
 
         return caller_fn
@@ -785,7 +787,8 @@ class MultivariateMuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained() is False`.
             return_distances:
                 If `True`, returns a `(test_count, nn_count)` matrix containing
                 the crosswise distances between the test elements and their
@@ -915,7 +918,8 @@ class MultivariateMuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.leanred() is False`.
 
 
         Returns
@@ -935,7 +939,7 @@ class MultivariateMuyGPS:
             batch_nn_targets,
             self.sigma_sq,
             variance_mode=variance_mode,
-            apply_sigma_sq=apply_sigma_sq,
+            apply_sigma_sq=(apply_sigma_sq and sigma_sq.trained()),
         )
 
     @staticmethod
@@ -971,7 +975,7 @@ class MultivariateMuyGPS:
                 diagonal_variance[:, i] = model._compute_diagonal_variance(
                     K, Kcross, model.eps()
                 ).reshape(batch_count)
-                if apply_sigma_sq and isinstance(sigma_sq(), np.ndarray):
+                if apply_sigma_sq:
                     diagonal_variance[:, i] *= sigma_sq()[i]
         if variance_mode == "diagonal":
             return responses, diagonal_variance
