@@ -939,7 +939,7 @@ class MultivariateMuyGPS:
             batch_nn_targets,
             self.sigma_sq,
             variance_mode=variance_mode,
-            apply_sigma_sq=(apply_sigma_sq and sigma_sq.trained()),
+            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained()),
         )
 
     @staticmethod
