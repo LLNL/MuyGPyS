@@ -162,9 +162,9 @@ class BenchmarkGP:
             Returns `True` if all parameters are fixed, and `False` otherwise.
         """
         for p in self.kernel.hyperparameters:
-            if self.kernel.hyperparameters[p].get_bounds() != "fixed":
+            if not self.kernel.hyperparameters[p].fixed():
                 return False
-        if self.eps.get_bounds() != "fixed":
+        if not self.eps.fixed():
             return False
         return True
 
@@ -187,9 +187,9 @@ class BenchmarkGP:
         optim_params = {
             p: self.kernel.hyperparameters[p]
             for p in self.kernel.hyperparameters
-            if self.kernel.hyperparameters[p].get_bounds() != "fixed"
+            if not self.kernel.hyperparameters[p].fixed()
         }
-        if self.eps.get_bounds() != "fixed":
+        if not self.eps.fixed():
             optim_params["eps"] = self.eps
         return optim_params
 

@@ -222,8 +222,8 @@ class Hyperparameter:
                 raise ValueError(
                     f"Unsupported string hyperparameter value {val}."
                 )
-        if self._bounds == "fixed":
-            if val == "sample" or val == "log_sample":
+        if self.fixed() is True:
+            if isinstance(val, str):
                 raise ValueError(
                     f"Fixed bounds do not support string value ({val}) prompts."
                 )
@@ -318,7 +318,11 @@ class Hyperparameter:
                     f"{bounds[1]}."
                 )
             bounds = (float(bounds[0]), float(bounds[1]))
-        self._bounds = bounds
+            self._bounds = bounds
+            self._fixed = False
+        else:
+            self._bounds = (0.0, 0.0)  # default value
+            self._fixed = True
 
     def __call__(self) -> float:
         """
@@ -334,9 +338,12 @@ class Hyperparameter:
         Bounds accessor.
 
         Returns:
-            The string `"fixed"` or the lower and upper bound tuple.
+            The lower and upper bound tuple.
         """
         return self._bounds
+
+    def fixed(self) -> bool:
+        return self._fixed
 
 
 def _init_hyperparameter(
@@ -481,14 +488,14 @@ class RBF(KernelFn):
         names = []
         params = []
         bounds = []
-        if self.length_scale.get_bounds() != "fixed":
+        if not self.length_scale.fixed():
             names.append("length_scale")
             params.append(self.length_scale())
             bounds.append(self.length_scale.get_bounds())
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:
-        if self.length_scale.get_bounds() != "fixed":
+        if not self.length_scale.fixed():
 
             def caller_fn(dists, x0):
                 return self._fn(dists, length_scale=x0[0])
@@ -605,19 +612,19 @@ class Matern(KernelFn):
         names = []
         params = []
         bounds = []
-        if self.nu.get_bounds() != "fixed":
+        if not self.nu.fixed():
             names.append("nu")
             params.append(self.nu())
             bounds.append(self.nu.get_bounds())
-        if self.length_scale.get_bounds() != "fixed":
+        if not self.length_scale.fixed():
             names.append("length_scale")
             params.append(self.length_scale())
             bounds.append(self.length_scale.get_bounds())
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:
-        nu_fixed = self.nu.get_bounds() == "fixed"
-        ls_fixed = self.length_scale.get_bounds() == "fixed"
+        nu_fixed = self.nu.fixed()
+        ls_fixed = self.length_scale.fixed()
         if nu_fixed is False and ls_fixed is True:
 
             def caller_fn(dists, x0):

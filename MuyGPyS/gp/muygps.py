@@ -119,9 +119,9 @@ class MuyGPS:
             Returns `True` if all parameters are fixed, and `False` otherwise.
         """
         for p in self.kernel.hyperparameters:
-            if self.kernel.hyperparameters[p].get_bounds() != "fixed":
+            if not self.kernel.hyperparameters[p].fixed():
                 return False
-        if self.eps.get_bounds() != "fixed":
+        if not self.eps.fixed():
             return False
         return True
 
@@ -144,7 +144,7 @@ class MuyGPS:
             as it is currently optimized via a separate closed-form method.
         """
         names, params, bounds = self.kernel.get_optim_params()
-        if self.eps.get_bounds() != "fixed":
+        if not self.eps.fixed():
             names.append("eps")
             params.append(self.eps())
             bounds.append(self.eps.get_bounds())
@@ -449,7 +449,7 @@ class MuyGPS:
             )
 
     def get_opt_fn(self):
-        if self.eps.get_bounds() != "fixed":
+        if not self.eps.fixed():
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
                 return self._regress(

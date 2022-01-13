@@ -53,12 +53,11 @@ class GPInitTest(parameterized.TestCase):
                 kwargs[param]["val"],
                 muygps.kernel.hyperparameters[param](),
             )
-            self.assertEqual(
-                "fixed",
-                muygps.kernel.hyperparameters[param].get_bounds(),
+            self.assertTrue(
+                muygps.kernel.hyperparameters[param].fixed(),
             )
         self.assertEqual(eps["val"], muygps.eps())
-        self.assertEqual("fixed", muygps.eps.get_bounds())
+        self.assertTrue(muygps.eps.fixed())
         if gp_type == MuyGPS:
             self.assertEqual("unlearned", muygps.sigma_sq())
         elif gp_type == BenchmarkGP:
@@ -110,12 +109,20 @@ class GPInitTest(parameterized.TestCase):
                 kwargs[param]["val"],
                 muygps.kernel.hyperparameters[param](),
             )
-            self.assertEqual(
-                kwargs[param]["bounds"],
-                muygps.kernel.hyperparameters[param].get_bounds(),
-            )
+            if kwargs[param]["bounds"] == "fixed":
+                self.assertTrue(muygps.kernel.hyperparameters[param].fixed())
+            else:
+                self.assertFalse(muygps.kernel.hyperparameters[param].fixed())
+                self.assertEqual(
+                    kwargs[param]["bounds"],
+                    muygps.kernel.hyperparameters[param].get_bounds(),
+                )
         self.assertEqual(eps["val"], muygps.eps())
-        self.assertEqual(eps["bounds"], muygps.eps.get_bounds())
+        if eps["bounds"] == "fixed":
+            self.assertTrue(muygps.eps.fixed())
+        else:
+            self.assertFalse(muygps.eps.fixed())
+            self.assertEqual(eps["bounds"], muygps.eps.get_bounds())
         if gp_type == MuyGPS:
             self.assertEqual("unlearned", muygps.sigma_sq())
         elif gp_type == BenchmarkGP:

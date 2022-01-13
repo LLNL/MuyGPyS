@@ -78,12 +78,9 @@ class InitTest(parameterized.TestCase):
                     this_kwargs[param]["val"],
                     muygps.kernel.hyperparameters[param](),
                 )
-                self.assertEqual(
-                    "fixed",
-                    muygps.kernel.hyperparameters[param].get_bounds(),
-                )
+                self.assertTrue(muygps.kernel.hyperparameters[param].fixed())
             self.assertEqual(this_kwargs["eps"]["val"], muygps.eps())
-            self.assertEqual("fixed", muygps.eps.get_bounds())
+            self.assertTrue(muygps.eps.fixed())
             self.assertEqual("unlearned", muygps.sigma_sq())
 
 
