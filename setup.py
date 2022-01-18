@@ -16,7 +16,7 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 INSTALL_REQUIRES = [
     "numpy>=1.18.5",
-    "scipy==1.4.1",
+    "scipy>=1.4.1",
     "scikit-learn>=0.23.2",
     "absl-py>=0.13.0",
     "pybind11>=2.5.0",
