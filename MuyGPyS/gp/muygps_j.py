@@ -152,8 +152,45 @@ class MuyGPS:
         return names, np.array(params), np.array(bounds)
 
     @staticmethod
-    # @jit
     def _compute_solve(
+        K: np.ndarray,
+        Kcross: np.ndarray,
+        batch_nn_targets: np.ndarray,
+        eps: float,
+    ) -> np.ndarray:
+        """
+        Simultaneously solve all of the GP inference systems of linear
+        equations.
+
+        Args:
+            K:
+                A tensor of shape `(batch_count, nn_count, nn_count)` containing
+                the `(nn_count, nn_count` -shaped kernel matrices corresponding
+                to each of the batch elements.
+            Kcross:
+                A tensor of shape `(batch_count, nn_count)` containing the
+                `1 x nn_count` -shaped cross-covariance matrix corresponding
+                to each of the batch elements.
+            batch_nn_targets:
+                A tensor of shape `(batch_count, nn_count, response_count)`
+                whose last dimension lists the vector-valued responses for the
+                nearest neighbors of each batch element.
+            eps:
+                The value of the homoscedastic nugget parameter.
+
+        Returns:
+            A matrix of shape `(batch_count, response_count)` listing the
+            predicted response for each of the batch elements.
+        """
+        batch_count, nn_count, response_count = batch_nn_targets.shape
+        responses = Kcross.reshape(batch_count, 1, nn_count) @ np.linalg.solve(
+            K + eps * np.eye(nn_count), batch_nn_targets
+        )
+        return responses.reshape(batch_count, response_count)
+
+    @staticmethod
+    @jit
+    def _compute_solve_j(
         K: jnp.ndarray,
         Kcross: jnp.ndarray,
         batch_nn_targets: jnp.ndarray,
@@ -184,8 +221,8 @@ class MuyGPS:
             predicted response for each of the batch elements.
         """
         batch_count, nn_count, response_count = batch_nn_targets.shape
-        responses = Kcross.reshape(batch_count, 1, nn_count) @ np.linalg.solve(
-            K + eps * np.eye(nn_count), batch_nn_targets
+        responses = Kcross.reshape(batch_count, 1, nn_count) @ jnp.linalg.solve(
+            K + eps * jnp.eye(nn_count), batch_nn_targets
         )
         return responses.reshape(batch_count, response_count)
 
