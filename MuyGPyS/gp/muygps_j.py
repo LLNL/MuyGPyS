@@ -152,7 +152,7 @@ class MuyGPS:
         return names, np.array(params), np.array(bounds)
 
     @staticmethod
-    @jit
+    # @jit
     def _compute_solve(
         K: jnp.ndarray,
         Kcross: jnp.ndarray,
@@ -184,7 +184,7 @@ class MuyGPS:
             predicted response for each of the batch elements.
         """
         batch_count, nn_count, response_count = batch_nn_targets.shape
-        responses = Kcross.reshape(batch_count, 1, nn_count) @ jnp.linalg.solve(
+        responses = Kcross.reshape(batch_count, 1, nn_count) @ np.linalg.solve(
             K + eps * np.eye(nn_count), batch_nn_targets
         )
         return responses.reshape(batch_count, response_count)
@@ -442,7 +442,7 @@ class MuyGPS:
         )
 
     @staticmethod
-    @partial(jit, static_argnums=(5, 6))
+    # @partial(jit, static_argnums=(5, 6))
     def _regress(
         K: jnp.ndarray,
         Kcross: jnp.ndarray,

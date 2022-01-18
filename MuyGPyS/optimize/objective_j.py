@@ -106,7 +106,7 @@ def mse_fn(
     return squared_errors / (batch_count * response_count)
 
 
-@partial(jit, static_argnums=(1, 2, 3))
+# @partial(jit, static_argnums=(1, 2, 3))
 def loo_crossval(
     x0: np.ndarray,
     objective_fn: Callable,
