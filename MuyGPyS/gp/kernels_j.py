@@ -632,36 +632,63 @@ class Matern(KernelFn):
         return self._fn(dists, nu=self.nu(), length_scale=self.length_scale())
 
     @staticmethod
-    @partial(jit, static_argnums=(1,))
     def _fn(dists: jnp.ndarray, nu: float, length_scale: float) -> jnp.ndarray:
-        dists = dists / length_scale
         if nu == 0.5:
-            K = jnp.exp(-dists)
+            return Matern._fn_05(dists, length_scale)
         elif nu == 1.5:
-            K = dists * jnp.sqrt(3)
-            K = (1.0 + K) * jnp.exp(-K)
+            return Matern._fn_15(dists, length_scale)
         elif nu == 2.5:
-            K = dists * jnp.sqrt(5)
-            K = (1.0 + K + K ** 2 / 3.0) * jnp.exp(-K)
+            return Matern._fn_25(dists, length_scale)
         elif nu == jnp.inf:
-            K = jnp.exp(-(dists ** 2) / 2.0)
+            return Matern._fn_inf(dists, length_scale)
         else:
-            K = dists
-            diag_indices = jnp.arange(K.shape[1])
-            if len(K.shape) == 3:
-                K = K.at[:, diag_indices, diag_indices].set(1.0)
-            tmp = jnp.sqrt(2 * nu) * K
-            const_val = (2 ** (1.0 - nu)) / jnp.exp(gammaln(nu))
-            if len(K.shape) == 2:
-                K = K.at[:, :].set(const_val)
-            elif len(K.shape) == 3:
-                K = K.at[:, :, :].set(const_val)
-            K *= tmp ** nu
-            K *= tfp.math.bessel_kve(nu, tmp) / jnp.exp(jnp.abs(tmp))
-            if len(K.shape) == 3:
-                K = K.at[:, jnp.arange(K.shape[1]), jnp.arange(K.shape[1])].set(
-                    1.0
-                )
+            return Matern._fn_gen(dists, nu, length_scale)
+
+    @staticmethod
+    @jit
+    def _fn_05(dists: jnp.ndarray, length_scale: float) -> jnp.ndarray:
+        dists = dists / length_scale
+        return jnp.exp(-dists)
+
+    @staticmethod
+    @jit
+    def _fn_15(dists: jnp.ndarray, length_scale: float) -> jnp.ndarray:
+        dists = dists / length_scale
+        K = dists * jnp.sqrt(3)
+        return (1.0 + K) * jnp.exp(-K)
+
+    @staticmethod
+    @jit
+    def _fn_25(dists: jnp.ndarray, length_scale: float) -> jnp.ndarray:
+        dists = dists / length_scale
+        K = dists * jnp.sqrt(5)
+        return (1.0 + K + K ** 2 / 3.0) * jnp.exp(-K)
+
+    @staticmethod
+    @jit
+    def _fn_inf(dists: jnp.ndarray, length_scale: float) -> jnp.ndarray:
+        dists = dists / length_scale
+        return jnp.exp(-(dists ** 2) / 2.0)
+
+    @staticmethod
+    @jit
+    def _fn_gen(
+        dists: jnp.ndarray, nu: float, length_scale: float
+    ) -> jnp.ndarray:
+        K = dists / length_scale
+        diag_indices = jnp.arange(K.shape[1])
+        if len(K.shape) == 3:
+            K = K.at[:, diag_indices, diag_indices].set(1.0)
+        tmp = jnp.sqrt(2 * nu) * K
+        const_val = (2 ** (1.0 - nu)) / jnp.exp(gammaln(nu))
+        if len(K.shape) == 2:
+            K = K.at[:, :].set(const_val)
+        elif len(K.shape) == 3:
+            K = K.at[:, :, :].set(const_val)
+        K *= tmp ** nu
+        K *= tfp.math.bessel_kve(nu, tmp) / jnp.exp(jnp.abs(tmp))
+        if len(K.shape) == 3:
+            K = K.at[:, jnp.arange(K.shape[1]), jnp.arange(K.shape[1])].set(1.0)
         return K
 
     def get_optim_params(
@@ -708,26 +735,69 @@ class Matern(KernelFn):
         if nu_fixed is False and ls_fixed is True:
 
             def caller_fn(dists, x0):
-                return self._fn(
+                return self._fn_gen(
                     dists, nu=x0[0], length_scale=self.length_scale()
                 )
 
         elif nu_fixed is False and ls_fixed is False:
 
             def caller_fn(dists, x0):
-                return self._fn(dists, nu=x0[0], length_scale=x0[1])
+                return self._fn_gen(dists, nu=x0[0], length_scale=x0[1])
 
         elif nu_fixed is True and ls_fixed is False:
+            if self.nu() == 0.5:
 
-            def caller_fn(dists, x0):
-                return self._fn(dists, nu=self.nu(), length_scale=x0[0])
+                def caller_fn(dists, x0):
+                    return self._fn_05(dists, length_scale=x0[0])
+
+            elif self.nu() == 1.5:
+
+                def caller_fn(dists, x0):
+                    return self._fn_15(dists, length_scale=x0[0])
+
+            elif self.nu() == 2.5:
+
+                def caller_fn(dists, x0):
+                    return self._fn_25(dists, length_scale=x0[0])
+
+            elif self.nu() == jnp.inf:
+
+                def caller_fn(dists, x0):
+                    return self._fn_25(dists, length_scale=x0[0])
+
+            else:
+
+                def caller_fn(dists, x0):
+                    return self._fn_gen(dists, nu=self.nu(), length_scale=x0[0])
 
         else:
 
-            def caller_fn(dists, x0):
-                return self._fn(
-                    dists, nu=self.nu(), length_scale=self.length_scale()
-                )
+            if self.nu() == 0.5:
+
+                def caller_fn(dists, x0):
+                    return self._fn_05(dists, length_scale=self.length_scale())
+
+            elif self.nu() == 1.5:
+
+                def caller_fn(dists, x0):
+                    return self._fn_15(dists, length_scale=self.length_scale())
+
+            elif self.nu() == 2.5:
+
+                def caller_fn(dists, x0):
+                    return self._fn_25(dists, length_scale=self.length_scale())
+
+            elif self.nu() == jnp.inf:
+
+                def caller_fn(dists, x0):
+                    return self._fn_25(dists, length_scale=self.length_scale())
+
+            else:
+
+                def caller_fn(dists, x0):
+                    return self._fn_gen(
+                        dists, nu=self.nu(), length_scale=self.length_scale()
+                    )
 
         return caller_fn
 
