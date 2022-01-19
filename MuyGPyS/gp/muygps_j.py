@@ -568,6 +568,9 @@ class MuyGPS:
             A vector of shape `(response_count)` listing the value of sigma^2
             for each dimension.
         """
+        K = np.array(K)
+        nn_indices = np.array(nn_indices)
+        targets = np.array(targets)
         self.sigma_sq._set(
             self._sigma_sq_optim(K, nn_indices, targets, self.eps())
         )
