@@ -20,12 +20,12 @@ from copy import deepcopy
 from functools import partial
 from typing import Callable, Optional
 
-from jax import jit
+# from jax import jit, grad
 from scipy import optimize as opt
 
 from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.optimize.objective import get_loss_func, loo_crossval
+from MuyGPyS.optimize.objective_j import get_loss_func, make_loo_crossval_fn
 
 
 def scipy_optimize_from_indices(
@@ -203,26 +203,28 @@ def scipy_optimize_from_tensors(
     kernel_fn = muygps.kernel.get_opt_fn()
     predict_fn = muygps.get_opt_fn()
 
+    obj_fn = make_loo_crossval_fn(
+        loss_fn,
+        kernel_fn,
+        predict_fn,
+        pairwise_dists,
+        crosswise_dists,
+        batch_nn_targets,
+        batch_targets,
+    )
+
     if verbose is True:
         print(f"parameters to be optimized: {x0_names}")
         print(f"bounds: {bounds}")
         print(f"initial x0: {x0}")
 
     optres = opt.minimize(
-        loo_crossval,
+        obj_fn,
         x0,
-        args=(
-            loss_fn,
-            kernel_fn,
-            predict_fn,
-            pairwise_dists,
-            crosswise_dists,
-            batch_nn_targets,
-            batch_targets,
-        ),
         method="L-BFGS-B",
         bounds=bounds,
     )
+
     if verbose is True:
         print(f"optimizer results: \n{optres}")
 

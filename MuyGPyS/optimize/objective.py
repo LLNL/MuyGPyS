@@ -11,12 +11,10 @@ indicating them to optimization.
 
 import numpy as np
 
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable
 
 from scipy.special import softmax
 from sklearn.metrics import log_loss
-
-from MuyGPyS.gp.muygps import MuyGPS
 
 
 def get_loss_func(loss_method: str) -> Callable:
@@ -165,3 +163,27 @@ def loo_crossval(
     )
 
     return objective_fn(predictions, batch_targets)
+
+
+def make_loo_crossval_fn(
+    loss_fn: Callable,
+    kernel_fn: Callable,
+    predict_fn: Callable,
+    pairwise_dists: np.ndarray,
+    crosswise_dists: np.ndarray,
+    batch_nn_targets: np.ndarray,
+    batch_targets: np.ndarray,
+) -> Callable:
+    def caller_fn(x0):
+        return loo_crossval(
+            x0,
+            loss_fn,
+            kernel_fn,
+            predict_fn,
+            pairwise_dists,
+            crosswise_dists,
+            batch_nn_targets,
+            batch_targets,
+        )
+
+    return caller_fn

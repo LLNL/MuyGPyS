@@ -15,7 +15,7 @@ import numpy as np
 from functools import partial
 from typing import Callable
 
-from jax import jit
+from jax import jit, grad
 from scipy.special import softmax
 from sklearn.metrics import log_loss
 
@@ -109,7 +109,7 @@ def mse_fn(
 # @partial(jit, static_argnums=(1, 2, 3))
 def loo_crossval(
     x0: np.ndarray,
-    objective_fn: Callable,
+    loss_fn: Callable,
     kernel_fn: Callable,
     predict_fn: Callable,
     pairwise_dists: jnp.ndarray,
@@ -126,7 +126,7 @@ def loo_crossval(
     Args:
         x0:
             Current guess for hyperparameter values of shape `(opt_count,)`.
-        objective_fn:
+        loss_fn:
             The function to be optimized. Can be any function that accepts two
             `numpy.ndarray` objects indicating the prediction and target values,
             in that order.
@@ -167,4 +167,28 @@ def loo_crossval(
         x0[-1],
     )
 
-    return objective_fn(predictions, batch_targets)
+    return loss_fn(predictions, batch_targets)
+
+
+def make_loo_crossval_fn(
+    loss_fn: Callable,
+    kernel_fn: Callable,
+    predict_fn: Callable,
+    pairwise_dists: jnp.ndarray,
+    crosswise_dists: jnp.ndarray,
+    batch_nn_targets: jnp.ndarray,
+    batch_targets: jnp.ndarray,
+) -> Callable:
+    def caller_fn(x0):
+        return loo_crossval(
+            x0,
+            loss_fn,
+            kernel_fn,
+            predict_fn,
+            pairwise_dists,
+            crosswise_dists,
+            batch_nn_targets,
+            batch_targets,
+        )
+
+    return caller_fn
