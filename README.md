@@ -1,5 +1,5 @@
 [![pipeline status](https://lc.llnl.gov/gitlab/muygps/MuyGPyS/badges/main/pipeline.svg)](https://lc.llnl.gov/gitlab/muygps/MuyGPyS/-/commits/main)
-[![Documentation Status](https://readthedocs.org/projects/muygpys/badge/?version=latest)](https://muygpys.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/muygpys/badge/?version=stable)](https://muygpys.readthedocs.io/en/latest/?badge=stable)
 
 # Fast implementation of the MuyGPs Gaussian process hyperparameter estimation algorithm
 
@@ -48,7 +48,7 @@ Then open the file `docs/_build/html/index.html` in your browser of choice.
 Our documentation includes several jupyter notebook tutorials at 
 `docs/examples`.
 These tutorials are also include in the 
-[online documentation](https://muygpys.readthedocs.io/en/latest/?).
+[online documentation](https://muygpys.readthedocs.io/en/stable/).
 
 See in particular the 
 [univariate regression tutorial](docs/examples/univariate_regression_tutorial.ipynb)
