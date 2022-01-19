@@ -15,11 +15,13 @@ to optimize a specified subset of the hyperparameters associated with a
 
 import numpy as np
 
+from copy import deepcopy
+
 from scipy import optimize as opt
 
 from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.optimize.objective import get_loss_func, loo_crossval
+from MuyGPyS.optimize.objective import get_loss_func, make_loo_crossval_fn
 
 
 def scipy_optimize_from_indices(
@@ -30,9 +32,9 @@ def scipy_optimize_from_indices(
     train_targets: np.ndarray,
     loss_method: str = "mse",
     verbose: bool = False,
-) -> np.ndarray:
+) -> MuyGPS:
     """
-    Optimize a model using scipy directly from the data.
+    Find an optimal model using scipy directly from the data.
 
     Use this method if you do not need to retain the distance matrices used for
     optimization.
@@ -44,7 +46,7 @@ def scipy_optimize_from_indices(
 
     Example:
         >>> from MuyGPyS.optimize.chassis import scipy_optimize_from_indices
-        >>> scipy_optimize_from_tensors(
+        >>> muygps = scipy_optimize_from_indices(
         ...         muygps,
         ...         batch_indices,
         ...         batch_nn_indices,
@@ -90,8 +92,7 @@ def scipy_optimize_from_indices(
             If True, print debug messages.
 
     Returns:
-        The list of optimized hyperparameters of shape `(opt_count)`. Mostly
-        useful for validation.
+        A new MuyGPs model whose specified hyperparameters have been optimized.
     """
     (
         crosswise_dists,
@@ -124,14 +125,14 @@ def scipy_optimize_from_tensors(
     pairwise_dists: np.ndarray,
     loss_method: str = "mse",
     verbose: bool = False,
-) -> np.ndarray:
+) -> MuyGPS:
     """
-    Optimize a model using existing distance matrices.
+    Find the optimal model using existing distance matrices.
 
     Use this method if you need to retain the distance matrices used for later
     use.
 
-    See the followin example, where we have already created a `batch_indices`
+    See the following example, where we have already created a `batch_indices`
     vector and a `batch_nn_indices` matrix using
     :class:`MuyGPyS.neighbors.NN_Wrapper`, a `crosswise_dists`
     matrix using :func:`MuyGPyS.gp.distance.crosswise_distances` and
@@ -140,7 +141,7 @@ def scipy_optimize_from_tensors(
 
     Example:
         >>> from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
-        >>> scipy_optimize_from_tensors(
+        >>> muygps = scipy_optimize_from_tensors(
         ...         muygps,
         ...         batch_indices,
         ...         batch_nn_indices,
@@ -190,43 +191,52 @@ def scipy_optimize_from_tensors(
             If True, print debug messages.
 
     Returns:
-        The vector of `(opt_count)` optimized hyperparameters. Mostly useful for
-        validation.
+        A new MuyGPs model whose specified hyperparameters have been optimized.
     """
     loss_fn = get_loss_func(loss_method)
-    optim_params = muygps.get_optim_params()
-    x0 = np.array([optim_params[p]() for p in optim_params])
-    bounds = np.array([optim_params[p].get_bounds() for p in optim_params])
+    x0_names, x0, bounds = muygps.get_optim_params()
+
+    kernel_fn = muygps.kernel.get_opt_fn()
+    predict_fn = muygps.get_opt_fn()
+
+    obj_fn = make_loo_crossval_fn(
+        loss_fn,
+        kernel_fn,
+        predict_fn,
+        pairwise_dists,
+        crosswise_dists,
+        batch_nn_targets,
+        batch_targets,
+    )
+
     if verbose is True:
-        print(f"parameters to be optimized: {[p for p in optim_params]}")
+        print(f"parameters to be optimized: {x0_names}")
         print(f"bounds: {bounds}")
         print(f"initial x0: {x0}")
 
     optres = opt.minimize(
-        loo_crossval,
+        obj_fn,
         x0,
-        args=(
-            loss_fn,
-            muygps,
-            optim_params,
-            pairwise_dists,
-            crosswise_dists,
-            batch_nn_targets,
-            batch_targets,
-        ),
         method="L-BFGS-B",
         bounds=bounds,
     )
     if verbose is True:
         print(f"optimizer results: \n{optres}")
 
+    ret = deepcopy(muygps)
+
     # set final values
-    for i, key in enumerate(optim_params):
+    for i, key in enumerate(x0_names):
         lb, ub = bounds[i]
-        if x0[i] < lb:
-            optim_params[key]._set_val(lb)
-        elif x0[i] > ub:
-            optim_params[key]._set_val(ub)
+        if optres.x[i] < lb:
+            val = lb
+        elif optres.x[i] > ub:
+            val = ub
         else:
-            optim_params[key]._set_val(x0[i])
-    return optres.x
+            val = optres.x[i]
+        if key == "eps":
+            ret.eps._set_val(val)
+        else:
+            ret.kernel.hyperparameters[key]._set_val(val)
+
+    return ret

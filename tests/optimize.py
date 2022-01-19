@@ -469,16 +469,17 @@ class GPOptimTest(parameterized.TestCase):
             batch_targets = sim_train["output"][batch_indices, :]
             batch_nn_targets = sim_train["output"][batch_nn_indices, :]
 
-            estimate = scipy_optimize_from_tensors(
+            muygps = scipy_optimize_from_tensors(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
                 crosswise_dists,
                 pairwise_dists,
                 loss_method=loss_method,
-            )[0]
+            )
 
             # mse += (estimate - target) ** 2
+            estimate = muygps.kernel.hyperparameters["nu"]()
             mrse += _sq_rel_err(target, estimate)
         mrse /= its
         print(f"optimizes with mean relative squared error {mrse}")
@@ -545,14 +546,16 @@ class GPOptimTest(parameterized.TestCase):
         # set up MuyGPS object
         muygps = MuyGPS(**kwargs)
 
-        estimate = scipy_optimize_from_indices(
+        muygps = scipy_optimize_from_indices(
             muygps,
             batch_indices,
             batch_nn_indices,
             sim_train["input"],
             sim_train["output"],
             loss_method=loss_method,
-        )[0]
+        )
+
+        estimate = muygps.kernel.hyperparameters["nu"]()
 
         rse = _sq_rel_err(target, estimate)
         print(f"optimizes with relative squared error {rse}")

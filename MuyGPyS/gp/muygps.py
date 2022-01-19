@@ -8,7 +8,7 @@
 
 import numpy as np
 
-from typing import Dict, Generator, Optional, Tuple, Union
+from typing import Dict, Generator, List, Optional, Tuple, Union
 
 from MuyGPyS.gp.distance import make_regress_tensors
 from MuyGPyS.gp.kernels import (
@@ -119,42 +119,40 @@ class MuyGPS:
             Returns `True` if all parameters are fixed, and `False` otherwise.
         """
         for p in self.kernel.hyperparameters:
-            if self.kernel.hyperparameters[p].get_bounds() != "fixed":
+            if not self.kernel.hyperparameters[p].fixed():
                 return False
-        if self.eps.get_bounds() != "fixed":
+        if not self.eps.fixed():
             return False
         return True
 
-    def get_optim_params(self) -> Dict[str, Hyperparameter]:
-        """
-        Return a dictionary of references to the unfixed kernel hyperparameters.
-
-        This is a convenience function for obtaining all of the information
-        necessary to optimize hyperparameters. It is important to note that the
-        values of the dictionary are references to the actual hyperparameter
-        objects underying the kernel functor - changing these references will
-        change the kernel.
-
-        Returns:
-            A dict mapping hyperparameter names to references to their objects.
-            Only returns hyperparameters whose bounds are not set as `fixed`.
-            Returned hyperparameters can include `eps`, but not `sigma_sq`,
-            as it is currently optimized via a separate closed-form method.
-        """
-        optim_params = {
-            p: self.kernel.hyperparameters[p]
-            for p in self.kernel.hyperparameters
-            if self.kernel.hyperparameters[p].get_bounds() != "fixed"
-        }
-        if self.eps.get_bounds() != "fixed":
-            optim_params["eps"] = self.eps
-        return optim_params
-
-    def _compute_solve(
+    def get_optim_params(
         self,
+    ) -> Tuple[List[str], np.ndarray, np.ndarray]:
+        """
+        Return lists of unfixed hyperparameter names, values, and bounds.
+
+        Returns
+        -------
+            names:
+                A list of unfixed hyperparameter names.
+            params:
+                A list of unfixed hyperparameter values.
+            bounds:
+                A list of unfixed hyperparameter bound tuples.
+        """
+        names, params, bounds = self.kernel.get_optim_params()
+        if not self.eps.fixed():
+            names.append("eps")
+            params.append(self.eps())
+            bounds.append(self.eps.get_bounds())
+        return names, np.array(params), np.array(bounds)
+
+    @staticmethod
+    def _compute_solve(
         K: np.ndarray,
         Kcross: np.ndarray,
         batch_nn_targets: np.ndarray,
+        eps: float,
     ) -> np.ndarray:
         """
         Simultaneously solve all of the GP inference systems of linear
@@ -173,6 +171,8 @@ class MuyGPS:
                 A tensor of shape `(batch_count, nn_count, response_count)`
                 whose last dimension lists the vector-valued responses for the
                 nearest neighbors of each batch element.
+            eps:
+                The value of the homoscedastic nugget parameter.
 
         Returns:
             A matrix of shape `(batch_count, response_count)` listing the
@@ -180,14 +180,15 @@ class MuyGPS:
         """
         batch_count, nn_count, response_count = batch_nn_targets.shape
         responses = Kcross.reshape(batch_count, 1, nn_count) @ np.linalg.solve(
-            K + self.eps() * np.eye(nn_count), batch_nn_targets
+            K + eps * np.eye(nn_count), batch_nn_targets
         )
         return responses.reshape(batch_count, response_count)
 
+    @staticmethod
     def _compute_diagonal_variance(
-        self,
         K: np.ndarray,
         Kcross: np.ndarray,
+        eps: float,
     ) -> np.ndarray:
         """
         Simultaneously solve all of the GP inference systems of linear
@@ -202,6 +203,8 @@ class MuyGPS:
                 A tensor of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
+            eps:
+                The value of the homoscedastic nugget parameter.
 
         Returns:
             A vector of shape `(batch_count)` listing the diagonal variances for
@@ -213,7 +216,7 @@ class MuyGPS:
                 1.0
                 - Kcross[i, :]
                 @ np.linalg.solve(
-                    K[i, :, :] + self.eps() * np.eye(nn_count), Kcross[i, :]
+                    K[i, :, :] + eps * np.eye(nn_count), Kcross[i, :]
                 )
                 for i in range(batch_count)
             ]
@@ -264,7 +267,8 @@ class MuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained() is False`.
             return_distances:
                 If `True`, returns a `(test_count, nn_count)` matrix containing
                 the crosswise distances between the test elements and their
@@ -389,7 +393,8 @@ class MuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained() is False`.
 
         Returns
         -------
@@ -402,26 +407,72 @@ class MuyGPS:
             `(batch_count, response_count)` for a multidimensional response.
             Only returned where `variance_mode == "diagonal"`.
         """
-        responses = self._compute_solve(K, Kcross, batch_nn_targets)
+        return self._regress(
+            K,
+            Kcross,
+            batch_nn_targets,
+            self.eps(),
+            self.sigma_sq(),
+            variance_mode=variance_mode,
+            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained()),
+        )
+
+    @staticmethod
+    def _regress(
+        K: np.array,
+        Kcross: np.array,
+        batch_nn_targets: np.array,
+        eps: float,
+        sigma_sq: np.ndarray,
+        variance_mode: Optional[str] = None,
+        apply_sigma_sq: bool = True,
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+        responses = MuyGPS._compute_solve(K, Kcross, batch_nn_targets, eps)
         if variance_mode is None:
             return responses
         elif variance_mode == "diagonal":
-            diagonal_variance = self._compute_diagonal_variance(K, Kcross)
-            if apply_sigma_sq is True and isinstance(
-                self.sigma_sq(), np.ndarray
-            ):
-                sigmas = self.sigma_sq()
-                if len(sigmas) == 1:
-                    diagonal_variance *= sigmas
+            diagonal_variance = MuyGPS._compute_diagonal_variance(
+                K, Kcross, eps
+            )
+            if apply_sigma_sq is True:
+                if len(sigma_sq) == 1:
+                    diagonal_variance *= sigma_sq
                 else:
                     diagonal_variance = np.array(
-                        [ss * diagonal_variance for ss in sigmas]
+                        [ss * diagonal_variance for ss in sigma_sq]
                     ).T
             return responses, diagonal_variance
         else:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
             )
+
+    def get_opt_fn(self):
+        """
+        Return a regress function for use in optimization.
+
+        Returns:
+            A function implementing regression, where `eps` is either fixed or
+            takes updating values during optimization. The function expects a
+            list of current hyperparameter values for unfixed parameters, which
+            are expected to occur in a certain order matching how they are set
+            in `~MuyGPyS.gp.muygps.MuyGPS.get_optim_params()`.
+        """
+        if not self.eps.fixed():
+
+            def caller_fn(K, Kcross, batch_nn_targets, x0):
+                return self._regress(
+                    K, Kcross, batch_nn_targets, x0[-1], self.sigma_sq()
+                )
+
+        else:
+
+            def caller_fn(K, Kcross, batch_nn_targets, x0):
+                return self._regress(
+                    K, Kcross, batch_nn_targets, self.eps(), self.sigma_sq()
+                )
+
+        return caller_fn
 
     def sigma_sq_optim(
         self,
@@ -455,17 +506,27 @@ class MuyGPS:
             A vector of shape `(response_count)` listing the value of sigma^2
             for each dimension.
         """
+        self.sigma_sq._set(
+            self._sigma_sq_optim(K, nn_indices, targets, self.eps())
+        )
+        return self.sigma_sq()
+
+    @staticmethod
+    def _sigma_sq_optim(
+        K: np.ndarray,
+        nn_indices: np.ndarray,
+        targets: np.ndarray,
+        eps: float,
+    ):
         batch_count, nn_count = nn_indices.shape
         _, response_count = targets.shape
 
         sigma_sq = np.zeros((response_count,))
         for i in range(response_count):
             sigma_sq[i] = sum(
-                self._get_sigma_sq(K, targets[:, i], nn_indices)
+                MuyGPS._get_sigma_sq(K, targets[:, i], nn_indices, eps)
             ) / (nn_count * batch_count)
-
-        self.sigma_sq._set(sigma_sq)
-        return self.sigma_sq()
+        return sigma_sq
 
     def _get_sigma_sq_series(
         self,
@@ -498,15 +559,18 @@ class MuyGPS:
         batch_count, nn_count = nn_indices.shape
 
         sigmas = np.zeros((batch_count,))
-        for i, el in enumerate(self._get_sigma_sq(K, target_col, nn_indices)):
+        for i, el in enumerate(
+            self._get_sigma_sq(K, target_col, nn_indices, self.eps())
+        ):
             sigmas[i] = el
         return sigmas / nn_count
 
+    @staticmethod
     def _get_sigma_sq(
-        self,
         K: np.ndarray,
         target_col: np.ndarray,
         nn_indices: np.ndarray,
+        eps: float,
     ) -> Generator[float, None, None]:
         """
         Generate series of :math:`\\sigma^2` scale parameters for each
@@ -540,7 +604,7 @@ class MuyGPS:
         for j in range(batch_count):
             Y_0 = target_col[nn_indices[j, :]]
             yield Y_0 @ np.linalg.solve(
-                K[j, :, :] + self.eps() * np.eye(nn_count), Y_0
+                K[j, :, :] + eps * np.eye(nn_count), Y_0
             )
 
 
@@ -646,27 +710,45 @@ class MultivariateMuyGPS:
             A vector of shape `(response_count,)` listing the found value of
             :math:`\\sigma^2` for each response dimension.
         """
+
+        self.sigma_sq._set(
+            self._sigma_sq_optim(
+                self.models, pairwise_dists, nn_indices, targets
+            )
+        )
+        return self.sigma_sq()
+
+    @staticmethod
+    def _sigma_sq_optim(
+        models: List[MuyGPS],
+        pairwise_dists: np.ndarray,
+        nn_indices: np.ndarray,
+        targets: np.ndarray,
+    ) -> np.ndarray:
         batch_count, nn_count = nn_indices.shape
         _, response_count = targets.shape
-        if response_count != len(self.models):
+        if response_count != len(models):
             raise ValueError(
                 f"Response count ({response_count}) does not match the number "
-                f"of models ({len(self.models)})."
+                f"of models ({len(models)})."
             )
 
         K = np.zeros((batch_count, nn_count, nn_count))
         sigma_sqs = np.zeros((response_count,))
-        for i, muygps in enumerate(self.models):
+        for i, muygps in enumerate(models):
             K = muygps.kernel(pairwise_dists)
             sigma_sq = np.zeros(1)
             sigma_sq[0] = np.array(
-                sum(muygps._get_sigma_sq(K, targets[:, i], nn_indices))
+                sum(
+                    muygps._get_sigma_sq(
+                        K, targets[:, i], nn_indices, muygps.eps()
+                    )
+                )
                 / (nn_count * batch_count)
             )
             muygps.sigma_sq._set(val=sigma_sq)
             sigma_sqs[i] = sigma_sq[0]
-        self.sigma_sq._set(sigma_sqs)
-        return self.sigma_sq()
+        return sigma_sqs
 
     def regress_from_indices(
         self,
@@ -712,7 +794,8 @@ class MultivariateMuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained() is False`.
             return_distances:
                 If `True`, returns a `(test_count, nn_count)` matrix containing
                 the crosswise distances between the test elements and their
@@ -842,7 +925,8 @@ class MultivariateMuyGPS:
                 `"diagonal"` and None. If None, report no variance term.
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.leanred() is False`.
 
 
         Returns
@@ -855,6 +939,26 @@ class MultivariateMuyGPS:
             diagonal elements of the posterior variance for each model. Only
             returned where `variance_mode == "diagonal"`.
         """
+        return self._regress(
+            self.models,
+            pairwise_dists,
+            crosswise_dists,
+            batch_nn_targets,
+            self.sigma_sq,
+            variance_mode=variance_mode,
+            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained()),
+        )
+
+    @staticmethod
+    def _regress(
+        models: List[MuyGPS],
+        pairwise_dists: np.ndarray,
+        crosswise_dists: np.ndarray,
+        batch_nn_targets: np.ndarray,
+        sigma_sq: SigmaSq,
+        variance_mode: Optional[str] = None,
+        apply_sigma_sq: bool = True,
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         batch_count, nn_count, response_count = batch_nn_targets.shape
         responses = np.zeros((batch_count, response_count))
         if variance_mode is None:
@@ -865,20 +969,21 @@ class MultivariateMuyGPS:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
             )
-        for i, model in enumerate(self.models):
+        for i, model in enumerate(models):
             K = model.kernel(pairwise_dists)
             Kcross = model.kernel(crosswise_dists)
             responses[:, i] = model._compute_solve(
                 K,
                 Kcross,
                 batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+                model.eps(),
             ).reshape(batch_count)
             if variance_mode == "diagonal":
                 diagonal_variance[:, i] = model._compute_diagonal_variance(
-                    K, Kcross
+                    K, Kcross, model.eps()
                 ).reshape(batch_count)
-                if apply_sigma_sq and isinstance(self.sigma_sq(), np.ndarray):
-                    diagonal_variance[:, i] *= self.sigma_sq()[i]
+                if apply_sigma_sq:
+                    diagonal_variance[:, i] *= sigma_sq()[i]
         if variance_mode == "diagonal":
             return responses, diagonal_variance
         return responses

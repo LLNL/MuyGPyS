@@ -78,13 +78,10 @@ class InitTest(parameterized.TestCase):
                     this_kwargs[param]["val"],
                     muygps.kernel.hyperparameters[param](),
                 )
-                self.assertEqual(
-                    "fixed",
-                    muygps.kernel.hyperparameters[param].get_bounds(),
-                )
+                self.assertTrue(muygps.kernel.hyperparameters[param].fixed())
             self.assertEqual(this_kwargs["eps"]["val"], muygps.eps())
-            self.assertEqual("fixed", muygps.eps.get_bounds())
-            self.assertEqual("unlearned", muygps.sigma_sq())
+            self.assertTrue(muygps.eps.fixed())
+            self.assertFalse(muygps.sigma_sq.trained())
 
 
 class SigmaSqTest(parameterized.TestCase):
@@ -247,14 +244,15 @@ class OptimTest(parameterized.TestCase):
             batch_nn_targets = sim_train["output"][batch_nn_indices, :]
 
             for i, muygps in enumerate(mmuygps.models):
-                estimate = scipy_optimize_from_tensors(
+                mmuygps.models[i] = scipy_optimize_from_tensors(
                     muygps,
                     batch_targets[:, i].reshape(batch_count, 1),
                     batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
                     crosswise_dists,
                     pairwise_dists,
                     loss_method=loss_method,
-                )[0]
+                )
+                estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
                 mse += np.sum(estimate - target[i]) ** 2
         mse /= its * response_count
         print(f"optimizes with mse {mse}")
@@ -340,14 +338,15 @@ class OptimTest(parameterized.TestCase):
             mmuygps = MMuyGPS(kern, *args)
 
             for i, muygps in enumerate(mmuygps.models):
-                estimate = scipy_optimize_from_indices(
+                mmuygps.models[i] = scipy_optimize_from_indices(
                     muygps,
                     batch_indices,
                     batch_nn_indices,
                     sim_train["input"],
                     sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
-                )[0]
+                )
+                estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
                 mse += np.sum(estimate - target[i]) ** 2
         mse /= its * response_count
         print(f"optimizes with mse {mse}")
@@ -470,7 +469,7 @@ class RegressTest(parameterized.TestCase):
         )
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
 
-        self.assertEqual(mmuygps.sigma_sq(), "unlearned")
+        self.assertFalse(mmuygps.sigma_sq.trained())
 
         predictions, _ = regress_any(
             mmuygps,
@@ -670,8 +669,9 @@ class MakeRegressorTest(parameterized.TestCase):
                         muygps.kernel.hyperparameters[key](),
                     )
             if sigma_method == None:
-                self.assertEqual("unlearned", muygps.sigma_sq())
+                self.assertFalse(muygps.sigma_sq.trained())
             else:
+                self.assertTrue(muygps.sigma_sq.trained())
                 print(
                     f"\toptimized sigma_sq to find value "
                     f"{muygps.sigma_sq()}"

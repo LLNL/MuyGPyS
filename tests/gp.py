@@ -53,15 +53,16 @@ class GPInitTest(parameterized.TestCase):
                 kwargs[param]["val"],
                 muygps.kernel.hyperparameters[param](),
             )
-            self.assertEqual(
-                "fixed",
-                muygps.kernel.hyperparameters[param].get_bounds(),
+            self.assertTrue(
+                muygps.kernel.hyperparameters[param].fixed(),
             )
         self.assertEqual(eps["val"], muygps.eps())
-        self.assertEqual("fixed", muygps.eps.get_bounds())
+        self.assertTrue(muygps.eps.fixed())
         if gp_type == MuyGPS:
-            self.assertEqual("unlearned", muygps.sigma_sq())
+            self.assertFalse(muygps.sigma_sq.trained())
+            self.assertEqual(np.array([1.0]), muygps.sigma_sq())
         elif gp_type == BenchmarkGP:
+            self.assertFalse(muygps.sigma_sq.trained())
             self.assertEqual(np.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
@@ -110,15 +111,25 @@ class GPInitTest(parameterized.TestCase):
                 kwargs[param]["val"],
                 muygps.kernel.hyperparameters[param](),
             )
-            self.assertEqual(
-                kwargs[param]["bounds"],
-                muygps.kernel.hyperparameters[param].get_bounds(),
-            )
+            if kwargs[param]["bounds"] == "fixed":
+                self.assertTrue(muygps.kernel.hyperparameters[param].fixed())
+            else:
+                self.assertFalse(muygps.kernel.hyperparameters[param].fixed())
+                self.assertEqual(
+                    kwargs[param]["bounds"],
+                    muygps.kernel.hyperparameters[param].get_bounds(),
+                )
         self.assertEqual(eps["val"], muygps.eps())
-        self.assertEqual(eps["bounds"], muygps.eps.get_bounds())
+        if eps["bounds"] == "fixed":
+            self.assertTrue(muygps.eps.fixed())
+        else:
+            self.assertFalse(muygps.eps.fixed())
+            self.assertEqual(eps["bounds"], muygps.eps.get_bounds())
         if gp_type == MuyGPS:
-            self.assertEqual("unlearned", muygps.sigma_sq())
+            self.assertFalse(muygps.sigma_sq.trained())
+            self.assertEqual(1.0, muygps.sigma_sq())
         elif gp_type == BenchmarkGP:
+            self.assertFalse(muygps.sigma_sq.trained())
             self.assertEqual(np.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
@@ -341,7 +352,9 @@ class GPMathTest(parameterized.TestCase):
         K, Kcross = muygps.kernel(F2_dists), muygps.kernel(nn_dists)
         # solve GP regression
         train_targets = train["output"][nn_indices]
-        responses = muygps._compute_solve(K, Kcross, train_targets)
+        responses = muygps._compute_solve(
+            K, Kcross, train_targets, muygps.eps()
+        )
 
         # validate
         self.assertEqual(responses.shape, (test_count, response_count))
@@ -415,7 +428,9 @@ class GPMathTest(parameterized.TestCase):
 
         # make kernels and variance
         K, Kcross = muygps.kernel(F2_dists), muygps.kernel(nn_dists)
-        diagonal_variance = muygps._compute_diagonal_variance(K, Kcross)
+        diagonal_variance = muygps._compute_diagonal_variance(
+            K, Kcross, muygps.eps()
+        )
 
         # validate
         self.assertEqual(diagonal_variance.shape, (test_count,))
@@ -482,6 +497,7 @@ class MakerTest(parameterized.TestCase):
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             return_distances=return_distances,
+            verbose=False,
         )
 
         if len(classifier_args) == 2:
@@ -593,8 +609,10 @@ class MakerTest(parameterized.TestCase):
                     muygps.kernel.hyperparameters[key](),
                 )
         if sigma_method == None:
-            self.assertEqual("unlearned", muygps.sigma_sq())
+            self.assertFalse(muygps.sigma_sq.trained())
+            self.assertEqual(np.array([1.0]), muygps.sigma_sq())
         else:
+            self.assertTrue(muygps.sigma_sq.trained())
             print(f"\toptimized sigma_sq to find value " f"{muygps.sigma_sq()}")
 
 
