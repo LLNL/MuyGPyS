@@ -626,24 +626,50 @@ class Matern(KernelFn):
 
     @staticmethod
     def _fn(dists: np.ndarray, nu: float, length_scale: float) -> np.ndarray:
-        dists = dists / length_scale
         if nu == 0.5:
-            K = np.exp(-dists)
+            return Matern._fn_05(dists, length_scale)
         elif nu == 1.5:
-            K = dists * np.sqrt(3)
-            K = (1.0 + K) * np.exp(-K)
+            return Matern._fn_15(dists, length_scale)
         elif nu == 2.5:
-            K = dists * np.sqrt(5)
-            K = (1.0 + K + K ** 2 / 3.0) * np.exp(-K)
+            return Matern._fn_25(dists, length_scale)
         elif nu == np.inf:
-            K = np.exp(-(dists ** 2) / 2.0)
+            return Matern._fn_inf(dists, length_scale)
         else:
-            K = dists
-            K[K == 0.0] += np.finfo(float).eps
-            tmp = np.sqrt(2 * nu) * K
-            K.fill((2 ** (1.0 - nu)) / gamma(nu))
-            K *= tmp ** nu
-            K *= kv(nu, tmp)
+            return Matern._fn_gen(dists, nu, length_scale)
+
+    @staticmethod
+    def _fn_05(dists: np.ndarray, length_scale: float) -> np.ndarray:
+        dists = dists / length_scale
+        return np.exp(-dists)
+
+    @staticmethod
+    def _fn_15(dists: np.ndarray, length_scale: float) -> np.ndarray:
+        dists = dists / length_scale
+        K = dists * np.sqrt(3)
+        return (1.0 + K) * np.exp(-K)
+
+    @staticmethod
+    def _fn_25(dists: np.ndarray, length_scale: float) -> np.ndarray:
+        dists = dists / length_scale
+        K = dists * np.sqrt(5)
+        return (1.0 + K + K ** 2 / 3.0) * np.exp(-K)
+
+    @staticmethod
+    def _fn_inf(dists: np.ndarray, length_scale: float) -> np.ndarray:
+        dists = dists / length_scale
+        return np.exp(-(dists ** 2) / 2.0)
+
+    @staticmethod
+    def _fn_gen(
+        dists: np.ndarray, nu: float, length_scale: float
+    ) -> np.ndarray:
+        dists = dists / length_scale
+        K = dists
+        K[K == 0.0] += np.finfo(float).eps
+        tmp = np.sqrt(2 * nu) * K
+        K.fill((2 ** (1.0 - nu)) / gamma(nu))
+        K *= tmp ** nu
+        K *= kv(nu, tmp)
         return K
 
     def get_optim_params(
@@ -690,26 +716,69 @@ class Matern(KernelFn):
         if nu_fixed is False and ls_fixed is True:
 
             def caller_fn(dists, x0):
-                return self._fn(
+                return self._fn_gen(
                     dists, nu=x0[0], length_scale=self.length_scale()
                 )
 
         elif nu_fixed is False and ls_fixed is False:
 
             def caller_fn(dists, x0):
-                return self._fn(dists, nu=x0[0], length_scale=x0[1])
+                return self._fn_gen(dists, nu=x0[0], length_scale=x0[1])
 
         elif nu_fixed is True and ls_fixed is False:
+            if self.nu() == 0.5:
 
-            def caller_fn(dists, x0):
-                return self._fn(dists, nu=self.nu(), length_scale=x0[0])
+                def caller_fn(dists, x0):
+                    return self._fn_05(dists, length_scale=x0[0])
+
+            elif self.nu() == 1.5:
+
+                def caller_fn(dists, x0):
+                    return self._fn_15(dists, length_scale=x0[0])
+
+            elif self.nu() == 2.5:
+
+                def caller_fn(dists, x0):
+                    return self._fn_25(dists, length_scale=x0[0])
+
+            elif self.nu() == np.inf:
+
+                def caller_fn(dists, x0):
+                    return self._fn_inf(dists, length_scale=x0[0])
+
+            else:
+
+                def caller_fn(dists, x0):
+                    return self._fn_gen(dists, nu=self.nu(), length_scale=x0[0])
 
         else:
 
-            def caller_fn(dists, x0):
-                return self._fn(
-                    dists, nu=self.nu(), length_scale=self.length_scale()
-                )
+            if self.nu() == 0.5:
+
+                def caller_fn(dists, x0):
+                    return self._fn_05(dists, length_scale=self.length_scale())
+
+            elif self.nu() == 1.5:
+
+                def caller_fn(dists, x0):
+                    return self._fn_15(dists, length_scale=self.length_scale())
+
+            elif self.nu() == 2.5:
+
+                def caller_fn(dists, x0):
+                    return self._fn_25(dists, length_scale=self.length_scale())
+
+            elif self.nu() == np.inf:
+
+                def caller_fn(dists, x0):
+                    return self._fn_25(dists, length_scale=self.length_scale())
+
+            else:
+
+                def caller_fn(dists, x0):
+                    return self._fn_gen(
+                        dists, nu=self.nu(), length_scale=self.length_scale()
+                    )
 
         return caller_fn
 
