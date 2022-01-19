@@ -16,7 +16,6 @@ to optimize a specified subset of the hyperparameters associated with a
 import numpy as np
 
 from copy import deepcopy
-from typing import Callable, Optional
 
 from scipy import optimize as opt
 
