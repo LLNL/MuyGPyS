@@ -20,7 +20,7 @@ INSTALL_REQUIRES = [
     "scikit-learn>=0.23.2",
     "absl-py>=0.13.0",
     "pybind11>=2.5.0",
-    "hnswlib>=0.5.2",
+    "hnswlib>=0.6.0",
 ]
 
 def _get_version() -> str:
