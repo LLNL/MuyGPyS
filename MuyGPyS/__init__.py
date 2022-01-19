@@ -5,7 +5,7 @@
 
 """Public MuyGPyS modules and functions."""
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 from MuyGPyS import neighbors
 
