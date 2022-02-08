@@ -1,6 +1,5 @@
 [![pipeline status](https://lc.llnl.gov/gitlab/muygps/MuyGPyS/badges/main/pipeline.svg)](https://lc.llnl.gov/gitlab/muygps/MuyGPyS/-/commits/main)
-[![Documentation Status](https://readthedocs.org/projects/muygpys/badge/?version=stable)](https://muygpys.readthedocs.io/en/latest/?badge=stable)
-
+[![Documentation Status](https://readthedocs.org/projects/muygpys/badge/?version=stable)](https://muygpys.readthedocs.io/en/stable/?badge=stable)
 # Fast implementation of the MuyGPs Gaussian process hyperparameter estimation algorithm
 
 
@@ -79,7 +78,7 @@ All tests in the `test/` directory are then runnable using python, e.g.
 $ python tests/kernels.py
 ```
 
-Particular `absl` unit test classes can be run in isolation, e.g.
+Individual `absl` unit test classes can be run in isolation, e.g.
 ```
 $ python tests/kernels.py DistancesTest
 ```
