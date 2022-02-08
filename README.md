@@ -14,33 +14,45 @@ required by similar sparse methods.
 
 ## Installation
 
+### Pip
 
-Pip installation instructions:
+`muygpys` is maintained on PyPI and can be installed using `pip`:
 ```
 $ pip install muygpys
 ```
 
-To install from source, follow these instructions:
+
+### From Source
+
+This repository includes several `extras_require` optional dependencies, 
+including `dev`, `docs` and `tests`.
+Including any of these extras will install the additional dependencies needed 
+for the corresponding features.
+The `dev` option includes all of the `docs` and `tests` requirements. 
+
+For example, follow these instructions to install from source for development 
+purposes:
 ```
 $ git clone git@github.com:LLNL/MuyGPyS.git
-$ pip install -e MuyGPyS
+$ cd MuyGPyS
+$ pip install -e .[dev]
 ```
 
 Additionally check out the develop branch to access the latest features in 
 between stable releases.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution rules. 
 
 ## Building Docs
 
 Automatically-generated documentation can be found at 
-[readthedocs.io](https://muygpys.readthedocs.io/en/latest/?).
+[readthedocs.io](https://muygpys.readthedocs.io/en/stable/?).
 
-Doc building instructions:
+In order to build the docs locally, first `pip` install from source using either 
+the `docs` or `dev` options and then execute:
 ```
-$ cd /path/to/this/repo/docs
-$ pip install -r requirements.txt
 $ sphinx-build -b html docs docs/_build/html
 ```
-Then open the file `docs/_build/html/index.html` in your browser of choice.
+Finally, open the file `docs/_build/html/index.html` in your browser of choice.
 
 
 ## Tutorials and Examples 
@@ -57,6 +69,20 @@ See also the
 [regression api tutorial](docs/examples/regress_api_tutorial.ipynb)
 describing how to coalesce the same simple workflow into a one-line call.
 
+
+## Testing
+
+In order to run tests locally, first `pip` install `MuyGPyS` from source using 
+either the `dev` or `tests` options.
+All tests in the `test/` directory are then runnable using python, e.g.
+```
+$ python tests/kernels.py
+```
+
+Particular `absl` unit test classes can be run in isolation, e.g.
+```
+$ python tests/kernels.py DistancesTest
+```
 
 # About
 
@@ -80,7 +106,8 @@ If you use MuyGPyS in a research paper, please reference our article:
 ```
 @article{muygps2021,
   title={MuyGPs: Scalable Gaussian Process Hyperparameter Estimation Using Local Cross-Validation},
-  author={Muyskens, Amanda and Priest, Benjamin W. and Goumiri, Im{\`e}ne and Schneider, Michael},
+  author={Muyskens, Amanda and Priest, Benjamin W. and Goumiri, Im{\`e}ne and 
+  Schneider, Michael},
   journal={arXiv preprint arXiv:2104.14581},
   year={2021}
 }
@@ -92,7 +119,8 @@ If you use MuyGPyS in a research paper, please reference our article:
 MuyGPyS is distributed under the terms of the MIT license.
 All new contributions must be made under the MIT license.
 
-See [LICENSE-MIT](LICENSE-MIT), [NOTICE](NOTICE), and [COPYRIGHT](COPYRIGHT) for details.
+See [LICENSE-MIT](LICENSE-MIT), [NOTICE](NOTICE), and [COPYRIGHT](COPYRIGHT) for 
+details.
 
 SPDX-License-Identifier: MIT
 
