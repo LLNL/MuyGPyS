@@ -18,9 +18,29 @@ INSTALL_REQUIRES = [
     "numpy>=1.18.5",
     "scipy>=1.4.1",
     "scikit-learn>=0.23.2",
-    "absl-py>=0.13.0",
     "pybind11>=2.5.0",
     "hnswlib>=0.6.0",
+]
+
+TEST_REQUIRES = [
+    "absl-py>=0.13.0",
+]
+
+DEV_REQUIRES = [
+    "black>=21.1.0",
+    "mypy>=0.910",
+]
+
+DOCS_REQUIRES = [
+    "sphinx==4.1.1",
+    "sphinx-rtd-theme==0.5.2",
+    "sphinx-autodoc-typehints==1.12.0",
+    "matplotlib==3.2.1",
+    "nbsphinx==0.8.7",
+    "pandoc==2.0.1",
+    "pandocfilters==1.5.0",
+    "ipython==7.30.1",
+    "ipykernel==6.6.0",
 ]
 
 def _get_version() -> str:
@@ -55,6 +75,11 @@ setup(
     packages=find_packages(),
     python_requires=">=3.6",
     install_requires=INSTALL_REQUIRES,
+    extras_require={
+        "dev": DEV_REQUIRES + TEST_REQUIRES + DOCS_REQUIRES,
+        "docs" : DOCS_REQUIRES,
+        "tests": TEST_REQUIRES,
+    },
     url="https://github.com/LLNL/MuyGPyS",
     download_url="https://pypi.org/project/muygpys",
     project_urls={
