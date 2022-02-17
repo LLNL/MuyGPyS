@@ -25,11 +25,10 @@ def _muygps_compute_diagonal_variance(
     eps: float,
 ) -> np.ndarray:
     batch_count, nn_count = Kcross.shape
-    return np.array(
-        [
-            1.0
-            - Kcross[i, :]
-            @ np.linalg.solve(K[i, :, :] + eps * np.eye(nn_count), Kcross[i, :])
-            for i in range(batch_count)
-        ]
+    return 1 - np.sum(
+        Kcross
+        * np.linalg.solve(
+            K + eps * np.eye(nn_count), Kcross.reshape(batch_count, nn_count, 1)
+        ).reshape(batch_count, nn_count),
+        axis=1,
     )
