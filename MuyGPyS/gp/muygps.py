@@ -17,16 +17,21 @@ from MuyGPyS.gp.kernels import (
     SigmaSq,
 )
 
-from MuyGPyS import __gpu_found__
+from MuyGPyS import __gpu_found__, __jax_enabled__
 
-if __gpu_found__ is False:
+if __jax_enabled__ is False:
     from MuyGPyS._src.gp.numpy_distance import _make_regress_tensors
+else:
+    from MuyGPyS._src.gp.jax_distance import _make_regress_tensors
+
+# Presently, these implementations appear to be slower than numpy on CPU (but
+# much faster on GPU)
+if __gpu_found__ is False:
     from MuyGPyS._src.gp.numpy_muygps import (
         _muygps_compute_solve,
         _muygps_compute_diagonal_variance,
     )
 else:
-    from MuyGPyS._src.gp.jax_distance import _make_regress_tensors
     from MuyGPyS._src.gp.jax_muygps import (
         _muygps_compute_solve,
         _muygps_compute_diagonal_variance,
@@ -172,6 +177,8 @@ class MuyGPS:
         Simultaneously solve all of the GP inference systems of linear
         equations.
 
+        @NOTE[bwp] We might want to get rid of these static methods.
+
         Args:
             K:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
@@ -203,6 +210,8 @@ class MuyGPS:
         """
         Simultaneously solve all of the GP inference systems of linear
         equations.
+
+        @NOTE[bwp] We might want to get rid of these static methods.
 
         Args:
             K:
