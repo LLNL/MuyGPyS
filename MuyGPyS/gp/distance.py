@@ -76,14 +76,29 @@ import numpy as np
 
 from typing import Optional, Tuple
 
-from sklearn.metrics.pairwise import cosine_similarity
+from MuyGPyS import __jax_enabled__
+
+if __jax_enabled__ is False:
+    from MuyGPyS._src.gp.numpy_distance import (
+        _make_regress_tensors,
+        _make_train_tensors,
+        _crosswise_distances,
+        _pairwise_distances,
+    )
+else:
+    from MuyGPyS._src.gp.jax_distance import (
+        _make_regress_tensors,
+        _make_train_tensors,
+        _crosswise_distances,
+        _pairwise_distances,
+    )
 
 
 def make_regress_tensors(
     metric: str,
     batch_indices: np.ndarray,
     batch_nn_indices: np.ndarray,
-    test_features: np.ndarray,
+    test_features: Optional[np.ndarray],
     train_features: np.ndarray,
     train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -126,20 +141,14 @@ def make_regress_tensors(
         containing the expected response for each nearest neighbor of each batch
         element.
     """
-    if test_features is None:
-        test_features = train_features
-    crosswise_dists = crosswise_distances(
-        test_features,
-        train_features,
+    return _make_regress_tensors(
+        metric,
         batch_indices,
         batch_nn_indices,
-        metric=metric,
+        test_features,
+        train_features,
+        train_targets,
     )
-    pairwise_dists = pairwise_distances(
-        train_features, batch_nn_indices, metric=metric
-    )
-    batch_nn_targets = train_targets[batch_nn_indices, :]
-    return crosswise_dists, pairwise_dists, batch_nn_targets
 
 
 def make_train_tensors(
@@ -189,16 +198,9 @@ def make_train_tensors(
         containing the expected response for each nearest neighbor of each batch
         element.
     """
-    crosswise_dists, pairwise_dists, batch_nn_targets = make_regress_tensors(
-        metric,
-        batch_indices,
-        batch_nn_indices,
-        train_features,
-        train_features,
-        train_targets,
+    return _make_train_tensors(
+        metric, batch_indices, batch_nn_indices, train_features, train_targets
     )
-    batch_targets = train_targets[batch_indices, :]
-    return crosswise_dists, pairwise_dists, batch_targets, batch_nn_targets
 
 
 def crosswise_distances(
@@ -243,68 +245,8 @@ def crosswise_distances(
         A matrix of shape `(batch_count, nn_count)` whose rows list the distance
         of the corresponding batch element to each of its nearest neighbors.
     """
-    locations = data[data_indices]
-    points = nn_data[nn_indices]
-    if metric == "l2":
-        diffs = _crosswise_diffs(locations, points)
-        return _l2(diffs)
-    elif metric == "F2":
-        diffs = _crosswise_diffs(locations, points)
-        return _F2(diffs)
-    elif metric == "ip":
-        return _crosswise_prods(locations, points)
-    elif metric == "cosine":
-        return _crosswise_cosine(locations, points)
-    else:
-        raise ValueError(f"Metric {metric} is not supported!")
-
-
-def _crosswise_diffs(locations: np.array, points: np.array) -> np.array:
-    return locations[:, None, :] - points
-
-
-def _crosswise_F2(locations: np.array, points: np.array) -> np.array:
-    return np.array(
-        [
-            [
-                _F2(locations[i, :] - points[i, j, :])
-                for j in range(points.shape[1])
-            ]
-            for i in range(points.shape[0])
-        ]
-    )
-
-
-def _crosswise_l2(locations: np.array, points: np.array) -> np.array:
-    return np.array(
-        [
-            [
-                _l2(locations[i, :] - points[i, j, :])
-                for j in range(points.shape[1])
-            ]
-            for i in range(points.shape[0])
-        ]
-    )
-
-
-def _crosswise_prods(locations: np.array, points: np.array) -> np.array:
-    return 1 - np.array(
-        [
-            [locations[i, :] @ points[i, j, :] for j in range(points.shape[1])]
-            for i in range(points.shape[0])
-        ]
-    )
-
-
-def _crosswise_cosine(locations: np.array, points: np.array) -> np.array:
-    return 1 - np.array(
-        [
-            [
-                cosine_similarity(locations[i, :], points[i, j, :])
-                for j in range(points.shape[1])
-            ]
-            for i in range(points.shape[0])
-        ]
+    return _crosswise_distances(
+        data, nn_data, data_indices, nn_indices, metric=metric
     )
 
 
@@ -337,51 +279,4 @@ def pairwise_distances(
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
     """
-    points = data[nn_indices]
-    if metric == "l2":
-        diffs = _diffs(points)
-        return _l2(diffs)
-    elif metric == "F2":
-        diffs = _diffs(points)
-        return _F2(diffs)
-    elif metric == "ip":
-        return _prods(points)
-    elif metric == "cosine":
-        return _cosine(points)
-    else:
-        raise ValueError(f"Metric {metric} is not supported!")
-
-
-def _diffs(points: np.array) -> np.array:
-    if len(points.shape) == 3:
-        return points[:, :, None, :] - points[:, None, :, :]
-    elif len(points.shape) == 2:
-        return points[:, None, :] - points[None, :, :]
-    else:
-        raise ValueError(f"points shape {points.shape} is not supported.")
-
-
-def _F2(diffs: np.array) -> np.array:
-    return np.sum(diffs ** 2, axis=-1)
-
-
-def _l2(diffs: np.array) -> np.array:
-    return np.sqrt(_F2(diffs))
-
-
-def _prods(points: np.array) -> np.array:
-    if len(points.shape) == 3:
-        return 1 - np.array([mat @ mat.T for mat in points])
-    elif len(points.shape) == 2:
-        return 1 - points @ points.T
-    else:
-        raise ValueError(f"points shape {points.shape} is not supported.")
-
-
-def _cosine(points: np.array) -> np.array:
-    if len(points.shape) == 3:
-        return 1 - np.array([cosine_similarity(mat) for mat in points])
-    elif len(points.shape) == 2:
-        return 1 - cosine_similarity(points)
-    else:
-        raise ValueError(f"points shape {points.shape} is not supported.")
+    return _pairwise_distances(data, nn_indices, metric=metric)

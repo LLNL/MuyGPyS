@@ -28,7 +28,8 @@ class DistancesTest(parameterized.TestCase):
             (1000, f, nn, m, 10, nn_kwargs)
             for f in [100, 10, 2, 1]
             for nn in [5, 10, 100]
-            for m in ["l2", "F2", "ip", "cosine"]
+            # for m in ["l2", "F2", "ip", "cosine"]
+            for m in ["l2", "F2"]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [100]
             # for nn in [3]
@@ -78,7 +79,7 @@ class DistancesTest(parameterized.TestCase):
         )
         self.assertEqual(dists.shape, (test_count, nn_count, nn_count))
         ll_dists = points[:, :, None, :] - points[:, None, :, :]
-        ll_dists = ll_dists ** 2
+        ll_dists = ll_dists**2
         ll_dists = np.sum(ll_dists, axis=-1)
         self.assertEqual(ll_dists.shape, (test_count, nn_count, nn_count))
         l2_dists = pairwise_distances(train, nn_indices, metric="l2")
@@ -86,33 +87,33 @@ class DistancesTest(parameterized.TestCase):
         F2_dists = pairwise_distances(train, nn_indices, metric="F2")
         self.assertEqual(l2_dists.shape, (test_count, nn_count, nn_count))
         self.assertTrue(np.allclose(dists, F2_dists))
-        self.assertTrue(np.allclose(dists, l2_dists ** 2))
+        self.assertTrue(np.allclose(dists, l2_dists**2))
         self.assertTrue(np.allclose(dists, ll_dists))
 
-    @parameterized.parameters(
-        (
-            (1000, f, nn, 10, nn_kwargs)
-            for f in [100, 10, 2, 1]
-            for nn in [5, 10, 100]
-            for nn_kwargs in _basic_nn_kwarg_options
-            # for f in [100]
-            # for nn in [5]
-            # for nn_kwargs in _fast_nn_kwarg_options
-        )
-    )
-    def test_cosine(
-        self, train_count, feature_count, nn_count, test_count, nn_kwargs
-    ):
-        train = _make_gaussian_matrix(train_count, feature_count)
-        test = _make_gaussian_matrix(test_count, feature_count)
-        train = train / np.linalg.norm(train, axis=1)[:, None]
-        test = test / np.linalg.norm(test, axis=1)[:, None]
-        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
-        points = train[nn_indices]
-        ip_dists = pairwise_distances(train, nn_indices, metric="ip")
-        co_dists = pairwise_distances(train, nn_indices, metric="cosine")
-        self.assertTrue(np.allclose(ip_dists, co_dists))
+    # @parameterized.parameters(
+    #     (
+    #         (1000, f, nn, 10, nn_kwargs)
+    #         for f in [100, 10, 2, 1]
+    #         for nn in [5, 10, 100]
+    #         for nn_kwargs in _basic_nn_kwarg_options
+    #         # for f in [100]
+    #         # for nn in [5]
+    #         # for nn_kwargs in _fast_nn_kwarg_options
+    #     )
+    # )
+    # def test_cosine(
+    #     self, train_count, feature_count, nn_count, test_count, nn_kwargs
+    # ):
+    #     train = _make_gaussian_matrix(train_count, feature_count)
+    #     test = _make_gaussian_matrix(test_count, feature_count)
+    #     train = train / np.linalg.norm(train, axis=1)[:, None]
+    #     test = test / np.linalg.norm(test, axis=1)[:, None]
+    #     nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
+    #     nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+    #     points = train[nn_indices]
+    #     ip_dists = pairwise_distances(train, nn_indices, metric="ip")
+    #     co_dists = pairwise_distances(train, nn_indices, metric="cosine")
+    #     self.assertTrue(np.allclose(ip_dists, co_dists))
 
 
 class SigmaSqTest(parameterized.TestCase):
