@@ -8,12 +8,13 @@
 
 import numpy as np
 
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Callable, Dict, Generator, List, Optional, Tuple, Union
 
 # from MuyGPyS.gp.distance import make_regress_tensors
 from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
+    Hyperparameter,
     SigmaSq,
 )
 
@@ -456,7 +457,7 @@ class MuyGPS:
                 f"Variance mode {variance_mode} is not implemented."
             )
 
-    def get_opt_fn(self):
+    def get_opt_fn(self) -> Callable:
         """
         Return a regress function for use in optimization.
 
@@ -467,19 +468,19 @@ class MuyGPS:
             are expected to occur in a certain order matching how they are set
             in `~MuyGPyS.gp.muygps.MuyGPS.get_optim_params()`.
         """
-        if not self.eps.fixed():
+        return self._get_opt_fn(_muygps_compute_solve, self.eps)
+
+    @staticmethod
+    def _get_opt_fn(solve_fn: Callable, eps: Hyperparameter) -> Callable:
+        if not eps.fixed():
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
-                return self._regress(
-                    K, Kcross, batch_nn_targets, x0[-1], self.sigma_sq()
-                )
+                return solve_fn(K, Kcross, batch_nn_targets, x0[-1])
 
         else:
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
-                return self._regress(
-                    K, Kcross, batch_nn_targets, self.eps(), self.sigma_sq()
-                )
+                return solve_fn(K, Kcross, batch_nn_targets, eps())
 
         return caller_fn
 
