@@ -16,6 +16,13 @@ from typing import Callable
 from scipy.special import softmax
 from sklearn.metrics import log_loss
 
+from MuyGPyS import __jax_enabled__
+
+if __jax_enabled__ is False:
+    from MuyGPyS._src.optimize.numpy_objective import _mse_fn
+else:
+    from MuyGPyS._src.optimize.jax_objective import _mse_fn
+
 
 def get_loss_func(loss_method: str) -> Callable:
     """
@@ -60,6 +67,8 @@ def cross_entropy_fn(
     Transforms `predictions` to be row-stochastic, and ensures that `targets`
     contains no negative elements.
 
+    @NOTE[bwp] Currently depends upon non-jax-compliant fancy indexing.
+
     Args:
         predictions:
             The predicted response of shape `(batch_count, response_count)`.
@@ -96,10 +105,7 @@ def mse_fn(
     Returns:
         The mse loss of the prediction.
     """
-    batch_count = predictions.shape[0]
-    response_count = predictions.shape[1]
-    squared_errors = np.sum((predictions - targets) ** 2)
-    return squared_errors / (batch_count * response_count)
+    return _mse_fn(predictions, targets)
 
 
 def loo_crossval(
