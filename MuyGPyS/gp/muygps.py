@@ -10,13 +10,27 @@ import numpy as np
 
 from typing import Dict, Generator, List, Optional, Tuple, Union
 
-from MuyGPyS.gp.distance import make_regress_tensors
+# from MuyGPyS.gp.distance import make_regress_tensors
 from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
-    Hyperparameter,
     SigmaSq,
 )
+
+from MuyGPyS import __gpu_found__
+
+if __gpu_found__ is False:
+    from MuyGPyS._src.gp.numpy_distance import _make_regress_tensors
+    from MuyGPyS._src.gp.numpy_muygps import (
+        _muygps_compute_solve,
+        _muygps_compute_diagonal_variance,
+    )
+else:
+    from MuyGPyS._src.gp.jax_distance import _make_regress_tensors
+    from MuyGPyS._src.gp.jax_muygps import (
+        _muygps_compute_solve,
+        _muygps_compute_diagonal_variance,
+    )
 
 
 class MuyGPS:
@@ -178,11 +192,7 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` listing the
             predicted response for each of the batch elements.
         """
-        batch_count, nn_count, response_count = batch_nn_targets.shape
-        responses = Kcross.reshape(batch_count, 1, nn_count) @ np.linalg.solve(
-            K + eps * np.eye(nn_count), batch_nn_targets
-        )
-        return responses.reshape(batch_count, response_count)
+        return _muygps_compute_solve(K, Kcross, batch_nn_targets, eps)
 
     @staticmethod
     def _compute_diagonal_variance(
@@ -210,17 +220,7 @@ class MuyGPS:
             A vector of shape `(batch_count)` listing the diagonal variances for
             each of the batch elements.
         """
-        batch_count, nn_count = Kcross.shape
-        return np.array(
-            [
-                1.0
-                - Kcross[i, :]
-                @ np.linalg.solve(
-                    K[i, :, :] + eps * np.eye(nn_count), Kcross[i, :]
-                )
-                for i in range(batch_count)
-            ]
-        )
+        return _muygps_compute_diagonal_variance(K, Kcross, eps)
 
     def regress_from_indices(
         self,
@@ -300,7 +300,7 @@ class MuyGPS:
             crosswise_dists,
             pairwise_dists,
             batch_nn_targets,
-        ) = make_regress_tensors(
+        ) = _make_regress_tensors(
             self.kernel.metric, indices, nn_indices, test, train, targets
         )
         K = self.kernel(pairwise_dists)
@@ -825,7 +825,7 @@ class MultivariateMuyGPS:
             crosswise_dists,
             pairwise_dists,
             batch_nn_targets,
-        ) = make_regress_tensors(
+        ) = _make_regress_tensors(
             self.metric,
             indices,
             nn_indices,
