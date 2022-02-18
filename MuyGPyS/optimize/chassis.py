@@ -16,10 +16,17 @@ to optimize a specified subset of the hyperparameters associated with a
 import numpy as np
 
 from copy import deepcopy
+from typing import Callable
 
 from scipy import optimize as opt
 
-from MuyGPyS.gp.distance import make_train_tensors
+from MuyGPyS import __gpu_found__, __jax_enabled__
+
+if __jax_enabled__ is False:
+    from MuyGPyS._src.gp.numpy_distance import _make_train_tensors
+else:
+    from MuyGPyS._src.gp.jax_distance import _make_train_tensors
+
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.objective import get_loss_func, make_loo_crossval_fn
 
@@ -99,7 +106,7 @@ def scipy_optimize_from_indices(
         pairwise_dists,
         batch_targets,
         batch_nn_targets,
-    ) = make_train_tensors(
+    ) = _make_train_tensors(
         muygps.kernel.metric,
         batch_indices,
         batch_nn_indices,
@@ -194,7 +201,6 @@ def scipy_optimize_from_tensors(
         A new MuyGPs model whose specified hyperparameters have been optimized.
     """
     loss_fn = get_loss_func(loss_method)
-    x0_names, x0, bounds = muygps.get_optim_params()
 
     kernel_fn = muygps.kernel.get_opt_fn()
     predict_fn = muygps.get_opt_fn()
@@ -209,6 +215,15 @@ def scipy_optimize_from_tensors(
         batch_targets,
     )
 
+    return _scipy_optimize_from_tensors(muygps, obj_fn, verbose=verbose)
+
+
+def _scipy_optimize_from_tensors(
+    muygps: MuyGPS,
+    obj_fn: Callable,
+    verbose: bool = False,
+) -> MuyGPS:
+    x0_names, x0, bounds = muygps.get_optim_params()
     if verbose is True:
         print(f"parameters to be optimized: {x0_names}")
         print(f"bounds: {bounds}")
