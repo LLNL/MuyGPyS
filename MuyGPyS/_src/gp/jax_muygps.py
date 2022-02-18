@@ -37,3 +37,24 @@ def _muygps_compute_diagonal_variance(
         ).reshape(batch_count, nn_count),
         axis=1,
     )
+
+
+@jit
+def _muygps_sigma_sq_optim(
+    K: jnp.ndarray,
+    nn_indices: jnp.ndarray,
+    targets: jnp.ndarray,
+    eps: float,
+):
+    batch_count, nn_count = nn_indices.shape
+    _, response_count = targets.shape
+
+    nn_targets = targets[nn_indices, :]
+    return jnp.sum(
+        jnp.einsum(
+            "ijk,ijk->ik",
+            nn_targets,
+            jnp.linalg.solve(K + eps * jnp.eye(nn_count), nn_targets),
+        ),
+        axis=0,
+    ) / (nn_count * batch_count)
