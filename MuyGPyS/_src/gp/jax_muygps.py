@@ -45,9 +45,8 @@ def _muygps_sigma_sq_optim(
     nn_indices: jnp.ndarray,
     targets: jnp.ndarray,
     eps: float,
-):
+) -> jnp.ndarray:
     batch_count, nn_count = nn_indices.shape
-    _, response_count = targets.shape
 
     nn_targets = targets[nn_indices, :]
     return jnp.sum(
