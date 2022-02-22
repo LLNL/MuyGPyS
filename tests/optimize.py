@@ -28,7 +28,6 @@ from MuyGPyS.testing.gp import (
     BenchmarkGP,
     get_analytic_sigma_sq,
 )
-
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
