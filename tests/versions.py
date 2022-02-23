@@ -15,6 +15,7 @@ from MuyGPyS import config
 
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
+    _make_gaussian_data,
     _exact_nn_kwarg_options,
 )
 from MuyGPyS.gp.muygps import MuyGPS
@@ -434,8 +435,14 @@ class MuyGPSTest(MuyGPSTestCase):
         )
 
 
-from MuyGPyS._src.optimize.numpy_objective import _mse_fn as mse_fn_n
-from MuyGPyS._src.optimize.jax_objective import _mse_fn as mse_fn_j
+from MuyGPyS._src.optimize.numpy_objective import (
+    _mse_fn as mse_fn_n,
+    _cross_entropy_fn as cross_entropy_fn_n,
+)
+from MuyGPyS._src.optimize.jax_objective import (
+    _mse_fn as mse_fn_j,
+    _cross_entropy_fn as cross_entropy_fn_j,
+)
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS._src.optimize.numpy_chassis import (
     _scipy_optimize_from_tensors as scipy_optimize_from_tensors_n,
@@ -532,6 +539,33 @@ class ObjectiveTest(OptimTestCase):
             np.isclose(
                 mse_fn_n(self.predictions_n, self.batch_targets_n),
                 mse_fn_j(self.predictions_j, self.batch_targets_j),
+            )
+        )
+
+    def test_cross_entropy(self):
+        cat_predictions_n, cat_batch_targets_n = _make_gaussian_data(
+            1000, 1000, 10, 2, categorical=True
+        )
+        cat_predictions_n = cat_predictions_n["output"]
+        cat_batch_targets_n = cat_batch_targets_n["output"]
+        cat_predictions_j = jnp.array(cat_predictions_n)
+        cat_batch_targets_j = jnp.array(cat_batch_targets_n)
+        self.assertTrue(
+            np.all(
+                (
+                    np.all(cat_predictions_j == cat_predictions_n),
+                    np.all(cat_batch_targets_j == cat_batch_targets_n),
+                )
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
+                cross_entropy_fn_n(
+                    cat_predictions_n, cat_batch_targets_n, ll_eps=1e-6
+                ),
+                cross_entropy_fn_j(
+                    cat_predictions_j, cat_batch_targets_j, ll_eps=1e-6
+                ),
             )
         )
 

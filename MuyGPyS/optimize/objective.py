@@ -19,9 +19,9 @@ from sklearn.metrics import log_loss
 from MuyGPyS import config
 
 if config.jax_enabled() is False:
-    from MuyGPyS._src.optimize.numpy_objective import _mse_fn
+    from MuyGPyS._src.optimize.numpy_objective import _mse_fn, _cross_entropy_fn
 else:
-    from MuyGPyS._src.optimize.jax_objective import _mse_fn
+    from MuyGPyS._src.optimize.jax_objective import _mse_fn, _cross_entropy_fn
 
 
 def get_loss_func(loss_method: str) -> Callable:
@@ -67,7 +67,8 @@ def cross_entropy_fn(
     Transforms `predictions` to be row-stochastic, and ensures that `targets`
     contains no negative elements.
 
-    @NOTE[bwp] Currently depends upon non-jax-compliant fancy indexing.
+    @NOTE[bwp] I don't remember why we hard-coded eps=1e-6. Might need to
+    revisit.
 
     Args:
         predictions:
@@ -78,12 +79,7 @@ def cross_entropy_fn(
     Returns:
         The cross-entropy loss of the prediction.
     """
-    one_hot_targets = np.zeros(targets.shape)
-    one_hot_targets[targets > 0.0] = 1.0
-
-    return log_loss(
-        one_hot_targets, softmax(predictions, axis=1), eps=1e-6, normalize=False
-    )
+    return _cross_entropy_fn(predictions, targets, ll_eps=1e-6)
 
 
 def mse_fn(
