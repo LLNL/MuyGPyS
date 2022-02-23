@@ -76,9 +76,9 @@ import numpy as np
 
 from typing import Optional, Tuple
 
-from MuyGPyS import __jax_enabled__
+from MuyGPyS import config
 
-if __jax_enabled__ is False:
+if config.jax_enabled() is False:
     from MuyGPyS._src.gp.numpy_distance import (
         _make_regress_tensors,
         _make_train_tensors,

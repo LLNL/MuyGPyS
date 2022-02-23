@@ -18,27 +18,32 @@ from MuyGPyS.gp.kernels import (
     SigmaSq,
 )
 
-from MuyGPyS import __gpu_found__, __jax_enabled__
+from MuyGPyS import config
 
-if __jax_enabled__ is False:
+if config.jax_enabled() is False:
     from MuyGPyS._src.gp.numpy_distance import _make_regress_tensors
-else:
-    from MuyGPyS._src.gp.jax_distance import _make_regress_tensors
-
-# Presently, these implementations appear to be slower than numpy on CPU (but
-# much faster on GPU)
-if __gpu_found__ is False:
     from MuyGPyS._src.gp.numpy_muygps import (
         _muygps_compute_solve,
         _muygps_compute_diagonal_variance,
         _muygps_sigma_sq_optim,
     )
 else:
-    from MuyGPyS._src.gp.jax_muygps import (
-        _muygps_compute_solve,
-        _muygps_compute_diagonal_variance,
-        _muygps_sigma_sq_optim,
-    )
+    from MuyGPyS._src.gp.jax_distance import _make_regress_tensors
+
+    # Presently, these implementations appear to be slower than numpy on CPU
+    # (but much faster on GPU)
+    if config.gpu_found() is False:
+        from MuyGPyS._src.gp.numpy_muygps import (
+            _muygps_compute_solve,
+            _muygps_compute_diagonal_variance,
+            _muygps_sigma_sq_optim,
+        )
+    else:
+        from MuyGPyS._src.gp.jax_muygps import (
+            _muygps_compute_solve,
+            _muygps_compute_diagonal_variance,
+            _muygps_sigma_sq_optim,
+        )
 
 
 class MuyGPS:

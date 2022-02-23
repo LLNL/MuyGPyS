@@ -7,7 +7,4 @@
 
 __version__ = "0.4.1"
 
-from MuyGPyS._src.config import (
-    __jax_enabled__ as __jax_enabled__,
-    __gpu_found__ as __gpu_found__,
-)
+from MuyGPyS._src.config import config as config

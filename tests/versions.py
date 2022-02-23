@@ -9,26 +9,44 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from jax.config import config as _config
+from MuyGPyS import config
 
-_config.update("jax_enable_x64", True)
-del _config
+# config.jax_enable_x64()
 
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
-    _basic_nn_kwarg_options,
     _exact_nn_kwarg_options,
-    _fast_nn_kwarg_options,
 )
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 
 
-class AgreementTestCase(parameterized.TestCase):
+def allclose_gen(a: np.ndarray, b: np.ndarray) -> bool:
+    if config.x64_enabled():
+        return np.allclose(a, b)
+    else:
+        return np.allclose(a, b, atol=1e-7)
+
+
+def allclose_var(a: np.ndarray, b: np.ndarray) -> bool:
+    if config.x64_enabled():
+        return np.allclose(a, b)
+    else:
+        return np.allclose(a, b, atol=1e-6)
+
+
+def allclose_inv(a: np.ndarray, b: np.ndarray) -> bool:
+    if config.x64_enabled():
+        return np.allclose(a, b)
+    else:
+        return np.allclose(a, b, atol=1e-3)
+
+
+class DistanceTestCase(parameterized.TestCase):
     @classmethod
     def setUpClass(cls):
-        super(AgreementTestCase, cls).setUpClass()
+        super(DistanceTestCase, cls).setUpClass()
         cls.train_count = 1000
         cls.test_count = 100
         cls.feature_count = 10
@@ -84,14 +102,14 @@ from MuyGPyS._src.gp.jax_distance import (
 )
 
 
-class DistanceTest(AgreementTestCase):
+class DistanceTest(DistanceTestCase):
     @classmethod
     def setUpClass(cls):
         super(DistanceTest, cls).setUpClass()
 
     def test_pairwise_distances(self):
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 pairwise_distances_n(
                     self.train_features_n, self.batch_nn_indices_n
                 ),
@@ -103,7 +121,7 @@ class DistanceTest(AgreementTestCase):
 
     def test_crosswise_distances(self):
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 crosswise_distances_n(
                     self.train_features_n,
                     self.train_features_n,
@@ -144,10 +162,10 @@ class DistanceTest(AgreementTestCase):
             self.train_features_j,
             self.train_responses_j,
         )
-        self.assertTrue(np.allclose(crosswise_dists_n, crosswise_dists_j))
-        self.assertTrue(np.allclose(pairwise_dists_n, pairwise_dists_j))
-        self.assertTrue(np.allclose(batch_targets_n, batch_targets_j))
-        self.assertTrue(np.allclose(batch_nn_targets_n, batch_nn_targets_j))
+        self.assertTrue(allclose_gen(crosswise_dists_n, crosswise_dists_j))
+        self.assertTrue(allclose_gen(pairwise_dists_n, pairwise_dists_j))
+        self.assertTrue(allclose_gen(batch_targets_n, batch_targets_j))
+        self.assertTrue(allclose_gen(batch_nn_targets_n, batch_nn_targets_j))
 
 
 from MuyGPyS._src.gp.numpy_kernels import (
@@ -168,10 +186,10 @@ from MuyGPyS._src.gp.jax_kernels import (
 )
 
 
-class KernelTest(AgreementTestCase):
+class KernelTestCase(DistanceTestCase):
     @classmethod
     def setUpClass(cls):
-        super(KernelTest, cls).setUpClass()
+        super(KernelTestCase, cls).setUpClass()
         (
             cls.crosswise_dists_n,
             cls.pairwise_dists_n,
@@ -197,9 +215,15 @@ class KernelTest(AgreementTestCase):
             cls.train_responses_j,
         )
 
+
+class KernelTest(KernelTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(KernelTest, cls).setUpClass()
+
     def test_crosswise_rbf(self):
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 rbf_fn_n(
                     self.crosswise_dists_n, length_scale=self.length_scale
                 ),
@@ -211,7 +235,7 @@ class KernelTest(AgreementTestCase):
 
     def test_pairwise_rbf(self):
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 rbf_fn_n(self.pairwise_dists_n, length_scale=self.length_scale),
                 rbf_fn_j(self.pairwise_dists_j, length_scale=self.length_scale),
             )
@@ -219,7 +243,7 @@ class KernelTest(AgreementTestCase):
 
     def test_crosswise_matern(self):
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 matern_05_fn_n(
                     self.crosswise_dists_n, length_scale=self.length_scale
                 ),
@@ -229,7 +253,7 @@ class KernelTest(AgreementTestCase):
             )
         )
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 matern_15_fn_n(
                     self.crosswise_dists_n, length_scale=self.length_scale
                 ),
@@ -239,7 +263,7 @@ class KernelTest(AgreementTestCase):
             )
         )
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 matern_25_fn_n(
                     self.crosswise_dists_n, length_scale=self.length_scale
                 ),
@@ -249,7 +273,7 @@ class KernelTest(AgreementTestCase):
             )
         )
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 matern_inf_fn_n(
                     self.crosswise_dists_n, length_scale=self.length_scale
                 ),
@@ -259,7 +283,7 @@ class KernelTest(AgreementTestCase):
             )
         )
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 matern_gen_fn_n(
                     self.crosswise_dists_n,
                     nu=self.nu,
@@ -275,7 +299,7 @@ class KernelTest(AgreementTestCase):
 
     def test_pairwise_matern(self):
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 matern_05_fn_n(
                     self.pairwise_dists_n, length_scale=self.length_scale
                 ),
@@ -285,7 +309,7 @@ class KernelTest(AgreementTestCase):
             )
         )
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 matern_15_fn_n(
                     self.pairwise_dists_n, length_scale=self.length_scale
                 ),
@@ -295,7 +319,7 @@ class KernelTest(AgreementTestCase):
             )
         )
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 matern_25_fn_n(
                     self.pairwise_dists_n, length_scale=self.length_scale
                 ),
@@ -305,7 +329,7 @@ class KernelTest(AgreementTestCase):
             )
         )
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 matern_inf_fn_n(
                     self.pairwise_dists_n, length_scale=self.length_scale
                 ),
@@ -315,7 +339,7 @@ class KernelTest(AgreementTestCase):
             )
         )
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 matern_gen_fn_n(
                     self.pairwise_dists_n,
                     nu=self.nu,
@@ -342,26 +366,28 @@ from MuyGPyS._src.gp.jax_muygps import (
 )
 
 
-class MuyGPSTest(KernelTest):
+class MuyGPSTestCase(KernelTestCase):
     @classmethod
     def setUpClass(cls):
-        super(MuyGPSTest, cls).setUpClass()
+        super(MuyGPSTestCase, cls).setUpClass()
         cls.K_n = matern_gen_fn_n(
             cls.pairwise_dists_n, nu=cls.nu, length_scale=cls.length_scale
         )
-        cls.K_j = matern_gen_fn_j(
-            cls.pairwise_dists_j, nu=cls.nu, length_scale=cls.length_scale
-        )
+        cls.K_j = jnp.array(cls.K_n)
         cls.Kcross_n = matern_gen_fn_n(
             cls.crosswise_dists_n, nu=cls.nu, length_scale=cls.length_scale
         )
-        cls.Kcross_j = matern_gen_fn_j(
-            cls.crosswise_dists_j, nu=cls.nu, length_scale=cls.length_scale
-        )
+        cls.Kcross_j = jnp.array(cls.Kcross_n)
+
+
+class MuyGPSTest(MuyGPSTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(MuyGPSTest, cls).setUpClass()
 
     def test_compute_solve(self):
         self.assertTrue(
-            np.allclose(
+            allclose_inv(
                 muygps_compute_solve_n(
                     self.K_n,
                     self.Kcross_n,
@@ -379,7 +405,7 @@ class MuyGPSTest(KernelTest):
 
     def test_diagonal_variance(self):
         self.assertTrue(
-            np.allclose(
+            allclose_var(
                 muygps_compute_diagonal_variance_n(
                     self.K_n, self.Kcross_n, self.muygps.eps()
                 ),
@@ -391,7 +417,7 @@ class MuyGPSTest(KernelTest):
 
     def test_sigma_sq_optim(self):
         self.assertTrue(
-            np.allclose(
+            allclose_inv(
                 muygps_sigma_sq_optim_n(
                     self.K_n,
                     self.batch_nn_indices_n,
@@ -411,13 +437,18 @@ class MuyGPSTest(KernelTest):
 from MuyGPyS._src.optimize.numpy_objective import _mse_fn as mse_fn_n
 from MuyGPyS._src.optimize.jax_objective import _mse_fn as mse_fn_j
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
-from MuyGPyS.optimize.chassis import _scipy_optimize_from_tensors
+from MuyGPyS._src.optimize.numpy_chassis import (
+    _scipy_optimize_from_tensors as scipy_optimize_from_tensors_n,
+)
+from MuyGPyS._src.optimize.jax_chassis import (
+    _scipy_optimize_from_tensors as scipy_optimize_from_tensors_j,
+)
 
 
-class OptimTest(MuyGPSTest):
+class OptimTestCase(MuyGPSTestCase):
     @classmethod
     def setUpClass(cls):
-        super(OptimTest, cls).setUpClass()
+        super(OptimTestCase, cls).setUpClass()
         cls.predictions_n = cls.muygps._regress(
             cls.K_n,
             cls.Kcross_n,
@@ -490,6 +521,12 @@ class OptimTest(MuyGPSTest):
             self.batch_targets_j,
         )
 
+
+class ObjectiveTest(OptimTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(ObjectiveTest, cls).setUpClass()
+
     def test_mse(self):
         self.assertTrue(
             np.isclose(
@@ -502,7 +539,7 @@ class OptimTest(MuyGPSTest):
         kernel_fn_n = self._get_kernel_fn_n()
         kernel_fn_j = self._get_kernel_fn_j()
         self.assertTrue(
-            np.allclose(
+            allclose_gen(
                 kernel_fn_n(self.pairwise_dists_n, self.x0_n),
                 kernel_fn_j(self.pairwise_dists_j, self.x0_j),
             )
@@ -512,7 +549,7 @@ class OptimTest(MuyGPSTest):
         predict_fn_n = self._get_predict_fn_n()
         predict_fn_j = self._get_predict_fn_j()
         self.assertTrue(
-            np.allclose(
+            allclose_inv(
                 predict_fn_n(
                     self.K_n,
                     self.Kcross_n,
@@ -532,27 +569,37 @@ class OptimTest(MuyGPSTest):
         obj_fn_n = self._get_obj_fn_n()
         obj_fn_j = self._get_obj_fn_j()
         obj_fn_h = self._get_obj_fn_h()
-        self.assertTrue(np.allclose(obj_fn_n(self.x0_n), obj_fn_j(self.x0_j)))
-        self.assertTrue(np.allclose(obj_fn_n(self.x0_n), obj_fn_h(self.x0_j)))
+        self.assertTrue(allclose_inv(obj_fn_n(self.x0_n), obj_fn_j(self.x0_j)))
+        self.assertTrue(allclose_inv(obj_fn_n(self.x0_n), obj_fn_h(self.x0_j)))
+
+
+class OptimTest(OptimTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(OptimTest, cls).setUpClass()
 
     def test_scipy_optimize_from_tensors(self):
-        mopt_n = _scipy_optimize_from_tensors(
+        obj_fn_n = self._get_obj_fn_n()
+        obj_fn_j = self._get_obj_fn_j()
+        obj_fn_h = self._get_obj_fn_h()
+
+        mopt_n = scipy_optimize_from_tensors_n(
             self.muygps,
-            self._get_obj_fn_n(),
+            obj_fn_n,
             verbose=False,
         )
-        mopt_j = _scipy_optimize_from_tensors(
+        mopt_j = scipy_optimize_from_tensors_j(
             self.muygps,
-            self._get_obj_fn_j(),
+            obj_fn_j,
             verbose=False,
         )
-        mopt_h = _scipy_optimize_from_tensors(
+        mopt_h = scipy_optimize_from_tensors_j(
             self.muygps,
-            self._get_obj_fn_h(),
+            obj_fn_h,
             verbose=False,
         )
-        self.assertTrue(np.allclose(mopt_n.kernel.nu(), mopt_j.kernel.nu()))
-        self.assertTrue(np.allclose(mopt_n.kernel.nu(), mopt_h.kernel.nu()))
+        self.assertTrue(allclose_gen(mopt_n.kernel.nu(), mopt_j.kernel.nu()))
+        self.assertTrue(allclose_gen(mopt_n.kernel.nu(), mopt_h.kernel.nu()))
 
 
 if __name__ == "__main__":

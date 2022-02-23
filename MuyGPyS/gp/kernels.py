@@ -45,9 +45,9 @@ import numpy as np
 
 from typing import cast, Callable, Dict, List, Optional, Tuple, Union
 
-from MuyGPyS import __jax_enabled__
+from MuyGPyS import config
 
-if __jax_enabled__ is False:
+if config.jax_enabled() is False:
     from MuyGPyS._src.gp.numpy_kernels import (
         _rbf_fn,
         _matern_05_fn,

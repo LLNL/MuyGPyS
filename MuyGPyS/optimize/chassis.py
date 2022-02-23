@@ -20,12 +20,14 @@ from typing import Callable
 
 from scipy import optimize as opt
 
-from MuyGPyS import __gpu_found__, __jax_enabled__
+from MuyGPyS import config
 
-if __jax_enabled__ is False:
+if config.jax_enabled() is False:
     from MuyGPyS._src.gp.numpy_distance import _make_train_tensors
+    from MuyGPyS._src.optimize.numpy_chassis import _scipy_optimize_from_tensors
 else:
     from MuyGPyS._src.gp.jax_distance import _make_train_tensors
+    from MuyGPyS._src.optimize.jax_chassis import _scipy_optimize_from_tensors
 
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.objective import get_loss_func, make_loo_crossval_fn
@@ -216,42 +218,3 @@ def scipy_optimize_from_tensors(
     )
 
     return _scipy_optimize_from_tensors(muygps, obj_fn, verbose=verbose)
-
-
-def _scipy_optimize_from_tensors(
-    muygps: MuyGPS,
-    obj_fn: Callable,
-    verbose: bool = False,
-) -> MuyGPS:
-    x0_names, x0, bounds = muygps.get_optim_params()
-    if verbose is True:
-        print(f"parameters to be optimized: {x0_names}")
-        print(f"bounds: {bounds}")
-        print(f"initial x0: {x0}")
-
-    optres = opt.minimize(
-        obj_fn,
-        x0,
-        method="L-BFGS-B",
-        bounds=bounds,
-    )
-    if verbose is True:
-        print(f"optimizer results: \n{optres}")
-
-    ret = deepcopy(muygps)
-
-    # set final values
-    for i, key in enumerate(x0_names):
-        lb, ub = bounds[i]
-        if optres.x[i] < lb:
-            val = lb
-        elif optres.x[i] > ub:
-            val = ub
-        else:
-            val = optres.x[i]
-        if key == "eps":
-            ret.eps._set_val(val)
-        else:
-            ret.kernel.hyperparameters[key]._set_val(val)
-
-    return ret

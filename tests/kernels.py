@@ -11,6 +11,11 @@ from absl.testing import parameterized
 from sklearn.gaussian_process.kernels import Matern as sk_Matern
 from sklearn.gaussian_process.kernels import RBF as sk_RBF
 
+from MuyGPyS import config
+
+config.disable_jax()
+# config.jax_enable_x64()
+
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
@@ -89,31 +94,6 @@ class DistancesTest(parameterized.TestCase):
         self.assertTrue(np.allclose(dists, F2_dists))
         self.assertTrue(np.allclose(dists, l2_dists**2))
         self.assertTrue(np.allclose(dists, ll_dists))
-
-    # @parameterized.parameters(
-    #     (
-    #         (1000, f, nn, 10, nn_kwargs)
-    #         for f in [100, 10, 2, 1]
-    #         for nn in [5, 10, 100]
-    #         for nn_kwargs in _basic_nn_kwarg_options
-    #         # for f in [100]
-    #         # for nn in [5]
-    #         # for nn_kwargs in _fast_nn_kwarg_options
-    #     )
-    # )
-    # def test_cosine(
-    #     self, train_count, feature_count, nn_count, test_count, nn_kwargs
-    # ):
-    #     train = _make_gaussian_matrix(train_count, feature_count)
-    #     test = _make_gaussian_matrix(test_count, feature_count)
-    #     train = train / np.linalg.norm(train, axis=1)[:, None]
-    #     test = test / np.linalg.norm(test, axis=1)[:, None]
-    #     nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-    #     nn_indices, nn_dists = nbrs_lookup.get_nns(test)
-    #     points = train[nn_indices]
-    #     ip_dists = pairwise_distances(train, nn_indices, metric="ip")
-    #     co_dists = pairwise_distances(train, nn_indices, metric="cosine")
-    #     self.assertTrue(np.allclose(ip_dists, co_dists))
 
 
 class SigmaSqTest(parameterized.TestCase):

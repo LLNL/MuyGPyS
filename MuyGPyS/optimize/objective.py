@@ -16,9 +16,9 @@ from typing import Callable
 from scipy.special import softmax
 from sklearn.metrics import log_loss
 
-from MuyGPyS import __jax_enabled__
+from MuyGPyS import config
 
-if __jax_enabled__ is False:
+if config.jax_enabled() is False:
     from MuyGPyS._src.optimize.numpy_objective import _mse_fn
 else:
     from MuyGPyS._src.optimize.jax_objective import _mse_fn
