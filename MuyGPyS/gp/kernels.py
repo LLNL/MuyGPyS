@@ -283,12 +283,12 @@ class Hyperparameter:
                         [False, True],
                     )
                 )
-                if any_below is True:
+                if any_below == True:
                     raise ValueError(
                         f"Hyperparameter value {val} is lesser than the "
                         f"optimization lower bound {self._bounds[0]}"
                     )
-                if any_above is True:
+                if any_above == True:
                     raise ValueError(
                         f"Hyperparameter value {val} is greater than the "
                         f"optimization upper bound {self._bounds[1]}"
