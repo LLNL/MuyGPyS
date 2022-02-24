@@ -8,6 +8,11 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS import config
+
+config.disable_jax()
+# config.jax_enable_x64()
+
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
 
@@ -21,6 +26,7 @@ from MuyGPyS.testing.test_utils import (
     _make_gaussian_data,
     _basic_nn_kwarg_options,
     _fast_nn_kwarg_options,
+    _get_sigma_sq_series,
 )
 
 
@@ -671,14 +677,14 @@ class GPSigmaSqTest(parameterized.TestCase):
         if response_count > 1:
             self.assertEqual(len(muygps.sigma_sq()), response_count)
             for i in range(response_count):
-                sigmas = muygps._get_sigma_sq_series(
-                    K, nn_indices, data["output"][:, i]
+                sigmas = _get_sigma_sq_series(
+                    K, nn_indices, data["output"][:, i], muygps.eps()
                 )
                 self.assertEqual(sigmas.shape, (data_count,))
                 self.assertAlmostEqual(muygps.sigma_sq()[i], np.mean(sigmas), 5)
         else:
-            sigmas = muygps._get_sigma_sq_series(
-                K, nn_indices, data["output"][:, 0]
+            sigmas = _get_sigma_sq_series(
+                K, nn_indices, data["output"][:, 0], muygps.eps()
             )
             self.assertEqual(sigmas.shape, (data_count,))
             self.assertAlmostEqual(muygps.sigma_sq()[0], np.mean(sigmas), 5)

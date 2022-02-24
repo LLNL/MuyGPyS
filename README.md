@@ -11,30 +11,100 @@ This feature affords the optimization of hyperparameters by way of leave-one-out
 required by similar sparse methods. 
 
 
+## Just-In-Time Compiled or Numpy?
+
+With release v0.5.0, `MuyGPyS` supports just-in-time compilation of the 
+underlying math functions to CPU or GPU using 
+[JAX](https://github.com/google/jax).
+The JAX-compiled versions of the code are significantly faster, especially on 
+GPUs.
+Both pure numpy and JAX-compiled versions of the library are supported, with 
+most users specifying at install-time whether to use JAX.
+See the below installation instructions.
+
+If for some reason you want to swap between numpy and JAX implementations (and
+have installed the JAX dependencies as below), `MuyGPyS.config` allows this.
+Note that deactivating JAX must happen prior to importing any other `MuyGPyS`
+functions.
+```
+from MuyGPyS import config
+
+config.disable_jax()
+
+# subsequent imports...
+```
+
 ## Installation
 
-### Pip
+### Pip: CPU
 
-`muygpys` is maintained on PyPI and can be installed using `pip`:
+The index `muygpys` is maintained on PyPI and can be installed using `pip`.
+`muygps` supports many optional extras flags, which will install additional
+dependencies if specified. 
+If installing CPU-only with pip, you might want to consider the following flag:  
+These extras include:
+- `jax_cpu` - install [JAX](https://github.com/google/jax) dependencies to 
+support just-in-time compilation of math functions on CPU (see below to install
+on GPU CUDA architectures)
 ```
-$ pip install muygpys
+$ # numpy-only installation. Functions will internally use numpy.
+$ pip install --upgrade muygpys
+$ # CPU-only JAX installation. Functions will be jit-compiled using JAX.
+$ pip install --upgrade muygpys[jax_cpu]
+```
+
+### Pip: GPU (CUDA)
+
+[JAX](https://github.com/google/jax) also supports just-in-time compilation to
+CUDA, making the compiled math functions within `MuyGPyS` runnable on NVidia 
+GPUS.
+This requires you to install 
+[CUDA](https://developer.nvidia.com/cuda-downloads)
+and 
+[CuDNN](https://developer.nvidia.com/CUDNN)
+in your environment, if they are not already installed, and to ensure that they
+are on your environment's `$LD_LIBRARY_PATH`. 
+See [scripts](scripts/lc-setup/pascal.sh) for an example environment setup.
+
+JAX currently supports CUDA 11.1 or newer, and CuDNN 8.0.5 or newer or CuDNN 8.2 
+or newer. 
+We will attempt to keep the `muygpys` PyPI index up to date with JAX, but any 
+significant installation changes may result in a lag in automated installation 
+support.
+Consider reading the 
+[JAX CUDA installation instructions](https://github.com/google/jax#pip-installation-gpu-cuda)
+for more information.
+
+Installing `muygpys` with NVidia GPU support requires indicating the location 
+for JAX's pre-built wheels, as well as specifying the versions of CUDA and CuDNN
+installed in your environment with one of the following extras flags:
+- `jax_cuda11_cudnn82`
+- `jax_cuda11_cudnn805`
+- `jax_cuda` (shorthand for `jax_cuda11_cudnn805`)
+```
+$ # CUDA >= 11.1 and CuDNN >= 8.2
+$ pip install muygpys[jax_cuda11_cudnn82] -f https://storage.googleapis.com/jax-releases/jax_releases.html
+$ # CUDA >= 11.1 and CuDNN >= 8.0.5
+$ pip install muygpys[jax_cuda11_cudnn805] -f https://storage.googleapis.com/jax-releases/jax_releases.html
+$ # alternately, 
+$ pip install muygpys[jax_cuda] -f https://storage.googleapis.com/jax-releases/jax_releases.html
 ```
 
 
 ### From Source
 
-This repository includes several `extras_require` optional dependencies, 
-including `dev`, `docs` and `tests`.
-Including any of these extras will install the additional dependencies needed 
-for the corresponding features.
-The `dev` option includes all of the `docs` and `tests` requirements. 
+This repository includes several `extras_require` optional dependencies.
+- `tests` - install dependencies necessary to run [tests](tests/)
+- `docs` - install dependencies necessary to build the docs
+- `dev` - install dependencies for maintaining code style, linting, and 
+packaging (includes all of the dependencies in `tests` and `docs`)
 
 For example, follow these instructions to install from source for development 
 purposes:
 ```
 $ git clone git@github.com:LLNL/MuyGPyS.git
 $ cd MuyGPyS
-$ pip install -e .[dev]
+$ pip install -e .[dev,jax_cpu]
 ```
 
 Additionally check out the develop branch to access the latest features in 

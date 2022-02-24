@@ -9,6 +9,11 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS import config
+
+config.disable_jax()
+# config.jax_enable_x64()
+
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
@@ -28,7 +33,6 @@ from MuyGPyS.testing.gp import (
     BenchmarkGP,
     get_analytic_sigma_sq,
 )
-
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,

@@ -5,7 +5,7 @@
 
 import numpy as np
 
-from typing import Dict, Tuple, Union
+from typing import Dict, Generator, Tuple, Union
 
 _basic_nn_kwarg_options = (
     {"nn_method": "exact", "algorithm": "ball_tree"},
@@ -255,4 +255,80 @@ def _normalize(X: np.ndarray) -> np.ndarray:
         A row-normalized matrix of shape `(data-count, feature_count)`.
     """
     # return X * np.sqrt(1 / np.sum(X ** 2, axis=1))[:, None]
-    return X * np.sqrt(X.shape[1] / np.sum(X ** 2, axis=1))[:, None]
+    return X * np.sqrt(X.shape[1] / np.sum(X**2, axis=1))[:, None]
+
+
+def _get_sigma_sq_series(
+    K: np.ndarray,
+    nn_indices: np.ndarray,
+    target_col: np.ndarray,
+    eps: float,
+) -> np.ndarray:
+    """
+    Return the series of sigma^2 scale parameters for each neighborhood
+    solve.
+
+    NOTE[bwp]: This function is only for testing purposes.
+
+    Args:
+        K:
+            A tensor of shape `(batch_count, nn_count, nn_count)` containing
+            the `(nn_count, nn_count` -shaped kernel matrices corresponding
+            to each of the batch elements.
+        nn_indices:
+            An integral matrix of shape `(batch_count, nn_count)` listing the
+            nearest neighbor indices for all observations in the test batch.
+        target_col:
+            A vector of shape `(batch_count)` consisting of the target for
+            each nearest neighbor.
+
+    Returns:
+        A vector of shape `(response_count)` listing the value of sigma^2
+        for the given response dimension.
+    """
+    batch_count, nn_count = nn_indices.shape
+
+    sigmas = np.zeros((batch_count,))
+    for i, el in enumerate(_get_sigma_sq(K, target_col, nn_indices, eps)):
+        sigmas[i] = el
+    return sigmas / nn_count
+
+
+def _get_sigma_sq(
+    K: np.ndarray,
+    target_col: np.ndarray,
+    nn_indices: np.ndarray,
+    eps: float,
+) -> Generator[float, None, None]:
+    """
+    Generate series of :math:`\\sigma^2` scale parameters for each
+    individual solve along a single dimension:
+
+    .. math::
+        \\sigma^2 = \\frac{1}{k} * Y_{nn}^T K_{nn}^{-1} Y_{nn}
+
+    Here :math:`Y_{nn}` and :math:`K_{nn}` are the target and kernel
+    matrices with respect to the nearest neighbor set in scope, where
+    :math:`k` is the number of nearest neighbors.
+
+    Args:
+        K:
+            A tensor of shape `(batch_count, nn_count, nn_count)` containing
+            the `(nn_count, nn_count` -shaped kernel matrices corresponding
+            to each of the batch elements.
+        target_col:
+            A vector of shape `(batch_count)` consisting of the target for
+            each nearest neighbor.
+        nn_indices:
+            An integral matrix of shape `(batch_count, nn_count)` listing the
+            nearest neighbor indices for all observations in the test batch.
+
+    Return:
+        A generator producing `batch_count` optimal values of
+        :math:`\\sigma^2` for each neighborhood for the given response
+        dimension.
+    """
+    batch_count, nn_count = nn_indices.shape
+    for j in range(batch_count):
+        Y_0 = target_col[nn_indices[j, :]]
+        yield Y_0 @ np.linalg.solve(K[j, :, :] + eps * np.eye(nn_count), Y_0)

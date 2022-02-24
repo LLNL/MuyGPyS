@@ -11,6 +11,11 @@ import pickle as pkl
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS import config
+
+config.disable_jax()
+# config.jax_enable_x64()
+
 from MuyGPyS.examples.two_class_classify_uq import example_lambdas
 from MuyGPyS.testing.api_tests import ClassifyAPITest, RegressionAPITest
 from MuyGPyS.testing.test_utils import (
