@@ -26,17 +26,16 @@ from MuyGPyS.optimize.chassis import (
     scipy_optimize_from_tensors,
     scipy_optimize_from_indices,
 )
-from MuyGPyS.testing.gp import (
+from MuyGPyS._test.gp import (
     benchmark_pairwise_distances,
     benchmark_sample,
     benchmark_sample_full,
     BenchmarkGP,
     get_analytic_sigma_sq,
 )
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
-    _make_gaussian_data,
     _basic_nn_kwarg_options,
     _sq_rel_err,
 )

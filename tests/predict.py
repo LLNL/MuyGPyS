@@ -25,13 +25,8 @@ from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import (
     get_balanced_batch,
-    sample_batch,
-    sample_balanced_batch,
-    full_filtered_batch,
 )
-from MuyGPyS.testing.test_utils import (
-    _make_gaussian_matrix,
-    _make_gaussian_dict,
+from MuyGPyS._test.utils import (
     _make_gaussian_data,
     _basic_nn_kwarg_options,
 )

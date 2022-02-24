@@ -17,7 +17,7 @@ config.disable_jax()
 # config.jax_enable_x64()
 
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _basic_nn_kwarg_options,
 )

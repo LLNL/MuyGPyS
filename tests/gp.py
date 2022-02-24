@@ -18,9 +18,9 @@ from MuyGPyS.examples.classify import make_classifier
 
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.testing.gp import BenchmarkGP
+from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _make_gaussian_data,

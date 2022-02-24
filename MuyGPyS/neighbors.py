@@ -26,8 +26,6 @@ from MuyGPyS import config
 
 if config.hnswlib_enabled() is True:
     import hnswlib
-# else:
-#     hnswlib = None  # type:ignore
 
 from MuyGPyS.utils import safe_apply
 

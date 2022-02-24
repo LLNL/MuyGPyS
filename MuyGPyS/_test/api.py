@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import re
-from MuyGPyS.gp.distance import crosswise_distances
 from MuyGPyS.neighbors import NN_Wrapper
 import numpy as np
 

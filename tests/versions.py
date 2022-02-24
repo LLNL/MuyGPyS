@@ -13,7 +13,7 @@ from MuyGPyS import config
 
 # config.jax_enable_x64()
 
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_data,
     _exact_nn_kwarg_options,
