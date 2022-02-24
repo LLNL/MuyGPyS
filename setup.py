@@ -29,10 +29,16 @@ DOCS_REQUIRES = [
     "ipykernel==6.6.0",
 ]
 
+JAX_CPU_REQUIRES = [
+    "jax[cpu]>=0.2.26",
+    "tensorflow-probability[jax]>=0.16.0",
+]
+
 setup(
     extras_require={
         "dev": DEV_REQUIRES + TEST_REQUIRES + DOCS_REQUIRES,
-        "docs" : DOCS_REQUIRES,
+        "docs": DOCS_REQUIRES,
         "tests": TEST_REQUIRES,
+        "jax_cpu": JAX_CPU_REQUIRES,
     },
 )
