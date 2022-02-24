@@ -3,7 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-from jax import config as jax_config
+try:
+    from jax import config as jax_config
+except Exception:
+    jax_config = None  # type: ignore
 
 
 class Config:
@@ -62,7 +65,10 @@ class Config:
         return self._jax_enabled
 
     def x64_enabled(self):
-        return jax_config.x64_enabled
+        if jax_config is not None:
+            return jax_config.x64_enabled
+        else:
+            return False
 
     def jax_enable_x64(self):
         """
@@ -70,7 +76,8 @@ class Config:
 
         Currently needed because x32 Matern matrices are not covariances!
         """
-        jax_config.update("jax_enable_x64", True)
+        if jax_config is not None:
+            jax_config.update("jax_enable_x64", True)
 
     def jax_disable_x64(self):
         """
@@ -78,7 +85,8 @@ class Config:
 
         Currently needed because x32 Matern matrices are not covariances!
         """
-        jax_config.update("jax_enable_x64", False)
+        if jax_config is not None:
+            jax_config.update("jax_enable_x64", False)
 
     def disable_jax(self):
         """
