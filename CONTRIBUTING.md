@@ -93,7 +93,8 @@ Be sure that your test runs successfully.
 
 Make sure that you follow our [formatting guidelines](#formatting-guidlines) for 
 any changes to the source code or build system. 
-If you create new methods or classes, please add ReStructuredText documentation. 
+If you create new methods or classes, please add ReStructuredText documentation
+and make sure that it builds locally. 
 
 Once your feature is complete and your tests are passing, ensure that your 
 remote fork is up-to-date and 
@@ -146,9 +147,62 @@ existing tests that will ensure the correctness of the new code.
 
 `MuyGPyS`'s tests are contained in the `test` directory, and make use of the 
 `absl` library. 
+pip install muygpys from source using the `tests` extras flags to automatically
+populate your environment with all of the dependencies needed to run tests.
 
 # Formatting Guidelines
 
+## Partitioning Math Functions
+
+All significant math functions in `MuyGPyS` must have both pure numpy and 
+JAX-compiled implementations, which are located within `MuyGPyS._src`.
+The front-end version of the functions, located within the proper subpackages,
+call the appropriate function based upon whether JAX is enabled when the 
+function is imported. 
+Examples proliferate in the code.
+Here is a particular example using `_mse_fn()` for illustration:
+
+`MuyGPyS._src.optimize.numpy_objective` contains the following function:
+```
+def _mse_fn(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+) -> float:
+    batch_count, response_count = predictions.shape
+    squared_errors = np.sum((predictions - targets) ** 2)
+    return squared_errors / (batch_count * response_count)
+```
+while `MuyGPyS._src.optimize.jax_objective` contains a JAX-compiled version
+```
+@jit
+def _mse_fn(
+    predictions: jnp.ndarray,
+    targets: jnp.ndarray,
+) -> float:
+    batch_count, response_count = predictions.shape
+    squared_errors = jnp.sum((predictions - targets) ** 2)
+    return squared_errors / (batch_count * response_count)
+```
+Note that the two functions share the same signature.
+Meanwhile, the API in `MuyGPyS.optimize.objective` contains the following code
+(irrelevant bits omitted):
+```
+from MuyGPyS import config
+
+if config.jax_enabled() is False:
+    from MuyGPyS._src.optimize.numpy_objective import _mse_fn
+else:
+    from MuyGPyS._src.optimize.jax_objective import _mse_fn
+
+def mse_fn(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+) -> float:
+    return _mse_fn(predictions, targets)
+```
+So, the state of `MuyGPyS.config.jax_enabled()` at import time determines which
+implementation the API uses.
+All significant math functions must support similar functionality.
 ## Naming Style
 
 In general, all names in `MuyGPyS` should be as succinct as possible while 
@@ -204,6 +258,7 @@ The examples in [the prior section](#naming-style) include some simple examples.
 Here is a slightly more sophisticated example of a functor that can return 
 either a `float` or `np.ndarray` object:
 ```
+import numpy as np
 from typing import Union
 
 class VariableMultiplier:
@@ -224,7 +279,7 @@ This docstring must include the following components:
 - A single sentence summarizing its use.
 - Formatted descriptions of any arguments
 - Formatted descriptions of any returned objects
-- Formatted descriptions of any `Error`s the could be raised and the conditions
+- Formatted descriptions of any `Error`s that could be raised and the conditions
 that trigger them.
 
 Additional components might include:
