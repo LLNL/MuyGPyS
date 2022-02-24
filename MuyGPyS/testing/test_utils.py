@@ -7,35 +7,24 @@ import numpy as np
 
 from typing import Dict, Generator, Tuple, Union
 
-_basic_nn_kwarg_options = (
-    {"nn_method": "exact", "algorithm": "ball_tree"},
-    {
-        "nn_method": "hnsw",
-        "space": "l2",
-        "ef_construction": 100,
-        "M": 16,
-    },
-)
+from MuyGPyS import config
 
-_exact_nn_kwarg_options = (
-    {"nn_method": "exact", "algorithm": "ball_tree"},
-    # {
-    #     "nn_method": "hnsw",
-    #     "space": "l2",
-    #     "ef_construction": 100,
-    #     "M": 16,
-    # },
-)
+if config.hnswlib_enabled() is True:
+    _basic_nn_kwarg_options = [
+        {"nn_method": "exact", "algorithm": "ball_tree"},
+        {
+            "nn_method": "hnsw",
+            "space": "l2",
+            "ef_construction": 100,
+            "M": 16,
+        },
+    ]
+else:
+    _basic_nn_kwarg_options = [
+        {"nn_method": "exact", "algorithm": "ball_tree"},
+    ]
 
-_fast_nn_kwarg_options = (
-    # {"nn_method": "exact", "algorithm": "ball_tree"},
-    {
-        "nn_method": "hnsw",
-        "space": "l2",
-        "ef_construction": 100,
-        "M": 16,
-    },
-)
+_exact_nn_kwarg_options = ({"nn_method": "exact", "algorithm": "ball_tree"},)
 
 
 def _sq_rel_err(

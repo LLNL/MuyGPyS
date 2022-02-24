@@ -30,11 +30,9 @@ from MuyGPyS.testing.gp import (
     BenchmarkGP,
 )
 from MuyGPyS.testing.test_utils import (
-    _make_gaussian_matrix,
     _make_gaussian_dict,
     _make_gaussian_data,
     _basic_nn_kwarg_options,
-    _fast_nn_kwarg_options,
     _get_sigma_sq_series,
 )
 

@@ -20,8 +20,6 @@ from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.testing.test_utils import (
     _make_gaussian_matrix,
     _basic_nn_kwarg_options,
-    _exact_nn_kwarg_options,
-    _fast_nn_kwarg_options,
 )
 from MuyGPyS.gp.distance import pairwise_distances
 from MuyGPyS.gp.kernels import Hyperparameter, SigmaSq, RBF, Matern
@@ -279,7 +277,6 @@ class RBFTest(KernelTest):
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
             # for f in [100]
             # for nn in [5]
-            # # for nn_kwargs in _fast_nn_kwarg_options
             # for nn_kwargs in _exact_nn_kwarg_options
             # for k_kwargs in [
             #     {"length_scale": {"val": 10.0, "bounds": (1e-5, 1e1)}}
@@ -410,7 +407,6 @@ class MaternTest(KernelTest):
             ]
             # for f in [100]
             # for nn in [5]
-            # for nn_kwargs in _fast_nn_kwarg_options
             # for k_kwargs in [
             #     {
             #         "nu": {"val": 0.42, "bounds": (1e-4, 5e1)},
