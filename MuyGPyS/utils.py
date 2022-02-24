@@ -1,4 +1,4 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS 
+# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
 # Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
@@ -36,7 +36,7 @@ def _val_to_list(val, L):
         or isinstance(val, str)
         or val is None
     ):
-        return [val for l in range(L)]
+        return [val for _ in range(L)]
     else:
         return val
 

@@ -3,23 +3,24 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Resources and high-level API for a two-class classification with UQ workflow.
+"""
+Resources and high-level API for a two-class classification with UQ workflow.
 
-Implements a two-class classification workflow with a bespoke uncertainty 
+Implements a two-class classification workflow with a bespoke uncertainty
 quantification tuning method. [muyskens2021star]_ describes this method and its
 application to a star-galaxy image separation problem.
 
-:func:`~MuyGPyS.examples.classify.do_classify_uq` is a high-level api for 
-executing a two-class classification workflow with the uncertainty 
-quantification. It calls the maker APIs 
-:func:`MuyGPyS.examples.classify.make_classifier` and 
+:func:`~MuyGPyS.examples.classify.do_classify_uq` is a high-level api for
+executing a two-class classification workflow with the uncertainty
+quantification. It calls the maker APIs
+:func:`MuyGPyS.examples.classify.make_classifier` and
 :func:`MuyGPyS.examples.classify.make_multivariate_classifier` to create and
-train models, and performs the inference using the functions 
-:func:`~MuyGPyS.examples.classify.classify_two_class_uq`, 
-:func:`~MuyGPyS.examples.classify.make_masks`,  and
-:func:`~MuyGPyS.examples.classify.train_two_class_interval`. 
+train models, and performs the inference using the functions
+:func:`~MuyGPyS.examples.classify.classify_two_class_uq`,
+:func:`~MuyGPyS.examples.classify.make_masks`, and
+:func:`~MuyGPyS.examples.classify.train_two_class_interval`.
 :func:`~MuyGPyS.examples.classify.do_uq` takes the true labels of the test data
-and the `surrgoate_prediction` and `masks` outputs to report the statistics of 
+and the `surrgoate_prediction` and `masks` outputs to report the statistics of
 the confidence intervals associated with each supplied objective function.
 """
 
@@ -222,7 +223,7 @@ def do_classify_uq(
     if verbose is True:
         print(f"uq batching time: {time_cutoff - time_pred}")
         print(f"cutoff time: {time_cutoff - time_uq_batch}s")
-        print(f"prediction time breakdown:")
+        print("prediction time breakdown:")
         for k in pred_timing:
             print(f"\t{k} time:{pred_timing[k]}s")
     return muygps, nbrs_lookup, surrogate_predictions, masks
@@ -356,8 +357,8 @@ def classify_two_class_uq(
     timing:
         Timing for the subroutines of this function.
     """
-    test_count = test_features.shape[0]
-    train_count = train_features.shape[0]
+    test_count, _ = test_features.shape
+    # train_count, _ = train_features.shape
 
     means = np.zeros((test_count, 2))
     variances = np.zeros(test_count)

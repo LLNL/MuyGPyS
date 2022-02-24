@@ -13,8 +13,9 @@ from sklearn.gaussian_process.kernels import RBF as sk_RBF
 
 from MuyGPyS import config
 
-config.disable_jax()
-# config.jax_enable_x64()
+if config.jax_enabled() is True:
+    config.disable_jax()
+    # config.jax_enable_x64()
 
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.utils import (

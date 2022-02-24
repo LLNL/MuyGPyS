@@ -69,7 +69,7 @@ class ClassifyAPITest(parameterized.TestCase):
                 np.unique(predicted_labels),
                 np.unique(np.argmax(train["output"], axis=1)),
             )
-        print(f"Finds hyperparameters:")
+        print("Finds hyperparameters:")
         if isinstance(muygps, MuyGPS):
             param_names, param_vals, _ = muygps.get_optim_params()
             for i, p in enumerate(param_names):
@@ -209,7 +209,7 @@ class ClassifyAPITest(parameterized.TestCase):
                 np.unique(predicted_labels),
                 np.unique(np.argmax(train["output"], axis=1)),
             )
-        print(f"Finds hyperparameters:")
+        print("Finds hyperparameters:")
         param_names, param_vals, _ = muygps.get_optim_params()
         for i, p in enumerate(param_names):
             print(f"\t{p} : {param_vals[i]}")
@@ -331,7 +331,7 @@ class RegressionAPITest(parameterized.TestCase):
     def _verify_regressor(self, regressor, variance, targets, sigma_method):
         param_names, param_vals, _ = regressor.get_optim_params()
         if len(param_names) > 0:
-            print(f"finds hyperparameters:")
+            print("finds hyperparameters:")
             for i, p in enumerate(param_names):
                 print(f"\t{p} : {param_vals[i]}")
         if variance is not None:

@@ -8,11 +8,6 @@ try:
 except Exception:
     jax_config = None  # type: ignore
 
-try:
-    import hnswlib
-except Exception:
-    hnswlib = None  # type: ignore
-
 
 class Config:
     _HAS_DYNAMIC_ATTRIBUTES = True
@@ -34,9 +29,10 @@ class Config:
 
         self._hnswlib_enabled = False
         try:
-            import hnswlib
+            import hnswlib as _hnswlib
 
             self._hnswlib_enabled = True
+            del _hnswlib
         except Exception:
             self._hnswlib_enabled = False
 

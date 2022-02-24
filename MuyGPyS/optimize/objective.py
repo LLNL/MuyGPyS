@@ -3,18 +3,16 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Objective and Loss Function Handling
+"""
+Objective and Loss Function Handling
 
-MuyGPyS includes predefined loss functions and convenience functions for 
+MuyGPyS includes predefined loss functions and convenience functions for
 indicating them to optimization.
 """
 
 import numpy as np
 
 from typing import Callable
-
-from scipy.special import softmax
-from sklearn.metrics import log_loss
 
 from MuyGPyS import config
 

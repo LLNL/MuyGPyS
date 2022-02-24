@@ -3,12 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-from copy import deepcopy
 from typing import Callable
 
-from scipy import optimize as opt
-
 from MuyGPyS import config
+
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS._src.optimize.numpy_chassis import (
     _scipy_optimize_from_tensors as _numpy_scipy_optimize_from_tensors,

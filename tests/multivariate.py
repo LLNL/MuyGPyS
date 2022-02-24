@@ -10,8 +10,9 @@ from absl.testing import parameterized
 
 from MuyGPyS import config
 
-config.disable_jax()
-# config.jax_enable_x64()
+if config.jax_enabled() is True:
+    config.disable_jax()
+    # config.jax_enable_x64()
 
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
@@ -26,7 +27,6 @@ from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.gp import (
     benchmark_prepare_cholK,
     benchmark_sample_from_cholK,
-    benchmark_sample_full,
     BenchmarkGP,
 )
 from MuyGPyS._test.utils import (
@@ -672,7 +672,7 @@ class MakeRegressorTest(parameterized.TestCase):
                         args[i][key]["val"],
                         muygps.kernel.hyperparameters[key](),
                     )
-            if sigma_method == None:
+            if sigma_method is None:
                 self.assertFalse(muygps.sigma_sq.trained())
             else:
                 self.assertTrue(muygps.sigma_sq.trained())

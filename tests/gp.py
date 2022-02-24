@@ -10,8 +10,9 @@ from absl.testing import parameterized
 
 from MuyGPyS import config
 
-config.disable_jax()
-# config.jax_enable_x64()
+if config.jax_enabled() is True:
+    config.disable_jax()
+    # config.jax_enable_x64()
 
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
@@ -165,7 +166,7 @@ class GPInitTest(parameterized.TestCase):
     def test_oob_init(self, k_kwargs, eps, gp_init):
         kern, kwargs = k_kwargs
         with self.assertRaises(ValueError):
-            muygps = gp_init(kern=kern, eps=eps, **kwargs)
+            _ = gp_init(kern=kern, eps=eps, **kwargs)
 
     @parameterized.parameters(
         (k_kwargs, e, gp, 100)
@@ -611,7 +612,7 @@ class MakerTest(parameterized.TestCase):
                     k_kwargs[key]["val"],
                     muygps.kernel.hyperparameters[key](),
                 )
-        if sigma_method == None:
+        if sigma_method is None:
             self.assertFalse(muygps.sigma_sq.trained())
             self.assertEqual(np.array([1.0]), muygps.sigma_sq())
         else:

@@ -3,21 +3,22 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Hyperparameters and kernel functors
+"""
+Hyperparameters and kernel functors
 
 Defines kernel functors (inheriting :class:`MuyGPyS.gp.kernels.KernelFn`) that
-transform crosswise distance matrices into cross-covariance matrices and 
-pairwise distance matrices into covariance or kernel matrices. 
+transform crosswise distance matrices into cross-covariance matrices and
+pairwise distance matrices into covariance or kernel matrices.
 
 Hyperparameters are expected to be provided in `Dict` form with the keys `"val"`
-and `"bounds"`. `"bounds"` is either a 2-tuple indicating a lower and upper 
-optimization bound or the string `"fixed"`, which exempts the hyperparameter 
-from optimization (`"fixed"` is the default behavior if `bounds` is 
-unspecified). `"val"` is either a floating point value (within the range between 
-the upper and lower bounds if specified). 
+and `"bounds"`. `"bounds"` is either a 2-tuple indicating a lower and upper
+optimization bound or the string `"fixed"`, which exempts the hyperparameter
+from optimization (`"fixed"` is the default behavior if `bounds` is
+unspecified). `"val"` is either a floating point value (within the range between
+the upper and lower bounds if specified).
 
-See the following example to initialize an :class:`MuyGPyS.gp.kernels.Matern` 
-object. Other kernel functors are similar, but require different 
+See the following example to initialize an :class:`MuyGPyS.gp.kernels.Matern`
+object. Other kernel functors are similar, but require different
 hyperparameters.
 
 Example:
@@ -28,17 +29,17 @@ Example:
     ...         metric = "l2",
     ... }
 
-One uses a previously computed `pairwise_dists` tensor (see 
-:func:`MuyGPyS.gp.distance.pairwise_distance`) to compute a kernel tensor whose 
-second two dimensions contain square kernel matrices. Similarly, one uses a 
-previously computed `crosswise_dists` matrix (see 
-:func:`MuyGPyS.gp.distance.crosswise_distance`) to compute a cross-covariance 
-matrix. See the following example, which assumes that you have already 
-constructed the distance `numpy.nparrays` and the kernel `kern` as shown above. 
+One uses a previously computed `pairwise_dists` tensor (see
+:func:`MuyGPyS.gp.distance.pairwise_distance`) to compute a kernel tensor whose
+second two dimensions contain square kernel matrices. Similarly, one uses a
+previously computed `crosswise_dists` matrix (see
+:func:`MuyGPyS.gp.distance.crosswise_distance`) to compute a cross-covariance
+matrix. See the following example, which assumes that you have already
+constructed the distance `numpy.nparrays` and the kernel `kern` as shown above.
 
 Example:
     >>> K = kern(pairwise_dists)
-    >>> Kcross = kern(crosswise_dists) 
+    >>> Kcross = kern(crosswise_dists)
 """
 
 import numpy as np
@@ -282,12 +283,12 @@ class Hyperparameter:
                         [False, True],
                     )
                 )
-                if any_below == True:
+                if any_below is True:
                     raise ValueError(
                         f"Hyperparameter value {val} is lesser than the "
                         f"optimization lower bound {self._bounds[0]}"
                     )
-                if any_above == True:
+                if any_above is True:
                     raise ValueError(
                         f"Hyperparameter value {val} is greater than the "
                         f"optimization upper bound {self._bounds[1]}"

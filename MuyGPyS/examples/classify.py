@@ -3,17 +3,18 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Resources and high-level API for a simple classification workflow.
+"""
+Resources and high-level API for a simple classification workflow.
 
-:func:`~MuyGPyS.examples.classify.make_classifier` is a high-level API for 
-creating and training :class:`MuyGPyS.gp.muygps.MuyGPS` objects for 
-classification. :func:`~MuyGPyS.examples.classify.make_multivariate_classifier` 
-is a high-level API for creating and training :
-class:`MuyGPyS.gp.muygps.MultivariateMuyGPS` objects for classification.
+:func:`~MuyGPyS.examples.classify.make_classifier` is a high-level API for
+creating and training :class:`MuyGPyS.gp.muygps.MuyGPS` objects for
+classification. :func:`~MuyGPyS.examples.classify.make_multivariate_classifier`
+is a high-level API for creating and training
+:class:`MuyGPyS.gp.muygps.MultivariateMuyGPS` objects for classification.
 
 :func:`~MuyGPyS.examples.classify.do_classify` is a high-level api for executing
-a simple, generic classification workflow given data. It calls the maker APIs 
-above and :func:`~MuyGPyS.examples.classify.classify_any`. 
+a simple, generic classification workflow given data. It calls the maker APIs
+above and :func:`~MuyGPyS.examples.classify.classify_any`.
 """
 
 import numpy as np
@@ -421,7 +422,7 @@ def _decide_and_make_classifier(
                 verbose=verbose,
             )
         else:
-            raise ValueError(f"Expected k_kwargs to be a dict!")
+            raise ValueError("Expected k_kwargs to be a dict!")
 
 
 def _unpack(first, *rest):
@@ -579,7 +580,7 @@ def do_classify(
         train_labels,
     )
     if verbose is True:
-        print(f"prediction time breakdown:")
+        print("prediction time breakdown:")
         for k in pred_timing:
             print(f"\t{k} time:{pred_timing[k]}s")
     if len(classifier_args_less2) > 0:
