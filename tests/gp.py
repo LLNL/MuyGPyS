@@ -25,7 +25,6 @@ from MuyGPyS.testing.test_utils import (
     _make_gaussian_dict,
     _make_gaussian_data,
     _basic_nn_kwarg_options,
-    _fast_nn_kwarg_options,
     _get_sigma_sq_series,
 )
 
@@ -301,7 +300,6 @@ class GPMathTest(parameterized.TestCase):
             (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
             # for f in [100]
             # for r in [5]
-            # for nn_kwargs in _fast_nn_kwarg_options
             for f in [100, 1]
             for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
@@ -382,7 +380,6 @@ class GPMathTest(parameterized.TestCase):
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [10]
-            # for nn_kwargs in _fast_nn_kwarg_options
             for k_kwargs in (
                 {
                     "kern": "matern",
@@ -631,7 +628,6 @@ class GPSigmaSqTest(parameterized.TestCase):
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [100]
             # for r in [10]
-            # for nn_kwargs in _fast_nn_kwarg_options
             for k_kwargs in (
                 {
                     "kern": "matern",

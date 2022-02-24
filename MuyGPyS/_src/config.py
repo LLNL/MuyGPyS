@@ -8,6 +8,11 @@ try:
 except Exception:
     jax_config = None  # type: ignore
 
+try:
+    import hnswlib
+except Exception:
+    hnswlib = None  # type: ignore
+
 
 class Config:
     _HAS_DYNAMIC_ATTRIBUTES = True
@@ -26,6 +31,30 @@ class Config:
         except Exception:
             self._jax_enabled = False
             self._gpu_found = False
+
+        self._hnswlib_enabled = False
+        try:
+            import hnswlib
+
+            self._hnswlib_enabled = True
+        except Exception:
+            self._hnswlib_enabled = False
+
+    def hnswlib_enabled(self):
+        """
+        Check if hnswlib is installed.
+
+        Currently used to determine whether to call hnswlib API functions.
+
+        Example:
+            >>> from MuyGPyS import config
+            >>> if config.hnswlib_enabled() is True:
+            ...     import hnswlib
+            ...     ...
+            ... else:
+            ...     ...
+        """
+        return self._hnswlib_enabled
 
     def gpu_found(self):
         """

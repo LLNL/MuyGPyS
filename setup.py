@@ -29,6 +29,11 @@ DOCS_REQUIRES = [
     "ipykernel==6.6.0",
 ]
 
+HNSWLIB_REQUIRES = [
+    "pybind11>=2.5.0",
+    "hnswlib>=0.6.0",
+]
+
 JAX_REQUIRES = [
     "tensorflow-probability[jax]>=0.16.0",
 ]
@@ -50,6 +55,7 @@ setup(
         "dev": DEV_REQUIRES + TEST_REQUIRES + DOCS_REQUIRES,
         "docs": DOCS_REQUIRES,
         "tests": TEST_REQUIRES,
+        "hnswlib": HNSWLIB_REQUIRES,
         "jax_cpu": JAX_CPU_REQUIRES + JAX_REQUIRES,
         "jax_cuda": JAX_CUDA11_CUDNN805_REQUIRES + JAX_REQUIRES,
         "jax_cuda11_cudnn805": JAX_CUDA11_CUDNN805_REQUIRES + JAX_REQUIRES,

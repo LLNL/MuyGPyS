@@ -41,16 +41,22 @@ config.disable_jax()
 The index `muygpys` is maintained on PyPI and can be installed using `pip`.
 `muygps` supports many optional extras flags, which will install additional
 dependencies if specified. 
-If installing CPU-only with pip, you might want to consider the following flag:  
+If installing CPU-only with pip, you might want to consider the following flags:  
 These extras include:
+- `hnswlib` - install [hnswlib](https://github.com/nmslib/hnswlib) dependency to
+support fast approximate nearest neighbors indexing
 - `jax_cpu` - install [JAX](https://github.com/google/jax) dependencies to 
 support just-in-time compilation of math functions on CPU (see below to install
 on GPU CUDA architectures)
 ```
 $ # numpy-only installation. Functions will internally use numpy.
 $ pip install --upgrade muygpys
+$ # The same, but includes hnswlib.
+$ pip install --upgrade muygpys[hnswlib]
 $ # CPU-only JAX installation. Functions will be jit-compiled using JAX.
 $ pip install --upgrade muygpys[jax_cpu]
+$ # The same, but includes hnswlib.
+$ pip install --upgrade muygpys[jax_cpu,hnswlib]
 ```
 
 ### Pip: GPU (CUDA)
@@ -110,6 +116,23 @@ $ pip install -e .[dev,jax_cpu]
 Additionally check out the develop branch to access the latest features in 
 between stable releases.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution rules. 
+
+### Full list of extras flags
+
+- `hnswlib` - install [hnswlib](https://github.com/nmslib/hnswlib) dependency to
+support fast approximate nearest neighbors indexing
+- `jax_cpu` - install [JAX](https://github.com/google/jax) dependencies to 
+support just-in-time compilation of math functions on CPU (see below to install
+on GPU CUDA architectures)
+- `jax_cuda11_cudnn82` - install JAX dependencies with NVidia GPU support with 
+CUDA >= 11.1 and CuDNN >= 8.2
+- `jax_cuda11_cudnn805` - install JAX dependencies with NVidia GPU support with 
+CUDA >= 11.1 and CuDNN >= 8.0.5
+- `jax_cuda` (shorthand for `jax_cuda11_cudnn805`)
+- `tests` - install dependencies necessary to run [tests](tests/)
+- `docs` - install dependencies necessary to build the [docs](docs/)
+- `dev` - install dependencies for maintaining code style, linting, and 
+packaging (includes all of the dependencies in `tests` and `docs`)
 
 ## Building Docs
 
