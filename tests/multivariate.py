@@ -23,13 +23,13 @@ from MuyGPyS.optimize.chassis import (
     scipy_optimize_from_tensors,
 )
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.testing.gp import (
+from MuyGPyS._test.gp import (
     benchmark_prepare_cholK,
     benchmark_sample_from_cholK,
     benchmark_sample_full,
     BenchmarkGP,
 )
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.utils import (
     _make_gaussian_dict,
     _make_gaussian_data,
     _basic_nn_kwarg_options,

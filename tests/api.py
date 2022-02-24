@@ -17,8 +17,8 @@ config.disable_jax()
 # config.jax_enable_x64()
 
 from MuyGPyS.examples.two_class_classify_uq import example_lambdas
-from MuyGPyS.testing.api_tests import ClassifyAPITest, RegressionAPITest
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.api import ClassifyAPITest, RegressionAPITest
+from MuyGPyS._test.utils import (
     _balanced_subsample,
     _basic_nn_kwarg_options,
 )

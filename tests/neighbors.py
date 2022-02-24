@@ -9,7 +9,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _basic_nn_kwarg_options,
 )
