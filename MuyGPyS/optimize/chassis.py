@@ -3,22 +3,17 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Convenience functions for optimizing :class:`MuyGPyS.gp.muygps.MuyGPS` 
-objects
+"""
+Convenience functions for optimizing :class:`MuyGPyS.gp.muygps.MuyGPS` objects
 
-Currently wraps :class:`scipy.optimize.opt` multiparameter optimization using 
+Currently wraps :class:`scipy.optimize.opt` multiparameter optimization using
 the objective function :func:`MuyGPyS.optimize.objective.loo_crossval` in order
-to optimize a specified subset of the hyperparameters associated with a 
+to optimize a specified subset of the hyperparameters associated with a
 :class:'MuyGPyS.gp.muygps.MuyGPS' object.
 """
 
 
 import numpy as np
-
-from copy import deepcopy
-from typing import Callable
-
-from scipy import optimize as opt
 
 from MuyGPyS import config
 

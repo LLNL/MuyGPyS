@@ -3,14 +3,15 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""KNN lookup management
+"""
+KNN lookup management
 
-`MuyGPyS.neighbors.NN_Wrapper` is an api for tasking several KNN libraries with 
+`MuyGPyS.neighbors.NN_Wrapper` is an api for tasking several KNN libraries with
 the construction of lookup indexes that empower fast training and inference.
-The wrapper constructor expects the training features, the number of nearest 
-neighbors, and a method string specifying which algorithm to use, as well as any 
+The wrapper constructor expects the training features, the number of nearest
+neighbors, and a method string specifying which algorithm to use, as well as any
 additional kwargs used by the methods.
-Currently supported implementations include exact KNN using 
+Currently supported implementations include exact KNN using
 `sklearn <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html>`_
 ("exact") and approximate KNN using `hnsw <https://github.com/nmslib/hnswlib>`_
 ("hnsw").
@@ -19,15 +20,12 @@ Currently supported implementations include exact KNN using
 import numpy as np
 
 from sklearn.neighbors import NearestNeighbors
-from time import perf_counter
-from typing import Tuple, Optional
+from typing import Tuple
 
 from MuyGPyS import config
 
 if config.hnswlib_enabled() is True:
     import hnswlib
-
-from MuyGPyS.utils import safe_apply
 
 
 class NN_Wrapper:
@@ -118,7 +116,7 @@ class NN_Wrapper:
                 self.nbrs.init_index(**hnsw_kwargs)
                 self.nbrs.add_items(self.train)
             else:
-                raise ModuleNotFoundError(f"Module hnswlib is not installed!")
+                raise ModuleNotFoundError("Module hnswlib is not installed!")
         else:
             raise NotImplementedError(
                 f"Nearest Neighbor algorithm {self.nn_method} is not "

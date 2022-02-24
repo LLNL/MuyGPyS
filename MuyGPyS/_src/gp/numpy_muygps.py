@@ -5,8 +5,6 @@
 
 import numpy as np
 
-from typing import Generator
-
 
 def _muygps_compute_solve(
     K: np.ndarray,

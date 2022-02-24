@@ -3,14 +3,14 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""MuyGPs implementation
+"""
+MuyGPs implementation
 """
 
 import numpy as np
 
-from typing import Callable, Dict, Generator, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
-# from MuyGPyS.gp.distance import make_regress_tensors
 from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
@@ -505,7 +505,7 @@ class MuyGPS:
         solution from each local kernel.
 
         .. math::
-            \\sigma^2 = \\frac{1}{bk} * \\sum_{i \in B}
+            \\sigma^2 = \\frac{1}{bk} * \\sum_{i \\in B}
                         Y_{nn_i}^T K_{nn_i}^{-1} Y_{nn_i}
 
         Here :math:`Y_{nn_i}` and :math:`K_{nn_i}` are the target and kernel

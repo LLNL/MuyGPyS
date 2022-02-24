@@ -10,8 +10,9 @@ from absl.testing import parameterized
 
 from MuyGPyS import config
 
-config.disable_jax()
-# config.jax_enable_x64()
+if config.jax_enabled() is True:
+    config.disable_jax()
+    # config.jax_enable_x64()
 
 from MuyGPyS.examples.classify import classify_any
 from MuyGPyS.examples.two_class_classify_uq import (
@@ -168,9 +169,9 @@ class ClassifyTest(parameterized.TestCase):
         min_label = np.min(train["output"][0, :])
         max_label = np.max(train["output"][0, :])
         if min_label == 0.0 and max_label == 1.0:
-            predicted_labels = np.argmax(predictions, axis=1)
+            _ = np.argmax(predictions, axis=1)
         elif min_label == -1.0 and max_label == 1.0:
-            predicted_labels = 2 * np.argmax(predictions, axis=1) - 1
+            _ = 2 * np.argmax(predictions, axis=1) - 1
         else:
             raise ("Unhandled label encoding min ({min_label}, {max_label})!")
         mid_value = (min_label + max_label) / 2

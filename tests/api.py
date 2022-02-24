@@ -13,8 +13,9 @@ from absl.testing import parameterized
 
 from MuyGPyS import config
 
-config.disable_jax()
-# config.jax_enable_x64()
+if config.jax_enabled() is True:
+    config.disable_jax()
+    # config.jax_enable_x64()
 
 from MuyGPyS.examples.two_class_classify_uq import example_lambdas
 from MuyGPyS._test.api import ClassifyAPITest, RegressionAPITest

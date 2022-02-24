@@ -10,7 +10,8 @@ from typing import Tuple
 
 from functools import partial
 from jax import jit
-from sklearn.metrics.pairwise import cosine_similarity
+
+# from sklearn.metrics.pairwise import cosine_similarity
 
 
 @partial(jit, static_argnums=(0,))

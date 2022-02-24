@@ -3,12 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Distance functions
+"""
+Distance functions
 
-Compute pairwise and crosswise distance tensors for the purposes of kernel 
-construction. 
+Compute pairwise and crosswise distance tensors for the purposes of kernel
+construction.
 
-See the following example computing the pairwise and crosswise distances between 
+See the following example computing the pairwise and crosswise distances between
 a batch of training data and their nearest neighbors.
 
 Example:
@@ -64,9 +65,9 @@ Example:
     ...         metric="l2"
     ... )
 
-The helper functions :func:`MuyGPyS.gp.distance.make_regress_tensors` and 
+The helper functions :func:`MuyGPyS.gp.distance.make_regress_tensors` and
 :func:`MuyGPyS.gp.distance.make_train_tensors` wrap these distances tensors and
-also return the nearest neighbors sets' training targets and (in the latter 
+also return the nearest neighbors sets' training targets and (in the latter
 case) the training targets of the training batch. These functions are convenient
 as the distance and target tensors are usually needed together.
 """

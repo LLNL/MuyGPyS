@@ -11,8 +11,9 @@ from absl.testing import parameterized
 
 from MuyGPyS import config
 
-config.disable_jax()
-# config.jax_enable_x64()
+if config.jax_enabled() is True:
+    config.disable_jax()
+    # config.jax_enable_x64()
 
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.gp.muygps import MuyGPS
@@ -112,10 +113,10 @@ class BatchTest(parameterized.TestCase):
         indices, nn_indices = sample_balanced_batch(
             nbrs_lookup, data["labels"], batch_count
         )
-        target_count = np.min((data_count, batch_count))
+        # target_count = np.min((data_count, batch_count))
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
-        for i, ind in enumerate(indices):
+        for i, _ in enumerate(indices):
             self.assertNotEqual(
                 len(np.unique(data["labels"][nn_indices[i, :]])), 1
             )
@@ -141,10 +142,10 @@ class BatchTest(parameterized.TestCase):
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
-        indices, nn_indices = sample_balanced_batch(
+        indices, _ = sample_balanced_batch(
             nbrs_lookup, data["labels"], batch_count
         )
-        target_count = np.min((data_count, batch_count))
+        # target_count = np.min((data_count, batch_count))
         hist, _ = np.array(
             np.histogram(data["labels"][indices], bins=response_count)
         )
