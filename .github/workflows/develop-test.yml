@@ -39,7 +39,7 @@ jobs:
       run: |
         python tests/data.py
         python tests/neighbors.py
-        python tests/kernel.py
+        python tests/kernels.py
         python tests/gp.py
         python tests/optimize.py
         python tests/predict.py
