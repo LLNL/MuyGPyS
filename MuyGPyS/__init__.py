@@ -5,6 +5,6 @@
 
 """Public MuyGPyS modules and functions."""
 
-__version__ = "0.4.1"
+__version__ = "0.5.0"
 
 from MuyGPyS._src.config import config as config

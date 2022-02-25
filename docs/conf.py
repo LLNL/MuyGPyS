@@ -11,6 +11,7 @@
 
 import os
 import sys
+from MuyGPyS import __version__
 
 # import mock
 # import sys
@@ -46,7 +47,7 @@ copyright = "2021, Lawrence Livermore National Security, LLC"
 author = "Benjamin W. Priest"
 
 # The full version, including alpha/beta/rc tags
-release = "0.3.0"
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
