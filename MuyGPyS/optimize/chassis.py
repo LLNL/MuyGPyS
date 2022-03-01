@@ -3,23 +3,27 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Convenience functions for optimizing :class:`MuyGPyS.gp.muygps.MuyGPS` 
-objects
+"""
+Convenience functions for optimizing :class:`MuyGPyS.gp.muygps.MuyGPS` objects
 
-Currently wraps :class:`scipy.optimize.opt` multiparameter optimization using 
+Currently wraps :class:`scipy.optimize.opt` multiparameter optimization using
 the objective function :func:`MuyGPyS.optimize.objective.loo_crossval` in order
-to optimize a specified subset of the hyperparameters associated with a 
+to optimize a specified subset of the hyperparameters associated with a
 :class:'MuyGPyS.gp.muygps.MuyGPS' object.
 """
 
 
 import numpy as np
 
-from copy import deepcopy
+from MuyGPyS import config
 
-from scipy import optimize as opt
+if config.jax_enabled() is False:
+    from MuyGPyS._src.gp.numpy_distance import _make_train_tensors
+    from MuyGPyS._src.optimize.numpy_chassis import _scipy_optimize_from_tensors
+else:
+    from MuyGPyS._src.gp.jax_distance import _make_train_tensors
+    from MuyGPyS._src.optimize.jax_chassis import _scipy_optimize_from_tensors
 
-from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.objective import get_loss_func, make_loo_crossval_fn
 
@@ -99,7 +103,7 @@ def scipy_optimize_from_indices(
         pairwise_dists,
         batch_targets,
         batch_nn_targets,
-    ) = make_train_tensors(
+    ) = _make_train_tensors(
         muygps.kernel.metric,
         batch_indices,
         batch_nn_indices,
@@ -194,7 +198,6 @@ def scipy_optimize_from_tensors(
         A new MuyGPs model whose specified hyperparameters have been optimized.
     """
     loss_fn = get_loss_func(loss_method)
-    x0_names, x0, bounds = muygps.get_optim_params()
 
     kernel_fn = muygps.kernel.get_opt_fn()
     predict_fn = muygps.get_opt_fn()
@@ -209,34 +212,4 @@ def scipy_optimize_from_tensors(
         batch_targets,
     )
 
-    if verbose is True:
-        print(f"parameters to be optimized: {x0_names}")
-        print(f"bounds: {bounds}")
-        print(f"initial x0: {x0}")
-
-    optres = opt.minimize(
-        obj_fn,
-        x0,
-        method="L-BFGS-B",
-        bounds=bounds,
-    )
-    if verbose is True:
-        print(f"optimizer results: \n{optres}")
-
-    ret = deepcopy(muygps)
-
-    # set final values
-    for i, key in enumerate(x0_names):
-        lb, ub = bounds[i]
-        if optres.x[i] < lb:
-            val = lb
-        elif optres.x[i] > ub:
-            val = ub
-        else:
-            val = optres.x[i]
-        if key == "eps":
-            ret.eps._set_val(val)
-        else:
-            ret.kernel.hyperparameters[key]._set_val(val)
-
-    return ret
+    return _scipy_optimize_from_tensors(muygps, obj_fn, verbose=verbose)

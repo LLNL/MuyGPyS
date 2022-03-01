@@ -3,28 +3,29 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""KNN lookup management
+"""
+KNN lookup management
 
-`MuyGPyS.neighbors.NN_Wrapper` is an api for tasking several KNN libraries with 
+`MuyGPyS.neighbors.NN_Wrapper` is an api for tasking several KNN libraries with
 the construction of lookup indexes that empower fast training and inference.
-The wrapper constructor expects the training features, the number of nearest 
-neighbors, and a method string specifying which algorithm to use, as well as any 
+The wrapper constructor expects the training features, the number of nearest
+neighbors, and a method string specifying which algorithm to use, as well as any
 additional kwargs used by the methods.
-Currently supported implementations include exact KNN using 
+Currently supported implementations include exact KNN using
 `sklearn <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html>`_
 ("exact") and approximate KNN using `hnsw <https://github.com/nmslib/hnswlib>`_
 ("hnsw").
 """
 
-
-import hnswlib
 import numpy as np
 
 from sklearn.neighbors import NearestNeighbors
-from time import perf_counter
-from typing import Tuple, Optional
+from typing import Tuple
 
-from MuyGPyS.utils import safe_apply
+from MuyGPyS import config
+
+if config.hnswlib_enabled() is True:
+    import hnswlib
 
 
 class NN_Wrapper:
@@ -58,7 +59,8 @@ class NN_Wrapper:
         nn_method:
             Indicates which nearest neighbor algorithm should be used.
             Currently "exact" indicates `sklearn.neighbors.NearestNeighbors`,
-            while "hnsw" indicates `hnswlib.Index`.
+            while "hnsw" indicates `hnswlib.Index` (requires installing MuyGPyS
+            with the "hnswlib" extras flag).
         kwargs:
             Additional kwargs used for lookup data structure construction.
             `nn_method="exact"` supports "radius", "algorithm", "leaf_size",
@@ -101,20 +103,24 @@ class NN_Wrapper:
             exact_kwargs["n_jobs"] = exact_kwargs.get("n_jobs", -1)
             self.nbrs = NearestNeighbors(**exact_kwargs).fit(self.train)
         elif self.nn_method == "hnsw":
-            self.nbrs = hnswlib.Index(
-                space=kwargs.get("space", "l2"), dim=self.feature_count
-            )
-            hnsw_kwargs = {
-                k: kwargs[k]
-                for k in kwargs
-                if k in {"ef_construction", "M", "random_seed"}
-            }
-            hnsw_kwargs["max_elements"] = self.train_count
-            self.nbrs.init_index(**hnsw_kwargs)
-            self.nbrs.add_items(self.train)
+            if config.hnswlib_enabled() is True:
+                self.nbrs = hnswlib.Index(
+                    space=kwargs.get("space", "l2"), dim=self.feature_count
+                )
+                hnsw_kwargs = {
+                    k: kwargs[k]
+                    for k in kwargs
+                    if k in {"ef_construction", "M", "random_seed"}
+                }
+                hnsw_kwargs["max_elements"] = self.train_count
+                self.nbrs.init_index(**hnsw_kwargs)
+                self.nbrs.add_items(self.train)
+            else:
+                raise ModuleNotFoundError("Module hnswlib is not installed!")
         else:
             raise NotImplementedError(
-                f"Nearest Neighbor algorithm {self.nn_method} is not implemented."
+                f"Nearest Neighbor algorithm {self.nn_method} is not "
+                f"implemented."
             )
 
     def get_nns(
@@ -236,7 +242,7 @@ class NN_Wrapper:
                 # We do this so that both implementations return the squared l2
                 # for downstream consistency. Taking the square root is much
                 # more expensive, so this should not produce much overhead.
-                nn_dists = nn_dists ** 2
+                nn_dists = nn_dists**2
         elif self.nn_method == "hnsw":
             # Although hnsw uses 'l2' as the name of its metric, it returns
             # F2 values as distances in order to avoid the square root

@@ -9,6 +9,12 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS import config
+
+if config.jax_enabled() is True:
+    config.disable_jax()
+    # config.jax_enable_x64()
+
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
@@ -21,18 +27,16 @@ from MuyGPyS.optimize.chassis import (
     scipy_optimize_from_tensors,
     scipy_optimize_from_indices,
 )
-from MuyGPyS.testing.gp import (
+from MuyGPyS._test.gp import (
     benchmark_pairwise_distances,
     benchmark_sample,
     benchmark_sample_full,
     BenchmarkGP,
     get_analytic_sigma_sq,
 )
-
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
-    _make_gaussian_data,
     _basic_nn_kwarg_options,
     _sq_rel_err,
 )
@@ -109,10 +113,10 @@ class BatchTest(parameterized.TestCase):
         indices, nn_indices = sample_balanced_batch(
             nbrs_lookup, data["labels"], batch_count
         )
-        target_count = np.min((data_count, batch_count))
+        # target_count = np.min((data_count, batch_count))
         self.assertEqual(indices.shape, (nn_indices.shape[0],))
         self.assertEqual(nn_indices.shape[1], nn_count)
-        for i, ind in enumerate(indices):
+        for i, _ in enumerate(indices):
             self.assertNotEqual(
                 len(np.unique(data["labels"][nn_indices[i, :]])), 1
             )
@@ -138,10 +142,10 @@ class BatchTest(parameterized.TestCase):
     ):
         data = _make_gaussian_dict(data_count, feature_count, response_count)
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
-        indices, nn_indices = sample_balanced_batch(
+        indices, _ = sample_balanced_batch(
             nbrs_lookup, data["labels"], batch_count
         )
-        target_count = np.min((data_count, batch_count))
+        # target_count = np.min((data_count, batch_count))
         hist, _ = np.array(
             np.histogram(data["labels"][indices], bins=response_count)
         )

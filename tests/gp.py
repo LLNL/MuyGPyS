@@ -8,19 +8,25 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS import config
+
+if config.jax_enabled() is True:
+    config.disable_jax()
+    # config.jax_enable_x64()
+
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
 
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.testing.gp import BenchmarkGP
+from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _make_gaussian_data,
     _basic_nn_kwarg_options,
-    _fast_nn_kwarg_options,
+    _get_sigma_sq_series,
 )
 
 
@@ -160,7 +166,7 @@ class GPInitTest(parameterized.TestCase):
     def test_oob_init(self, k_kwargs, eps, gp_init):
         kern, kwargs = k_kwargs
         with self.assertRaises(ValueError):
-            muygps = gp_init(kern=kern, eps=eps, **kwargs)
+            _ = gp_init(kern=kern, eps=eps, **kwargs)
 
     @parameterized.parameters(
         (k_kwargs, e, gp, 100)
@@ -295,7 +301,6 @@ class GPMathTest(parameterized.TestCase):
             (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
             # for f in [100]
             # for r in [5]
-            # for nn_kwargs in _fast_nn_kwarg_options
             for f in [100, 1]
             for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
@@ -376,7 +381,6 @@ class GPMathTest(parameterized.TestCase):
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [10]
-            # for nn_kwargs in _fast_nn_kwarg_options
             for k_kwargs in (
                 {
                     "kern": "matern",
@@ -608,7 +612,7 @@ class MakerTest(parameterized.TestCase):
                     k_kwargs[key]["val"],
                     muygps.kernel.hyperparameters[key](),
                 )
-        if sigma_method == None:
+        if sigma_method is None:
             self.assertFalse(muygps.sigma_sq.trained())
             self.assertEqual(np.array([1.0]), muygps.sigma_sq())
         else:
@@ -625,7 +629,6 @@ class GPSigmaSqTest(parameterized.TestCase):
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [100]
             # for r in [10]
-            # for nn_kwargs in _fast_nn_kwarg_options
             for k_kwargs in (
                 {
                     "kern": "matern",
@@ -671,14 +674,14 @@ class GPSigmaSqTest(parameterized.TestCase):
         if response_count > 1:
             self.assertEqual(len(muygps.sigma_sq()), response_count)
             for i in range(response_count):
-                sigmas = muygps._get_sigma_sq_series(
-                    K, nn_indices, data["output"][:, i]
+                sigmas = _get_sigma_sq_series(
+                    K, nn_indices, data["output"][:, i], muygps.eps()
                 )
                 self.assertEqual(sigmas.shape, (data_count,))
                 self.assertAlmostEqual(muygps.sigma_sq()[i], np.mean(sigmas), 5)
         else:
-            sigmas = muygps._get_sigma_sq_series(
-                K, nn_indices, data["output"][:, 0]
+            sigmas = _get_sigma_sq_series(
+                K, nn_indices, data["output"][:, 0], muygps.eps()
             )
             self.assertEqual(sigmas.shape, (data_count,))
             self.assertAlmostEqual(muygps.sigma_sq()[0], np.mean(sigmas), 5)

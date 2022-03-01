@@ -3,21 +3,22 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Hyperparameters and kernel functors
+"""
+Hyperparameters and kernel functors
 
 Defines kernel functors (inheriting :class:`MuyGPyS.gp.kernels.KernelFn`) that
-transform crosswise distance matrices into cross-covariance matrices and 
-pairwise distance matrices into covariance or kernel matrices. 
+transform crosswise distance matrices into cross-covariance matrices and
+pairwise distance matrices into covariance or kernel matrices.
 
 Hyperparameters are expected to be provided in `Dict` form with the keys `"val"`
-and `"bounds"`. `"bounds"` is either a 2-tuple indicating a lower and upper 
-optimization bound or the string `"fixed"`, which exempts the hyperparameter 
-from optimization (`"fixed"` is the default behavior if `bounds` is 
-unspecified). `"val"` is either a floating point value (within the range between 
-the upper and lower bounds if specified). 
+and `"bounds"`. `"bounds"` is either a 2-tuple indicating a lower and upper
+optimization bound or the string `"fixed"`, which exempts the hyperparameter
+from optimization (`"fixed"` is the default behavior if `bounds` is
+unspecified). `"val"` is either a floating point value (within the range between
+the upper and lower bounds if specified).
 
-See the following example to initialize an :class:`MuyGPyS.gp.kernels.Matern` 
-object. Other kernel functors are similar, but require different 
+See the following example to initialize an :class:`MuyGPyS.gp.kernels.Matern`
+object. Other kernel functors are similar, but require different
 hyperparameters.
 
 Example:
@@ -28,24 +29,43 @@ Example:
     ...         metric = "l2",
     ... }
 
-One uses a previously computed `pairwise_dists` tensor (see 
-:func:`MuyGPyS.gp.distance.pairwise_distance`) to compute a kernel tensor whose 
-second two dimensions contain square kernel matrices. Similarly, one uses a 
-previously computed `crosswise_dists` matrix (see 
-:func:`MuyGPyS.gp.distance.crosswise_distance`) to compute a cross-covariance 
-matrix. See the following example, which assumes that you have already 
-constructed the distance `numpy.nparrays` and the kernel `kern` as shown above. 
+One uses a previously computed `pairwise_dists` tensor (see
+:func:`MuyGPyS.gp.distance.pairwise_distance`) to compute a kernel tensor whose
+second two dimensions contain square kernel matrices. Similarly, one uses a
+previously computed `crosswise_dists` matrix (see
+:func:`MuyGPyS.gp.distance.crosswise_distance`) to compute a cross-covariance
+matrix. See the following example, which assumes that you have already
+constructed the distance `numpy.nparrays` and the kernel `kern` as shown above.
 
 Example:
     >>> K = kern(pairwise_dists)
-    >>> Kcross = kern(crosswise_dists) 
+    >>> Kcross = kern(crosswise_dists)
 """
 
 import numpy as np
 
 from typing import cast, Callable, Dict, List, Optional, Tuple, Union
 
-from scipy.special import gamma, kv
+from MuyGPyS import config
+
+if config.jax_enabled() is False:
+    from MuyGPyS._src.gp.numpy_kernels import (
+        _rbf_fn,
+        _matern_05_fn,
+        _matern_15_fn,
+        _matern_25_fn,
+        _matern_inf_fn,
+        _matern_gen_fn,
+    )
+else:
+    from MuyGPyS._src.gp.jax_kernels import (
+        _rbf_fn,
+        _matern_05_fn,
+        _matern_15_fn,
+        _matern_25_fn,
+        _matern_inf_fn,
+        _matern_gen_fn,
+    )
 
 
 class SigmaSq:
@@ -498,7 +518,7 @@ class RBF(KernelFn):
 
     @staticmethod
     def _fn(squared_dists: np.ndarray, length_scale: float) -> np.ndarray:
-        return np.exp(-squared_dists / (2 * length_scale ** 2))
+        return _rbf_fn(squared_dists, length_scale)
 
     def get_optim_params(
         self,
@@ -535,15 +555,19 @@ class RBF(KernelFn):
             order matching how they are set in
             :func:`~MuyGPyS.gp.kernel.RBF.get_optim_params()`.
         """
-        if not self.length_scale.fixed():
+        return self._get_opt_fn(_rbf_fn, self.length_scale)
+
+    @staticmethod
+    def _get_opt_fn(rbf_fn: Callable, length_scale: Hyperparameter) -> Callable:
+        if not length_scale.fixed():
 
             def caller_fn(dists, x0):
-                return self._fn(dists, length_scale=x0[0])
+                return rbf_fn(dists, length_scale=x0[0])
 
         else:
 
             def caller_fn(dists, x0):
-                return self._fn(dists, length_scale=self.length_scale())
+                return rbf_fn(dists, length_scale=length_scale())
 
         return caller_fn
 
@@ -627,50 +651,15 @@ class Matern(KernelFn):
     @staticmethod
     def _fn(dists: np.ndarray, nu: float, length_scale: float) -> np.ndarray:
         if nu == 0.5:
-            return Matern._fn_05(dists, length_scale)
+            return _matern_05_fn(dists, length_scale)
         elif nu == 1.5:
-            return Matern._fn_15(dists, length_scale)
+            return _matern_15_fn(dists, length_scale)
         elif nu == 2.5:
-            return Matern._fn_25(dists, length_scale)
+            return _matern_25_fn(dists, length_scale)
         elif nu == np.inf:
-            return Matern._fn_inf(dists, length_scale)
+            return _matern_inf_fn(dists, length_scale)
         else:
-            return Matern._fn_gen(dists, nu, length_scale)
-
-    @staticmethod
-    def _fn_05(dists: np.ndarray, length_scale: float) -> np.ndarray:
-        dists = dists / length_scale
-        return np.exp(-dists)
-
-    @staticmethod
-    def _fn_15(dists: np.ndarray, length_scale: float) -> np.ndarray:
-        dists = dists / length_scale
-        K = dists * np.sqrt(3)
-        return (1.0 + K) * np.exp(-K)
-
-    @staticmethod
-    def _fn_25(dists: np.ndarray, length_scale: float) -> np.ndarray:
-        dists = dists / length_scale
-        K = dists * np.sqrt(5)
-        return (1.0 + K + K ** 2 / 3.0) * np.exp(-K)
-
-    @staticmethod
-    def _fn_inf(dists: np.ndarray, length_scale: float) -> np.ndarray:
-        dists = dists / length_scale
-        return np.exp(-(dists ** 2) / 2.0)
-
-    @staticmethod
-    def _fn_gen(
-        dists: np.ndarray, nu: float, length_scale: float
-    ) -> np.ndarray:
-        dists = dists / length_scale
-        K = dists
-        K[K == 0.0] += np.finfo(float).eps
-        tmp = np.sqrt(2 * nu) * K
-        K.fill((2 ** (1.0 - nu)) / gamma(nu))
-        K *= tmp ** nu
-        K *= kv(nu, tmp)
-        return K
+            return _matern_gen_fn(dists, nu, length_scale)
 
     def get_optim_params(
         self,
@@ -711,74 +700,90 @@ class Matern(KernelFn):
             order matching how they are set in
             :func:`~MuyGPyS.gp.kernel.Matern.get_optim_params()`.
         """
-        nu_fixed = self.nu.fixed()
-        ls_fixed = self.length_scale.fixed()
+        return self._get_opt_fn(
+            _matern_05_fn,
+            _matern_15_fn,
+            _matern_25_fn,
+            _matern_inf_fn,
+            _matern_gen_fn,
+            self.nu,
+            self.length_scale,
+        )
+
+    @staticmethod
+    def _get_opt_fn(
+        m_05_fn: Callable,
+        m_15_fn: Callable,
+        m_25_fn: Callable,
+        m_inf_fn: Callable,
+        m_gen_fn: Callable,
+        nu: Hyperparameter,
+        length_scale: Hyperparameter,
+    ) -> Callable:
+        nu_fixed = nu.fixed()
+        ls_fixed = length_scale.fixed()
         if nu_fixed is False and ls_fixed is True:
 
             def caller_fn(dists, x0):
-                return self._fn_gen(
-                    dists, nu=x0[0], length_scale=self.length_scale()
-                )
+                return m_gen_fn(dists, nu=x0[0], length_scale=length_scale())
 
         elif nu_fixed is False and ls_fixed is False:
 
             def caller_fn(dists, x0):
-                return self._fn_gen(dists, nu=x0[0], length_scale=x0[1])
+                return m_gen_fn(dists, nu=x0[0], length_scale=x0[1])
 
         elif nu_fixed is True and ls_fixed is False:
-            if self.nu() == 0.5:
+            if nu() == 0.5:
 
                 def caller_fn(dists, x0):
-                    return self._fn_05(dists, length_scale=x0[0])
+                    return m_05_fn(dists, length_scale=x0[0])
 
-            elif self.nu() == 1.5:
-
-                def caller_fn(dists, x0):
-                    return self._fn_15(dists, length_scale=x0[0])
-
-            elif self.nu() == 2.5:
+            elif nu() == 1.5:
 
                 def caller_fn(dists, x0):
-                    return self._fn_25(dists, length_scale=x0[0])
+                    return m_15_fn(dists, length_scale=x0[0])
 
-            elif self.nu() == np.inf:
+            elif nu() == 2.5:
 
                 def caller_fn(dists, x0):
-                    return self._fn_inf(dists, length_scale=x0[0])
+                    return m_25_fn(dists, length_scale=x0[0])
+
+            elif nu() == np.inf:
+
+                def caller_fn(dists, x0):
+                    return m_inf_fn(dists, length_scale=x0[0])
 
             else:
 
                 def caller_fn(dists, x0):
-                    return self._fn_gen(dists, nu=self.nu(), length_scale=x0[0])
+                    return m_gen_fn(dists, nu=nu(), length_scale=x0[0])
 
         else:
 
-            if self.nu() == 0.5:
+            if nu() == 0.5:
 
                 def caller_fn(dists, x0):
-                    return self._fn_05(dists, length_scale=self.length_scale())
+                    return m_05_fn(dists, length_scale=length_scale())
 
-            elif self.nu() == 1.5:
-
-                def caller_fn(dists, x0):
-                    return self._fn_15(dists, length_scale=self.length_scale())
-
-            elif self.nu() == 2.5:
+            elif nu() == 1.5:
 
                 def caller_fn(dists, x0):
-                    return self._fn_25(dists, length_scale=self.length_scale())
+                    return m_15_fn(dists, length_scale=length_scale())
 
-            elif self.nu() == np.inf:
+            elif nu() == 2.5:
 
                 def caller_fn(dists, x0):
-                    return self._fn_25(dists, length_scale=self.length_scale())
+                    return m_25_fn(dists, length_scale=length_scale())
+
+            elif nu() == np.inf:
+
+                def caller_fn(dists, x0):
+                    return m_inf_fn(dists, length_scale=length_scale())
 
             else:
 
                 def caller_fn(dists, x0):
-                    return self._fn_gen(
-                        dists, nu=self.nu(), length_scale=self.length_scale()
-                    )
+                    return m_gen_fn(dists, nu=nu(), length_scale=length_scale())
 
         return caller_fn
 

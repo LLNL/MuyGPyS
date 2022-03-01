@@ -5,10 +5,8 @@
 
 import numpy as np
 
-from typing import Dict, Iterable, List, Optional, Tuple, Union
-from numpy.linalg.linalg import cholesky
+from typing import Dict, Optional, Tuple, Union
 
-# from sklearn.gaussian_process.kernels import Matern, RBF
 from sklearn.metrics import pairwise_distances as skl_pairwise_distances
 
 from MuyGPyS.gp.kernels import (

@@ -9,7 +9,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _basic_nn_kwarg_options,
 )
@@ -57,7 +57,7 @@ class NeighborsTest(parameterized.TestCase):
         self.assertEqual(nn_indices.shape, (test_count, nn_count))
         self.assertEqual(nn_dists.shape, (test_count, nn_count))
 
-    ## NOTE[bwp] Should we validate actual KNN behavior, or just trust that we
+    # NOTE[bwp] Should we validate actual KNN behavior, or just trust that we
     # are using the APIs correctly and that the libraries work internally? I
     # don't want to try to develop tests for third-party software...
 

@@ -3,20 +3,47 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""MuyGPs implementation
+"""
+MuyGPs implementation
 """
 
 import numpy as np
 
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
-from MuyGPyS.gp.distance import make_regress_tensors
 from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
     Hyperparameter,
     SigmaSq,
 )
+
+from MuyGPyS import config
+
+if config.jax_enabled() is False:
+    from MuyGPyS._src.gp.numpy_distance import _make_regress_tensors
+    from MuyGPyS._src.gp.numpy_muygps import (
+        _muygps_compute_solve,
+        _muygps_compute_diagonal_variance,
+        _muygps_sigma_sq_optim,
+    )
+else:
+    from MuyGPyS._src.gp.jax_distance import _make_regress_tensors
+
+    # Presently, these implementations appear to be slower than numpy on CPU
+    # (but much faster on GPU)
+    if config.gpu_found() is False:
+        from MuyGPyS._src.gp.numpy_muygps import (
+            _muygps_compute_solve,
+            _muygps_compute_diagonal_variance,
+            _muygps_sigma_sq_optim,
+        )
+    else:
+        from MuyGPyS._src.gp.jax_muygps import (
+            _muygps_compute_solve,
+            _muygps_compute_diagonal_variance,
+            _muygps_sigma_sq_optim,
+        )
 
 
 class MuyGPS:
@@ -158,6 +185,8 @@ class MuyGPS:
         Simultaneously solve all of the GP inference systems of linear
         equations.
 
+        @NOTE[bwp] We might want to get rid of these static methods.
+
         Args:
             K:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
@@ -178,11 +207,7 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` listing the
             predicted response for each of the batch elements.
         """
-        batch_count, nn_count, response_count = batch_nn_targets.shape
-        responses = Kcross.reshape(batch_count, 1, nn_count) @ np.linalg.solve(
-            K + eps * np.eye(nn_count), batch_nn_targets
-        )
-        return responses.reshape(batch_count, response_count)
+        return _muygps_compute_solve(K, Kcross, batch_nn_targets, eps)
 
     @staticmethod
     def _compute_diagonal_variance(
@@ -193,6 +218,8 @@ class MuyGPS:
         """
         Simultaneously solve all of the GP inference systems of linear
         equations.
+
+        @NOTE[bwp] We might want to get rid of these static methods.
 
         Args:
             K:
@@ -210,17 +237,7 @@ class MuyGPS:
             A vector of shape `(batch_count)` listing the diagonal variances for
             each of the batch elements.
         """
-        batch_count, nn_count = Kcross.shape
-        return np.array(
-            [
-                1.0
-                - Kcross[i, :]
-                @ np.linalg.solve(
-                    K[i, :, :] + eps * np.eye(nn_count), Kcross[i, :]
-                )
-                for i in range(batch_count)
-            ]
-        )
+        return _muygps_compute_diagonal_variance(K, Kcross, eps)
 
     def regress_from_indices(
         self,
@@ -300,7 +317,7 @@ class MuyGPS:
             crosswise_dists,
             pairwise_dists,
             batch_nn_targets,
-        ) = make_regress_tensors(
+        ) = _make_regress_tensors(
             self.kernel.metric, indices, nn_indices, test, train, targets
         )
         K = self.kernel(pairwise_dists)
@@ -447,7 +464,7 @@ class MuyGPS:
                 f"Variance mode {variance_mode} is not implemented."
             )
 
-    def get_opt_fn(self):
+    def get_opt_fn(self) -> Callable:
         """
         Return a regress function for use in optimization.
 
@@ -458,19 +475,19 @@ class MuyGPS:
             are expected to occur in a certain order matching how they are set
             in `~MuyGPyS.gp.muygps.MuyGPS.get_optim_params()`.
         """
-        if not self.eps.fixed():
+        return self._get_opt_fn(_muygps_compute_solve, self.eps)
+
+    @staticmethod
+    def _get_opt_fn(solve_fn: Callable, eps: Hyperparameter) -> Callable:
+        if not eps.fixed():
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
-                return self._regress(
-                    K, Kcross, batch_nn_targets, x0[-1], self.sigma_sq()
-                )
+                return solve_fn(K, Kcross, batch_nn_targets, x0[-1])
 
         else:
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
-                return self._regress(
-                    K, Kcross, batch_nn_targets, self.eps(), self.sigma_sq()
-                )
+                return solve_fn(K, Kcross, batch_nn_targets, eps())
 
         return caller_fn
 
@@ -488,7 +505,13 @@ class MuyGPS:
         solution from each local kernel.
 
         .. math::
-            \\sigma^2 = \\frac{1}{n} * Y^T  K^{-1}  Y
+            \\sigma^2 = \\frac{1}{bk} * \\sum_{i \\in B}
+                        Y_{nn_i}^T K_{nn_i}^{-1} Y_{nn_i}
+
+        Here :math:`Y_{nn_i}` and :math:`K_{nn_i}` are the target and kernel
+        matrices with respect to the nearest neighbor set in scope, where
+        :math:`k` is the number of nearest neighbors and :math:`b = |B|` is the
+        number of batch elements considered.
 
         Args:
             K:
@@ -507,105 +530,9 @@ class MuyGPS:
             for each dimension.
         """
         self.sigma_sq._set(
-            self._sigma_sq_optim(K, nn_indices, targets, self.eps())
+            _muygps_sigma_sq_optim(K, nn_indices, targets, self.eps())
         )
         return self.sigma_sq()
-
-    @staticmethod
-    def _sigma_sq_optim(
-        K: np.ndarray,
-        nn_indices: np.ndarray,
-        targets: np.ndarray,
-        eps: float,
-    ):
-        batch_count, nn_count = nn_indices.shape
-        _, response_count = targets.shape
-
-        sigma_sq = np.zeros((response_count,))
-        for i in range(response_count):
-            sigma_sq[i] = sum(
-                MuyGPS._get_sigma_sq(K, targets[:, i], nn_indices, eps)
-            ) / (nn_count * batch_count)
-        return sigma_sq
-
-    def _get_sigma_sq_series(
-        self,
-        K: np.ndarray,
-        nn_indices: np.ndarray,
-        target_col: np.ndarray,
-    ) -> np.ndarray:
-        """
-        Return the series of sigma^2 scale parameters for each neighborhood
-        solve.
-
-        NOTE[bwp]: This function is only for testing purposes.
-
-        Args:
-            K:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count` -shaped kernel matrices corresponding
-                to each of the batch elements.
-            nn_indices:
-                An integral matrix of shape `(batch_count, nn_count)` listing the
-                nearest neighbor indices for all observations in the test batch.
-            target_col:
-                A vector of shape `(batch_count)` consisting of the target for
-                each nearest neighbor.
-
-        Returns:
-            A vector of shape `(response_count)` listing the value of sigma^2
-            for the given response dimension.
-        """
-        batch_count, nn_count = nn_indices.shape
-
-        sigmas = np.zeros((batch_count,))
-        for i, el in enumerate(
-            self._get_sigma_sq(K, target_col, nn_indices, self.eps())
-        ):
-            sigmas[i] = el
-        return sigmas / nn_count
-
-    @staticmethod
-    def _get_sigma_sq(
-        K: np.ndarray,
-        target_col: np.ndarray,
-        nn_indices: np.ndarray,
-        eps: float,
-    ) -> Generator[float, None, None]:
-        """
-        Generate series of :math:`\\sigma^2` scale parameters for each
-        individual solve along a single dimension:
-
-        .. math::
-            \\sigma^2 = \\frac{1}{k} * Y_{nn}^T K_{nn}^{-1} Y_{nn}
-
-        Here :math:`Y_{nn}` and :math:`K_{nn}` are the target and kernel
-        matrices with respect to the nearest neighbor set in scope, where
-        :math:`k` is the number of nearest neighbors.
-
-        Args:
-            K:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count` -shaped kernel matrices corresponding
-                to each of the batch elements.
-            target_col:
-                A vector of shape `(batch_count)` consisting of the target for
-                each nearest neighbor.
-            nn_indices:
-                An integral matrix of shape `(batch_count, nn_count)` listing the
-                nearest neighbor indices for all observations in the test batch.
-
-        Return:
-            A generator producing `batch_count` optimal values of
-            :math:`\\sigma^2` for each neighborhood for the given response
-            dimension.
-        """
-        batch_count, nn_count = nn_indices.shape
-        for j in range(batch_count):
-            Y_0 = target_col[nn_indices[j, :]]
-            yield Y_0 @ np.linalg.solve(
-                K[j, :, :] + eps * np.eye(nn_count), Y_0
-            )
 
 
 class MultivariateMuyGPS:
@@ -726,7 +653,7 @@ class MultivariateMuyGPS:
         targets: np.ndarray,
     ) -> np.ndarray:
         batch_count, nn_count = nn_indices.shape
-        _, response_count = targets.shape
+        target_count, response_count = targets.shape
         if response_count != len(models):
             raise ValueError(
                 f"Response count ({response_count}) does not match the number "
@@ -737,17 +664,9 @@ class MultivariateMuyGPS:
         sigma_sqs = np.zeros((response_count,))
         for i, muygps in enumerate(models):
             K = muygps.kernel(pairwise_dists)
-            sigma_sq = np.zeros(1)
-            sigma_sq[0] = np.array(
-                sum(
-                    muygps._get_sigma_sq(
-                        K, targets[:, i], nn_indices, muygps.eps()
-                    )
-                )
-                / (nn_count * batch_count)
+            sigma_sqs[i] = muygps.sigma_sq_optim(
+                K, nn_indices, targets[:, i].reshape(target_count, 1)
             )
-            muygps.sigma_sq._set(val=sigma_sq)
-            sigma_sqs[i] = sigma_sq[0]
         return sigma_sqs
 
     def regress_from_indices(
@@ -825,7 +744,7 @@ class MultivariateMuyGPS:
             crosswise_dists,
             pairwise_dists,
             batch_nn_targets,
-        ) = make_regress_tensors(
+        ) = _make_regress_tensors(
             self.metric,
             indices,
             nn_indices,

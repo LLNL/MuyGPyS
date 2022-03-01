@@ -8,6 +8,11 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS import config
+
+if config.jax_enabled() is True:
+    config.disable_jax()
+    # config.jax_enable_x64()
 
 from MuyGPyS.examples.classify import classify_any
 from MuyGPyS.examples.two_class_classify_uq import (
@@ -21,13 +26,8 @@ from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import (
     get_balanced_batch,
-    sample_batch,
-    sample_balanced_batch,
-    full_filtered_batch,
 )
-from MuyGPyS.testing.test_utils import (
-    _make_gaussian_matrix,
-    _make_gaussian_dict,
+from MuyGPyS._test.utils import (
     _make_gaussian_data,
     _basic_nn_kwarg_options,
 )
@@ -169,9 +169,9 @@ class ClassifyTest(parameterized.TestCase):
         min_label = np.min(train["output"][0, :])
         max_label = np.max(train["output"][0, :])
         if min_label == 0.0 and max_label == 1.0:
-            predicted_labels = np.argmax(predictions, axis=1)
+            _ = np.argmax(predictions, axis=1)
         elif min_label == -1.0 and max_label == 1.0:
-            predicted_labels = 2 * np.argmax(predictions, axis=1) - 1
+            _ = 2 * np.argmax(predictions, axis=1) - 1
         else:
             raise ("Unhandled label encoding min ({min_label}, {max_label})!")
         mid_value = (min_label + max_label) / 2

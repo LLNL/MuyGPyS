@@ -8,12 +8,11 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS.testing.test_utils import (
+from MuyGPyS._test.utils import (
     _normalize,
     _subsample,
     _balanced_subsample,
     _make_gaussian_dict,
-    _make_gaussian_data,
 )
 
 

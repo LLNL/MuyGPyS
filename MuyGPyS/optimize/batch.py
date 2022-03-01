@@ -3,14 +3,15 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Sampling elements with their nearest neighbors from data
+"""
+Sampling elements with their nearest neighbors from data
 
-MuyGPyS includes convenience functions for sampling batches of data from 
+MuyGPyS includes convenience functions for sampling batches of data from
 existing datasets.
-These batches are returned in the form of row indices, both of the sampled data 
+These batches are returned in the form of row indices, both of the sampled data
 as well as their nearest neighbors.
-Also included is the ability to sample "balanced" batches, where the data is 
-partitioned by class and we attempt to sample as close to an equal number of 
+Also included is the ability to sample "balanced" batches, where the data is
+partitioned by class and we attempt to sample as close to an equal number of
 items from each class as is possible.
 """
 

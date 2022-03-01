@@ -8,6 +8,12 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS import config
+
+if config.jax_enabled() is True:
+    config.disable_jax()
+    # config.jax_enable_x64()
+
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
@@ -18,18 +24,16 @@ from MuyGPyS.optimize.chassis import (
     scipy_optimize_from_tensors,
 )
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.testing.gp import (
+from MuyGPyS._test.gp import (
     benchmark_prepare_cholK,
     benchmark_sample_from_cholK,
-    benchmark_sample_full,
     BenchmarkGP,
 )
-from MuyGPyS.testing.test_utils import (
-    _make_gaussian_matrix,
+from MuyGPyS._test.utils import (
     _make_gaussian_dict,
     _make_gaussian_data,
     _basic_nn_kwarg_options,
-    _fast_nn_kwarg_options,
+    _get_sigma_sq_series,
 )
 
 
@@ -143,8 +147,8 @@ class SigmaSqTest(parameterized.TestCase):
         K = np.zeros((data_count, nn_count, nn_count))
         for i, muygps in enumerate(mmuygps.models):
             K = muygps.kernel(pairwise_dists)
-            sigmas = muygps._get_sigma_sq_series(
-                K, nn_indices, data["output"][:, i]
+            sigmas = _get_sigma_sq_series(
+                K, nn_indices, data["output"][:, i], muygps.eps()
             )
             self.assertEqual(sigmas.shape, (data_count,))
             self.assertAlmostEqual(muygps.sigma_sq()[0], np.mean(sigmas), 5)
@@ -668,7 +672,7 @@ class MakeRegressorTest(parameterized.TestCase):
                         args[i][key]["val"],
                         muygps.kernel.hyperparameters[key](),
                     )
-            if sigma_method == None:
+            if sigma_method is None:
                 self.assertFalse(muygps.sigma_sq.trained())
             else:
                 self.assertTrue(muygps.sigma_sq.trained())

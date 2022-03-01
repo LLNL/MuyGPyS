@@ -3,17 +3,18 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Resources and high-level API for a simple regression workflow.
+"""
+Resources and high-level API for a simple regression workflow.
 
-:func:`~MuyGPyS.examples.regress.make_regressor` is a high-level API for 
-creating and training :class:`MuyGPyS.gp.muygps.MuyGPS` objects for regression. 
-:func:`~MuyGPyS.examples.regress.make_multivariate_regressor` is a high-level 
-API for creating and training :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS` 
+:func:`~MuyGPyS.examples.regress.make_regressor` is a high-level API for
+creating and training :class:`MuyGPyS.gp.muygps.MuyGPS` objects for regression.
+:func:`~MuyGPyS.examples.regress.make_multivariate_regressor` is a high-level
+API for creating and training :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS`
 objects for regression.
 
 :func:`~MuyGPyS.examples.regress.do_regress` is a high-level api for executing
-a simple, generic regression workflow given data. It calls the maker APIs 
-above and :func:`~MuyGPyS.examples.regress.regress_any`. 
+a simple, generic regression workflow given data. It calls the maker APIs
+above and :func:`~MuyGPyS.examples.regress.regress_any`.
 """
 
 import numpy as np
@@ -518,7 +519,7 @@ def _decide_and_make_regressor(
                 verbose=verbose,
             )
         else:
-            raise ValueError(f"Expected k_kwargs to be a dict!")
+            raise ValueError("Expected k_kwargs to be a dict!")
 
 
 def _unpack(first, *rest):
@@ -728,7 +729,7 @@ def do_regress(
 
     # predictions, prediction_args_less1 = _unpack(*prediction_args)
     if verbose is True:
-        print(f"prediction time breakdown:")
+        print("prediction time breakdown:")
         for k in pred_timing:
             print(f"\t{k} time:{pred_timing[k]}s")
 
@@ -833,8 +834,8 @@ def regress_any(
     timing : dict
         Timing for the subroutines of this function.
     """
-    test_count = test_features.shape[0]
-    train_count = train_features.shape[0]
+    test_count, _ = test_features.shape
+    # train_count, _ = train_features.shape
 
     time_start = perf_counter()
     test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
