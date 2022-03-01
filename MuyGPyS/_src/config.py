@@ -130,3 +130,4 @@ class Config:
 
 
 config = Config()
+config.jax_enable_x64()

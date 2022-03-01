@@ -34,6 +34,32 @@ config.disable_jax()
 # subsequent imports...
 ```
 
+### Precision
+
+JAX uses 32 bit types by default, whereas numpy tends to promote everything to
+64 bits.
+For highly stable operations like matrix multiplication, this difference in
+precision tends to result in a roughly `1e-8` disagreement between 64 bit and 32
+bit implementations.
+However, `MuyGPyS` depends upon matrix-vector solves, which can result in
+disagreements up to `1e-2`.
+In order to ensure that the numpy and JAX implementations agree, `MuyGPyS`
+forces JAX to use 64 bit types by default.
+
+However, the 64 bit operations are slightly slower than their 32 bit
+counterparts.
+It is possible for a user to switch to 32 bit types and functions in their JAX
+compiled code by either directly manipulating JAX's configuration or using
+`MuyGPyS.config` as follows:
+```
+from MuyGPyS import config
+
+config.jax_enable_x64()
+# equivalent to jax.config.update("jax_enable_x64", True)
+```
+If confused, you can also query for whether 64 bit types are enabled via
+`config.x64_enabled()`, which returns a boolean.
+
 ## Installation
 
 ### Pip: CPU
