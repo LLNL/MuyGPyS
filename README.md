@@ -139,6 +139,18 @@ $ cd MuyGPyS
 $ pip install -e .[dev,jax_cpu]
 ```
 
+If you would like to perform a GPU installation from source, you will need to
+install the jax dependency directly instead of using the `jax_cuda` flag or
+similar.
+The following instructions outline such an installation procedure on `pascal`:
+```
+$ git clone git@github.com:LLNL/MuyGPyS.git
+$ cd MuyGPyS
+$ pip install -e .[dev]
+$ source scripts/lc-setup/pascal.sh
+$ pip install --upgrade jax[cuda11_cudnn805] -f https://storage.googleapis.com/jax-releases/jax_releases.html
+```
+
 Additionally check out the develop branch to access the latest features in 
 between stable releases.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution rules. 
@@ -151,10 +163,10 @@ support fast approximate nearest neighbors indexing
 support just-in-time compilation of math functions on CPU (see below to install
 on GPU CUDA architectures)
 - `jax_cuda11_cudnn82` - install JAX dependencies with NVidia GPU support with 
-CUDA >= 11.1 and CuDNN >= 8.2
+CUDA >= 11.1 and CuDNN >= 8.2 (pip only)
 - `jax_cuda11_cudnn805` - install JAX dependencies with NVidia GPU support with 
-CUDA >= 11.1 and CuDNN >= 8.0.5
-- `jax_cuda` (shorthand for `jax_cuda11_cudnn805`)
+CUDA >= 11.1 and CuDNN >= 8.0.5 (pip only)
+- `jax_cuda` (shorthand for `jax_cuda11_cudnn805`, pip only)
 - `tests` - install dependencies necessary to run [tests](tests/)
 - `docs` - install dependencies necessary to build the [docs](docs/)
 - `dev` - install dependencies for maintaining code style, linting, and 
