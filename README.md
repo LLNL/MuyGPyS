@@ -29,7 +29,7 @@ functions.
 ```
 from MuyGPyS import config
 
-config.disable_jax()
+config.update("muygpys_jax_enabled", False)
 
 # subsequent imports...
 ```
@@ -49,16 +49,15 @@ forces JAX to use 64 bit types by default.
 However, the 64 bit operations are slightly slower than their 32 bit
 counterparts.
 It is possible for a user to switch to 32 bit types and functions in their JAX
-compiled code by either directly manipulating JAX's configuration or using
-`MuyGPyS.config` as follows:
+compiled code by directly manipulating JAX's configuration:
 ```
-from MuyGPyS import config
+from MuyGPyS import jax_config
+# equivalent to `from jax import config as jax_config`
 
-config.jax_enable_x64()
-# equivalent to jax.config.update("jax_enable_x64", True)
+jax_config.update("jax_enable_x64", False)
 ```
 If confused, you can also query for whether 64 bit types are enabled via
-`config.x64_enabled()`, which returns a boolean.
+the `jax_config.x64_enabled` boolean.
 
 ## Installation
 
