@@ -48,7 +48,7 @@ from typing import cast, Callable, Dict, List, Optional, Tuple, Union
 
 from MuyGPyS import config
 
-if config.jax_enabled() is False:
+if config.muygpys_jax_enabled is False:  # type: ignore
     from MuyGPyS._src.gp.numpy_kernels import (
         _rbf_fn,
         _matern_05_fn,

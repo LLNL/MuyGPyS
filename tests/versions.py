@@ -3,11 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS import config
+from MuyGPyS import config, jax_config
 
-# config.jax_enable_x64()
+config.parse_flags_with_absl()  # Affords option setting from CLI
 
-if config.jax_enabled() is True:
+
+if config.muygpys_jax_enabled is True:  # type: ignore
     import jax.numpy as jnp
     import numpy as np
 
@@ -24,19 +25,19 @@ if config.jax_enabled() is True:
     from MuyGPyS.optimize.batch import sample_batch
 
     def allclose_gen(a: np.ndarray, b: np.ndarray) -> bool:
-        if config.x64_enabled():
+        if jax_config.x64_enabled:  # type: ignore
             return np.allclose(a, b)
         else:
             return np.allclose(a, b, atol=1e-7)
 
     def allclose_var(a: np.ndarray, b: np.ndarray) -> bool:
-        if config.x64_enabled():
+        if jax_config.x64_enabled:  # type: ignore
             return np.allclose(a, b)
         else:
             return np.allclose(a, b, atol=1e-6)
 
     def allclose_inv(a: np.ndarray, b: np.ndarray) -> bool:
-        if config.x64_enabled():
+        if jax_config.x64_enabled:  # type: ignore
             return np.allclose(a, b)
         else:
             return np.allclose(a, b, atol=1e-3)

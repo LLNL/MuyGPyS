@@ -9,7 +9,7 @@ from typing import Dict, Generator, Tuple, Union
 
 from MuyGPyS import config
 
-if config.hnswlib_enabled() is True:
+if config.muygpys_hnswlib_enabled is True:  # type: ignore
     _basic_nn_kwarg_options = [
         {"nn_method": "exact", "algorithm": "ball_tree"},
         {

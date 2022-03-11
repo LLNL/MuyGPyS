@@ -24,7 +24,7 @@ from typing import Tuple
 
 from MuyGPyS import config
 
-if config.hnswlib_enabled() is True:
+if config.muygpys_hnswlib_enabled is True:  # type: ignore
     import hnswlib
 
 
@@ -103,7 +103,7 @@ class NN_Wrapper:
             exact_kwargs["n_jobs"] = exact_kwargs.get("n_jobs", -1)
             self.nbrs = NearestNeighbors(**exact_kwargs).fit(self.train)
         elif self.nn_method == "hnsw":
-            if config.hnswlib_enabled() is True:
+            if config.muygpys_hnswlib_enabled is True:  # type: ignore
                 self.nbrs = hnswlib.Index(
                     space=kwargs.get("space", "l2"), dim=self.feature_count
                 )

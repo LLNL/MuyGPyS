@@ -10,9 +10,7 @@ from absl.testing import parameterized
 
 from MuyGPyS import config
 
-if config.jax_enabled() is True:
-    config.disable_jax()
-    # config.jax_enable_x64()
+config.parse_flags_with_absl()  # Affords option setting from CLI
 
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier

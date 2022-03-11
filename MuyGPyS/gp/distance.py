@@ -79,7 +79,7 @@ from typing import Optional, Tuple
 
 from MuyGPyS import config
 
-if config.jax_enabled() is False:
+if config.muygpys_jax_enabled is False:  # type: ignore
     from MuyGPyS._src.gp.numpy_distance import (
         _make_regress_tensors,
         _make_train_tensors,

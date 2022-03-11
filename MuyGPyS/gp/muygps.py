@@ -20,7 +20,7 @@ from MuyGPyS.gp.kernels import (
 
 from MuyGPyS import config
 
-if config.jax_enabled() is False:
+if config.muygpys_jax_enabled is False:  # type: ignore
     from MuyGPyS._src.gp.numpy_distance import _make_regress_tensors
     from MuyGPyS._src.gp.numpy_muygps import (
         _muygps_compute_solve,
@@ -32,7 +32,7 @@ else:
 
     # Presently, these implementations appear to be slower than numpy on CPU
     # (but much faster on GPU)
-    if config.gpu_found() is False:
+    if config.muygpys_gpu_enabled is False:  # type: ignore
         from MuyGPyS._src.gp.numpy_muygps import (
             _muygps_compute_solve,
             _muygps_compute_diagonal_variance,
