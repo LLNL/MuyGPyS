@@ -1,128 +1,46 @@
-variables:
-  PYTHON_ENVIRONMENT_PATH: $CI_BUILDS_DIR/MuyGPyS
+image: "python:3.8"
 
-stages:
-  - environment
-  - test
-
-.template_run_rules:
+workflow:
   rules:
     - if: $CI_COMMIT_TAG
       when: never
-    - when: always
-    
-configure_python:
-  extends: .template_run_rules
-  stage: environment
-  tags:
-    - quartz
-    - shell
-  script:
-    - if [ ! -d "${PYTHON_ENVIRONMENT_PATH}" ]; then /usr/tce/bin/virtualenv -p /usr/tce/bin/python3-3.8.2 ${PYTHON_ENVIRONMENT_PATH}; echo "Creates environment"; else echo "Finds existing environment"; fi
-    - source ${PYTHON_ENVIRONMENT_PATH}/bin/activate
-    - pip uninstall MuyGPyS
-    - pip install -e .
-    
-.template_env_load:
-  before_script:
-    - source ${PYTHON_ENVIRONMENT_PATH}/bin/activate
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: always
 
-test_data:
-  extends: .template_run_rules
-  extends: .template_env_load
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+before_script:
+  - /usr/tce/bin/virtualenv --python=/usr/tce/bin/python3-3.8.2 venv
+  - source venv/bin/activate
+  - source scripts/lc-setup/pascal.sh
+  - which python
+  - python --version
+  - pip install --upgrade pip
+  - pip install -e .[tests]
+  - pip install --upgrade jax[cuda11_cudnn805] -f https://storage.googleapis.com/jax-releases/jax-releases.html
+
+all_tests:
   stage: test
   tags:
-    - quartz
+    - pascal
     - shell
   script:
+    - salloc -N1 -ppvis -A muygps
     - python tests/data.py
-
-test_gp:
-  extends: .template_run_rules
-  extends: .template_env_load
-  stage: test
-  tags:
-    - quartz
-    - shell
-  script:
-    - srun -N1 -ppdebug -A madstare python tests/gp.py
-
-test_kernel:
-  extends: .template_run_rules
-  extends: .template_env_load
-  stage: test
-  tags:
-    - quartz
-    - shell
-  script:
-    - python tests/kernels.py
-  
-test_neighbors:
-  extends: .template_run_rules
-  extends: .template_env_load
-  stage: test
-  tags:
-    - quartz
-    - shell
-  script:
     - python tests/neighbors.py
-
-test_optimize:
-  extends: .template_run_rules
-  extends: .template_env_load
-  stage: test
-  tags:
-    - quartz
-    - shell
-  script:
-    - srun -N1 -ppdebug -A madstare python tests/optimize.py
-
-test_predict:
-  extends: .template_run_rules
-  extends: .template_env_load
-  stage: test
-  tags:
-    - quartz
-    - shell
-  script:
-    - srun -N1 -ppdebug -A madstare python tests/predict.py
-
-test_multivariate:
-  extends: .template_run_rules
-  extends: .template_env_load
-  stage: test
-  tags:
-    - quartz
-    - shell
-  script:
+    - python tests/kernels.py
+    - python tests/gp.py
+    - python tests/optimize.py
+    - python tests/predict.py
     - python tests/multivariate.py
-
-test_api_mnist:
-  extends: .template_run_rules
-  extends: .template_env_load
-  stage: test
-  tags:
-    - quartz
-    - shell
-  script:
-    - srun -N1 -ppdebug -A madstare python tests/api.py MNISTTest /p/lustre1/madstare/muygps-data/
-
-test_api_stargal:
-  extends: .template_run_rules
-  extends: .template_env_load
-  stage: test
-  tags:
-    - quartz
-    - shell
-  script:
-    - srun -N1 -ppdebug -A madstare python tests/api.py StargalTest /p/lustre1/madstare/muygps-data/
-
-test_api_heaton:
-  extends: .template_run_rules
-  extends: .template_env_load
-  stage: test
-  tags:
-    - quartz
-    - shell
-  script:
-    - srun -N1 -ppdebug -A madstare python tests/api.py HeatonTest /p/lustre1/madstare/muygps-data/
+    - python tests/versions.py
+    - python tests/api.py /p/lustre1/madstare/muygps-data/
