@@ -37,7 +37,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with absl
       run: |
-        python tests/data.py --muygpys_jax_enabled=False
+        python tests/data.py
         python tests/neighbors.py --muygpys_jax_enabled=False
         python tests/kernels.py --muygpys_jax_enabled=False
         python tests/gp.py --muygpys_jax_enabled=False
