@@ -105,11 +105,11 @@ try:
 
     config.update("muygpys_jax_enabled", True)
     if _default_backend() in ["gpu", "tpu"]:
-        config.update("muygpys_gpu_found", True)
+        config.update("muygpys_gpu_enabled", True)
     del _default_backend
 except Exception:
     config.update("muygpys_jax_enabled", False)
-    config.update("muygpys_gpu_found", False)
+    config.update("muygpys_gpu_enabled", False)
 
 try:
     import hnswlib as _hnswlib
