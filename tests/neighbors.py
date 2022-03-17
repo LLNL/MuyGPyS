@@ -8,6 +8,10 @@ import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS import config
+
+config.parse_flags_with_absl()  # Affords option setting from CLI
+
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.utils import (
     _make_gaussian_matrix,

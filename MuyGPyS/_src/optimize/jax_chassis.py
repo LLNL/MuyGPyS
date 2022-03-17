@@ -5,7 +5,7 @@
 
 from typing import Callable
 
-from MuyGPyS import config
+from MuyGPyS import config, jax_config
 
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS._src.optimize.numpy_chassis import (
@@ -24,14 +24,12 @@ def _scipy_optimize_from_tensors(
     functions if we are operating in 32-bit mode. We will hopefully remove this
     in a future update.
     """
-    if config.x64_enabled() is False:
-        config.jax_enable_x64()
-        ret = _numpy_scipy_optimize_from_tensors(
-            muygps, obj_fn, verbose=verbose
-        )
-        config.jax_disable_x64()
-        return ret
-    else:
-        return _numpy_scipy_optimize_from_tensors(
-            muygps, obj_fn, verbose=verbose
-        )
+    if config.muygpys_jax_enabled is True:  # type: ignore
+        if jax_config.x64_enabled is False:  # type: ignore
+            jax_config.update("jax_enable_x64", True)
+            ret = _numpy_scipy_optimize_from_tensors(
+                muygps, obj_fn, verbose=verbose
+            )
+            jax_config.update("jax_enable_x64", False)
+            return ret
+    return _numpy_scipy_optimize_from_tensors(muygps, obj_fn, verbose=verbose)

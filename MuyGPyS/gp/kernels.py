@@ -48,7 +48,7 @@ from typing import cast, Callable, Dict, List, Optional, Tuple, Union
 
 from MuyGPyS import config
 
-if config.jax_enabled() is False:
+if config.muygpys_jax_enabled is False:  # type: ignore
     from MuyGPyS._src.gp.numpy_kernels import (
         _rbf_fn,
         _matern_05_fn,
@@ -93,9 +93,22 @@ class SigmaSq:
                 The new value of the hyperparameter.
         """
         if not isinstance(val, np.ndarray):
-            raise ValueError(
-                f"Expected np.ndarray for SigmaSq value update, not {val}"
-            )
+            if config.muygpys_jax_enabled is True:  # type: ignore
+                import jax.numpy as jnp
+
+                if not isinstance(val, jnp.DeviceArray):
+                    raise ValueError(
+                        f"Expected np.ndarray or jax.numpy.DeviceArray for "
+                        f"SigmaSq value update, not {val}"
+                    )
+                else:
+                    val = jnp.atleast_1d(val)
+            else:
+                raise ValueError(
+                    f"Expected np.ndarray for SigmaSq value update, not {val}"
+                )
+        else:
+            val = np.atleast_1d(val)
         self.val = val
         self._trained = True
 

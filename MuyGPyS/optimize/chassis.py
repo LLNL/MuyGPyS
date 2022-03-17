@@ -17,7 +17,7 @@ import numpy as np
 
 from MuyGPyS import config
 
-if config.jax_enabled() is False:
+if config.muygpys_jax_enabled is False:  # type: ignore
     from MuyGPyS._src.gp.numpy_distance import _make_train_tensors
     from MuyGPyS._src.optimize.numpy_chassis import _scipy_optimize_from_tensors
 else:
