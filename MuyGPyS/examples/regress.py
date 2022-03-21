@@ -23,7 +23,7 @@ from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
 from MuyGPyS.gp.distance import make_train_tensors
-from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
+from MuyGPyS.optimize.chassis import optimize_from_tensors
 
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
@@ -36,6 +36,7 @@ def make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    opt_method: str = "scipy",
     sigma_method: Optional[str] = "analytic",
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
@@ -69,6 +70,7 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
@@ -81,6 +83,7 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
@@ -104,6 +107,9 @@ def make_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        opt_method:
+            Indicates the optimization method to be used. Currently restricted
+            to `"scipy"`.
         sigma_method:
             The optimization method to be employed to learn the `sigma_sq`
             hyperparameter. Currently supports only `"analytic"` and `None`. If
@@ -190,13 +196,14 @@ def make_regressor(
 
         if skip_opt is False:
             # maybe do something with these estimates?
-            muygps = scipy_optimize_from_tensors(
+            muygps = optimize_from_tensors(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
                 crosswise_dists,
                 pairwise_dists,
                 loss_method=loss_method,
+                opt_method=opt_method,
                 verbose=verbose,
             )
         time_opt = perf_counter()
@@ -230,6 +237,7 @@ def make_multivariate_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    opt_method: str = "scipy",
     sigma_method: Optional[str] = "analytic",
     kern: str = "matern",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
@@ -269,6 +277,7 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         kern="rbf",
         ...         k_args=k_args,
@@ -282,6 +291,7 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         kern="rbf",
         ...         k_args=k_args,
@@ -306,6 +316,9 @@ def make_multivariate_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        opt_method:
+            Indicates the optimization method to be used. Currently restricted
+            to `"scipy"`.
         sigma_method:
             The optimization method to be employed to learn the `sigma_sq`
             hyperparameter. Currently supports only `"analytic"` and `None`. If
@@ -401,7 +414,7 @@ def make_multivariate_regressor(
             # maybe do something with these estimates?
             for i, muygps in enumerate(mmuygps.models):
                 if muygps.fixed() is False:
-                    mmuygps.models[i] = scipy_optimize_from_tensors(
+                    mmuygps.models[i] = optimize_from_tensors(
                         muygps,
                         batch_targets[:, i].reshape(batch_count, 1),
                         batch_nn_targets[:, :, i].reshape(
@@ -410,6 +423,7 @@ def make_multivariate_regressor(
                         crosswise_dists,
                         pairwise_dists,
                         loss_method=loss_method,
+                        opt_method=opt_method,
                         verbose=verbose,
                     )
         time_opt = perf_counter()

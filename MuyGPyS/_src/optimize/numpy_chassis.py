@@ -11,7 +11,7 @@ from scipy import optimize as opt
 from MuyGPyS.gp.muygps import MuyGPS
 
 
-def _scipy_optimize_from_tensors(
+def _scipy_optimize(
     muygps: MuyGPS,
     obj_fn: Callable,
     verbose: bool = False,

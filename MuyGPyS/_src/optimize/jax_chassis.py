@@ -9,11 +9,11 @@ from MuyGPyS import config, jax_config
 
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS._src.optimize.numpy_chassis import (
-    _scipy_optimize_from_tensors as _numpy_scipy_optimize_from_tensors,
+    _scipy_optimize as _numpy_scipy_optimize,
 )
 
 
-def _scipy_optimize_from_tensors(
+def _scipy_optimize(
     muygps: MuyGPS,
     obj_fn: Callable,
     verbose: bool = False,
@@ -27,9 +27,7 @@ def _scipy_optimize_from_tensors(
     if config.muygpys_jax_enabled is True:  # type: ignore
         if jax_config.x64_enabled is False:  # type: ignore
             jax_config.update("jax_enable_x64", True)
-            ret = _numpy_scipy_optimize_from_tensors(
-                muygps, obj_fn, verbose=verbose
-            )
+            ret = _numpy_scipy_optimize(muygps, obj_fn, verbose=verbose)
             jax_config.update("jax_enable_x64", False)
             return ret
-    return _numpy_scipy_optimize_from_tensors(muygps, obj_fn, verbose=verbose)
+    return _numpy_scipy_optimize(muygps, obj_fn, verbose=verbose)

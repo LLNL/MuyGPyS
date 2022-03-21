@@ -18,8 +18,8 @@ from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.chassis import (
-    scipy_optimize_from_indices,
-    scipy_optimize_from_tensors,
+    optimize_from_indices,
+    optimize_from_tensors,
 )
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.gp import (
@@ -155,11 +155,12 @@ class SigmaSqTest(parameterized.TestCase):
 class OptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, om, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for om in ["scipy"]
             for k_kwargs in (
                 (
                     "matern",
@@ -189,6 +190,7 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        opt_method,
         k_kwargs,
     ):
         kern, metric, target, args = k_kwargs
@@ -246,13 +248,14 @@ class OptimTest(parameterized.TestCase):
             batch_nn_targets = sim_train["output"][batch_nn_indices, :]
 
             for i, muygps in enumerate(mmuygps.models):
-                mmuygps.models[i] = scipy_optimize_from_tensors(
+                mmuygps.models[i] = optimize_from_tensors(
                     muygps,
                     batch_targets[:, i].reshape(batch_count, 1),
                     batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
                     crosswise_dists,
                     pairwise_dists,
                     loss_method=loss_method,
+                    opt_method=opt_method,
                 )
                 estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
                 mse += np.sum(estimate - target[i]) ** 2
@@ -262,11 +265,12 @@ class OptimTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, om, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for om in ["scipy"]
             for k_kwargs in (
                 (
                     "matern",
@@ -296,6 +300,7 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        opt_method,
         k_kwargs,
     ):
         kern, metric, target, args = k_kwargs
@@ -340,13 +345,14 @@ class OptimTest(parameterized.TestCase):
             mmuygps = MMuyGPS(kern, *args)
 
             for i, muygps in enumerate(mmuygps.models):
-                mmuygps.models[i] = scipy_optimize_from_indices(
+                mmuygps.models[i] = optimize_from_indices(
                     muygps,
                     batch_indices,
                     batch_nn_indices,
                     sim_train["input"],
                     sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
+                    opt_method=opt_method,
                 )
                 estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
                 mse += np.sum(estimate - target[i]) ** 2

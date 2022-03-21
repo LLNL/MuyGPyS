@@ -22,8 +22,8 @@ from MuyGPyS.optimize.batch import (
     full_filtered_batch,
 )
 from MuyGPyS.optimize.chassis import (
-    scipy_optimize_from_tensors,
-    scipy_optimize_from_indices,
+    optimize_from_tensors,
+    optimize_from_indices,
 )
 from MuyGPyS._test.gp import (
     benchmark_pairwise_distances,
@@ -395,11 +395,12 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
 class GPOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, om, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for om in ["scipy"]
             for k_kwargs in (
                 (
                     0.38,
@@ -422,6 +423,7 @@ class GPOptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        opt_method,
         k_kwargs,
     ):
         target, kwargs = k_kwargs
@@ -471,13 +473,14 @@ class GPOptimTest(parameterized.TestCase):
             batch_targets = sim_train["output"][batch_indices, :]
             batch_nn_targets = sim_train["output"][batch_nn_indices, :]
 
-            muygps = scipy_optimize_from_tensors(
+            muygps = optimize_from_tensors(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
                 crosswise_dists,
                 pairwise_dists,
                 loss_method=loss_method,
+                opt_method=opt_method,
             )
 
             # mse += (estimate - target) ** 2
@@ -490,11 +493,12 @@ class GPOptimTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1001, b, n, nn_kwargs, lm, k_kwargs)
+            (1001, b, n, nn_kwargs, lm, om, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for om in ["scipy"]
             for k_kwargs in (
                 (
                     0.38,
@@ -516,6 +520,7 @@ class GPOptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        opt_method,
         k_kwargs,
     ):
         target, kwargs = k_kwargs
@@ -548,13 +553,14 @@ class GPOptimTest(parameterized.TestCase):
         # set up MuyGPS object
         muygps = MuyGPS(**kwargs)
 
-        muygps = scipy_optimize_from_indices(
+        muygps = optimize_from_indices(
             muygps,
             batch_indices,
             batch_nn_indices,
             sim_train["input"],
             sim_train["output"],
             loss_method=loss_method,
+            opt_method=opt_method,
         )
 
         estimate = muygps.kernel.hyperparameters["nu"]()

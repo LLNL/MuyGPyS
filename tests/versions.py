@@ -440,10 +440,10 @@ if config.muygpys_jax_enabled is True:  # type: ignore
     )
     from MuyGPyS.optimize.objective import make_loo_crossval_fn
     from MuyGPyS._src.optimize.numpy_chassis import (
-        _scipy_optimize_from_tensors as scipy_optimize_from_tensors_n,
+        _scipy_optimize as scipy_optimize_n,
     )
     from MuyGPyS._src.optimize.jax_chassis import (
-        _scipy_optimize_from_tensors as scipy_optimize_from_tensors_j,
+        _scipy_optimize as scipy_optimize_j,
     )
 
     class OptimTestCase(MuyGPSTestCase):
@@ -612,22 +612,22 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         def setUpClass(cls):
             super(OptimTest, cls).setUpClass()
 
-        def test_scipy_optimize_from_tensors(self):
+        def test_scipy_optimize(self):
             obj_fn_n = self._get_obj_fn_n()
             obj_fn_j = self._get_obj_fn_j()
             obj_fn_h = self._get_obj_fn_h()
 
-            mopt_n = scipy_optimize_from_tensors_n(
+            mopt_n = scipy_optimize_n(
                 self.muygps,
                 obj_fn_n,
                 verbose=False,
             )
-            mopt_j = scipy_optimize_from_tensors_j(
+            mopt_j = scipy_optimize_j(
                 self.muygps,
                 obj_fn_j,
                 verbose=False,
             )
-            mopt_h = scipy_optimize_from_tensors_j(
+            mopt_h = scipy_optimize_j(
                 self.muygps,
                 obj_fn_h,
                 verbose=False,

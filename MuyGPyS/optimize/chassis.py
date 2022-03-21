@@ -14,31 +14,34 @@ to optimize a specified subset of the hyperparameters associated with a
 
 
 import numpy as np
+import warnings
 
 from MuyGPyS import config
 
 if config.muygpys_jax_enabled is False:  # type: ignore
     from MuyGPyS._src.gp.numpy_distance import _make_train_tensors
-    from MuyGPyS._src.optimize.numpy_chassis import _scipy_optimize_from_tensors
+    from MuyGPyS._src.optimize.numpy_chassis import _scipy_optimize
+
 else:
     from MuyGPyS._src.gp.jax_distance import _make_train_tensors
-    from MuyGPyS._src.optimize.jax_chassis import _scipy_optimize_from_tensors
+    from MuyGPyS._src.optimize.jax_chassis import _scipy_optimize
 
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.objective import get_loss_func, make_loo_crossval_fn
 
 
-def scipy_optimize_from_indices(
+def optimize_from_indices(
     muygps: MuyGPS,
     batch_indices: np.ndarray,
     batch_nn_indices: np.ndarray,
     train_features: np.ndarray,
     train_targets: np.ndarray,
     loss_method: str = "mse",
+    opt_method: str = "scipy",
     verbose: bool = False,
 ) -> MuyGPS:
     """
-    Find an optimal model using scipy directly from the data.
+    Find an optimal model directly from the data.
 
     Use this method if you do not need to retain the distance matrices used for
     optimization.
@@ -49,8 +52,8 @@ def scipy_optimize_from_indices(
     :class:`MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
 
     Example:
-        >>> from MuyGPyS.optimize.chassis import scipy_optimize_from_indices
-        >>> muygps = scipy_optimize_from_indices(
+        >>> from MuyGPyS.optimize.chassis import optimize_from_indices
+        >>> muygps = optimize_from_indices(
         ...         muygps,
         ...         batch_indices,
         ...         batch_nn_indices,
@@ -58,6 +61,7 @@ def scipy_optimize_from_indices(
         ...         train_features,
         ...         train_responses,
         ...         loss_method='mse',
+        ...         opt_method='scipy',
         ...         verbose=True,
         ... )
         parameters to be optimized: ['nu']
@@ -92,6 +96,9 @@ def scipy_optimize_from_indices(
             vector-valued responses for each training element.
         loss_method:
             Indicates the loss function to be used.
+        opt_method:
+            Indicates the optimization method to be used. Currently restricted
+            to `"scipy"`.
         verbose : bool
             If True, print debug messages.
 
@@ -110,24 +117,26 @@ def scipy_optimize_from_indices(
         train_features,
         train_targets,
     )
-    return scipy_optimize_from_tensors(
+    return optimize_from_tensors(
         muygps,
         batch_targets,
         batch_nn_targets,
         crosswise_dists,
         pairwise_dists,
         loss_method=loss_method,
+        opt_method=opt_method,
         verbose=verbose,
     )
 
 
-def scipy_optimize_from_tensors(
+def optimize_from_tensors(
     muygps: MuyGPS,
     batch_targets: np.ndarray,
     batch_nn_targets: np.ndarray,
     crosswise_dists: np.ndarray,
     pairwise_dists: np.ndarray,
     loss_method: str = "mse",
+    opt_method: str = "scipy",
     verbose: bool = False,
 ) -> MuyGPS:
     """
@@ -144,8 +153,8 @@ def scipy_optimize_from_tensors(
     initialized a :class:`MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
 
     Example:
-        >>> from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
-        >>> muygps = scipy_optimize_from_tensors(
+        >>> from MuyGPyS.optimize.chassis import optimize_from_tensors
+        >>> muygps = optimize_from_tensors(
         ...         muygps,
         ...         batch_indices,
         ...         batch_nn_indices,
@@ -153,6 +162,7 @@ def scipy_optimize_from_tensors(
         ...         pairwise_dists,
         ...         train_responses,
         ...         loss_method='mse',
+        ...         opt_method='scipy',
         ...         verbose=True,
         ... )
         parameters to be optimized: ['nu']
@@ -191,12 +201,119 @@ def scipy_optimize_from_tensors(
             element.
         loss_method:
             Indicates the loss function to be used.
+        opt_method:
+            Indicates the optimization method to be used. Currently restricted
+            to `"scipy"`.
         verbose:
             If True, print debug messages.
 
     Returns:
         A new MuyGPs model whose specified hyperparameters have been optimized.
     """
+    loss_method = loss_method.lower()
+    opt_method = opt_method.lower()
+
+    if opt_method == "scipy":
+        return _scipy_optimize_from_tensors(
+            muygps,
+            batch_targets,
+            batch_nn_targets,
+            crosswise_dists,
+            pairwise_dists,
+            loss_method=loss_method,
+            verbose=verbose,
+        )
+    else:
+        raise ValueError(f"Unsupported optimization method: {opt_method}")
+
+
+def scipy_optimize_from_indices(
+    muygps: MuyGPS,
+    batch_indices: np.ndarray,
+    batch_nn_indices: np.ndarray,
+    train_features: np.ndarray,
+    train_targets: np.ndarray,
+    loss_method: str = "mse",
+    verbose: bool = False,
+) -> MuyGPS:
+    """
+    Find the optimal model with scipy directly from the data.
+
+    Deprecated and will be removed in v0.6.0. Use
+    `func:~MuyGPyS.optimize.chassis.optimize_from_indices()` with
+    `opt_method="scipy"` instead.
+    """
+    warnings.warn(
+        "scipy_optimize_from_indices() is deprecated, and will be removed in "
+        "v0.6.0. "
+        'Use optimize_from_indices() with opt_method="scipy" instead.',
+        DeprecationWarning,
+    )
+    (
+        crosswise_dists,
+        pairwise_dists,
+        batch_targets,
+        batch_nn_targets,
+    ) = _make_train_tensors(
+        muygps.kernel.metric,
+        batch_indices,
+        batch_nn_indices,
+        train_features,
+        train_targets,
+    )
+    return _scipy_optimize_from_tensors(
+        muygps,
+        batch_targets,
+        batch_nn_targets,
+        crosswise_dists,
+        pairwise_dists,
+        loss_method=loss_method,
+        verbose=verbose,
+    )
+
+
+def scipy_optimize_from_tensors(
+    muygps: MuyGPS,
+    batch_targets: np.ndarray,
+    batch_nn_targets: np.ndarray,
+    crosswise_dists: np.ndarray,
+    pairwise_dists: np.ndarray,
+    loss_method: str = "mse",
+    verbose: bool = False,
+) -> MuyGPS:
+    """
+    Find the optimal model with scipy using existing distance matrices.
+
+    Deprecated and will be removed in v0.6.0. Use
+    `func:~MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+    `opt_method="scipy"` instead.
+    """
+    warnings.warn(
+        "scipy_optimize_from_tensors() is deprecated, and will be removed in "
+        "v0.6.0. "
+        'Use optimize_from_tensors() with opt_method="scipy" instead.',
+        DeprecationWarning,
+    )
+    return _scipy_optimize_from_tensors(
+        muygps,
+        batch_targets,
+        batch_nn_targets,
+        crosswise_dists,
+        pairwise_dists,
+        loss_method=loss_method,
+        verbose=verbose,
+    )
+
+
+def _scipy_optimize_from_tensors(
+    muygps: MuyGPS,
+    batch_targets: np.ndarray,
+    batch_nn_targets: np.ndarray,
+    crosswise_dists: np.ndarray,
+    pairwise_dists: np.ndarray,
+    loss_method: str = "mse",
+    verbose: bool = False,
+) -> MuyGPS:
     loss_fn = get_loss_func(loss_method)
 
     kernel_fn = muygps.kernel.get_opt_fn()
@@ -212,4 +329,4 @@ def scipy_optimize_from_tensors(
         batch_targets,
     )
 
-    return _scipy_optimize_from_tensors(muygps, obj_fn, verbose=verbose)
+    return _scipy_optimize(muygps, obj_fn, verbose=verbose)
