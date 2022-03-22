@@ -491,6 +491,23 @@ class MuyGPS:
 
         return caller_fn
 
+    def get_kwargs_opt_fn(self) -> Callable:
+        return self._get_kwargs_opt_fn(_muygps_compute_solve, self.eps)
+
+    @staticmethod
+    def _get_kwargs_opt_fn(solve_fn: Callable, eps: Hyperparameter) -> Callable:
+        if not eps.fixed():
+
+            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
+                return solve_fn(K, Kcross, batch_nn_targets, kwargs["eps"])
+
+        else:
+
+            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
+                return solve_fn(K, Kcross, batch_nn_targets, eps())
+
+        return caller_fn
+
     def sigma_sq_optim(
         self,
         K: np.ndarray,

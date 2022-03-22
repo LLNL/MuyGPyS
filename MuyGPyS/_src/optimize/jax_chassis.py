@@ -10,6 +10,7 @@ from MuyGPyS import config, jax_config
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS._src.optimize.numpy_chassis import (
     _scipy_optimize as _numpy_scipy_optimize,
+    _bayes_opt_optimize as _numpy_bayes_opt_optimize,
 )
 
 
@@ -32,3 +33,12 @@ def _scipy_optimize(
             jax_config.update("jax_enable_x64", False)
             return ret
     return _numpy_scipy_optimize(muygps, obj_fn, verbose=verbose, **kwargs)
+
+
+def _bayes_opt_optimize(
+    muygps: MuyGPS,
+    obj_fn: Callable,
+    verbose: bool = False,
+    **kwargs,
+) -> MuyGPS:
+    return _numpy_bayes_opt_optimize(muygps, obj_fn, verbose=verbose, **kwargs)

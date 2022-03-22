@@ -139,7 +139,7 @@ def do_classify_uq(
             for classification.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"scipy"`.
+            to `"bayesian"` and `"scipy"`.
         uq_objectives : list(Callable)
             List of `objective_count`functions taking four arguments: bit masks
             `alpha` and `beta` - the type 1 and type 2 error counts at each grid

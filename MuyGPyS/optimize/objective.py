@@ -104,7 +104,7 @@ def mse_fn(
 
 def loo_crossval(
     x0: np.ndarray,
-    objective_fn: Callable,
+    loss_fn: Callable,
     kernel_fn: Callable,
     predict_fn: Callable,
     pairwise_dists: np.ndarray,
@@ -121,10 +121,10 @@ def loo_crossval(
     Args:
         x0:
             Current guess for hyperparameter values of shape `(opt_count,)`.
-        objective_fn:
-            The function to be optimized. Can be any function that accepts two
-            `numpy.ndarray` objects indicating the prediction and target values,
-            in that order.
+        loss_fn:
+            The loss function to be minimizes. Can be any function that accepts
+            two `numpy.ndarray` objects indicating the prediction and target
+            values, in that order.
         kernel_fn:
             A function that realizes kernel tensors given a list of the free
             parameters.
@@ -162,7 +162,7 @@ def loo_crossval(
         x0[-1],
     )
 
-    return objective_fn(predictions, batch_targets)
+    return loss_fn(predictions, batch_targets)
 
 
 def make_loo_crossval_fn(
@@ -184,6 +184,53 @@ def make_loo_crossval_fn(
             crosswise_dists,
             batch_nn_targets,
             batch_targets,
+        )
+
+    return caller_fn
+
+
+def loo_crossval_kwargs(
+    loss_fn: Callable,
+    kernel_fn: Callable,
+    predict_fn: Callable,
+    pairwise_dists: np.ndarray,
+    crosswise_dists: np.ndarray,
+    batch_nn_targets: np.ndarray,
+    batch_targets: np.ndarray,
+    **kwargs,
+) -> float:
+    K = kernel_fn(pairwise_dists, **kwargs)
+    Kcross = kernel_fn(crosswise_dists, **kwargs)
+
+    predictions = predict_fn(
+        K,
+        Kcross,
+        batch_nn_targets,
+        **kwargs,
+    )
+
+    return -loss_fn(predictions, batch_targets)
+
+
+def make_loo_crossval_kwargs_fn(
+    loss_fn: Callable,
+    kernel_fn: Callable,
+    predict_fn: Callable,
+    pairwise_dists: np.ndarray,
+    crosswise_dists: np.ndarray,
+    batch_nn_targets: np.ndarray,
+    batch_targets: np.ndarray,
+) -> Callable:
+    def caller_fn(**kwargs):
+        return loo_crossval_kwargs(
+            loss_fn,
+            kernel_fn,
+            predict_fn,
+            pairwise_dists,
+            crosswise_dists,
+            batch_nn_targets,
+            batch_targets,
+            **kwargs,
         )
 
     return caller_fn

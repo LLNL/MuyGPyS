@@ -504,11 +504,23 @@ class RegressTest(parameterized.TestCase):
 class MakeClassifierTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, rt, k_kwargs)
+            (
+                1000,
+                1000,
+                10,
+                b,
+                n,
+                nn_kwargs,
+                lm,
+                opt_method_and_kwargs,
+                rt,
+                k_kwargs,
+            )
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for rt in [True, False]
             for k_kwargs in (
                 (
@@ -538,10 +550,12 @@ class MakeClassifierTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        opt_method_and_kwargs,
         return_distances,
         k_kwargs,
     ):
         kern, args = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -559,9 +573,11 @@ class MakeClassifierTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_args=args,
+            opt_kwargs=opt_kwargs,
             return_distances=return_distances,
         )
 
@@ -593,11 +609,24 @@ class MakeClassifierTest(parameterized.TestCase):
 class MakeRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, rt, k_kwargs)
+            (
+                1000,
+                1000,
+                10,
+                b,
+                n,
+                nn_kwargs,
+                lm,
+                opt_method_and_kwargs,
+                ssm,
+                rt,
+                k_kwargs,
+            )
             for b in [250]
             for n in [10]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for ssm in ["analytic", None]
             for rt in [True, False]
             for k_kwargs in (
@@ -628,11 +657,13 @@ class MakeRegressorTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        opt_method_and_kwargs,
         sigma_method,
         return_distances,
         k_kwargs,
     ):
         kern, args = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -650,8 +681,10 @@ class MakeRegressorTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             sigma_method=sigma_method,
             nn_kwargs=nn_kwargs,
+            opt_kwargs=opt_kwargs,
             kern=kern,
             k_args=args,
             return_distances=return_distances,

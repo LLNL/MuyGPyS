@@ -110,7 +110,7 @@ def make_regressor(
             Currently supports only `"mse"` for regression.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"scipy"`.
+            to `"bayesian"` and `"scipy"`.
         sigma_method:
             The optimization method to be employed to learn the `sigma_sq`
             hyperparameter. Currently supports only `"analytic"` and `None`. If
@@ -324,7 +324,7 @@ def make_multivariate_regressor(
             Currently supports only `"mse"` for regression.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"scipy"`.
+            to `"bayesian"` and `"scipy"`.
         sigma_method:
             The optimization method to be employed to learn the `sigma_sq`
             hyperparameter. Currently supports only `"analytic"` and `None`. If
@@ -662,7 +662,7 @@ def do_regress(
             Currently supports only `"mse"` for regression.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"scipy"`.
+            to `"bayesian"` and `"scipy"`.
         sigma_method:
             The optimization method to be employed to learn the `sigma_sq`
             hyperparameter. Currently supports only `"analytic"` and `None`. If

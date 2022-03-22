@@ -20,14 +20,24 @@ from MuyGPyS import config
 
 if config.muygpys_jax_enabled is False:  # type: ignore
     from MuyGPyS._src.gp.numpy_distance import _make_train_tensors
-    from MuyGPyS._src.optimize.numpy_chassis import _scipy_optimize
+    from MuyGPyS._src.optimize.numpy_chassis import (
+        _scipy_optimize,
+        _bayes_opt_optimize,
+    )
 
 else:
     from MuyGPyS._src.gp.jax_distance import _make_train_tensors
-    from MuyGPyS._src.optimize.jax_chassis import _scipy_optimize
+    from MuyGPyS._src.optimize.jax_chassis import (
+        _scipy_optimize,
+        _bayes_opt_optimize,
+    )
 
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.optimize.objective import get_loss_func, make_loo_crossval_fn
+from MuyGPyS.optimize.objective import (
+    get_loss_func,
+    make_loo_crossval_fn,
+    make_loo_crossval_kwargs_fn,
+)
 
 
 def optimize_from_indices(
@@ -99,7 +109,7 @@ def optimize_from_indices(
             Indicates the loss function to be used.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"scipy"`.
+            to `"bayesian"` and `"scipy"`.
         verbose:
             If True, print debug messages.
         kwargs:
@@ -208,7 +218,7 @@ def optimize_from_tensors(
             Indicates the loss function to be used.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"scipy"`.
+            to `"bayesian"` and `"scipy"`.
         verbose:
             If True, print debug messages.
         kwargs:
@@ -222,6 +232,17 @@ def optimize_from_tensors(
 
     if opt_method == "scipy":
         return _scipy_optimize_from_tensors(
+            muygps,
+            batch_targets,
+            batch_nn_targets,
+            crosswise_dists,
+            pairwise_dists,
+            loss_method=loss_method,
+            verbose=verbose,
+            **kwargs,
+        )
+    if opt_method == "bayesian":
+        return _bayes_opt_optimize_from_tensors(
             muygps,
             batch_targets,
             batch_nn_targets,
@@ -339,3 +360,31 @@ def _scipy_optimize_from_tensors(
     )
 
     return _scipy_optimize(muygps, obj_fn, verbose=verbose, **kwargs)
+
+
+def _bayes_opt_optimize_from_tensors(
+    muygps: MuyGPS,
+    batch_targets: np.ndarray,
+    batch_nn_targets: np.ndarray,
+    crosswise_dists: np.ndarray,
+    pairwise_dists: np.ndarray,
+    loss_method: str = "mse",
+    verbose: bool = False,
+    **kwargs,
+) -> MuyGPS:
+    loss_fn = get_loss_func(loss_method)
+
+    kernel_fn = muygps.kernel.get_kwargs_opt_fn()
+    predict_fn = muygps.get_kwargs_opt_fn()
+
+    obj_fn = make_loo_crossval_kwargs_fn(
+        loss_fn,
+        kernel_fn,
+        predict_fn,
+        pairwise_dists,
+        crosswise_dists,
+        batch_nn_targets,
+        batch_targets,
+    )
+
+    return _bayes_opt_optimize(muygps, obj_fn, verbose=verbose, **kwargs)

@@ -108,7 +108,7 @@ def make_classifier(
             for classification.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"scipy"`.
+            to `"bayesian"` and `"scipy"`.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
             metric, epsilon and sigma hyperparameter specifications, and
@@ -293,7 +293,7 @@ def make_multivariate_classifier(
             Currently supports only `"mse"` for regression.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"scipy"`.
+            to `"bayesian"` and `"scipy"`.
         kern:
             The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
             details.
@@ -410,6 +410,7 @@ def _decide_and_make_classifier(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "log",
+    opt_method: str = "scipy",
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
@@ -427,6 +428,7 @@ def _decide_and_make_classifier(
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             kern=kern,
             k_args=k_kwargs,
             nn_kwargs=nn_kwargs,
@@ -442,6 +444,7 @@ def _decide_and_make_classifier(
                 nn_count=nn_count,
                 batch_count=batch_count,
                 loss_method=loss_method,
+                opt_method=opt_method,
                 k_kwargs=k_kwargs,
                 nn_kwargs=nn_kwargs,
                 opt_kwargs=opt_kwargs,
@@ -550,7 +553,7 @@ def do_classify(
             for classification.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"scipy"`.
+            to `"bayesian"` and `"scipy"`.
         kern:
             The kernel function to be used. Only relevant for multivariate case
             where `k_kwargs` is a list of hyperparameter dicts. Currently
@@ -596,6 +599,7 @@ def do_classify(
         nn_count=nn_count,
         batch_count=batch_count,
         loss_method=loss_method,
+        opt_method=opt_method,
         kern=kern,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,

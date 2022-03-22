@@ -36,7 +36,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _basic_nn_kwarg_options,
-    _basic_opt_method_and_kwarg_options,
+    _advanced_opt_method_and_kwarg_options,
     _sq_rel_err,
 )
 
@@ -401,7 +401,7 @@ class GPOptimTest(parameterized.TestCase):
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
                     0.38,
@@ -501,7 +501,7 @@ class GPOptimTest(parameterized.TestCase):
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
                     0.38,
