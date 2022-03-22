@@ -26,6 +26,8 @@ else:
 
 _exact_nn_kwarg_options = ({"nn_method": "exact", "algorithm": "ball_tree"},)
 
+_basic_opt_method_and_kwarg_options = [["scipy", dict()]]
+
 
 def _sq_rel_err(
     tru: Union[float, np.ndarray], est: Union[float, np.ndarray]

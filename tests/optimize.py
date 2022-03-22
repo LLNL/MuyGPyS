@@ -36,6 +36,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _basic_nn_kwarg_options,
+    _basic_opt_method_and_kwarg_options,
     _sq_rel_err,
 )
 
@@ -395,12 +396,12 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
 class GPOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, om, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
-            for om in ["scipy"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
                     0.38,
@@ -423,10 +424,11 @@ class GPOptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
-        opt_method,
+        opt_method_and_kwargs,
         k_kwargs,
     ):
         target, kwargs = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
 
         # construct the observation locations
         sim_train = dict()
@@ -481,6 +483,7 @@ class GPOptimTest(parameterized.TestCase):
                 pairwise_dists,
                 loss_method=loss_method,
                 opt_method=opt_method,
+                **opt_kwargs,
             )
 
             # mse += (estimate - target) ** 2
@@ -493,12 +496,12 @@ class GPOptimTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1001, b, n, nn_kwargs, lm, om, k_kwargs)
+            (1001, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
-            for om in ["scipy"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
                     0.38,
@@ -520,10 +523,11 @@ class GPOptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
-        opt_method,
+        opt_method_and_kwargs,
         k_kwargs,
     ):
         target, kwargs = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
 
         # construct the observation locations
         sim_train = dict()
@@ -561,6 +565,7 @@ class GPOptimTest(parameterized.TestCase):
             sim_train["output"],
             loss_method=loss_method,
             opt_method=opt_method,
+            **opt_kwargs,
         )
 
         estimate = muygps.kernel.hyperparameters["nu"]()

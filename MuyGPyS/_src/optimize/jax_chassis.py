@@ -17,6 +17,7 @@ def _scipy_optimize(
     muygps: MuyGPS,
     obj_fn: Callable,
     verbose: bool = False,
+    **kwargs,
 ) -> MuyGPS:
     """
     NOTE[bwp] This is presently required because scipy.optimize.minimize() does
@@ -30,4 +31,4 @@ def _scipy_optimize(
             ret = _numpy_scipy_optimize(muygps, obj_fn, verbose=verbose)
             jax_config.update("jax_enable_x64", False)
             return ret
-    return _numpy_scipy_optimize(muygps, obj_fn, verbose=verbose)
+    return _numpy_scipy_optimize(muygps, obj_fn, verbose=verbose, **kwargs)

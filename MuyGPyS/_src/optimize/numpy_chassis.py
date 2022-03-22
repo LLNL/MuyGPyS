@@ -15,6 +15,7 @@ def _scipy_optimize(
     muygps: MuyGPS,
     obj_fn: Callable,
     verbose: bool = False,
+    **kwargs,
 ) -> MuyGPS:
     x0_names, x0, bounds = muygps.get_optim_params()
     if verbose is True:
@@ -27,6 +28,7 @@ def _scipy_optimize(
         x0,
         method="L-BFGS-B",
         bounds=bounds,
+        **kwargs,
     )
     if verbose is True:
         print(f"optimizer results: \n{optres}")

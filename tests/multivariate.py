@@ -31,6 +31,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_dict,
     _make_gaussian_data,
     _basic_nn_kwarg_options,
+    _basic_opt_method_and_kwarg_options,
     _get_sigma_sq_series,
 )
 
@@ -155,12 +156,12 @@ class SigmaSqTest(parameterized.TestCase):
 class OptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, om, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
-            for om in ["scipy"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
                     "matern",
@@ -190,10 +191,11 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
-        opt_method,
+        opt_method_and_kwargs,
         k_kwargs,
     ):
         kern, metric, target, args = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -256,6 +258,7 @@ class OptimTest(parameterized.TestCase):
                     pairwise_dists,
                     loss_method=loss_method,
                     opt_method=opt_method,
+                    **opt_kwargs,
                 )
                 estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
                 mse += np.sum(estimate - target[i]) ** 2
@@ -265,12 +268,12 @@ class OptimTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, om, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
-            for om in ["scipy"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
                     "matern",
@@ -300,10 +303,11 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
-        opt_method,
+        opt_method_and_kwargs,
         k_kwargs,
     ):
         kern, metric, target, args = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -353,6 +357,7 @@ class OptimTest(parameterized.TestCase):
                     sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
                     opt_method=opt_method,
+                    **opt_kwargs,
                 )
                 estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
                 mse += np.sum(estimate - target[i]) ** 2

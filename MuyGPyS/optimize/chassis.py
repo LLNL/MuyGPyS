@@ -39,6 +39,7 @@ def optimize_from_indices(
     loss_method: str = "mse",
     opt_method: str = "scipy",
     verbose: bool = False,
+    **kwargs,
 ) -> MuyGPS:
     """
     Find an optimal model directly from the data.
@@ -99,8 +100,10 @@ def optimize_from_indices(
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"scipy"`.
-        verbose : bool
+        verbose:
             If True, print debug messages.
+        kwargs:
+            Additional keyword arguments to be passed to the wrapper optimizer.
 
     Returns:
         A new MuyGPs model whose specified hyperparameters have been optimized.
@@ -126,6 +129,7 @@ def optimize_from_indices(
         loss_method=loss_method,
         opt_method=opt_method,
         verbose=verbose,
+        **kwargs,
     )
 
 
@@ -138,6 +142,7 @@ def optimize_from_tensors(
     loss_method: str = "mse",
     opt_method: str = "scipy",
     verbose: bool = False,
+    **kwargs,
 ) -> MuyGPS:
     """
     Find the optimal model using existing distance matrices.
@@ -206,6 +211,8 @@ def optimize_from_tensors(
             to `"scipy"`.
         verbose:
             If True, print debug messages.
+        kwargs:
+            Additional keyword arguments to be passed to the wrapper optimizer.
 
     Returns:
         A new MuyGPs model whose specified hyperparameters have been optimized.
@@ -222,6 +229,7 @@ def optimize_from_tensors(
             pairwise_dists,
             loss_method=loss_method,
             verbose=verbose,
+            **kwargs,
         )
     else:
         raise ValueError(f"Unsupported optimization method: {opt_method}")
@@ -313,6 +321,7 @@ def _scipy_optimize_from_tensors(
     pairwise_dists: np.ndarray,
     loss_method: str = "mse",
     verbose: bool = False,
+    **kwargs,
 ) -> MuyGPS:
     loss_fn = get_loss_func(loss_method)
 
@@ -329,4 +338,4 @@ def _scipy_optimize_from_tensors(
         batch_targets,
     )
 
-    return _scipy_optimize(muygps, obj_fn, verbose=verbose)
+    return _scipy_optimize(muygps, obj_fn, verbose=verbose, **kwargs)
