@@ -564,6 +564,11 @@ class RBF(KernelFn):
         """
         Return a kernel function with fixed parameters set.
 
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="scipy"`, and assumes that the optimization parameters will
+        be passed in an `(optim_count,)` vector.
+
         Returns:
             A function implementing the kernel where all fixed parameters are
             set. The function expects a list of current hyperparameter values
@@ -588,6 +593,19 @@ class RBF(KernelFn):
         return caller_fn
 
     def get_kwargs_opt_fn(self) -> Callable:
+        """
+        Return a kernel function with fixed parameters set.
+
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="bayesian"`, and assumes that optimization parameters will
+        be passed as keyword arguments.
+
+        Returns:
+            A function implementing the kernel where all fixed parameters are
+            set. The function expects keyword arguments corresponding to current
+            hyperparameter values for unfixed parameters.
+        """
         return self._get_kwargs_opt_fn(_rbf_fn, self.length_scale)
 
     @staticmethod
@@ -728,6 +746,11 @@ class Matern(KernelFn):
         """
         Return a kernel function with fixed parameters set.
 
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="scipy"`, and assumes that the optimization parameters will
+        be passed in an `(optim_count,)` vector.
+
         Returns:
             A function implementing the kernel where all fixed parameters are
             set. The function expects a list of current hyperparameter values
@@ -823,6 +846,19 @@ class Matern(KernelFn):
         return caller_fn
 
     def get_kwargs_opt_fn(self) -> Callable:
+        """
+        Return a kernel function with fixed parameters set.
+
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="bayesian"`, and assumes that optimization parameters will
+        be passed as keyword arguments.
+
+        Returns:
+            A function implementing the kernel where all fixed parameters are
+            set. The function expects keyword arguments corresponding to current
+            hyperparameter values for unfixed parameters.
+        """
         return self._get_kwargs_opt_fn(
             _matern_05_fn,
             _matern_15_fn,

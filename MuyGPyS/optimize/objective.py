@@ -116,7 +116,12 @@ def loo_crossval(
     Leave-one-out cross validation.
 
     Returns leave-one-out cross validation performance for a set `MuyGPS`
-    object. Predicts on all of the training data at once.
+    object.
+    Predicts on all of the training data at once.
+    This function is designed for use with
+    :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+    `opt_method="scipy"`, and embeds the optimization parameters into the `x0`
+    vector.
 
     Args:
         x0:
@@ -174,6 +179,48 @@ def make_loo_crossval_fn(
     batch_nn_targets: np.ndarray,
     batch_targets: np.ndarray,
 ) -> Callable:
+    """
+    Prepare a leave-one-out cross validation function as a function purely of
+    the hyperparameters to be optimized.
+
+    This function is designed for use with
+    :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+    `opt_method="scipy"`, and assumes that the optimization parameters will be
+    passed in an `(optim_count,)` vector.
+
+    Args:
+        loss_fn:
+            The loss function to be minimizes. Can be any function that accepts
+            two `numpy.ndarray` objects indicating the prediction and target
+            values, in that order.
+        kernel_fn:
+            A function that realizes kernel tensors given a list of the free
+            parameters.
+        predict_fn:
+            A function that realizes MuyGPs prediction given an epsilon value.
+            The given value is unused if epsilon is fixed.
+        pairwise_dists:
+            Distance tensor of floats of shape
+            `(batch_count, nn_count, nn_count)` whose second two dimensions give
+            the pairwise distances between the nearest neighbors of each batch
+            element.
+        crosswise_dists:
+            Distance matrix of floats of shape `(batch_count, nn_count)` whose
+            rows give the distances between each batch element and its nearest
+            neighbors.
+        batch_nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, response_count)`
+            containing the expected response for each nearest neighbor of each
+            batch element.
+        batch_targets:
+            Matrix of floats of shape `(batch_count, response_count)` whose rows
+            give the expected response for each  batch element.
+
+    Returns:
+        A Callable `objective_fn` as a function of only an `(optim_count,)`
+        vector.
+    """
+
     def caller_fn(x0):
         return loo_crossval(
             x0,
@@ -199,6 +246,51 @@ def loo_crossval_kwargs(
     batch_targets: np.ndarray,
     **kwargs,
 ) -> float:
+    """
+    Leave-one-out cross validation.
+
+    Returns leave-one-out cross validation performance for a set `MuyGPS`
+    object.
+    Predicts on all of the training data at once.
+    This function is designed for use with
+    :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+    `opt_method="bayesian"`, and the optimization parameters as additional
+    kwargs.
+
+    Args:
+        loss_fn:
+            The loss function to be minimizes. Can be any function that accepts
+            two `numpy.ndarray` objects indicating the prediction and target
+            values, in that order.
+        kernel_fn:
+            A function that realizes kernel tensors given a list of the free
+            parameters.
+        predict_fn:
+            A function that realizes MuyGPs prediction given an epsilon value.
+            The given value is unused if epsilon is fixed.
+        pairwise_dists:
+            Distance tensor of floats of shape
+            `(batch_count, nn_count, nn_count)` whose second two dimensions give
+            the pairwise distances between the nearest neighbors of each batch
+            element.
+        crosswise_dists:
+            Distance matrix of floats of shape `(batch_count, nn_count)` whose
+            rows give the distances between each batch element and its nearest
+            neighbors.
+        batch_nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, response_count)`
+            containing the expected response for each nearest neighbor of each
+            batch element.
+        batch_targets:
+            Matrix of floats of shape `(batch_count, response_count)` whose rows
+            give the expected response for each  batch element.
+        kwargs:
+            Hyperparameter values to be optimized, e.g. `nu=0.32`.
+
+    Returns:
+        The evaluation of `objective_fn` on the predicted versus expected
+        response.
+    """
     K = kernel_fn(pairwise_dists, **kwargs)
     Kcross = kernel_fn(crosswise_dists, **kwargs)
 
@@ -221,6 +313,48 @@ def make_loo_crossval_kwargs_fn(
     batch_nn_targets: np.ndarray,
     batch_targets: np.ndarray,
 ) -> Callable:
+    """
+    Prepare a leave-one-out cross validation function as a function purely of
+    the hyperparameters to be optimized.
+
+    This function is designed for use with
+    :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+    `opt_method="bayesian"`, and assumes that the optimization parameters will
+    be passed as keyword arguments.
+
+    Args:
+        loss_fn:
+            The loss function to be minimizes. Can be any function that accepts
+            two `numpy.ndarray` objects indicating the prediction and target
+            values, in that order.
+        kernel_fn:
+            A function that realizes kernel tensors given a list of the free
+            parameters.
+        predict_fn:
+            A function that realizes MuyGPs prediction given an epsilon value.
+            The given value is unused if epsilon is fixed.
+        pairwise_dists:
+            Distance tensor of floats of shape
+            `(batch_count, nn_count, nn_count)` whose second two dimensions give
+            the pairwise distances between the nearest neighbors of each batch
+            element.
+        crosswise_dists:
+            Distance matrix of floats of shape `(batch_count, nn_count)` whose
+            rows give the distances between each batch element and its nearest
+            neighbors.
+        batch_nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, response_count)`
+            containing the expected response for each nearest neighbor of each
+            batch element.
+        batch_targets:
+            Matrix of floats of shape `(batch_count, response_count)` whose rows
+            give the expected response for each  batch element.
+
+    Returns:
+        A Callable `objective_fn` as a function of only an `(optim_count,)`
+        vector.
+    """
+
     def caller_fn(**kwargs):
         return loo_crossval_kwargs(
             loss_fn,

@@ -6,10 +6,22 @@
 """
 Convenience functions for optimizing :class:`MuyGPyS.gp.muygps.MuyGPS` objects
 
-Currently wraps :class:`scipy.optimize.opt` multiparameter optimization using
-the objective function :func:`MuyGPyS.optimize.objective.loo_crossval` in order
-to optimize a specified subset of the hyperparameters associated with a
-:class:'MuyGPyS.gp.muygps.MuyGPS' object.
+The functions
+:func:`~MuyGPyS.optimize.chassis.optimize_from_indices` and
+:func:`~MuyGPyS.optimize.chassis.optimize_from_tensors` wrap different
+optimization packages to provide a simple interface to optimize the
+hyperparameters of :class:`~MuyGPyS.gp.muygps.MuyGPS` objects.
+
+Currently, `opt_method="scipy"` wraps :class:`scipy.optimize.opt`
+multiparameter optimization using L-BFGS-B algorithm using the objective
+function :func:`MuyGPyS.optimize.objective.loo_crossval`.
+
+Currently, `opt_method="bayesian"` (also accepts `"bayes"` and `"bayes_opt"`)
+wraps :class:`bayes_opt.BayesianOptimization`. Unlike the `scipy` version,
+`BayesianOptimization` can be meaningfully modified by several kwargs.
+`MuyGPyS` assigns reasonable defaults if no settings are passed by the user.
+See the `BayesianOptimization <https://github.com/fmfn/BayesianOptimization>`_
+documentation for details.
 """
 
 
@@ -109,7 +121,8 @@ def optimize_from_indices(
             Indicates the loss function to be used.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"bayesian"` and `"scipy"`.
+            to `"bayesian"` (alternately `"bayes"` or `"bayes_opt"`) and
+            `"scipy"`.
         verbose:
             If True, print debug messages.
         kwargs:
@@ -218,7 +231,8 @@ def optimize_from_tensors(
             Indicates the loss function to be used.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
-            to `"bayesian"` and `"scipy"`.
+            to `"bayesian"` (alternately `"bayes"` or `"bayes_opt"`) and
+            `"scipy"`.
         verbose:
             If True, print debug messages.
         kwargs:
@@ -241,7 +255,7 @@ def optimize_from_tensors(
             verbose=verbose,
             **kwargs,
         )
-    if opt_method == "bayesian":
+    if opt_method in ["bayesian", "bayes", "bayes-opt"]:
         return _bayes_opt_optimize_from_tensors(
             muygps,
             batch_targets,
