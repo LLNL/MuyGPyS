@@ -438,12 +438,17 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _mse_fn as mse_fn_j,
         _cross_entropy_fn as cross_entropy_fn_j,
     )
-    from MuyGPyS.optimize.objective import make_loo_crossval_fn
+    from MuyGPyS.optimize.objective import (
+        make_loo_crossval_fn,
+        make_loo_crossval_kwargs_fn,
+    )
     from MuyGPyS._src.optimize.numpy_chassis import (
         _scipy_optimize as scipy_optimize_n,
+        _bayes_opt_optimize as bayes_optimize_n,
     )
     from MuyGPyS._src.optimize.jax_chassis import (
         _scipy_optimize as scipy_optimize_j,
+        _bayes_opt_optimize as bayes_optimize_j,
     )
 
     class OptimTestCase(MuyGPSTestCase):
@@ -472,8 +477,30 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.muygps.kernel.length_scale,
             )
 
+        def _get_kwargs_kernel_fn_n(self):
+            return self.muygps.kernel._get_kwargs_opt_fn(
+                matern_05_fn_n,
+                matern_15_fn_n,
+                matern_25_fn_n,
+                matern_inf_fn_n,
+                matern_gen_fn_n,
+                self.muygps.kernel.nu,
+                self.muygps.kernel.length_scale,
+            )
+
         def _get_kernel_fn_j(self):
             return self.muygps.kernel._get_opt_fn(
+                matern_05_fn_j,
+                matern_15_fn_j,
+                matern_25_fn_j,
+                matern_inf_fn_j,
+                matern_gen_fn_j,
+                self.muygps.kernel.nu,
+                self.muygps.kernel.length_scale,
+            )
+
+        def _get_kwargs_kernel_fn_j(self):
+            return self.muygps.kernel._get_kwargs_opt_fn(
                 matern_05_fn_j,
                 matern_15_fn_j,
                 matern_25_fn_j,
@@ -488,8 +515,18 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 muygps_compute_solve_n, self.muygps.eps
             )
 
+        def _get_kwargs_predict_fn_n(self):
+            return self.muygps._get_kwargs_opt_fn(
+                muygps_compute_solve_n, self.muygps.eps
+            )
+
         def _get_predict_fn_j(self):
             return self.muygps._get_opt_fn(
+                muygps_compute_solve_j, self.muygps.eps
+            )
+
+        def _get_kwargs_predict_fn_j(self):
+            return self.muygps._get_kwargs_opt_fn(
                 muygps_compute_solve_j, self.muygps.eps
             )
 
@@ -498,6 +535,17 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 mse_fn_n,
                 self._get_kernel_fn_n(),
                 self._get_predict_fn_n(),
+                self.pairwise_dists_n,
+                self.crosswise_dists_n,
+                self.batch_nn_targets_n,
+                self.batch_targets_n,
+            )
+
+        def _get_kwargs_obj_fn_n(self):
+            return make_loo_crossval_kwargs_fn(
+                mse_fn_n,
+                self._get_kwargs_kernel_fn_n(),
+                self._get_kwargs_predict_fn_n(),
                 self.pairwise_dists_n,
                 self.crosswise_dists_n,
                 self.batch_nn_targets_n,
@@ -515,11 +563,33 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.batch_targets_j,
             )
 
+        def _get_kwargs_obj_fn_j(self):
+            return make_loo_crossval_kwargs_fn(
+                mse_fn_j,
+                self._get_kwargs_kernel_fn_j(),
+                self._get_kwargs_predict_fn_j(),
+                self.pairwise_dists_j,
+                self.crosswise_dists_j,
+                self.batch_nn_targets_j,
+                self.batch_targets_j,
+            )
+
         def _get_obj_fn_h(self):
             return make_loo_crossval_fn(
                 mse_fn_j,
                 self._get_kernel_fn_j(),
                 self._get_predict_fn_n(),
+                self.pairwise_dists_j,
+                self.crosswise_dists_j,
+                self.batch_nn_targets_j,
+                self.batch_targets_j,
+            )
+
+        def _get_kwargs_obj_fn_h(self):
+            return make_loo_crossval_kwargs_fn(
+                mse_fn_j,
+                self._get_kwargs_kernel_fn_j(),
+                self._get_kwargs_predict_fn_n(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -631,6 +701,47 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.muygps,
                 obj_fn_h,
                 verbose=False,
+            )
+            self.assertTrue(
+                allclose_gen(mopt_n.kernel.nu(), mopt_j.kernel.nu())
+            )
+            self.assertTrue(
+                allclose_gen(mopt_n.kernel.nu(), mopt_h.kernel.nu())
+            )
+
+    class BayesOptimTest(OptimTestCase):
+        @classmethod
+        def setUpClass(cls):
+            super(BayesOptimTest, cls).setUpClass()
+
+        def test_scipy_optimize(self):
+            obj_fn_n = self._get_kwargs_obj_fn_n()
+            obj_fn_j = self._get_kwargs_obj_fn_j()
+            obj_fn_h = self._get_kwargs_obj_fn_h()
+
+            mopt_n = bayes_optimize_n(
+                self.muygps,
+                obj_fn_n,
+                verbose=True,
+                random_state=1,
+                init_points=2,
+                n_iter=5,
+            )
+            mopt_j = bayes_optimize_j(
+                self.muygps,
+                obj_fn_j,
+                verbose=True,
+                random_state=1,
+                init_points=2,
+                n_iter=5,
+            )
+            mopt_h = bayes_optimize_j(
+                self.muygps,
+                obj_fn_h,
+                verbose=True,
+                random_state=1,
+                init_points=2,
+                n_iter=5,
             )
             self.assertTrue(
                 allclose_gen(mopt_n.kernel.nu(), mopt_j.kernel.nu())
