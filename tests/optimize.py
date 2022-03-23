@@ -13,7 +13,11 @@ from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
-from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
+from MuyGPyS.gp.distance import (
+    pairwise_distances,
+    crosswise_distances,
+    make_train_tensors,
+)
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import (
@@ -24,6 +28,11 @@ from MuyGPyS.optimize.batch import (
 from MuyGPyS.optimize.chassis import (
     optimize_from_tensors,
     optimize_from_indices,
+)
+from MuyGPyS.optimize.objective import (
+    get_loss_func,
+    make_loo_crossval_fn,
+    make_loo_crossval_kwargs_fn,
 )
 from MuyGPyS._test.gp import (
     benchmark_pairwise_distances,
@@ -36,6 +45,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
     _basic_nn_kwarg_options,
+    _exact_nn_kwarg_options,
     _advanced_opt_method_and_kwarg_options,
     _sq_rel_err,
 )
@@ -574,6 +584,129 @@ class GPOptimTest(parameterized.TestCase):
         print(f"optimizes with relative squared error {rse}")
         # Is this a strong enough guarantee?
         self.assertAlmostEqual(rse, 0.0, 0)
+
+
+class MethodsAgreementTest(parameterized.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        data_count = 1001
+        feature_count = 10
+        response_count = 2
+        batch_count = 250
+        nn_count = 20
+
+        data = _make_gaussian_dict(data_count, feature_count, response_count)
+        nbrs_lookup = NN_Wrapper(
+            data["input"], nn_count, **_exact_nn_kwarg_options[0]
+        )
+        batch_indices, batch_nn_indices = sample_batch(
+            nbrs_lookup, batch_count, data_count
+        )
+
+        (
+            cls.crosswise_dists,
+            cls.pairwise_dists,
+            cls.batch_targets,
+            cls.batch_nn_targets,
+        ) = make_train_tensors(
+            "l2", batch_indices, batch_nn_indices, data["input"], data["output"]
+        )
+
+    def _make_x0(self, params):
+        x0 = list()
+        if "nu" in params:
+            x0.append(params["nu"])
+        if "length_scale" in params:
+            x0.append(params["length_scale"])
+        if "eps" in params:
+            x0.append(params["eps"])
+        return x0
+
+    @parameterized.parameters(
+        (
+            (lm, k_kwargs)
+            for lm in ["mse"]
+            for k_kwargs in (
+                (
+                    {"nu": 0.38},
+                    {
+                        "kern": "matern",
+                        "metric": "l2",
+                        "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
+                        "length_scale": {"val": 1.5},
+                        "eps": {"val": 1e-5},
+                    },
+                ),
+                (
+                    {"nu": 0.38, "length_scale": 1.5, "eps": 1e-5},
+                    {
+                        "kern": "matern",
+                        "metric": "l2",
+                        "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
+                        "length_scale": {
+                            "val": "sample",
+                            "bounds": (1e-2, 1e0),
+                        },
+                        "eps": {"val": "sample", "bounds": (1e-6, 1e-3)},
+                    },
+                ),
+            )
+        )
+    )
+    def test_kernel_fn(self, loss_method, k_kwargs):
+        loss_fn = get_loss_func(loss_method)
+        params, k_kwargs = k_kwargs
+        muygps = MuyGPS(**k_kwargs)
+
+        x0 = self._make_x0(params)
+
+        array_kernel_fn = muygps.kernel.get_opt_fn()
+        kwargs_kernel_fn = muygps.kernel.get_kwargs_opt_fn()
+
+        K_array = array_kernel_fn(self.pairwise_dists, x0)
+        Kcross_array = array_kernel_fn(self.crosswise_dists, x0)
+
+        K_kwargs = kwargs_kernel_fn(self.pairwise_dists, **params)
+        Kcross_kwargs = kwargs_kernel_fn(self.crosswise_dists, **params)
+
+        self.assertTrue(np.allclose(K_array, K_kwargs))
+        self.assertTrue(np.allclose(Kcross_array, Kcross_kwargs))
+
+        array_predict_fn = muygps.get_opt_fn()
+        kwargs_predict_fn = muygps.get_kwargs_opt_fn()
+
+        predictions_array = array_predict_fn(
+            K_array, Kcross_array, self.batch_nn_targets, x0
+        )
+        predictions_kwargs = kwargs_predict_fn(
+            K_kwargs, Kcross_kwargs, self.batch_nn_targets, **params
+        )
+
+        self.assertTrue(np.allclose(predictions_array, predictions_kwargs))
+
+        array_obj_fn = make_loo_crossval_fn(
+            loss_fn,
+            array_kernel_fn,
+            array_predict_fn,
+            self.pairwise_dists,
+            self.crosswise_dists,
+            self.batch_nn_targets,
+            self.batch_targets,
+        )
+        kwargs_obj_fn = make_loo_crossval_kwargs_fn(
+            loss_fn,
+            kwargs_kernel_fn,
+            kwargs_predict_fn,
+            self.pairwise_dists,
+            self.crosswise_dists,
+            self.batch_nn_targets,
+            self.batch_targets,
+        )
+
+        array_val = array_obj_fn(x0)
+        kwargs_val = kwargs_obj_fn(**params)
+
+        self.assertAlmostEqual(array_val, -kwargs_val)
 
 
 if __name__ == "__main__":

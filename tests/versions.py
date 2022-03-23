@@ -722,7 +722,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             mopt_n = bayes_optimize_n(
                 self.muygps,
                 obj_fn_n,
-                verbose=True,
+                verbose=False,
                 random_state=1,
                 init_points=2,
                 n_iter=5,
@@ -730,7 +730,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             mopt_j = bayes_optimize_j(
                 self.muygps,
                 obj_fn_j,
-                verbose=True,
+                verbose=False,
                 random_state=1,
                 init_points=2,
                 n_iter=5,
@@ -738,7 +738,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             mopt_h = bayes_optimize_j(
                 self.muygps,
                 obj_fn_h,
-                verbose=True,
+                verbose=False,
                 random_state=1,
                 init_points=2,
                 n_iter=5,
