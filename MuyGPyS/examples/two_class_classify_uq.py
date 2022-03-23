@@ -1,5 +1,5 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
-# Project Developers. See the top-level COPYRIGHT file for details.
+# Copyright 2021-2022 Lawrence Livermore National Security, LLC and other
+# MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
 
@@ -62,11 +62,13 @@ def do_classify_uq(
     opt_batch_count: int = 200,
     uq_batch_count: int = 500,
     loss_method: str = "log",
+    opt_method: str = "scipy",
     uq_objectives: Union[
         List[Callable], Tuple[Callable, ...]
     ] = example_lambdas,
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
+    opt_kwargs: Dict = dict(),
     verbose: bool = False,
 ) -> Tuple[MuyGPS, NN_Wrapper, np.ndarray, np.ndarray]:
     """
@@ -135,6 +137,9 @@ def do_classify_uq(
             all of the parameters specified by `k_kwargs` are fixed. Currently
             supports only `"log"` (also known as `"cross_entropy"`) and `"mse"`
             for classification.
+        opt_method:
+            Indicates the optimization method to be used. Currently restricted
+            to `"bayesian"` and `"scipy"`.
         uq_objectives : list(Callable)
             List of `objective_count`functions taking four arguments: bit masks
             `alpha` and `beta` - the type 1 and type 2 error counts at each grid
@@ -152,6 +157,9 @@ def do_classify_uq(
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
             their parameters.
+        opt_kwargs:
+            Parameters for the wrapped optimizer. See the docs of the
+            corresponding library for supported parameters.
         verbose:
             If `True`, print summary statistics.
 
@@ -177,8 +185,10 @@ def do_classify_uq(
         nn_count=nn_count,
         batch_count=opt_batch_count,
         loss_method=loss_method,
+        opt_method=opt_method,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
+        opt_kwargs=opt_kwargs,
         verbose=verbose,
     )
 

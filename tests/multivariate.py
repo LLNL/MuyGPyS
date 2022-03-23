@@ -1,5 +1,5 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
-# Project Developers. See the top-level COPYRIGHT file for details.
+# Copyright 2021-2022 Lawrence Livermore National Security, LLC and other
+# MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
 
@@ -10,9 +10,7 @@ from absl.testing import parameterized
 
 from MuyGPyS import config
 
-if config.jax_enabled() is True:
-    config.disable_jax()
-    # config.jax_enable_x64()
+config.parse_flags_with_absl()  # Affords option setting from CLI
 
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
@@ -20,8 +18,8 @@ from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.chassis import (
-    scipy_optimize_from_indices,
-    scipy_optimize_from_tensors,
+    optimize_from_indices,
+    optimize_from_tensors,
 )
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.gp import (
@@ -33,6 +31,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_dict,
     _make_gaussian_data,
     _basic_nn_kwarg_options,
+    _basic_opt_method_and_kwarg_options,
     _get_sigma_sq_series,
 )
 
@@ -157,11 +156,12 @@ class SigmaSqTest(parameterized.TestCase):
 class OptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
                     "matern",
@@ -191,9 +191,11 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        opt_method_and_kwargs,
         k_kwargs,
     ):
         kern, metric, target, args = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -248,13 +250,15 @@ class OptimTest(parameterized.TestCase):
             batch_nn_targets = sim_train["output"][batch_nn_indices, :]
 
             for i, muygps in enumerate(mmuygps.models):
-                mmuygps.models[i] = scipy_optimize_from_tensors(
+                mmuygps.models[i] = optimize_from_tensors(
                     muygps,
                     batch_targets[:, i].reshape(batch_count, 1),
                     batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
                     crosswise_dists,
                     pairwise_dists,
                     loss_method=loss_method,
+                    opt_method=opt_method,
+                    **opt_kwargs,
                 )
                 estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
                 mse += np.sum(estimate - target[i]) ** 2
@@ -264,11 +268,12 @@ class OptimTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
                     "matern",
@@ -298,9 +303,11 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        opt_method_and_kwargs,
         k_kwargs,
     ):
         kern, metric, target, args = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -342,13 +349,15 @@ class OptimTest(parameterized.TestCase):
             mmuygps = MMuyGPS(kern, *args)
 
             for i, muygps in enumerate(mmuygps.models):
-                mmuygps.models[i] = scipy_optimize_from_indices(
+                mmuygps.models[i] = optimize_from_indices(
                     muygps,
                     batch_indices,
                     batch_nn_indices,
                     sim_train["input"],
                     sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
+                    opt_method=opt_method,
+                    **opt_kwargs,
                 )
                 estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
                 mse += np.sum(estimate - target[i]) ** 2
@@ -495,11 +504,23 @@ class RegressTest(parameterized.TestCase):
 class MakeClassifierTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, rt, k_kwargs)
+            (
+                1000,
+                1000,
+                10,
+                b,
+                n,
+                nn_kwargs,
+                lm,
+                opt_method_and_kwargs,
+                rt,
+                k_kwargs,
+            )
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for rt in [True, False]
             for k_kwargs in (
                 (
@@ -529,10 +550,12 @@ class MakeClassifierTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        opt_method_and_kwargs,
         return_distances,
         k_kwargs,
     ):
         kern, args = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -550,9 +573,11 @@ class MakeClassifierTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_args=args,
+            opt_kwargs=opt_kwargs,
             return_distances=return_distances,
         )
 
@@ -584,11 +609,24 @@ class MakeClassifierTest(parameterized.TestCase):
 class MakeRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, rt, k_kwargs)
+            (
+                1000,
+                1000,
+                10,
+                b,
+                n,
+                nn_kwargs,
+                lm,
+                opt_method_and_kwargs,
+                ssm,
+                rt,
+                k_kwargs,
+            )
             for b in [250]
             for n in [10]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for ssm in ["analytic", None]
             for rt in [True, False]
             for k_kwargs in (
@@ -619,11 +657,13 @@ class MakeRegressorTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        opt_method_and_kwargs,
         sigma_method,
         return_distances,
         k_kwargs,
     ):
         kern, args = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -641,8 +681,10 @@ class MakeRegressorTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             sigma_method=sigma_method,
             nn_kwargs=nn_kwargs,
+            opt_kwargs=opt_kwargs,
             kern=kern,
             k_args=args,
             return_distances=return_distances,

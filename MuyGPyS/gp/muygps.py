@@ -1,5 +1,5 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
-# Project Developers. See the top-level COPYRIGHT file for details.
+# Copyright 2021-2022 Lawrence Livermore National Security, LLC and other
+# MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
 
@@ -20,7 +20,7 @@ from MuyGPyS.gp.kernels import (
 
 from MuyGPyS import config
 
-if config.jax_enabled() is False:
+if config.muygpys_jax_enabled is False:  # type: ignore
     from MuyGPyS._src.gp.numpy_distance import _make_regress_tensors
     from MuyGPyS._src.gp.numpy_muygps import (
         _muygps_compute_solve,
@@ -32,7 +32,7 @@ else:
 
     # Presently, these implementations appear to be slower than numpy on CPU
     # (but much faster on GPU)
-    if config.gpu_found() is False:
+    if config.muygpys_gpu_enabled is False:  # type: ignore
         from MuyGPyS._src.gp.numpy_muygps import (
             _muygps_compute_solve,
             _muygps_compute_diagonal_variance,
@@ -468,6 +468,12 @@ class MuyGPS:
         """
         Return a regress function for use in optimization.
 
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="scipy"`, and assumes that the optimization parameters will
+        be passed in an `(optim_count,)` vector where `eps` is either the last
+        element or is not included.
+
         Returns:
             A function implementing regression, where `eps` is either fixed or
             takes updating values during optimization. The function expects a
@@ -487,6 +493,37 @@ class MuyGPS:
         else:
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
+                return solve_fn(K, Kcross, batch_nn_targets, eps())
+
+        return caller_fn
+
+    def get_kwargs_opt_fn(self) -> Callable:
+        """
+        Return a regress function for use in optimization.
+
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="bayesian"`, and assumes that either `eps` will be passed
+        via a keyword argument or not at all.
+
+        Returns:
+            A function implementing regression, where `eps` is either fixed or
+            takes updating values during optimization. The function expects
+            keyword arguments corresponding to current hyperparameter values for
+            unfixed parameters.
+        """
+        return self._get_kwargs_opt_fn(_muygps_compute_solve, self.eps)
+
+    @staticmethod
+    def _get_kwargs_opt_fn(solve_fn: Callable, eps: Hyperparameter) -> Callable:
+        if not eps.fixed():
+
+            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
+                return solve_fn(K, Kcross, batch_nn_targets, kwargs["eps"])
+
+        else:
+
+            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
                 return solve_fn(K, Kcross, batch_nn_targets, eps())
 
         return caller_fn

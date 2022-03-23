@@ -1,5 +1,5 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
-# Project Developers. See the top-level COPYRIGHT file for details.
+# Copyright 2021-2022 Lawrence Livermore National Security, LLC and other
+# MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
 
@@ -7,6 +7,10 @@ import numpy as np
 
 from absl.testing import absltest
 from absl.testing import parameterized
+
+from MuyGPyS import config
+
+config.parse_flags_with_absl()  # Affords option setting from CLI
 
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.utils import (

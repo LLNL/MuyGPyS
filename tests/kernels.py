@@ -1,5 +1,5 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
-# Project Developers. See the top-level COPYRIGHT file for details.
+# Copyright 2021-2022 Lawrence Livermore National Security, LLC and other
+# MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
 
@@ -13,9 +13,7 @@ from sklearn.gaussian_process.kernels import RBF as sk_RBF
 
 from MuyGPyS import config
 
-if config.jax_enabled() is True:
-    config.disable_jax()
-    # config.jax_enable_x64()
+config.parse_flags_with_absl()  # Affords option setting from CLI
 
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.utils import (
@@ -95,14 +93,75 @@ class DistancesTest(parameterized.TestCase):
         self.assertTrue(np.allclose(dists, ll_dists))
 
 
+class JaxConfigUser:
+    def __init__(self, _enable: bool):
+        self.enable = _enable
+
+    def __enter__(self):
+        self.state = config.muygpys_jax_enabled  # type: ignore
+        config.update("muygpys_jax_enabled", self.enable)
+        return self.state
+
+    def __exit__(self, *args):
+        config.update("muygpys_jax_enabled", self.state)
+
+
 class SigmaSqTest(parameterized.TestCase):
-    def test_untrained(self):
+    def _do_untrained(self, val):
         param = SigmaSq()
         self.assertFalse(param.trained())
         self.assertEqual(np.array([1.0]), param())
-        val = np.array([5.0])
         param._set(val)
         self.assertEqual(val, param())
+
+    @parameterized.parameters(v for v in [5.0, [5.0]])
+    def test_untrained_good(self, val):
+        self._do_untrained(np.array(val))
+
+    def test_untrained_bad(self):
+        with self.assertRaisesRegex(ValueError, "Expected np.ndarray for"):
+            self._do_untrained([5.0])
+
+    def _jax_chassis(self, jax_enabled, func):
+        try:
+            import jax.numpy as jnp
+
+            with JaxConfigUser(jax_enabled):
+                func()
+        except Exception as e:
+            # JAX not installed; skip
+            print("skipping due to error:", e)
+            pass
+
+    def _jax_disabled(self):
+        import jax.numpy as jnp
+
+        with self.assertRaisesRegex(ValueError, "Expected np.ndarray for"):
+            self._do_untrained(jnp.array([5.0]))
+
+    def test_untrained_jax_disabled(self):
+        self._jax_chassis(False, self._jax_disabled)
+
+    def _jax_good(self, val):
+        import jax.numpy as jnp
+
+        self._do_untrained(jnp.array(val))
+
+    @parameterized.parameters(v for v in [5.0, [5.0]])
+    def test_untrained_jax_good(self, val):
+        def jax_good():
+            self._jax_good(val)
+
+        self._jax_chassis(True, jax_good)
+
+    def _jax_bad(self):
+        import jax.numpy as jnp
+
+        with self.assertRaisesRegex(ValueError, "Expected np.ndarray or"):
+            self._do_untrained([5.0])
+
+    def test_untrained_jax_bad(self):
+        self._jax_chassis(True, self._jax_bad)
 
 
 class HyperparameterTest(parameterized.TestCase):

@@ -29,7 +29,7 @@ functions.
 ```
 from MuyGPyS import config
 
-config.disable_jax()
+config.update("muygpys_jax_enabled", False)
 
 # subsequent imports...
 ```
@@ -49,16 +49,15 @@ forces JAX to use 64 bit types by default.
 However, the 64 bit operations are slightly slower than their 32 bit
 counterparts.
 It is possible for a user to switch to 32 bit types and functions in their JAX
-compiled code by either directly manipulating JAX's configuration or using
-`MuyGPyS.config` as follows:
+compiled code by directly manipulating JAX's configuration:
 ```
-from MuyGPyS import config
+from MuyGPyS import jax_config
+# equivalent to `from jax import config as jax_config`
 
-config.jax_enable_x64()
-# equivalent to jax.config.update("jax_enable_x64", True)
+jax_config.update("jax_enable_x64", False)
 ```
 If confused, you can also query for whether 64 bit types are enabled via
-`config.x64_enabled()`, which returns a boolean.
+the `jax_config.x64_enabled` boolean.
 
 ## Installation
 
@@ -139,6 +138,18 @@ $ cd MuyGPyS
 $ pip install -e .[dev,jax_cpu]
 ```
 
+If you would like to perform a GPU installation from source, you will need to
+install the jax dependency directly instead of using the `jax_cuda` flag or
+similar.
+The following instructions outline such an installation procedure on `pascal`:
+```
+$ git clone git@github.com:LLNL/MuyGPyS.git
+$ cd MuyGPyS
+$ pip install -e .[dev]
+$ source scripts/lc-setup/pascal.sh
+$ pip install --upgrade jax[cuda11_cudnn805] -f https://storage.googleapis.com/jax-releases/jax_releases.html
+```
+
 Additionally check out the develop branch to access the latest features in 
 between stable releases.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution rules. 
@@ -151,10 +162,10 @@ support fast approximate nearest neighbors indexing
 support just-in-time compilation of math functions on CPU (see below to install
 on GPU CUDA architectures)
 - `jax_cuda11_cudnn82` - install JAX dependencies with NVidia GPU support with 
-CUDA >= 11.1 and CuDNN >= 8.2
+CUDA >= 11.1 and CuDNN >= 8.2 (pip only)
 - `jax_cuda11_cudnn805` - install JAX dependencies with NVidia GPU support with 
-CUDA >= 11.1 and CuDNN >= 8.0.5
-- `jax_cuda` (shorthand for `jax_cuda11_cudnn805`)
+CUDA >= 11.1 and CuDNN >= 8.0.5 (pip only)
+- `jax_cuda` (shorthand for `jax_cuda11_cudnn805`, pip only)
 - `tests` - install dependencies necessary to run [tests](tests/)
 - `docs` - install dependencies necessary to build the [docs](docs/)
 - `dev` - install dependencies for maintaining code style, linting, and 

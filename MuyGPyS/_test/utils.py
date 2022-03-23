@@ -1,5 +1,5 @@
-# Copyright 2021 Lawrence Livermore National Security, LLC and other MuyGPyS
-# Project Developers. See the top-level COPYRIGHT file for details.
+# Copyright 2021-2022 Lawrence Livermore National Security, LLC and other
+# MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
 
@@ -9,7 +9,7 @@ from typing import Dict, Generator, Tuple, Union
 
 from MuyGPyS import config
 
-if config.hnswlib_enabled() is True:
+if config.muygpys_hnswlib_enabled is True:  # type: ignore
     _basic_nn_kwarg_options = [
         {"nn_method": "exact", "algorithm": "ball_tree"},
         {
@@ -25,6 +25,16 @@ else:
     ]
 
 _exact_nn_kwarg_options = ({"nn_method": "exact", "algorithm": "ball_tree"},)
+
+_basic_opt_method_and_kwarg_options = [
+    ["scipy", dict()],
+    ["bayesian", {"random_state": 1, "init_points": 3, "n_iter": 10}],
+]
+
+_advanced_opt_method_and_kwarg_options = [
+    ["scipy", dict()],
+    ["bayesian", {"random_state": 1, "init_points": 5, "n_iter": 20}],
+]
 
 
 def _sq_rel_err(
