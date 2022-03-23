@@ -20,6 +20,7 @@ from MuyGPyS._test.api import ClassifyAPITest, RegressionAPITest
 from MuyGPyS._test.utils import (
     _balanced_subsample,
     _basic_nn_kwarg_options,
+    _basic_opt_method_and_kwarg_options,
 )
 
 
@@ -57,10 +58,11 @@ class MNISTTest(ClassifyAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lm, nn_kwargs, k_kwargs)
+            (nn, bs, lm, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
             for lm in ["log", "mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in (
                 (
@@ -86,9 +88,16 @@ class MNISTTest(ClassifyAPITest):
         )
     )
     def test_classify(
-        self, nn_count, batch_count, loss_method, nn_kwargs, k_kwargs
+        self,
+        nn_count,
+        batch_count,
+        loss_method,
+        opt_method_and_kwargs,
+        nn_kwargs,
+        k_kwargs,
     ):
         target_accuracy, k_kwargs = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 5000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
@@ -98,8 +107,10 @@ class MNISTTest(ClassifyAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
+            opt_kwargs=opt_kwargs,
             verbose=False,
         )
 
@@ -121,10 +132,11 @@ class StargalTest(ClassifyAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lm, nn_kwargs, k_kwargs)
+            (nn, bs, lm, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
             for lm in ["log", "mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in (
                 (
@@ -150,9 +162,16 @@ class StargalTest(ClassifyAPITest):
         )
     )
     def test_classify(
-        self, nn_count, batch_count, loss_method, nn_kwargs, k_kwargs
+        self,
+        nn_count,
+        batch_count,
+        loss_method,
+        opt_method_and_kwargs,
+        nn_kwargs,
+        k_kwargs,
     ):
         target_accuracy, k_kwargs = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 5000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
@@ -162,18 +181,21 @@ class StargalTest(ClassifyAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
+            opt_kwargs=opt_kwargs,
             verbose=False,
         )
 
     @parameterized.parameters(
         (
-            (nn, obs, ubs, lm, uq, nn_kwargs, k_kwargs)
+            (nn, obs, ubs, lm, opt_method_and_kwargs, uq, nn_kwargs, k_kwargs)
             for nn in [30]
             for obs in [500]
             for ubs in [500]
             for lm in ["log", "mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for uq in [example_lambdas]
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in (
@@ -205,11 +227,13 @@ class StargalTest(ClassifyAPITest):
         opt_batch_count,
         uq_batch_count,
         loss_method,
+        opt_method_and_kwargs,
         uq_objectives,
         nn_kwargs,
         k_kwargs,
     ):
         target_accuracy, k_kwargs = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_uq_test_chassis(
@@ -220,8 +244,10 @@ class StargalTest(ClassifyAPITest):
             opt_batch_count=opt_batch_count,
             uq_batch_count=uq_batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             uq_objectives=uq_objectives,
             nn_kwargs=nn_kwargs,
+            opt_kwargs=opt_kwargs,
             k_kwargs=k_kwargs,
             verbose=False,
         )
@@ -244,10 +270,11 @@ class MultivariateStargalTest(ClassifyAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lm, nn_kwargs, k_kwargs)
+            (nn, bs, lm, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
             for lm in ["mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for k_kwargs in (
                 (
@@ -284,9 +311,16 @@ class MultivariateStargalTest(ClassifyAPITest):
         )
     )
     def test_classify(
-        self, nn_count, batch_count, loss_method, nn_kwargs, k_kwargs
+        self,
+        nn_count,
+        batch_count,
+        loss_method,
+        opt_method_and_kwargs,
+        nn_kwargs,
+        k_kwargs,
     ):
         target_accuracy, kern, k_kwargs = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 5000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
         self._do_classify_test_chassis(
@@ -296,9 +330,11 @@ class MultivariateStargalTest(ClassifyAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_kwargs=k_kwargs,
+            opt_kwargs=opt_kwargs,
             verbose=False,
         )
 
@@ -316,7 +352,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, vm, lm, nn_kwargs, k_kwargs)
+            (nn, bs, vm, lm, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
             # for vm in [None]
@@ -325,6 +361,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             for vm in [None, "diagonal"]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
                     1.0,
@@ -361,10 +398,12 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         batch_count,
         variance_mode,
         loss_method,
+        opt_method_and_kwargs,
         nn_kwargs,
         k_kwargs,
     ):
         target_mse, kern, k_args = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
 
@@ -382,11 +421,13 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             sigma_method=sigma_method,
             variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_kwargs=k_args,
+            opt_kwargs=opt_kwargs,
             apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )
@@ -401,7 +442,7 @@ class HeatonTest(RegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, vm, lm, nn_kwargs, k_kwargs)
+            (nn, bs, vm, lm, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
             for vm in ["diagonal", None]
@@ -410,6 +451,7 @@ class HeatonTest(RegressionAPITest):
             # for vm in [None, "diagonal"]
             # for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
                     11.0,
@@ -439,10 +481,12 @@ class HeatonTest(RegressionAPITest):
         batch_count,
         variance_mode,
         loss_method,
+        opt_method_and_kwargs,
         nn_kwargs,
         k_kwargs,
     ):
         target_mse, k_kwargs = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
 
         if variance_mode is None:
             sigma_method = None
@@ -458,10 +502,12 @@ class HeatonTest(RegressionAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             sigma_method=sigma_method,
             variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
+            opt_kwargs=opt_kwargs,
             apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )

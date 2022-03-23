@@ -23,7 +23,7 @@ from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
 from MuyGPyS.gp.distance import make_train_tensors
-from MuyGPyS.optimize.chassis import scipy_optimize_from_tensors
+from MuyGPyS.optimize.chassis import optimize_from_tensors
 
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
@@ -36,9 +36,11 @@ def make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    opt_method: str = "scipy",
     sigma_method: Optional[str] = "analytic",
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
+    opt_kwargs: Dict = dict(),
     return_distances: bool = False,
     verbose: bool = False,
 ) -> Union[
@@ -69,6 +71,7 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
@@ -81,6 +84,7 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
@@ -104,6 +108,9 @@ def make_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        opt_method:
+            Indicates the optimization method to be used. Currently restricted
+            to `"bayesian"` and `"scipy"`.
         sigma_method:
             The optimization method to be employed to learn the `sigma_sq`
             hyperparameter. Currently supports only `"analytic"` and `None`. If
@@ -123,6 +130,9 @@ def make_regressor(
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
             their parameters.
+        opt_kwargs:
+            Parameters for the wrapped optimizer. See the docs of the
+            corresponding library for supported parameters.
         return_distances:
             If `True` and any training occurs, returns a
             `(batch_count, nn_count)` matrix containing the crosswise distances
@@ -190,14 +200,16 @@ def make_regressor(
 
         if skip_opt is False:
             # maybe do something with these estimates?
-            muygps = scipy_optimize_from_tensors(
+            muygps = optimize_from_tensors(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
                 crosswise_dists,
                 pairwise_dists,
                 loss_method=loss_method,
+                opt_method=opt_method,
                 verbose=verbose,
+                **opt_kwargs,
             )
         time_opt = perf_counter()
 
@@ -230,10 +242,12 @@ def make_multivariate_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    opt_method: str = "scipy",
     sigma_method: Optional[str] = "analytic",
     kern: str = "matern",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
+    opt_kwargs: Dict = dict(),
     return_distances: bool = False,
     verbose: bool = False,
 ) -> Union[
@@ -269,6 +283,7 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         kern="rbf",
         ...         k_args=k_args,
@@ -282,6 +297,7 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         kern="rbf",
         ...         k_args=k_args,
@@ -306,6 +322,9 @@ def make_multivariate_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        opt_method:
+            Indicates the optimization method to be used. Currently restricted
+            to `"bayesian"` and `"scipy"`.
         sigma_method:
             The optimization method to be employed to learn the `sigma_sq`
             hyperparameter. Currently supports only `"analytic"` and `None`. If
@@ -328,6 +347,9 @@ def make_multivariate_regressor(
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
             their parameters.
+        opt_kwargs:
+            Parameters for the wrapped optimizer. See the docs of the
+            corresponding library for supported parameters.
         return_distances:
             If `True` and any training occurs, returns a
             `(batch_count, nn_count)` matrix containing the crosswise distances
@@ -401,7 +423,7 @@ def make_multivariate_regressor(
             # maybe do something with these estimates?
             for i, muygps in enumerate(mmuygps.models):
                 if muygps.fixed() is False:
-                    mmuygps.models[i] = scipy_optimize_from_tensors(
+                    mmuygps.models[i] = optimize_from_tensors(
                         muygps,
                         batch_targets[:, i].reshape(batch_count, 1),
                         batch_nn_targets[:, :, i].reshape(
@@ -410,7 +432,9 @@ def make_multivariate_regressor(
                         crosswise_dists,
                         pairwise_dists,
                         loss_method=loss_method,
+                        opt_method=opt_method,
                         verbose=verbose,
+                        **opt_kwargs,
                     )
         time_opt = perf_counter()
 
@@ -478,10 +502,12 @@ def _decide_and_make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    opt_method: str = "scipy",
     sigma_method: Optional[str] = "analytic",
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
+    opt_kwargs: Dict = dict(),
     return_distances: bool = False,
     verbose: bool = False,
 ) -> Union[
@@ -497,10 +523,12 @@ def _decide_and_make_regressor(
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method=opt_method,
             sigma_method=sigma_method,
             kern=kern,
             k_args=k_kwargs,
             nn_kwargs=nn_kwargs,
+            opt_kwargs=opt_kwargs,
             return_distances=return_distances,
             verbose=verbose,
         )
@@ -512,9 +540,11 @@ def _decide_and_make_regressor(
                 nn_count=nn_count,
                 batch_count=batch_count,
                 loss_method=loss_method,
+                opt_method=opt_method,
                 sigma_method=sigma_method,
                 k_kwargs=k_kwargs,
                 nn_kwargs=nn_kwargs,
+                opt_kwargs=opt_kwargs,
                 return_distances=return_distances,
                 verbose=verbose,
             )
@@ -533,11 +563,13 @@ def do_regress(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    opt_method: str = "scipy",
     sigma_method: Optional[str] = "analytic",
     variance_mode: Optional[str] = None,
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
+    opt_kwargs: Dict = dict(),
     apply_sigma_sq: bool = True,
     return_distances: bool = False,
     verbose: bool = False,
@@ -628,6 +660,9 @@ def do_regress(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        opt_method:
+            Indicates the optimization method to be used. Currently restricted
+            to `"bayesian"` and `"scipy"`.
         sigma_method:
             The optimization method to be employed to learn the `sigma_sq`
             hyperparameter. Currently supports only `"analytic"` and `None`. If
@@ -655,6 +690,9 @@ def do_regress(
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
             their parameters.
+        opt_kwargs:
+            Parameters for the wrapped optimizer. See the docs of the
+            corresponding library for supported parameters.
         apply_sigma_sq:
             If `True` and `variance_mode is not None`, automatically scale the
             posterior variances by `sigma_sq`.
@@ -702,10 +740,12 @@ def do_regress(
         nn_count=nn_count,
         batch_count=batch_count,
         loss_method=loss_method,
+        opt_method=opt_method,
         sigma_method=sigma_method,
         kern=kern,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
+        opt_kwargs=opt_kwargs,
         return_distances=False,
         verbose=verbose,
     )

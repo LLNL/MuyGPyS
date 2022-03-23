@@ -461,6 +461,9 @@ class KernelFn:
     def get_opt_fn(self) -> Callable:
         pass
 
+    def get_kwargs_opt_fn(self) -> Callable:
+        pass
+
     def __str__(self) -> str:
         """
         Print state of hyperparameter dict.
@@ -561,6 +564,11 @@ class RBF(KernelFn):
         """
         Return a kernel function with fixed parameters set.
 
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="scipy"`, and assumes that the optimization parameters will
+        be passed in an `(optim_count,)` vector.
+
         Returns:
             A function implementing the kernel where all fixed parameters are
             set. The function expects a list of current hyperparameter values
@@ -580,6 +588,38 @@ class RBF(KernelFn):
         else:
 
             def caller_fn(dists, x0):
+                return rbf_fn(dists, length_scale=length_scale())
+
+        return caller_fn
+
+    def get_kwargs_opt_fn(self) -> Callable:
+        """
+        Return a kernel function with fixed parameters set.
+
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="bayesian"`, and assumes that optimization parameters will
+        be passed as keyword arguments.
+
+        Returns:
+            A function implementing the kernel where all fixed parameters are
+            set. The function expects keyword arguments corresponding to current
+            hyperparameter values for unfixed parameters.
+        """
+        return self._get_kwargs_opt_fn(_rbf_fn, self.length_scale)
+
+    @staticmethod
+    def _get_kwargs_opt_fn(
+        rbf_fn: Callable, length_scale: Hyperparameter
+    ) -> Callable:
+        if not length_scale.fixed():
+
+            def caller_fn(dists, **kwargs):
+                return rbf_fn(dists, length_scale=kwargs["length_scale"])
+
+        else:
+
+            def caller_fn(dists, **kwargs):
                 return rbf_fn(dists, length_scale=length_scale())
 
         return caller_fn
@@ -706,6 +746,11 @@ class Matern(KernelFn):
         """
         Return a kernel function with fixed parameters set.
 
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="scipy"`, and assumes that the optimization parameters will
+        be passed in an `(optim_count,)` vector.
+
         Returns:
             A function implementing the kernel where all fixed parameters are
             set. The function expects a list of current hyperparameter values
@@ -796,6 +841,113 @@ class Matern(KernelFn):
             else:
 
                 def caller_fn(dists, x0):
+                    return m_gen_fn(dists, nu=nu(), length_scale=length_scale())
+
+        return caller_fn
+
+    def get_kwargs_opt_fn(self) -> Callable:
+        """
+        Return a kernel function with fixed parameters set.
+
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="bayesian"`, and assumes that optimization parameters will
+        be passed as keyword arguments.
+
+        Returns:
+            A function implementing the kernel where all fixed parameters are
+            set. The function expects keyword arguments corresponding to current
+            hyperparameter values for unfixed parameters.
+        """
+        return self._get_kwargs_opt_fn(
+            _matern_05_fn,
+            _matern_15_fn,
+            _matern_25_fn,
+            _matern_inf_fn,
+            _matern_gen_fn,
+            self.nu,
+            self.length_scale,
+        )
+
+    @staticmethod
+    def _get_kwargs_opt_fn(
+        m_05_fn: Callable,
+        m_15_fn: Callable,
+        m_25_fn: Callable,
+        m_inf_fn: Callable,
+        m_gen_fn: Callable,
+        nu: Hyperparameter,
+        length_scale: Hyperparameter,
+    ) -> Callable:
+        nu_fixed = nu.fixed()
+        ls_fixed = length_scale.fixed()
+        if nu_fixed is False and ls_fixed is True:
+
+            def caller_fn(dists, **kwargs):
+                return m_gen_fn(
+                    dists, length_scale=length_scale(), nu=kwargs["nu"]
+                )
+
+        elif nu_fixed is False and ls_fixed is False:
+
+            def caller_fn(dists, **kwargs):
+                return m_gen_fn(
+                    dists, length_scale=kwargs["length_scale"], nu=kwargs["nu"]
+                )
+
+        elif nu_fixed is True and ls_fixed is False:
+            if nu() == 0.5:
+
+                def caller_fn(dists, **kwargs):
+                    return m_05_fn(dists, length_scale=kwargs["length_scale"])
+
+            elif nu() == 1.5:
+
+                def caller_fn(dists, **kwargs):
+                    return m_15_fn(dists, length_scale=kwargs["length_scale"])
+
+            elif nu() == 2.5:
+
+                def caller_fn(dists, **kwargs):
+                    return m_25_fn(dists, length_scale=kwargs["length_scale"])
+
+            elif nu() == np.inf:
+
+                def caller_fn(dists, **kwargs):
+                    return m_inf_fn(dists, length_scale=kwargs["length_scale"])
+
+            else:
+
+                def caller_fn(dists, **kwargs):
+                    return m_gen_fn(
+                        dists, nu=nu(), length_scale=kwargs["length_scale"]
+                    )
+
+        else:
+
+            if nu() == 0.5:
+
+                def caller_fn(dists, **kwargs):
+                    return m_05_fn(dists, length_scale=length_scale())
+
+            elif nu() == 1.5:
+
+                def caller_fn(dists, **kwargs):
+                    return m_15_fn(dists, length_scale=length_scale())
+
+            elif nu() == 2.5:
+
+                def caller_fn(dists, **kwargs):
+                    return m_25_fn(dists, length_scale=length_scale())
+
+            elif nu() == np.inf:
+
+                def caller_fn(dists, **kwargs):
+                    return m_inf_fn(dists, length_scale=length_scale())
+
+            else:
+
+                def caller_fn(dists, **kwargs):
                     return m_gen_fn(dists, nu=nu(), length_scale=length_scale())
 
         return caller_fn

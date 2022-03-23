@@ -26,6 +26,16 @@ else:
 
 _exact_nn_kwarg_options = ({"nn_method": "exact", "algorithm": "ball_tree"},)
 
+_basic_opt_method_and_kwarg_options = [
+    ["scipy", dict()],
+    ["bayesian", {"random_state": 1, "init_points": 3, "n_iter": 10}],
+]
+
+_advanced_opt_method_and_kwarg_options = [
+    ["scipy", dict()],
+    ["bayesian", {"random_state": 1, "init_points": 5, "n_iter": 20}],
+]
+
 
 def _sq_rel_err(
     tru: Union[float, np.ndarray], est: Union[float, np.ndarray]

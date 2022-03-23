@@ -468,6 +468,12 @@ class MuyGPS:
         """
         Return a regress function for use in optimization.
 
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="scipy"`, and assumes that the optimization parameters will
+        be passed in an `(optim_count,)` vector where `eps` is either the last
+        element or is not included.
+
         Returns:
             A function implementing regression, where `eps` is either fixed or
             takes updating values during optimization. The function expects a
@@ -487,6 +493,37 @@ class MuyGPS:
         else:
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
+                return solve_fn(K, Kcross, batch_nn_targets, eps())
+
+        return caller_fn
+
+    def get_kwargs_opt_fn(self) -> Callable:
+        """
+        Return a regress function for use in optimization.
+
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
+        `opt_method="bayesian"`, and assumes that either `eps` will be passed
+        via a keyword argument or not at all.
+
+        Returns:
+            A function implementing regression, where `eps` is either fixed or
+            takes updating values during optimization. The function expects
+            keyword arguments corresponding to current hyperparameter values for
+            unfixed parameters.
+        """
+        return self._get_kwargs_opt_fn(_muygps_compute_solve, self.eps)
+
+    @staticmethod
+    def _get_kwargs_opt_fn(solve_fn: Callable, eps: Hyperparameter) -> Callable:
+        if not eps.fixed():
+
+            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
+                return solve_fn(K, Kcross, batch_nn_targets, kwargs["eps"])
+
+        else:
+
+            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
                 return solve_fn(K, Kcross, batch_nn_targets, eps())
 
         return caller_fn
