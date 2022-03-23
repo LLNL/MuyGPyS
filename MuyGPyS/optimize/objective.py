@@ -164,7 +164,7 @@ def loo_crossval(
         K,
         Kcross,
         batch_nn_targets,
-        x0[-1],
+        x0,
     )
 
     return loss_fn(predictions, batch_targets)
