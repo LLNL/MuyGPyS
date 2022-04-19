@@ -25,8 +25,8 @@ before_script:
   - which python
   - python --version
   - pip install --upgrade pip
-  - pip install -e .[tests]
   - pip install --upgrade jax[cuda11_cudnn805] -f https://storage.googleapis.com/jax-releases/jax-releases.html
+  - pip install -e .[tests]
 
 all_tests:
   stage: test
