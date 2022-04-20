@@ -5,7 +5,7 @@
 
 """Public MuyGPyS modules and functions."""
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 from MuyGPyS._src.config import config as config, jax_config as jax_config
 
