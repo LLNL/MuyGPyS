@@ -88,12 +88,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.batch_indices_j = jnp.array(cls.batch_indices_n)
             cls.batch_nn_indices_j = jnp.array(cls.batch_nn_indices_n)
 
-    from MuyGPyS._src.gp.numpy_distance import (
+    from MuyGPyS._src.gp.distance.numpy import (
         _pairwise_distances as pairwise_distances_n,
         _crosswise_distances as crosswise_distances_n,
         _make_train_tensors as make_train_tensors_n,
     )
-    from MuyGPyS._src.gp.jax_distance import (
+    from MuyGPyS._src.gp.distance.jax import (
         _pairwise_distances as pairwise_distances_j,
         _crosswise_distances as crosswise_distances_j,
         _make_train_tensors as make_train_tensors_j,
@@ -166,7 +166,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 allclose_gen(batch_nn_targets_n, batch_nn_targets_j)
             )
 
-    from MuyGPyS._src.gp.numpy_kernels import (
+    from MuyGPyS._src.gp.kernels.numpy import (
         _rbf_fn as rbf_fn_n,
         _matern_05_fn as matern_05_fn_n,
         _matern_15_fn as matern_15_fn_n,
@@ -174,7 +174,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _matern_inf_fn as matern_inf_fn_n,
         _matern_gen_fn as matern_gen_fn_n,
     )
-    from MuyGPyS._src.gp.jax_kernels import (
+    from MuyGPyS._src.gp.kernels.jax import (
         _rbf_fn as rbf_fn_j,
         _matern_05_fn as matern_05_fn_j,
         _matern_15_fn as matern_15_fn_j,
@@ -353,12 +353,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 )
             )
 
-    from MuyGPyS._src.gp.numpy_muygps import (
+    from MuyGPyS._src.gp.muygps.numpy import (
         _muygps_compute_solve as muygps_compute_solve_n,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
         _muygps_sigma_sq_optim as muygps_sigma_sq_optim_n,
     )
-    from MuyGPyS._src.gp.jax_muygps import (
+    from MuyGPyS._src.gp.muygps.jax import (
         _muygps_compute_solve as muygps_compute_solve_j,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_j,
         _muygps_sigma_sq_optim as muygps_sigma_sq_optim_j,
@@ -430,11 +430,11 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 )
             )
 
-    from MuyGPyS._src.optimize.numpy_objective import (
+    from MuyGPyS._src.optimize.objective.numpy import (
         _mse_fn as mse_fn_n,
         _cross_entropy_fn as cross_entropy_fn_n,
     )
-    from MuyGPyS._src.optimize.jax_objective import (
+    from MuyGPyS._src.optimize.objective.jax import (
         _mse_fn as mse_fn_j,
         _cross_entropy_fn as cross_entropy_fn_j,
     )
@@ -442,11 +442,11 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         make_loo_crossval_fn,
         make_loo_crossval_kwargs_fn,
     )
-    from MuyGPyS._src.optimize.numpy_chassis import (
+    from MuyGPyS._src.optimize.chassis.numpy import (
         _scipy_optimize as scipy_optimize_n,
         _bayes_opt_optimize as bayes_optimize_n,
     )
-    from MuyGPyS._src.optimize.jax_chassis import (
+    from MuyGPyS._src.optimize.chassis.jax import (
         _scipy_optimize as scipy_optimize_j,
         _bayes_opt_optimize as bayes_optimize_j,
     )
