@@ -136,18 +136,21 @@ class SigmaSqTest(parameterized.TestCase):
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices = np.arange(data_count)
         nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
+        nn_targets = data["output"][nn_indices, :]
         pairwise_dists = pairwise_distances(
             data["input"], nn_indices, metric=mmuygps.metric
         )
 
         # fit sigmas
-        mmuygps.sigma_sq_optim(pairwise_dists, nn_indices, data["output"])
+        mmuygps.sigma_sq_optim(pairwise_dists, nn_targets)
 
         K = np.zeros((data_count, nn_count, nn_count))
         for i, muygps in enumerate(mmuygps.models):
             K = muygps.kernel(pairwise_dists)
             sigmas = _get_sigma_sq_series(
-                K, nn_indices, data["output"][:, i], muygps.eps()
+                K,
+                nn_targets[:, :, i].reshape(data_count, nn_count, 1),
+                muygps.eps(),
             )
             self.assertEqual(sigmas.shape, (data_count,))
             self.assertAlmostEqual(muygps.sigma_sq()[0], np.mean(sigmas), 5)

@@ -417,14 +417,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 allclose_inv(
                     muygps_sigma_sq_optim_n(
                         self.K_n,
-                        self.batch_nn_indices_n,
-                        self.train_responses_n,
+                        self.batch_nn_targets_n,
                         self.muygps.eps(),
                     ),
                     muygps_sigma_sq_optim_j(
                         self.K_j,
-                        self.batch_nn_indices_j,
-                        self.train_responses_j,
+                        self.batch_nn_targets_j,
                         self.muygps.eps(),
                     ),
                 )
@@ -744,10 +742,10 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 n_iter=5,
             )
             self.assertTrue(
-                allclose_gen(mopt_n.kernel.nu(), mopt_j.kernel.nu())
+                allclose_inv(mopt_n.kernel.nu(), mopt_j.kernel.nu())
             )
             self.assertTrue(
-                allclose_gen(mopt_n.kernel.nu(), mopt_h.kernel.nu())
+                allclose_inv(mopt_n.kernel.nu(), mopt_h.kernel.nu())
             )
 
     if __name__ == "__main__":

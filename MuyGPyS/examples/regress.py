@@ -216,7 +216,7 @@ def make_regressor(
         if sigma_method is not None:
             if sigma_method.lower() == "analytic":
                 K = muygps.kernel(pairwise_dists)
-                muygps.sigma_sq_optim(K, batch_nn_indices, train_targets)
+                muygps.sigma_sq_optim(K, batch_nn_targets)
             else:
                 raise ValueError(f"Unrecognized sigma_method {sigma_method}")
             if verbose is True:
@@ -440,9 +440,7 @@ def make_multivariate_regressor(
 
         if sigma_method is not None:
             if sigma_method.lower() == "analytic":
-                mmuygps.sigma_sq_optim(
-                    pairwise_dists, batch_nn_indices, train_targets
-                )
+                mmuygps.sigma_sq_optim(pairwise_dists, batch_nn_targets)
             else:
                 raise ValueError(f"Unrecognized sigma_method {sigma_method}")
             if verbose is True:

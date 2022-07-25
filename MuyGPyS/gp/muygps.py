@@ -531,8 +531,7 @@ class MuyGPS:
     def sigma_sq_optim(
         self,
         K: np.ndarray,
-        nn_indices: np.ndarray,
-        targets: np.ndarray,
+        nn_targets: np.ndarray,
     ) -> np.ndarray:
         """
         Optimize the value of the :math:`\\sigma^2` scale parameter for each
@@ -555,20 +554,17 @@ class MuyGPS:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
                 the `(nn_count, nn_count` -shaped kernel matrices corresponding
                 to each of the batch elements.
-            nn_indices:
-                An integral matrix of shape `(batch_count, nn_count)` listing the
-                nearest neighbor indices for all observations in the test batch.
-            targets:
-                A matrix of shape `(batch_count, response_count)` whose rows list
-                the vector-valued responses for all of the training targets.
+            nn_targets:
+                Tensor of floats of shape
+                `(batch_count, nn_count, response_count)` containing the
+                expected response for each nearest neighbor of each batch
+                element.
 
         Returns:
             A vector of shape `(response_count)` listing the value of sigma^2
             for each dimension.
         """
-        self.sigma_sq._set(
-            _muygps_sigma_sq_optim(K, nn_indices, targets, self.eps())
-        )
+        self.sigma_sq._set(_muygps_sigma_sq_optim(K, nn_targets, self.eps()))
         return self.sigma_sq()
 
 
@@ -644,8 +640,7 @@ class MultivariateMuyGPS:
     def sigma_sq_optim(
         self,
         pairwise_dists: np.ndarray,
-        nn_indices: np.ndarray,
-        targets: np.ndarray,
+        nn_targets: np.ndarray,
     ) -> np.ndarray:
         """
         Optimize the value of the :math:`\\sigma^2` scale parameter for each
@@ -662,13 +657,11 @@ class MultivariateMuyGPS:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
                 the `(nn_count, nn_count)` -shaped pairwise nearest neighbor
                 distance matrices corresponding to each of the batch elements.
-            nn_indices:
-                An integral matrix of shape `(batch_count, nn_count)` listing the
-                nearest neighbor indices for all observations in the testing
-                batch.
-            targets:
-                A matrix of shape `(train_count, response_count)` whose rows
-                are the responses for each training element.
+            nn_targets:
+                Tensor of floats of shape
+                `(batch_count, nn_count, response_count)` containing the
+                expected response for each nearest neighbor of each batch
+                element.
 
         Returns:
             A vector of shape `(response_count,)` listing the found value of
@@ -676,9 +669,7 @@ class MultivariateMuyGPS:
         """
 
         self.sigma_sq._set(
-            self._sigma_sq_optim(
-                self.models, pairwise_dists, nn_indices, targets
-            )
+            self._sigma_sq_optim(self.models, pairwise_dists, nn_targets)
         )
         return self.sigma_sq()
 
@@ -686,11 +677,9 @@ class MultivariateMuyGPS:
     def _sigma_sq_optim(
         models: List[MuyGPS],
         pairwise_dists: np.ndarray,
-        nn_indices: np.ndarray,
-        targets: np.ndarray,
+        nn_targets: np.ndarray,
     ) -> np.ndarray:
-        batch_count, nn_count = nn_indices.shape
-        target_count, response_count = targets.shape
+        batch_count, nn_count, response_count = nn_targets.shape
         if response_count != len(models):
             raise ValueError(
                 f"Response count ({response_count}) does not match the number "
@@ -702,7 +691,7 @@ class MultivariateMuyGPS:
         for i, muygps in enumerate(models):
             K = muygps.kernel(pairwise_dists)
             sigma_sqs[i] = muygps.sigma_sq_optim(
-                K, nn_indices, targets[:, i].reshape(target_count, 1)
+                K, nn_targets[:, :, i].reshape(batch_count, nn_count, 1)
             )
         return sigma_sqs
 

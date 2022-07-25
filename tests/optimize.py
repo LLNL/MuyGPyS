@@ -393,8 +393,10 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
             sim_test["output"] = y[:test_count].reshape(test_count, 1)
             sim_train["output"] = y[test_count:].reshape(train_count, 1)
 
+            batch_nn_targets = sim_train["output"][batch_nn_indices, :]
+
             # Find MuyGPyS optim
-            muygps.sigma_sq_optim(K, batch_nn_indices, sim_train["output"])
+            muygps.sigma_sq_optim(K, batch_nn_targets)
             estimate = muygps.sigma_sq()[0]
 
             mrse += _sq_rel_err(sigma_sq, estimate)

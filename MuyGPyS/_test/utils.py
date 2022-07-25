@@ -259,8 +259,7 @@ def _normalize(X: np.ndarray) -> np.ndarray:
 
 def _get_sigma_sq_series(
     K: np.ndarray,
-    nn_indices: np.ndarray,
-    target_col: np.ndarray,
+    nn_targets_column: np.ndarray,
     eps: float,
 ) -> np.ndarray:
     """
@@ -274,29 +273,26 @@ def _get_sigma_sq_series(
             A tensor of shape `(batch_count, nn_count, nn_count)` containing
             the `(nn_count, nn_count` -shaped kernel matrices corresponding
             to each of the batch elements.
-        nn_indices:
-            An integral matrix of shape `(batch_count, nn_count)` listing the
-            nearest neighbor indices for all observations in the test batch.
-        target_col:
-            A vector of shape `(batch_count)` consisting of the target for
-            each nearest neighbor.
+        nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, 1)` containing
+            one dimension of the expected response for each nearest neighbor of
+            each batch element.
 
     Returns:
         A vector of shape `(response_count)` listing the value of sigma^2
         for the given response dimension.
     """
-    batch_count, nn_count = nn_indices.shape
+    batch_count, nn_count, _ = nn_targets_column.shape
 
     sigmas = np.zeros((batch_count,))
-    for i, el in enumerate(_get_sigma_sq(K, target_col, nn_indices, eps)):
+    for i, el in enumerate(_get_sigma_sq(K, nn_targets_column, eps)):
         sigmas[i] = el
     return sigmas / nn_count
 
 
 def _get_sigma_sq(
     K: np.ndarray,
-    target_col: np.ndarray,
-    nn_indices: np.ndarray,
+    nn_targets_column: np.ndarray,
     eps: float,
 ) -> Generator[float, None, None]:
     """
@@ -315,19 +311,17 @@ def _get_sigma_sq(
             A tensor of shape `(batch_count, nn_count, nn_count)` containing
             the `(nn_count, nn_count` -shaped kernel matrices corresponding
             to each of the batch elements.
-        target_col:
-            A vector of shape `(batch_count)` consisting of the target for
-            each nearest neighbor.
-        nn_indices:
-            An integral matrix of shape `(batch_count, nn_count)` listing the
-            nearest neighbor indices for all observations in the test batch.
+        nn_targets_column:
+            Tensor of floats of shape `(batch_count, nn_count, 1)` containing
+            one dimension of the expected response for each nearest neighbor of
+            each batch element.
 
     Return:
         A generator producing `batch_count` optimal values of
         :math:`\\sigma^2` for each neighborhood for the given response
         dimension.
     """
-    batch_count, nn_count = nn_indices.shape
+    batch_count, nn_count, _ = nn_targets_column.shape
     for j in range(batch_count):
-        Y_0 = target_col[nn_indices[j, :]]
+        Y_0 = nn_targets_column[j, :, 0]
         yield Y_0 @ np.linalg.solve(K[j, :, :] + eps * np.eye(nn_count), Y_0)

@@ -662,24 +662,29 @@ class GPSigmaSqTest(parameterized.TestCase):
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices = np.arange(data_count)
         nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
+        nn_targets = data["output"][nn_indices, :]
         F2_dists = pairwise_distances(
             data["input"], nn_indices, metric=muygps.kernel.metric
         )
 
         K = muygps.kernel(F2_dists)
-        muygps.sigma_sq_optim(K, nn_indices, data["output"])
+        muygps.sigma_sq_optim(K, nn_targets)
 
         if response_count > 1:
             self.assertEqual(len(muygps.sigma_sq()), response_count)
             for i in range(response_count):
                 sigmas = _get_sigma_sq_series(
-                    K, nn_indices, data["output"][:, i], muygps.eps()
+                    K,
+                    nn_targets[:, :, i].reshape(data_count, nn_count, 1),
+                    muygps.eps(),
                 )
                 self.assertEqual(sigmas.shape, (data_count,))
                 self.assertAlmostEqual(muygps.sigma_sq()[i], np.mean(sigmas), 5)
         else:
             sigmas = _get_sigma_sq_series(
-                K, nn_indices, data["output"][:, 0], muygps.eps()
+                K,
+                nn_targets[:, :, 0].reshape(data_count, nn_count, 1),
+                muygps.eps(),
             )
             self.assertEqual(sigmas.shape, (data_count,))
             self.assertAlmostEqual(muygps.sigma_sq()[0], np.mean(sigmas), 5)
