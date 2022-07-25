@@ -119,7 +119,7 @@ class SigmaSqTest(parameterized.TestCase):
         self._do_untrained(np.array(val))
 
     def test_untrained_bad(self):
-        with self.assertRaisesRegex(ValueError, "Expected np.ndarray for"):
+        with self.assertRaisesRegex(ValueError, "Expected np.ndarray"):
             self._do_untrained([5.0])
 
     def _jax_chassis(self, jax_enabled, func):

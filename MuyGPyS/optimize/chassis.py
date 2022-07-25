@@ -31,15 +31,15 @@ import warnings
 from MuyGPyS import config
 
 if config.muygpys_jax_enabled is False:  # type: ignore
-    from MuyGPyS._src.gp.numpy_distance import _make_train_tensors
-    from MuyGPyS._src.optimize.numpy_chassis import (
+    from MuyGPyS._src.gp.distance.numpy import _make_train_tensors
+    from MuyGPyS._src.optimize.chassis.numpy import (
         _scipy_optimize,
         _bayes_opt_optimize,
     )
 
 else:
-    from MuyGPyS._src.gp.jax_distance import _make_train_tensors
-    from MuyGPyS._src.optimize.jax_chassis import (
+    from MuyGPyS._src.gp.distance.jax import _make_train_tensors
+    from MuyGPyS._src.optimize.chassis.jax import (
         _scipy_optimize,
         _bayes_opt_optimize,
     )
