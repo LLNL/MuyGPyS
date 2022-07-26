@@ -40,16 +40,13 @@ def _muygps_sigma_sq_optim_unnormalized(
     eps: float,
 ) -> np.ndarray:
     _, nn_count, _ = nn_targets.shape
-    return (
-        np.sum(
-            np.einsum(
-                "ijk,ijk->ik",
-                nn_targets,
-                np.linalg.solve(K + eps * np.eye(nn_count), nn_targets),
-            ),
-            axis=0,
-        )
-        / nn_count
+    return np.sum(
+        np.einsum(
+            "ijk,ijk->ik",
+            nn_targets,
+            np.linalg.solve(K + eps * np.eye(nn_count), nn_targets),
+        ),
+        axis=0,
     )
 
 
@@ -58,5 +55,7 @@ def _muygps_sigma_sq_optim(
     nn_targets: np.ndarray,
     eps: float,
 ) -> np.ndarray:
-    batch_count, _, _ = nn_targets.shape
-    return _muygps_sigma_sq_optim_unnormalized(K, nn_targets, eps) / batch_count
+    batch_count, nn_count, _ = nn_targets.shape
+    return _muygps_sigma_sq_optim_unnormalized(K, nn_targets, eps) / (
+        nn_count * batch_count
+    )

@@ -24,9 +24,9 @@ def _muygps_sigma_sq_optim(
     nn_targets: np.ndarray,
     eps: float,
 ) -> np.ndarray:
-    local_batch_count, _, _ = nn_targets.shape
+    local_batch_count, nn_count, _ = nn_targets.shape
     local_sum = _muygps_sigma_sq_optim_unnormalized(K, nn_targets, eps)
     global_batch_count, global_sum = world.allreduce(
         (local_batch_count, local_sum), op=MPI.SUM
     )
-    return global_sum / global_batch_count
+    return global_sum / (nn_count * global_batch_count)
