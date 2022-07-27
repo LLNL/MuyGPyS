@@ -22,10 +22,18 @@ def _cross_entropy_fn(
     )
 
 
+def _mse_fn_unnormalized(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+) -> float:
+    return np.sum((predictions - targets) ** 2)
+
+
 def _mse_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
 ) -> float:
     batch_count, response_count = predictions.shape
-    squared_errors = np.sum((predictions - targets) ** 2)
-    return squared_errors / (batch_count * response_count)
+    return _mse_fn_unnormalized(predictions, targets) / (
+        batch_count * response_count
+    )
