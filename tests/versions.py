@@ -679,27 +679,16 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         @classmethod
         def setUpClass(cls):
             super(OptimTest, cls).setUpClass()
+            cls.sopt_kwargs = {"verbose": False}
 
         def test_scipy_optimize(self):
             obj_fn_n = self._get_obj_fn_n()
             obj_fn_j = self._get_obj_fn_j()
             obj_fn_h = self._get_obj_fn_h()
 
-            mopt_n = scipy_optimize_n(
-                self.muygps,
-                obj_fn_n,
-                verbose=False,
-            )
-            mopt_j = scipy_optimize_j(
-                self.muygps,
-                obj_fn_j,
-                verbose=False,
-            )
-            mopt_h = scipy_optimize_j(
-                self.muygps,
-                obj_fn_h,
-                verbose=False,
-            )
+            mopt_n = scipy_optimize_n(self.muygps, obj_fn_n, **self.sopt_kwargs)
+            mopt_j = scipy_optimize_j(self.muygps, obj_fn_j, **self.sopt_kwargs)
+            mopt_h = scipy_optimize_j(self.muygps, obj_fn_h, **self.sopt_kwargs)
             self.assertTrue(
                 allclose_gen(mopt_n.kernel.nu(), mopt_j.kernel.nu())
             )
@@ -711,36 +700,21 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         @classmethod
         def setUpClass(cls):
             super(BayesOptimTest, cls).setUpClass()
+            cls.bopt_kwargs = {
+                "verbose": False,
+                "random_state": 1,
+                "init_points": 5,
+                "n_iter": 5,
+            }
 
         def test_scipy_optimize(self):
             obj_fn_n = self._get_kwargs_obj_fn_n()
             obj_fn_j = self._get_kwargs_obj_fn_j()
             obj_fn_h = self._get_kwargs_obj_fn_h()
 
-            mopt_n = bayes_optimize_n(
-                self.muygps,
-                obj_fn_n,
-                verbose=False,
-                random_state=1,
-                init_points=2,
-                n_iter=5,
-            )
-            mopt_j = bayes_optimize_j(
-                self.muygps,
-                obj_fn_j,
-                verbose=False,
-                random_state=1,
-                init_points=2,
-                n_iter=5,
-            )
-            mopt_h = bayes_optimize_j(
-                self.muygps,
-                obj_fn_h,
-                verbose=False,
-                random_state=1,
-                init_points=2,
-                n_iter=5,
-            )
+            mopt_n = bayes_optimize_n(self.muygps, obj_fn_n, **self.bopt_kwargs)
+            mopt_j = bayes_optimize_j(self.muygps, obj_fn_j, **self.bopt_kwargs)
+            mopt_h = bayes_optimize_j(self.muygps, obj_fn_h, **self.bopt_kwargs)
             self.assertTrue(
                 allclose_inv(mopt_n.kernel.nu(), mopt_j.kernel.nu())
             )

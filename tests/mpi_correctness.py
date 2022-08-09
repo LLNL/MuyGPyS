@@ -626,8 +626,9 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
             super(OptimTestCase, cls).setUpClass()
             cls.x0_names, cls.x0, bounds = cls.muygps.get_optim_params()
             cls.x0_map = {n: cls.x0[i] for i, n in enumerate(cls.x0_names)}
-            cls.sopt_kwargs = {}
+            cls.sopt_kwargs = {"verbose": False}
             cls.bopt_kwargs = {
+                "verbose": False,
                 "random_state": 1,
                 "init_points": 5,
                 "n_iter": 5,
@@ -860,14 +861,12 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
         def test_scipy_optimize(self):
             obj_fn_m = self._get_array_obj_fn_m()
-            opt_m = scipy_optimize_m(
-                self.muygps, obj_fn_m, verbose=False, **self.sopt_kwargs
-            )
+            opt_m = scipy_optimize_m(self.muygps, obj_fn_m, **self.sopt_kwargs)
 
             if rank == 0:
                 obj_fn_n = self._get_array_obj_fn_n()
                 opt_n = scipy_optimize_n(
-                    self.muygps, obj_fn_n, verbose=False, **self.sopt_kwargs
+                    self.muygps, obj_fn_n, **self.sopt_kwargs
                 )
                 self.assertAlmostEqual(opt_m.kernel.nu(), opt_n.kernel.nu())
 
@@ -879,13 +878,13 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
         def test_bayes_optimize(self):
             obj_fn_m = self._get_kwargs_obj_fn_m()
             model_m = bayes_optimize_m(
-                self.muygps, obj_fn_m, verbose=False, **self.bopt_kwargs
+                self.muygps, obj_fn_m, **self.bopt_kwargs
             )
 
             if rank == 0:
                 obj_fn_n = self._get_kwargs_obj_fn_n()
                 model_n = bayes_optimize_n(
-                    self.muygps, obj_fn_n, verbose=False, **self.bopt_kwargs
+                    self.muygps, obj_fn_n, **self.bopt_kwargs
                 )
                 self.assertAlmostEqual(model_m.kernel.nu(), model_n.kernel.nu())
 
