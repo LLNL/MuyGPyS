@@ -13,7 +13,7 @@ from MuyGPyS._src.gp.distance.numpy import (
 from MuyGPyS import config
 
 from mpi4py import MPI
-from typing import Callable, List, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 
@@ -44,9 +44,8 @@ def _prepare_parallel_data(size, chunk_sizes, *args):
     return ret
 
 
-def _chunk_function_tensor(func: Callable, *args, return_count=1):
+def _chunk_tensor(tensors, return_count=1):
     if rank == 0:
-        tensors = func(*args)
         if return_count == 1:
             tensors = [tensors]
         data_count = tensors[0].shape[0]
@@ -60,6 +59,14 @@ def _chunk_function_tensor(func: Callable, *args, return_count=1):
     if return_count == 1:
         local_chunks = local_chunks[0]
     return local_chunks
+
+
+def _chunk_function_tensor(func: Callable, *args, return_count=1):
+    if rank == 0:
+        tensors = func(*args)
+    else:
+        tensors = None
+    return _chunk_tensor(tensors, return_count=return_count)
 
 
 def _make_regress_tensors(
