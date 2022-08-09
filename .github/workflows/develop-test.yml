@@ -42,7 +42,7 @@ jobs:
         python tests/optimize.py --muygpys_jax_enabled=False
         python tests/predict.py --muygpys_jax_enabled=False
         python tests/multivariate.py --muygpys_jax_enabled=False
-        python tests/versions.py
+        python tests/jax_correctness.py
 
   build-docs:
 
