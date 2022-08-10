@@ -48,6 +48,8 @@ from MuyGPyS._test.utils import (
     _exact_nn_kwarg_options,
     _advanced_opt_method_and_kwarg_options,
     _sq_rel_err,
+    _consistent_chunk_tensor,
+    _is_mpi_mode,
 )
 
 
@@ -347,6 +349,8 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
                     "eps": {"val": 1e-5},
                 },
             )
+            # for nn_kwargs in [_basic_nn_kwarg_options][0]
+            # for ss in [(1.0, 5e-2)]
         )
     )
     def test_sigma_sq_optim(
@@ -393,7 +397,9 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
             sim_test["output"] = y[:test_count].reshape(test_count, 1)
             sim_train["output"] = y[test_count:].reshape(train_count, 1)
 
-            batch_nn_targets = sim_train["output"][batch_nn_indices, :]
+            batch_nn_targets = _consistent_chunk_tensor(
+                sim_train["output"][batch_nn_indices, :]
+            )
 
             # Find MuyGPyS optim
             muygps.sigma_sq_optim(K, batch_nn_targets)
@@ -426,6 +432,10 @@ class GPOptimTest(parameterized.TestCase):
                     },
                 ),
             )
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _advanced_opt_method_and_kwarg_options[0]
+            # ]
         )
     )
     def test_hyper_optim(
@@ -484,8 +494,12 @@ class GPOptimTest(parameterized.TestCase):
             # set up MuyGPS object
             muygps = MuyGPS(**kwargs)
 
-            batch_targets = sim_train["output"][batch_indices, :]
-            batch_nn_targets = sim_train["output"][batch_nn_indices, :]
+            batch_targets = _consistent_chunk_tensor(
+                sim_train["output"][batch_indices, :]
+            )
+            batch_nn_targets = _consistent_chunk_tensor(
+                sim_train["output"][batch_nn_indices, :]
+            )
 
             muygps = optimize_from_tensors(
                 muygps,
@@ -538,6 +552,9 @@ class GPOptimTest(parameterized.TestCase):
         opt_method_and_kwargs,
         k_kwargs,
     ):
+        # Skip if we are in MPI mode.
+        if _is_mpi_mode() is True:
+            return
         target, kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
 

@@ -49,14 +49,24 @@ from typing import cast, Callable, Dict, List, Optional, Tuple, Union
 from MuyGPyS import config
 
 if config.muygpys_jax_enabled is False:  # type: ignore
-    from MuyGPyS._src.gp.kernels.numpy import (
-        _rbf_fn,
-        _matern_05_fn,
-        _matern_15_fn,
-        _matern_25_fn,
-        _matern_inf_fn,
-        _matern_gen_fn,
-    )
+    if config.muygpys_mpi_enabled is False:  # type: ignore
+        from MuyGPyS._src.gp.kernels.numpy import (
+            _rbf_fn,
+            _matern_05_fn,
+            _matern_15_fn,
+            _matern_25_fn,
+            _matern_inf_fn,
+            _matern_gen_fn,
+        )
+    else:
+        from MuyGPyS._src.gp.kernels.mpi import (
+            _rbf_fn,
+            _matern_05_fn,
+            _matern_15_fn,
+            _matern_25_fn,
+            _matern_inf_fn,
+            _matern_gen_fn,
+        )
 else:
     from MuyGPyS._src.gp.kernels.jax import (
         _rbf_fn,

@@ -80,12 +80,20 @@ from typing import Optional, Tuple
 from MuyGPyS import config
 
 if config.muygpys_jax_enabled is False:  # type: ignore
-    from MuyGPyS._src.gp.distance.numpy import (
-        _make_regress_tensors,
-        _make_train_tensors,
-        _crosswise_distances,
-        _pairwise_distances,
-    )
+    if config.muygpys_mpi_enabled is False:  # type:ignore
+        from MuyGPyS._src.gp.distance.numpy import (
+            _make_regress_tensors,
+            _make_train_tensors,
+            _crosswise_distances,
+            _pairwise_distances,
+        )
+    else:
+        from MuyGPyS._src.gp.distance.mpi import (
+            _make_regress_tensors,
+            _make_train_tensors,
+            _crosswise_distances,
+            _pairwise_distances,
+        )
 else:
     from MuyGPyS._src.gp.distance.jax import (
         _make_regress_tensors,

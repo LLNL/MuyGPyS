@@ -21,6 +21,7 @@ from MuyGPyS._test.utils import (
     _balanced_subsample,
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
+    _is_mpi_mode,
 )
 
 
@@ -96,6 +97,9 @@ class MNISTTest(ClassifyAPITest):
         nn_kwargs,
         k_kwargs,
     ):
+        # Skip if testing MPI chassis
+        if _is_mpi_mode() is True:
+            return
         target_accuracy, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 5000)
@@ -170,6 +174,9 @@ class StargalTest(ClassifyAPITest):
         nn_kwargs,
         k_kwargs,
     ):
+        # Skip if testing MPI chassis
+        if _is_mpi_mode() is True:
+            return
         target_accuracy, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 5000)
@@ -232,6 +239,9 @@ class StargalTest(ClassifyAPITest):
         nn_kwargs,
         k_kwargs,
     ):
+        # Skip if testing MPI chassis
+        if _is_mpi_mode() is True:
+            return
         target_accuracy, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 10000)
@@ -319,6 +329,9 @@ class MultivariateStargalTest(ClassifyAPITest):
         nn_kwargs,
         k_kwargs,
     ):
+        # Skip if testing MPI chassis
+        if _is_mpi_mode() is True:
+            return
         target_accuracy, kern, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 5000)
@@ -402,6 +415,9 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         nn_kwargs,
         k_kwargs,
     ):
+        # Skip if testing MPI chassis
+        if _is_mpi_mode() is True:
+            return
         target_mse, kern, k_args = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 10000)
@@ -446,12 +462,10 @@ class HeatonTest(RegressionAPITest):
             for nn in [30]
             for bs in [500]
             for vm in ["diagonal", None]
-            # for vm in ["diagonal"]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            # for vm in [None, "diagonal"]
-            # for nn_kwargs in _basic_nn_kwarg_options
+            for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for lm in ["mse"]
             for k_kwargs in (
                 (
                     11.0,
@@ -473,6 +487,11 @@ class HeatonTest(RegressionAPITest):
                 #     },
                 # ),
             )
+            # for vm in ["diagonal"]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[0]
+            # ]
         )
     )
     def test_regress(
@@ -485,6 +504,9 @@ class HeatonTest(RegressionAPITest):
         nn_kwargs,
         k_kwargs,
     ):
+        # Skip if testing MPI chassis
+        if _is_mpi_mode() is True:
+            return
         target_mse, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
 

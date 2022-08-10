@@ -150,10 +150,12 @@ except Exception:
     config.update("muygpys_hnswlib_enabled", False)
 
 try:
-    from mpi4py import MPI as _MPI
+    from mpi4py import MPI
 
-    config.update("muygpys_mpi_enabled", True)
-    config.mpi_state.set_comm(_MPI.COMM_WORLD)
-    del _MPI
+    config.mpi_state.set_comm(MPI.COMM_WORLD)
+
+    if config.mpi_state.comm_world.Get_size() > 1:
+        config.update("muygpys_mpi_enabled", True)
 except Exception as e:
+    MPI = None  # type: ignore
     config.update("muygpys_mpi_enabled", False)

@@ -33,14 +33,12 @@ def _get_chunk_sizes(count: int, size: int):
 def _prepare_parallel_data(size, chunk_sizes, *args):
     count = len(args)
     ret = [list() for _ in range(count)]
+    offsets = np.array(
+        [np.sum(chunk_sizes[:i]) for i in range(size)], dtype=int
+    )
     for i in range(size):
         for j, arg in enumerate(args):
-            if i < size - 1:
-                ret[j].append(
-                    arg[(i * chunk_sizes[i]) : ((i + 1) * chunk_sizes[i])]
-                )
-            else:
-                ret[j].append(arg[(i * chunk_sizes[i]) :])
+            ret[j].append(arg[offsets[i] : offsets[i] + chunk_sizes[i]])
     return ret
 
 

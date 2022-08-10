@@ -21,12 +21,20 @@ from MuyGPyS.gp.kernels import (
 from MuyGPyS import config
 
 if config.muygpys_jax_enabled is False:  # type: ignore
-    from MuyGPyS._src.gp.distance.numpy import _make_regress_tensors
-    from MuyGPyS._src.gp.muygps.numpy import (
-        _muygps_compute_solve,
-        _muygps_compute_diagonal_variance,
-        _muygps_sigma_sq_optim,
-    )
+    if config.muygpys_mpi_enabled is False:  # type: ignore
+        from MuyGPyS._src.gp.distance.numpy import _make_regress_tensors
+        from MuyGPyS._src.gp.muygps.numpy import (
+            _muygps_compute_solve,
+            _muygps_compute_diagonal_variance,
+            _muygps_sigma_sq_optim,
+        )
+    else:
+        from MuyGPyS._src.gp.distance.mpi import _make_regress_tensors
+        from MuyGPyS._src.gp.muygps.mpi import (
+            _muygps_compute_solve,
+            _muygps_compute_diagonal_variance,
+            _muygps_sigma_sq_optim,
+        )
 else:
     from MuyGPyS._src.gp.distance.jax import _make_regress_tensors
 

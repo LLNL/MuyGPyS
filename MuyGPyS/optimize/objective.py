@@ -17,7 +17,16 @@ from typing import Callable
 from MuyGPyS import config
 
 if config.muygpys_jax_enabled is False:  # type: ignore
-    from MuyGPyS._src.optimize.objective.numpy import _mse_fn, _cross_entropy_fn
+    if config.muygpys_mpi_enabled is False:  # type: ignore
+        from MuyGPyS._src.optimize.objective.numpy import (
+            _mse_fn,
+            _cross_entropy_fn,
+        )
+    else:
+        from MuyGPyS._src.optimize.objective.mpi import (
+            _mse_fn,
+            _cross_entropy_fn,
+        )
 else:
     from MuyGPyS._src.optimize.objective.jax import _mse_fn, _cross_entropy_fn
 

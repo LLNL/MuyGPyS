@@ -31,3 +31,11 @@ def _make_mpi_obj_fn(kwargs_opt_fn, comm):
         return global_obj
 
     return caller_fn
+
+
+def _cross_entropy_fn(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    ll_eps: float = 1e-15,
+) -> float:
+    pass

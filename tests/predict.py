@@ -28,6 +28,7 @@ from MuyGPyS.optimize.batch import (
 from MuyGPyS._test.utils import (
     _make_gaussian_data,
     _basic_nn_kwarg_options,
+    _is_mpi_mode,
 )
 
 
@@ -63,6 +64,8 @@ class ClassifyTest(parameterized.TestCase):
         nn_kwargs,
         k_kwargs,
     ):
+        if _is_mpi_mode() is True:
+            return
         muygps = MuyGPS(**k_kwargs)
 
         train, test = _make_gaussian_data(
@@ -121,6 +124,8 @@ class ClassifyTest(parameterized.TestCase):
         nn_kwargs,
         k_kwargs,
     ):
+        if _is_mpi_mode() is True:
+            return
         muygps = MuyGPS(**k_kwargs)
 
         objective_count = len(example_lambdas)

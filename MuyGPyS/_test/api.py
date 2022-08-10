@@ -16,6 +16,8 @@ from MuyGPyS.examples.regress import do_regress
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize.objective import mse_fn
 
+from MuyGPyS._test.utils import _consistent_chunk_tensor
+
 
 class ClassifyAPITest(parameterized.TestCase):
     def _do_classify_test_chassis(
@@ -393,6 +395,7 @@ class RegressionAPITest(parameterized.TestCase):
         np.ndarray,
         np.ndarray,
     ]:
+        # print("gets here")
         ret = do_regress(
             test["input"],
             train["input"],
@@ -448,8 +451,12 @@ class RegressionAPITest(parameterized.TestCase):
                     ],
                     ret,
                 )
+                crosswise_dists = _consistent_chunk_tensor(crosswise_dists)
+                pairwise_dists = _consistent_chunk_tensor(pairwise_dists)
+            variance = _consistent_chunk_tensor(variance)
         else:
             raise ValueError(f"Variance mode {variance_mode} is not supported.")
+        predictions = _consistent_chunk_tensor(predictions)
         mse = mse_fn(predictions, test["output"])
         return (
             regressor,

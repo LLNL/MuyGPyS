@@ -19,6 +19,8 @@ from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _basic_nn_kwarg_options,
+    _consistent_assert,
+    _consistent_unchunk_tensor,
 )
 from MuyGPyS.gp.distance import pairwise_distances
 from MuyGPyS.gp.kernels import Hyperparameter, SigmaSq, RBF, Matern
@@ -28,14 +30,15 @@ class DistancesTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, m, 10, nn_kwargs)
+            # for f in [100]
+            # for nn in [10]
+            # for m in ["l2"]
+            # for nn_kwargs in [_basic_nn_kwarg_options][0]
             for f in [100, 10, 2, 1]
             for nn in [5, 10, 100]
             # for m in ["l2", "F2", "ip", "cosine"]
             for m in ["l2", "F2"]
             for nn_kwargs in _basic_nn_kwarg_options
-            # for f in [100]
-            # for nn in [3]
-            # for nn_kwargs in _exact_nn_kwarg_options
         )
     )
     def test_distances_shapes(
@@ -53,12 +56,17 @@ class DistancesTest(parameterized.TestCase):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         self.assertEqual(nn_indices.shape, (test_count, nn_count))
         self.assertEqual(nn_dists.shape, (test_count, nn_count))
-        dists = pairwise_distances(train, nn_indices, metric=metric)
+        dists = _consistent_unchunk_tensor(
+            pairwise_distances(train, nn_indices, metric=metric)
+        )
         self.assertEqual(dists.shape, (test_count, nn_count, nn_count))
 
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs)
+            # for f in [100]
+            # for nn in [10]
+            # for nn_kwargs in [_basic_nn_kwarg_options][0]
             for f in [100, 10, 2, 1]
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
@@ -84,13 +92,17 @@ class DistancesTest(parameterized.TestCase):
         ll_dists = ll_dists**2
         ll_dists = np.sum(ll_dists, axis=-1)
         self.assertEqual(ll_dists.shape, (test_count, nn_count, nn_count))
-        l2_dists = pairwise_distances(train, nn_indices, metric="l2")
+        l2_dists = _consistent_unchunk_tensor(
+            pairwise_distances(train, nn_indices, metric="l2")
+        )
         self.assertEqual(l2_dists.shape, (test_count, nn_count, nn_count))
-        F2_dists = pairwise_distances(train, nn_indices, metric="F2")
+        F2_dists = _consistent_unchunk_tensor(
+            pairwise_distances(train, nn_indices, metric="F2")
+        )
         self.assertEqual(l2_dists.shape, (test_count, nn_count, nn_count))
-        self.assertTrue(np.allclose(dists, F2_dists))
-        self.assertTrue(np.allclose(dists, l2_dists**2))
-        self.assertTrue(np.allclose(dists, ll_dists))
+        _consistent_assert(self.assertTrue, np.allclose(dists, F2_dists))
+        _consistent_assert(self.assertTrue, np.allclose(dists, l2_dists**2))
+        _consistent_assert(self.assertTrue, np.allclose(dists, ll_dists))
 
 
 class JaxConfigUser:
@@ -337,7 +349,7 @@ class RBFTest(KernelTest):
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
             # for f in [100]
             # for nn in [5]
-            # for nn_kwargs in _exact_nn_kwarg_options
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             # for k_kwargs in [
             #     {"length_scale": {"val": 10.0, "bounds": (1e-5, 1e1)}}
             # ]
@@ -366,13 +378,13 @@ class RBFTest(KernelTest):
         F2_dists = pairwise_distances(train, nn_indices, metric="F2")
         rbf = RBF(**k_kwargs)
         self._check_params_chassis(rbf, **k_kwargs)
-        kern = rbf(F2_dists)
+        kern = _consistent_unchunk_tensor(rbf(F2_dists))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         sk_rbf = sk_RBF(length_scale=rbf.length_scale())
         sk_kern = np.array([sk_rbf(mat) for mat in points])
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
-        self.assertTrue(np.allclose(kern, sk_kern))
+        _consistent_assert(self.assertTrue, np.allclose(kern, sk_kern))
         Kcross = rbf(nn_dists)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
         sk_Kcross = np.array(
@@ -492,20 +504,20 @@ class MaternTest(KernelTest):
         l2_dists = pairwise_distances(train, nn_indices, metric="l2")
         mtn = Matern(**k_kwargs)
         self._check_params_chassis(mtn, **k_kwargs)
-        kern = mtn(l2_dists)
+        kern = _consistent_unchunk_tensor(mtn(l2_dists))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=mtn.length_scale())
         sk_kern = np.array([sk_mtn(mat) for mat in points])
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
-        self.assertTrue(np.allclose(kern, sk_kern))
+        _consistent_assert(self.assertTrue, np.allclose(kern, sk_kern))
         Kcross = mtn(nn_dists)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
         sk_Kcross = np.array(
             [sk_mtn(vec, mat) for vec, mat in zip(test, points)]
         ).reshape(test_count, nn_count)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        self.assertTrue(np.allclose(Kcross, sk_Kcross))
+        self.assertTrue, np.allclose(Kcross, sk_Kcross)
 
 
 if __name__ == "__main__":
