@@ -30,26 +30,11 @@ import warnings
 
 from MuyGPyS import config
 
-if config.muygpys_jax_enabled is False:  # type: ignore
-    if config.muygpys_mpi_enabled is False:  # type: ignore
-        from MuyGPyS._src.gp.distance.numpy import _make_train_tensors
-        from MuyGPyS._src.optimize.chassis.numpy import (
-            _scipy_optimize,
-            _bayes_opt_optimize,
-        )
-    else:
-        from MuyGPyS._src.gp.distance.mpi import _make_train_tensors
-        from MuyGPyS._src.optimize.chassis.mpi import (
-            _scipy_optimize,
-            _bayes_opt_optimize,
-        )
-
-else:
-    from MuyGPyS._src.gp.distance.jax import _make_train_tensors
-    from MuyGPyS._src.optimize.chassis.jax import (
-        _scipy_optimize,
-        _bayes_opt_optimize,
-    )
+from MuyGPyS._src.gp.distance import _make_train_tensors
+from MuyGPyS._src.optimize.chassis import (
+    _scipy_optimize,
+    _bayes_opt_optimize,
+)
 
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.objective import (

@@ -2,3 +2,11 @@
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
+
+from MuyGPyS._src.util import _collect_implementation
+
+_mse_fn, _cross_entropy_fn = _collect_implementation(
+    "MuyGPyS._src.optimize.objective",
+    "_mse_fn",
+    "_cross_entropy_fn",
+)
