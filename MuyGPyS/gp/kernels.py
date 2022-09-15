@@ -56,6 +56,7 @@ from MuyGPyS._src.gp.kernels import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
+from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
 
 class SigmaSq:
@@ -266,6 +267,8 @@ class Hyperparameter:
                 val = np.random.uniform(
                     low=self._bounds[0], high=self._bounds[1]
                 )
+                if _is_mpi_mode() is True:
+                    val = config.mpi_state.comm_world.bcast(val, root=0)
             elif val == "log_sample":
                 val = np.exp(
                     np.random.uniform(
@@ -273,6 +276,8 @@ class Hyperparameter:
                         high=np.log(self._bounds[1]),
                     )
                 )
+                if _is_mpi_mode() is True:
+                    val = config.mpi_state.comm_world.bcast(val, root=0)
             else:
                 any_below = np.any(
                     np.choose(
