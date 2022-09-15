@@ -425,9 +425,9 @@ def make_multivariate_regressor(
                 if muygps.fixed() is False:
                     mmuygps.models[i] = optimize_from_tensors(
                         muygps,
-                        batch_targets[:, i].reshape(batch_count, 1),
+                        batch_targets[:, i].reshape(batch_targets.shape[0], 1),
                         batch_nn_targets[:, :, i].reshape(
-                            batch_count, nn_count, 1
+                            batch_nn_targets.shape[0], nn_count, 1
                         ),
                         crosswise_dists,
                         pairwise_dists,

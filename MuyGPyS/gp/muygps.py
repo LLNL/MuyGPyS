@@ -21,11 +21,15 @@ from MuyGPyS.gp.kernels import (
 from MuyGPyS import config
 
 from MuyGPyS._src.gp.distance import _make_regress_tensors
+from MuyGPyS._src.gp.distance.numpy import (
+    _make_regress_tensors as _make_regress_tensors_n,
+)
 from MuyGPyS._src.gp.muygps import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
     _muygps_sigma_sq_optim,
 )
+from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
 
 class MuyGPS:
@@ -231,6 +235,7 @@ class MuyGPS:
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
         return_distances: bool = False,
+        indices_by_rank: bool = False,
     ) -> Union[
         np.ndarray,
         Tuple[np.ndarray, np.ndarray],
@@ -274,6 +279,9 @@ class MuyGPS:
                 nearest neighbor sets and a `(test_count, nn_count, nn_count)`
                 tensor containing the pairwise distances between the test data's
                 nearest neighbor sets.
+            indices_by_rank:
+                If `True`, construct the tensors using local indices with no
+                communication. Only for use in MPI mode.
 
         Returns
         -------
@@ -295,11 +303,12 @@ class MuyGPS:
             distances between the nearest neighbors of the test elements. Only
             returned if `return_distances is True`.
         """
-        (
-            crosswise_dists,
-            pairwise_dists,
-            batch_nn_targets,
-        ) = _make_regress_tensors(
+        tensor_fn = (
+            _make_regress_tensors_n
+            if _is_mpi_mode() is True and indices_by_rank is True
+            else _make_regress_tensors
+        )
+        (crosswise_dists, pairwise_dists, batch_nn_targets,) = tensor_fn(
             self.kernel.metric, indices, nn_indices, test, train, targets
         )
         K = self.kernel(pairwise_dists)
@@ -687,6 +696,7 @@ class MultivariateMuyGPS:
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
         return_distances: bool = False,
+        indices_by_rank: bool = False,
     ) -> Union[
         np.ndarray,
         Tuple[np.ndarray, np.ndarray],
@@ -729,6 +739,9 @@ class MultivariateMuyGPS:
                 nearest neighbor sets and a `(test_count, nn_count, nn_count)`
                 tensor containing the pairwise distances between the test data's
                 nearest neighbor sets.
+            indices_by_rank:
+                If `True`, construct the tensors using local indices with no
+                communication. Only for use in MPI mode.
         Returns
         -------
         responses:
@@ -748,11 +761,13 @@ class MultivariateMuyGPS:
             distances between the nearest neighbors of the test elements. Only
             returned if `return_distances is True`.
         """
-        (
-            crosswise_dists,
-            pairwise_dists,
-            batch_nn_targets,
-        ) = _make_regress_tensors(
+        tensor_fn = (
+            _make_regress_tensors_n
+            if _is_mpi_mode() is True and indices_by_rank is True
+            else _make_regress_tensors
+        )
+
+        (crosswise_dists, pairwise_dists, batch_nn_targets,) = tensor_fn(
             self.metric,
             indices,
             nn_indices,

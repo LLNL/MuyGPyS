@@ -37,7 +37,6 @@ from MuyGPyS._test.utils import (
 from MuyGPyS._src.mpi_utils import (
     _consistent_unchunk_tensor,
     _consistent_chunk_tensor,
-    _is_mpi_mode,
 )
 
 
@@ -395,9 +394,10 @@ class ClassifyTest(parameterized.TestCase):
             (1000, 200, f, nn, nn_kwargs, k_kwargs)
             for f in [100, 10, 2]
             for nn in [5, 10, 100]
+            for nn_kwargs in _basic_nn_kwarg_options
             # for f in [10]
             # for nn in [5]
-            for nn_kwargs in _basic_nn_kwarg_options
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for k_kwargs in (
                 (
                     "matern",
@@ -428,8 +428,6 @@ class ClassifyTest(parameterized.TestCase):
         k_kwargs,
     ):
         # skip if we are using the MPI implementation
-        if _is_mpi_mode() is True:
-            return
         kern, args = k_kwargs
         response_count = len(args)
 
@@ -584,8 +582,6 @@ class MakeClassifierTest(parameterized.TestCase):
         k_kwargs,
     ):
         # skip if we are using the MPI implementation
-        if _is_mpi_mode() is True:
-            return
         kern, args = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
@@ -617,6 +613,8 @@ class MakeClassifierTest(parameterized.TestCase):
             mmuygps, _ = classifier_args
         elif len(classifier_args) == 4:
             mmuygps, _, crosswise_dists, pairwise_dists = classifier_args
+            crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
+            pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
             self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
             self.assertEqual(
                 pairwise_dists.shape, (batch_count, nn_count, nn_count)
@@ -695,8 +693,6 @@ class MakeRegressorTest(parameterized.TestCase):
         k_kwargs,
     ):
         # skip if we are using the MPI implementation
-        if _is_mpi_mode() is True:
-            return
         kern, args = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
@@ -729,6 +725,8 @@ class MakeRegressorTest(parameterized.TestCase):
             mmuygps, _ = regressor_args
         elif len(regressor_args) == 4:
             mmuygps, _, crosswise_dists, pairwise_dists = regressor_args
+            crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
+            pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
             self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
             self.assertEqual(
                 pairwise_dists.shape, (batch_count, nn_count, nn_count)
