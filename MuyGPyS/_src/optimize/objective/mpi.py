@@ -3,7 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS._src.optimize.objective.numpy import _mse_fn_unnormalized
+from MuyGPyS._src.optimize.objective.numpy import (
+    _mse_fn_unnormalized,
+    _cross_entropy_fn as _cross_entropy_fn_n,
+)
 from MuyGPyS import config
 
 from mpi4py import MPI
@@ -38,4 +41,6 @@ def _cross_entropy_fn(
     targets: np.ndarray,
     ll_eps: float = 1e-15,
 ) -> float:
-    pass
+    local_log_loss = _cross_entropy_fn_n(predictions, targets, ll_eps=ll_eps)
+    global_log_loss = world.allreduce(local_log_loss, op=MPI.SUM)
+    return global_log_loss

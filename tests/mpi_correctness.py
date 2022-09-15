@@ -600,11 +600,11 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
     from MuyGPyS._src.optimize.objective.numpy import (
         _mse_fn as mse_fn_n,
-        # _cross_entropy_fn as cross_entropy_fn_n,
+        _cross_entropy_fn as cross_entropy_fn_n,
     )
     from MuyGPyS._src.optimize.objective.mpi import (
         _mse_fn as mse_fn_m,
-        # _cross_entropy_fn as cross_entropy_fn_m,
+        _cross_entropy_fn as cross_entropy_fn_m,
     )
     from MuyGPyS.optimize.objective import (
         make_loo_crossval_fn,
@@ -747,6 +747,38 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                 self.batch_nn_targets_chunk,
                 self.batch_targets_chunk,
             )
+
+    class LossTest(parameterized.TestCase):
+        @parameterized.parameters((10, 10, f, r) for f in [100] for r in [2])
+        def test_cross_entropy(
+            self, train_count, test_count, feature_count, response_count
+        ):
+            if rank == 0:
+                train, test = _make_gaussian_data(
+                    train_count,
+                    test_count,
+                    feature_count,
+                    response_count,
+                    categorical=True,
+                )
+                targets = train["output"]
+                predictions = test["output"]
+                serial_cross_entropy = cross_entropy_fn_n(predictions, targets)
+            else:
+                targets = None
+                predictions = None
+                serial_cross_entropy = None
+
+            targets_chunk = _chunk_tensor(targets)
+            predictions_chunk = _chunk_tensor(predictions)
+
+            parallel_cross_entropy = cross_entropy_fn_m(
+                predictions_chunk, targets_chunk
+            )
+            if rank == 0:
+                self.assertAlmostEqual(
+                    serial_cross_entropy, parallel_cross_entropy
+                )
 
     class ObjectiveTest(OptimTestCase):
         @classmethod
