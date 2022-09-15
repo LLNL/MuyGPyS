@@ -49,10 +49,7 @@ from MuyGPyS._test.utils import (
     _advanced_opt_method_and_kwarg_options,
     _sq_rel_err,
 )
-from MuyGPyS._src.mpi_utils import (
-    _consistent_chunk_tensor,
-    _is_mpi_mode,
-)
+from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 
 
 class BatchTest(parameterized.TestCase):
@@ -529,8 +526,12 @@ class GPIndicesOptimTest(parameterized.TestCase):
             (1001, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
-            for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _advanced_opt_method_and_kwarg_options[0]
+            # ]
+            for nn_kwargs in _basic_nn_kwarg_options
             for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
@@ -557,8 +558,6 @@ class GPIndicesOptimTest(parameterized.TestCase):
         k_kwargs,
     ):
         # Skip if we are in MPI mode.
-        if _is_mpi_mode() is True:
-            return
         target, kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
 
