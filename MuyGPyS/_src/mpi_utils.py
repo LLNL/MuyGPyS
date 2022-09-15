@@ -10,8 +10,12 @@ from typing import Callable
 import numpy as np
 
 world = config.mpi_state.comm_world
-rank = config.mpi_state.comm_world.Get_rank()
-size = config.mpi_state.comm_world.Get_size()
+if world is not None:
+    rank = config.mpi_state.comm_world.Get_rank()
+    size = config.mpi_state.comm_world.Get_size()
+else:
+    rank = 0
+    size = 1
 
 
 def _get_chunk_sizes(count: int, size: int):
