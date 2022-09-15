@@ -48,6 +48,8 @@ from MuyGPyS._test.utils import (
     _exact_nn_kwarg_options,
     _advanced_opt_method_and_kwarg_options,
     _sq_rel_err,
+)
+from MuyGPyS._src.mpi_utils import (
     _consistent_chunk_tensor,
     _is_mpi_mode,
 )
@@ -411,7 +413,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
         self.assertLessEqual(mrse, tol)
 
 
-class GPOptimTest(parameterized.TestCase):
+class GPTensorsOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
@@ -520,6 +522,8 @@ class GPOptimTest(parameterized.TestCase):
         # Is this a strong enough guarantee?
         self.assertAlmostEqual(mrse, 0.0, 0)
 
+
+class GPIndicesOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1001, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)

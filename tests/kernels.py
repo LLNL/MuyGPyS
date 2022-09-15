@@ -20,8 +20,8 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _basic_nn_kwarg_options,
     _consistent_assert,
-    _consistent_unchunk_tensor,
 )
+from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor
 from MuyGPyS.gp.distance import pairwise_distances
 from MuyGPyS.gp.kernels import Hyperparameter, SigmaSq, RBF, Matern
 

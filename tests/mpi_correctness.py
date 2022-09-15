@@ -26,8 +26,8 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
     from MuyGPyS._src.gp.distance.mpi import (
         _make_regress_tensors as make_regress_tensors_m,
         _make_train_tensors as make_train_tensors_m,
-        _chunk_tensor,
     )
+    from MuyGPyS._src.mpi_utils import _chunk_tensor
 
     from absl.testing import absltest
     from absl.testing import parameterized

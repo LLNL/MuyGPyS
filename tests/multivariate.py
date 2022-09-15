@@ -33,6 +33,8 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
     _get_sigma_sq_series,
+)
+from MuyGPyS._src.mpi_utils import (
     _consistent_unchunk_tensor,
     _consistent_chunk_tensor,
     _is_mpi_mode,

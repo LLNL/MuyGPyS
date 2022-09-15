@@ -28,8 +28,8 @@ from MuyGPyS.optimize.batch import (
 from MuyGPyS._test.utils import (
     _make_gaussian_data,
     _basic_nn_kwarg_options,
-    _is_mpi_mode,
 )
+from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
 
 class ClassifyTest(parameterized.TestCase):

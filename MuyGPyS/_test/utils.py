@@ -3,11 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
+from MuyGPyS import config
+from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
 from typing import Dict, Generator, Tuple, Union
 
-from MuyGPyS import config
+import numpy as np
 
 if config.muygpys_hnswlib_enabled is True:  # type: ignore
     _basic_nn_kwarg_options = [
@@ -346,45 +347,3 @@ def _consistent_assert(assert_fn, *args):
             assert_fn(*args)
     else:
         assert_fn(*args)
-
-
-def _consistent_unchunk_tensor(tensor) -> np.ndarray:
-    """
-    If we are using an MPI implementation, allgather the tensor across all
-    cores. Otherwise NOOP.
-
-    The purpose of this function is to allow the existing serial testing harness
-    to also test the mpi implementations without the need for additional codes.
-
-    Args:
-        tensor:
-            A tensor, which might be a simple serial tensors or distributed
-            chunks if it is the product of the mpi implementation.
-
-    Return:
-        The same tensor if a serial implementation, else an allgathered tensor
-        of the distributed chunks.
-    """
-    if _is_mpi_mode() is True:
-        if len(tensor.shape) > 1:
-            return np.vstack(config.mpi_state.comm_world.allgather(tensor))
-        else:
-            return np.concatenate(config.mpi_state.comm_world.allgather(tensor))
-    else:
-        return tensor
-
-
-def _consistent_chunk_tensor(tensor) -> np.ndarray:
-    if _is_mpi_mode() is True:
-        from MuyGPyS._src.gp.distance.mpi import _chunk_tensor
-
-        return _chunk_tensor(tensor)
-    else:
-        return tensor
-
-
-def _is_mpi_mode() -> bool:
-    return (
-        config.muygpys_mpi_enabled is True  # type: ignore
-        and config.muygpys_jax_enabled is False  # type: ignore
-    )

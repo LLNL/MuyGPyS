@@ -16,7 +16,7 @@ from MuyGPyS.examples.regress import do_regress
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize.objective import mse_fn
 
-from MuyGPyS._test.utils import _consistent_chunk_tensor
+from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 
 
 class ClassifyAPITest(parameterized.TestCase):

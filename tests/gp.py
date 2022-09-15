@@ -32,8 +32,9 @@ from MuyGPyS._test.utils import (
     _exact_nn_kwarg_options,
     _get_sigma_sq_series,
     _consistent_assert,
+)
+from MuyGPyS._src.mpi_utils import (
     _consistent_unchunk_tensor,
-    _is_mpi_mode,
 )
 
 
@@ -462,7 +463,7 @@ class GPMathTest(parameterized.TestCase):
             self.assertGreater(diagonal_variance[i], 0.0)
 
 
-class MakerTest(parameterized.TestCase):
+class MakeClassifierTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 1000, 10, b, n, nn_kwargs, lm, rt, k_kwargs)
@@ -494,10 +495,6 @@ class MakerTest(parameterized.TestCase):
         return_distances,
         k_kwargs,
     ):
-        # Skip this test if we are in mpi mode
-        if _is_mpi_mode() is True:
-            return
-
         response_count = 2
         train, test = _make_gaussian_data(
             train_count,
@@ -523,6 +520,8 @@ class MakerTest(parameterized.TestCase):
             muygps, _ = classifier_args
         elif len(classifier_args) == 4:
             muygps, _, crosswise_dists, pairwise_dists = classifier_args
+            crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
+            pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
             self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
             self.assertEqual(
                 pairwise_dists.shape, (batch_count, nn_count, nn_count)
@@ -546,6 +545,8 @@ class MakerTest(parameterized.TestCase):
                     muygps.kernel.hyperparameters[key](),
                 )
 
+
+class MakeRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, rt, k_kwargs)
@@ -553,6 +554,8 @@ class MakerTest(parameterized.TestCase):
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
+            # for ssm in ["analytic"]
+            # for rt in [True]
             for ssm in ["analytic", None]
             for rt in [True, False]
             for k_kwargs in (
@@ -560,6 +563,7 @@ class MakerTest(parameterized.TestCase):
                     "kern": "matern",
                     "metric": "l2",
                     "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
+                    # "nu": {"val": 0.38},
                     "length_scale": {"val": 1.5},
                     "eps": {"val": 1e-5},
                 },
@@ -579,9 +583,6 @@ class MakerTest(parameterized.TestCase):
         return_distances,
         k_kwargs,
     ):
-        # Skip this test if we are in mpi mode
-        if _is_mpi_mode() is True:
-            return
         response_count = 1
         # construct the observation locations
         train, test = _make_gaussian_data(
@@ -608,6 +609,8 @@ class MakerTest(parameterized.TestCase):
             muygps, _ = regressor_args
         elif len(regressor_args) == 4:
             muygps, _, crosswise_dists, pairwise_dists = regressor_args
+            crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
+            pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
             self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
             self.assertEqual(
                 pairwise_dists.shape, (batch_count, nn_count, nn_count)
