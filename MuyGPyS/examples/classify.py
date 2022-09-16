@@ -28,7 +28,10 @@ from MuyGPyS.optimize.chassis import optimize_from_tensors
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import get_balanced_batch
-from MuyGPyS._src.mpi_utils import _is_mpi_mode, _consistent_chunk_tensor
+from MuyGPyS._src.mpi_utils import (
+    _is_mpi_mode,
+    _consistent_chunk_tensor,
+)
 
 
 def make_classifier(
@@ -676,12 +679,11 @@ def classify_any(
     one_hot_false = float(np.min(train_labels[0, :]))
 
     time_start = perf_counter()
+    test_features = _consistent_chunk_tensor(test_features)
     test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
-    nn_labels = _consistent_chunk_tensor(nn_labels)
-    test_nn_indices = _consistent_chunk_tensor(test_nn_indices)
 
     predictions = np.full((nn_labels.shape[0], class_count), one_hot_false)
     nonconstant_mask = np.max(nn_labels[:, :, 0], axis=-1) != np.min(

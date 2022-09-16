@@ -376,12 +376,11 @@ def classify_two_class_uq(
     # train_count, _ = train_features.shape
 
     time_start = perf_counter()
+    test_feature = _consistent_chunk_tensor(test_features)
     test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
-    nn_labels = _consistent_chunk_tensor(nn_labels)
-    test_nn_indices = _consistent_chunk_tensor(test_nn_indices)
 
     means = np.zeros((nn_labels.shape[0], 2))
     variances = np.zeros(nn_labels.shape[0])
