@@ -557,7 +557,6 @@ class GPIndicesOptimTest(parameterized.TestCase):
         opt_method_and_kwargs,
         k_kwargs,
     ):
-        # Skip if we are in MPI mode.
         target, kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
 

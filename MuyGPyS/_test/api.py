@@ -16,7 +16,11 @@ from MuyGPyS.examples.regress import do_regress
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize.objective import mse_fn
 
-from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
+from MuyGPyS._src.mpi_utils import (
+    _consistent_chunk_tensor,
+    _consistent_unchunk_tensor,
+    _consistent_reduce_scalar,
+)
 
 
 class ClassifyAPITest(parameterized.TestCase):
@@ -158,9 +162,24 @@ class ClassifyAPITest(parameterized.TestCase):
             )
 
         predicted_labels = np.argmax(surrogate_predictions, axis=1)
-        acc = np.mean(predicted_labels == np.argmax(test["output"], axis=1))
+        target_labels = np.argmax(test["output"], axis=1)
+        test_count = len(target_labels)
         if np.all(np.unique(train["output"]) == np.unique([-1.0, 1.0])):
             predicted_labels = 2 * predicted_labels - 1
+            target_labels = 2 * target_labels - 1
+
+        target_labels = _consistent_chunk_tensor(target_labels)
+        correct_count = np.count_nonzero(predicted_labels == target_labels)
+
+        correct_count = _consistent_reduce_scalar(correct_count)
+        acc = correct_count / test_count
+
+        surrogate_predictions = _consistent_unchunk_tensor(
+            surrogate_predictions
+        )
+        predicted_labels = _consistent_unchunk_tensor(predicted_labels)
+        crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
+        pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
         return (
             classifier,
             surrogate_predictions,
@@ -451,12 +470,14 @@ class RegressionAPITest(parameterized.TestCase):
                     ],
                     ret,
                 )
-                crosswise_dists = _consistent_chunk_tensor(crosswise_dists)
-                pairwise_dists = _consistent_chunk_tensor(pairwise_dists)
-            variance = _consistent_chunk_tensor(variance)
         else:
             raise ValueError(f"Variance mode {variance_mode} is not supported.")
-        predictions = _consistent_chunk_tensor(predictions)
+
+        predictions = _consistent_unchunk_tensor(predictions)
+        variance = _consistent_unchunk_tensor(variance)
+        crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
+        pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
+
         mse = mse_fn(predictions, test["output"])
         return (
             regressor,

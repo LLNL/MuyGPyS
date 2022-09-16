@@ -82,6 +82,8 @@ def _consistent_unchunk_tensor(tensor) -> np.ndarray:
         The same tensor if a serial implementation, else an allgathered tensor
         of the distributed chunks.
     """
+    if tensor is None:
+        return tensor
     if _is_mpi_mode() is True:
         if len(tensor.shape) > 1:
             return np.vstack(config.mpi_state.comm_world.allgather(tensor))
