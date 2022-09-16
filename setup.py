@@ -50,6 +50,10 @@ JAX_CUDA11_CUDNN82_REQUIRES = [
     "jax[cuda11_cudnn82]",
 ]
 
+MPI_REQUIRES = [
+    "mpi4py>=3.1.3",
+]
+
 setup(
     extras_require={
         "dev": DEV_REQUIRES + TEST_REQUIRES + DOCS_REQUIRES,
@@ -60,5 +64,6 @@ setup(
         "jax_cuda": JAX_CUDA11_CUDNN805_REQUIRES + JAX_REQUIRES,
         "jax_cuda11_cudnn805": JAX_CUDA11_CUDNN805_REQUIRES + JAX_REQUIRES,
         "jax_cuda11_cudnn82": JAX_CUDA11_CUDNN82_REQUIRES + JAX_REQUIRES,
+        "mpi": MPI_REQUIRES,
     },
 )
