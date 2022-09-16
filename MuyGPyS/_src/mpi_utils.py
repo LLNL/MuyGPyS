@@ -5,8 +5,6 @@
 
 from MuyGPyS import config
 
-from mpi4py import MPI
-
 from typing import Callable
 
 import numpy as np
@@ -102,6 +100,8 @@ def _consistent_chunk_tensor(tensor) -> np.ndarray:
 
 def _consistent_reduce_scalar(scalar):
     if _is_mpi_mode() is True:
+        from mpi4py import MPI
+
         return world.allreduce(scalar, op=MPI.SUM)
     else:
         return scalar
