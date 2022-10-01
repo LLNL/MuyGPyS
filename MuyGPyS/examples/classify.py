@@ -28,6 +28,10 @@ from MuyGPyS.optimize.chassis import optimize_from_tensors
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import get_balanced_batch
+from MuyGPyS._src.mpi_utils import (
+    _is_mpi_mode,
+    _consistent_chunk_tensor,
+)
 
 
 def make_classifier(
@@ -381,8 +385,10 @@ def make_multivariate_classifier(
             if muygps.fixed() is False:
                 mmuygps.models[i] = optimize_from_tensors(
                     muygps,
-                    batch_targets[:, i].reshape(batch_count, 1),
-                    batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+                    batch_targets[:, i].reshape(batch_targets.shape[0], 1),
+                    batch_nn_targets[:, :, i].reshape(
+                        batch_nn_targets.shape[0], nn_count, 1
+                    ),
                     crosswise_dists,
                     pairwise_dists,
                     loss_method=loss_method,
@@ -671,13 +677,15 @@ def classify_any(
 
     # detect one hot encoding, e.g. {0,1}, {-0.1, 0.9}, {-1,1}, ...
     one_hot_false = float(np.min(train_labels[0, :]))
-    predictions = np.full((test_count, class_count), one_hot_false)
 
     time_start = perf_counter()
+    test_features = _consistent_chunk_tensor(test_features)
     test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
+
+    predictions = np.full((nn_labels.shape[0], class_count), one_hot_false)
     nonconstant_mask = np.max(nn_labels[:, :, 0], axis=-1) != np.min(
         nn_labels[:, :, 0], axis=-1
     )
@@ -688,13 +696,16 @@ def classify_any(
     time_agree = perf_counter()
 
     if np.sum(nonconstant_mask) > 0:
+        nonconstant_indices = np.where(nonconstant_mask == True)[0]
+        nonconstant_nn_indices = test_nn_indices[nonconstant_mask, :]
         predictions[nonconstant_mask] = surrogate.regress_from_indices(
-            np.where(nonconstant_mask == True)[0],
-            test_nn_indices[nonconstant_mask, :],
+            nonconstant_indices,
+            nonconstant_nn_indices,
             test_features,
             train_features,
             train_labels,
             apply_sigma_sq=False,
+            indices_by_rank=_is_mpi_mode(),
         )
     time_pred = perf_counter()
 

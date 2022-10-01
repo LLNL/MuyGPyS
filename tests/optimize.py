@@ -49,6 +49,7 @@ from MuyGPyS._test.utils import (
     _advanced_opt_method_and_kwarg_options,
     _sq_rel_err,
 )
+from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 
 
 class BatchTest(parameterized.TestCase):
@@ -347,6 +348,8 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
                     "eps": {"val": 1e-5},
                 },
             )
+            # for nn_kwargs in [_basic_nn_kwarg_options][0]
+            # for ss in [(1.0, 5e-2)]
         )
     )
     def test_sigma_sq_optim(
@@ -393,8 +396,12 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
             sim_test["output"] = y[:test_count].reshape(test_count, 1)
             sim_train["output"] = y[test_count:].reshape(train_count, 1)
 
+            batch_nn_targets = _consistent_chunk_tensor(
+                sim_train["output"][batch_nn_indices, :]
+            )
+
             # Find MuyGPyS optim
-            muygps.sigma_sq_optim(K, batch_nn_indices, sim_train["output"])
+            muygps.sigma_sq_optim(K, batch_nn_targets)
             estimate = muygps.sigma_sq()[0]
 
             mrse += _sq_rel_err(sigma_sq, estimate)
@@ -403,7 +410,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
         self.assertLessEqual(mrse, tol)
 
 
-class GPOptimTest(parameterized.TestCase):
+class GPTensorsOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
@@ -424,6 +431,10 @@ class GPOptimTest(parameterized.TestCase):
                     },
                 ),
             )
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _advanced_opt_method_and_kwarg_options[0]
+            # ]
         )
     )
     def test_hyper_optim(
@@ -482,8 +493,12 @@ class GPOptimTest(parameterized.TestCase):
             # set up MuyGPS object
             muygps = MuyGPS(**kwargs)
 
-            batch_targets = sim_train["output"][batch_indices, :]
-            batch_nn_targets = sim_train["output"][batch_nn_indices, :]
+            batch_targets = _consistent_chunk_tensor(
+                sim_train["output"][batch_indices, :]
+            )
+            batch_nn_targets = _consistent_chunk_tensor(
+                sim_train["output"][batch_nn_indices, :]
+            )
 
             muygps = optimize_from_tensors(
                 muygps,
@@ -504,13 +519,19 @@ class GPOptimTest(parameterized.TestCase):
         # Is this a strong enough guarantee?
         self.assertAlmostEqual(mrse, 0.0, 0)
 
+
+class GPIndicesOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1001, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
-            for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _advanced_opt_method_and_kwarg_options[0]
+            # ]
+            for nn_kwargs in _basic_nn_kwarg_options
             for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
             for k_kwargs in (
                 (

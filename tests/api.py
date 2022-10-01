@@ -61,6 +61,11 @@ class MNISTTest(ClassifyAPITest):
             (nn, bs, lm, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
+            # for lm in ["mse"]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[0]
+            # ]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["log", "mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
@@ -130,11 +135,18 @@ class StargalTest(ClassifyAPITest):
         # with open(os.path.join(hardpath, hardfiles["50"]), "rb") as f:
         #     cls.embedded_50_train, cls.embedded_50_test = pkl.load(f)
 
+
+class StargalClassifyTest(StargalTest):
     @parameterized.parameters(
         (
             (nn, bs, lm, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
+            # for lm in ["log"]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[0]
+            # ]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["log", "mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
@@ -144,6 +156,7 @@ class StargalTest(ClassifyAPITest):
                     {
                         "kern": "matern",
                         "metric": "l2",
+                        # "nu": {"val": 0.75},
                         "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
                         "eps": {"val": 1e-3},
@@ -188,6 +201,8 @@ class StargalTest(ClassifyAPITest):
             verbose=False,
         )
 
+
+class StargalUQTest(StargalTest):
     @parameterized.parameters(
         (
             (nn, obs, ubs, lm, opt_method_and_kwargs, uq, nn_kwargs, k_kwargs)
@@ -253,21 +268,7 @@ class StargalTest(ClassifyAPITest):
         )
 
 
-class MultivariateStargalTest(ClassifyAPITest):
-    @classmethod
-    def setUpClass(cls):
-        super(MultivariateStargalTest, cls).setUpClass()
-        # with open(os.path.join(hardpath, hardfiles["full"]), "rb") as f:
-        #     cls.train, cls.test = pkl.load(f)
-        # with open(os.path.join(hardpath, hardfiles["30"]), "rb") as f:
-        #     cls.embedded_30_train, cls.embedded_30_test = pkl.load(f)
-        with open(
-            os.path.join(hardpath + stargal_dir, stargal_files["40"]), "rb"
-        ) as f:
-            cls.embedded_40_train, cls.embedded_40_test = pkl.load(f)
-        # with open(os.path.join(hardpath, hardfiles["50"]), "rb") as f:
-        #     cls.embedded_50_train, cls.embedded_50_test = pkl.load(f)
-
+class MultivariateStargalClassifyTest(StargalTest):
     @parameterized.parameters(
         (
             (nn, bs, lm, opt_method_and_kwargs, nn_kwargs, k_kwargs)
@@ -355,13 +356,15 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             (nn, bs, vm, lm, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            # for vm in [None]
-            # for vm in ["diagonal"]
-            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for lm in ["mse"]
             for vm in [None, "diagonal"]
             for nn_kwargs in _basic_nn_kwarg_options
-            for lm in ["mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            # for vm in ["diagonal"]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[0]
+            # ]
             for k_kwargs in (
                 (
                     1.0,
@@ -446,10 +449,7 @@ class HeatonTest(RegressionAPITest):
             for nn in [30]
             for bs in [500]
             for vm in ["diagonal", None]
-            # for vm in ["diagonal"]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            # for vm in [None, "diagonal"]
-            # for nn_kwargs in _basic_nn_kwarg_options
+            for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
@@ -473,6 +473,11 @@ class HeatonTest(RegressionAPITest):
                 #     },
                 # ),
             )
+            # for vm in ["diagonal"]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[0]
+            # ]
         )
     )
     def test_regress(

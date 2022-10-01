@@ -40,15 +40,12 @@ def _muygps_compute_diagonal_variance(
 
 
 @jit
-def _muygps_sigma_sq_optim(
+def _muygps_sigma_sq_optim_unnormalized(
     K: jnp.ndarray,
-    nn_indices: jnp.ndarray,
-    targets: jnp.ndarray,
+    nn_targets: jnp.ndarray,
     eps: float,
 ) -> jnp.ndarray:
-    batch_count, nn_count = nn_indices.shape
-
-    nn_targets = targets[nn_indices, :]
+    _, nn_count, _ = nn_targets.shape
     return jnp.sum(
         jnp.einsum(
             "ijk,ijk->ik",
@@ -56,4 +53,16 @@ def _muygps_sigma_sq_optim(
             jnp.linalg.solve(K + eps * jnp.eye(nn_count), nn_targets),
         ),
         axis=0,
-    ) / (nn_count * batch_count)
+    )
+
+
+@jit
+def _muygps_sigma_sq_optim(
+    K: jnp.ndarray,
+    nn_targets: jnp.ndarray,
+    eps: float,
+) -> jnp.ndarray:
+    batch_count, nn_count, _ = nn_targets.shape
+    return _muygps_sigma_sq_optim_unnormalized(K, nn_targets, eps) / (
+        batch_count * nn_count
+    )

@@ -29,20 +29,21 @@ from MuyGPyS._test.utils import (
     _make_gaussian_data,
     _basic_nn_kwarg_options,
 )
+from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor
 
 
 class ClassifyTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 200, f, r, nn, nn_kwargs, k_kwargs)
-            for f in [100, 10, 2]
-            for r in [10, 2, 1]
-            for nn in [5, 10, 100]
+            for f in [10, 2]
+            for r in [10, 1]
+            for nn in [5, 50]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [100]
             # for r in [10]
             # for nn in [10]
-            # for nn_kwargs in _basic_nn_kwarg_options
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for k_kwargs in (
                 {
                     "kern": "matern",
@@ -81,8 +82,11 @@ class ClassifyTest(parameterized.TestCase):
             nbrs_lookup,
             train["output"],
         )
+        predictions = _consistent_unchunk_tensor(predictions)
         self.assertEqual(predictions.shape, (test_count, response_count))
 
+
+class ClassifyUQTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 200, f, r, nn, b, nn_kwargs, k_kwargs)
@@ -90,9 +94,10 @@ class ClassifyTest(parameterized.TestCase):
             # for r in [2]
             # for nn in [10]
             # for b in [200]
-            for f in [100, 10, 2]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for f in [10, 2]
             for r in [2]
-            for nn in [5, 10, 100]
+            for nn in [5, 50]
             for b in [200]
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in (
@@ -143,6 +148,8 @@ class ClassifyTest(parameterized.TestCase):
             train["output"],
         )
 
+        predictions = _consistent_unchunk_tensor(predictions)
+        variances = _consistent_unchunk_tensor(variances)
         self.assertEqual(predictions.shape, (test_count, response_count))
         self.assertEqual(variances.shape, (test_count,))
 

@@ -88,12 +88,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.batch_indices_j = jnp.array(cls.batch_indices_n)
             cls.batch_nn_indices_j = jnp.array(cls.batch_nn_indices_n)
 
-    from MuyGPyS._src.gp.numpy_distance import (
+    from MuyGPyS._src.gp.distance.numpy import (
         _pairwise_distances as pairwise_distances_n,
         _crosswise_distances as crosswise_distances_n,
         _make_train_tensors as make_train_tensors_n,
     )
-    from MuyGPyS._src.gp.jax_distance import (
+    from MuyGPyS._src.gp.distance.jax import (
         _pairwise_distances as pairwise_distances_j,
         _crosswise_distances as crosswise_distances_j,
         _make_train_tensors as make_train_tensors_j,
@@ -166,7 +166,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 allclose_gen(batch_nn_targets_n, batch_nn_targets_j)
             )
 
-    from MuyGPyS._src.gp.numpy_kernels import (
+    from MuyGPyS._src.gp.kernels.numpy import (
         _rbf_fn as rbf_fn_n,
         _matern_05_fn as matern_05_fn_n,
         _matern_15_fn as matern_15_fn_n,
@@ -174,7 +174,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _matern_inf_fn as matern_inf_fn_n,
         _matern_gen_fn as matern_gen_fn_n,
     )
-    from MuyGPyS._src.gp.jax_kernels import (
+    from MuyGPyS._src.gp.kernels.jax import (
         _rbf_fn as rbf_fn_j,
         _matern_05_fn as matern_05_fn_j,
         _matern_15_fn as matern_15_fn_j,
@@ -353,12 +353,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 )
             )
 
-    from MuyGPyS._src.gp.numpy_muygps import (
+    from MuyGPyS._src.gp.muygps.numpy import (
         _muygps_compute_solve as muygps_compute_solve_n,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
         _muygps_sigma_sq_optim as muygps_sigma_sq_optim_n,
     )
-    from MuyGPyS._src.gp.jax_muygps import (
+    from MuyGPyS._src.gp.muygps.jax import (
         _muygps_compute_solve as muygps_compute_solve_j,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_j,
         _muygps_sigma_sq_optim as muygps_sigma_sq_optim_j,
@@ -417,24 +417,22 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 allclose_inv(
                     muygps_sigma_sq_optim_n(
                         self.K_n,
-                        self.batch_nn_indices_n,
-                        self.train_responses_n,
+                        self.batch_nn_targets_n,
                         self.muygps.eps(),
                     ),
                     muygps_sigma_sq_optim_j(
                         self.K_j,
-                        self.batch_nn_indices_j,
-                        self.train_responses_j,
+                        self.batch_nn_targets_j,
                         self.muygps.eps(),
                     ),
                 )
             )
 
-    from MuyGPyS._src.optimize.numpy_objective import (
+    from MuyGPyS._src.optimize.objective.numpy import (
         _mse_fn as mse_fn_n,
         _cross_entropy_fn as cross_entropy_fn_n,
     )
-    from MuyGPyS._src.optimize.jax_objective import (
+    from MuyGPyS._src.optimize.objective.jax import (
         _mse_fn as mse_fn_j,
         _cross_entropy_fn as cross_entropy_fn_j,
     )
@@ -442,11 +440,11 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         make_loo_crossval_fn,
         make_loo_crossval_kwargs_fn,
     )
-    from MuyGPyS._src.optimize.numpy_chassis import (
+    from MuyGPyS._src.optimize.chassis.numpy import (
         _scipy_optimize as scipy_optimize_n,
         _bayes_opt_optimize as bayes_optimize_n,
     )
-    from MuyGPyS._src.optimize.jax_chassis import (
+    from MuyGPyS._src.optimize.chassis.jax import (
         _scipy_optimize as scipy_optimize_j,
         _bayes_opt_optimize as bayes_optimize_j,
     )
@@ -681,27 +679,16 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         @classmethod
         def setUpClass(cls):
             super(OptimTest, cls).setUpClass()
+            cls.sopt_kwargs = {"verbose": False}
 
         def test_scipy_optimize(self):
             obj_fn_n = self._get_obj_fn_n()
             obj_fn_j = self._get_obj_fn_j()
             obj_fn_h = self._get_obj_fn_h()
 
-            mopt_n = scipy_optimize_n(
-                self.muygps,
-                obj_fn_n,
-                verbose=False,
-            )
-            mopt_j = scipy_optimize_j(
-                self.muygps,
-                obj_fn_j,
-                verbose=False,
-            )
-            mopt_h = scipy_optimize_j(
-                self.muygps,
-                obj_fn_h,
-                verbose=False,
-            )
+            mopt_n = scipy_optimize_n(self.muygps, obj_fn_n, **self.sopt_kwargs)
+            mopt_j = scipy_optimize_j(self.muygps, obj_fn_j, **self.sopt_kwargs)
+            mopt_h = scipy_optimize_j(self.muygps, obj_fn_h, **self.sopt_kwargs)
             self.assertTrue(
                 allclose_gen(mopt_n.kernel.nu(), mopt_j.kernel.nu())
             )
@@ -713,41 +700,26 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         @classmethod
         def setUpClass(cls):
             super(BayesOptimTest, cls).setUpClass()
+            cls.bopt_kwargs = {
+                "verbose": False,
+                "random_state": 1,
+                "init_points": 5,
+                "n_iter": 5,
+            }
 
         def test_scipy_optimize(self):
             obj_fn_n = self._get_kwargs_obj_fn_n()
             obj_fn_j = self._get_kwargs_obj_fn_j()
             obj_fn_h = self._get_kwargs_obj_fn_h()
 
-            mopt_n = bayes_optimize_n(
-                self.muygps,
-                obj_fn_n,
-                verbose=False,
-                random_state=1,
-                init_points=2,
-                n_iter=5,
-            )
-            mopt_j = bayes_optimize_j(
-                self.muygps,
-                obj_fn_j,
-                verbose=False,
-                random_state=1,
-                init_points=2,
-                n_iter=5,
-            )
-            mopt_h = bayes_optimize_j(
-                self.muygps,
-                obj_fn_h,
-                verbose=False,
-                random_state=1,
-                init_points=2,
-                n_iter=5,
+            mopt_n = bayes_optimize_n(self.muygps, obj_fn_n, **self.bopt_kwargs)
+            mopt_j = bayes_optimize_j(self.muygps, obj_fn_j, **self.bopt_kwargs)
+            mopt_h = bayes_optimize_j(self.muygps, obj_fn_h, **self.bopt_kwargs)
+            self.assertTrue(
+                allclose_inv(mopt_n.kernel.nu(), mopt_j.kernel.nu())
             )
             self.assertTrue(
-                allclose_gen(mopt_n.kernel.nu(), mopt_j.kernel.nu())
-            )
-            self.assertTrue(
-                allclose_gen(mopt_n.kernel.nu(), mopt_h.kernel.nu())
+                allclose_inv(mopt_n.kernel.nu(), mopt_h.kernel.nu())
             )
 
     if __name__ == "__main__":
