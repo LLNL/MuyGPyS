@@ -455,7 +455,7 @@ class MuyGPS:
                 f"Variance mode {variance_mode} is not implemented."
             )
 
-    def get_opt_fn(self) -> Callable:
+    def get_array_opt_fn(self) -> Callable:
         """
         Return a regress function for use in optimization.
 
@@ -472,10 +472,10 @@ class MuyGPS:
             are expected to occur in a certain order matching how they are set
             in `~MuyGPyS.gp.muygps.MuyGPS.get_optim_params()`.
         """
-        return self._get_opt_fn(_muygps_compute_solve, self.eps)
+        return self._get_array_opt_fn(_muygps_compute_solve, self.eps)
 
     @staticmethod
-    def _get_opt_fn(solve_fn: Callable, eps: Hyperparameter) -> Callable:
+    def _get_array_opt_fn(solve_fn: Callable, eps: Hyperparameter) -> Callable:
         if not eps.fixed():
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):

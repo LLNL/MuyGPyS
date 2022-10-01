@@ -352,8 +352,8 @@ def _scipy_optimize_from_tensors(
 ) -> MuyGPS:
     loss_fn = get_loss_func(loss_method)
 
-    kernel_fn = muygps.kernel.get_opt_fn()
-    predict_fn = muygps.get_opt_fn()
+    kernel_fn = muygps.kernel.get_array_opt_fn()
+    predict_fn = muygps.get_array_opt_fn()
 
     obj_fn = make_loo_crossval_fn(
         loss_fn,
