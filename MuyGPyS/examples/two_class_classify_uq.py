@@ -67,6 +67,7 @@ def do_classify_uq(
     opt_batch_count: int = 200,
     uq_batch_count: int = 500,
     loss_method: str = "log",
+    obj_method: str = "loo_crossval",
     opt_method: str = "scipy",
     uq_objectives: Union[
         List[Callable], Tuple[Callable, ...]
@@ -106,6 +107,8 @@ def do_classify_uq(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="log",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="scipy",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -142,6 +145,9 @@ def do_classify_uq(
             all of the parameters specified by `k_kwargs` are fixed. Currently
             supports only `"log"` (also known as `"cross_entropy"`) and `"mse"`
             for classification.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -190,6 +196,7 @@ def do_classify_uq(
         nn_count=nn_count,
         batch_count=opt_batch_count,
         loss_method=loss_method,
+        obj_method=obj_method,
         opt_method=opt_method,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,

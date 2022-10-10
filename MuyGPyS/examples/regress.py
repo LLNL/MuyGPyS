@@ -36,6 +36,7 @@ def make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    obj_method: str = "loo_crossval",
     opt_method: str = "scipy",
     sigma_method: Optional[str] = "analytic",
     k_kwargs: Dict = dict(),
@@ -71,6 +72,7 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         obj_method="loo_crossval",
         ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
@@ -84,6 +86,7 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         obj_method="loo_crossval",
         ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
@@ -108,6 +111,9 @@ def make_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -207,6 +213,7 @@ def make_regressor(
                 crosswise_dists,
                 pairwise_dists,
                 loss_method=loss_method,
+                obj_method=obj_method,
                 opt_method=opt_method,
                 verbose=verbose,
                 **opt_kwargs,
@@ -242,6 +249,7 @@ def make_multivariate_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    obj_method: str = "loo_crossval",
     opt_method: str = "scipy",
     sigma_method: Optional[str] = "analytic",
     kern: str = "matern",
@@ -283,6 +291,7 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         obj_method="loo_crossval",
         ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         kern="rbf",
@@ -297,6 +306,7 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         obj_method="loo_crossval",
         ...         opt_method="scipy",
         ...         sigma_method="analytic",
         ...         kern="rbf",
@@ -322,6 +332,9 @@ def make_multivariate_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -432,6 +445,7 @@ def make_multivariate_regressor(
                         crosswise_dists,
                         pairwise_dists,
                         loss_method=loss_method,
+                        obj_method=obj_method,
                         opt_method=opt_method,
                         verbose=verbose,
                         **opt_kwargs,
@@ -500,6 +514,7 @@ def _decide_and_make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    obj_method: str = "loo_crossval",
     opt_method: str = "scipy",
     sigma_method: Optional[str] = "analytic",
     kern: Optional[str] = None,
@@ -521,6 +536,7 @@ def _decide_and_make_regressor(
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
             kern=kern,
@@ -538,6 +554,7 @@ def _decide_and_make_regressor(
                 nn_count=nn_count,
                 batch_count=batch_count,
                 loss_method=loss_method,
+                obj_method=obj_method,
                 opt_method=opt_method,
                 sigma_method=sigma_method,
                 k_kwargs=k_kwargs,
@@ -561,6 +578,7 @@ def do_regress(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
+    obj_method: str = "loo_crossval",
     opt_method: str = "scipy",
     sigma_method: Optional[str] = "analytic",
     variance_mode: Optional[str] = None,
@@ -616,6 +634,8 @@ def do_regress(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="scipy",
         ...         variance_mode="diagonal",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
@@ -629,6 +649,8 @@ def do_regress(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="scipy",
         ...         variance_mode="diagonal",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
@@ -658,6 +680,9 @@ def do_regress(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -738,6 +763,7 @@ def do_regress(
         nn_count=nn_count,
         batch_count=batch_count,
         loss_method=loss_method,
+        obj_method=obj_method,
         opt_method=opt_method,
         sigma_method=sigma_method,
         kern=kern,

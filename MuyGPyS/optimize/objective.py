@@ -19,6 +19,30 @@ from MuyGPyS import config
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
+def make_obj_fn(obj_method: str, opt_method: str, *args) -> Callable:
+    """
+    Prepare an objective function as a function purely of the hyperparameters
+    to be optimized.
+
+    This function is designed for use with
+    :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`, and the format
+    depends on the `opt_method` argument.
+
+    Args:
+        obj_method:
+            The name of the objective function to be minimized.
+        opt_method:
+            The name of the optimization method to be utilized.
+
+    Returns:
+        A Callable `objective_fn`, whose format depends on `opt_method`.
+    """
+    if obj_method == "loo_crossval":
+        return make_loo_crossval_fn(opt_method, *args)
+    else:
+        raise ValueError(f"Unsupported objective method: {obj_method}")
+
+
 def make_loo_crossval_fn(
     opt_method: str,
     loss_fn: Callable,
@@ -38,6 +62,8 @@ def make_loo_crossval_fn(
     depends on the `opt_method` argument.
 
     Args:
+        opt_method:
+            The name of the optimization method to be utilized.
         loss_fn:
             The loss function to be minimized. Can be any function that accepts
             two `numpy.ndarray` objects indicating the prediction and target

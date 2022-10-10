@@ -164,11 +164,12 @@ class SigmaSqTest(parameterized.TestCase):
 class OptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
@@ -203,6 +204,7 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
@@ -275,6 +277,7 @@ class OptimTest(parameterized.TestCase):
                     crosswise_dists,
                     pairwise_dists,
                     loss_method=loss_method,
+                    obj_method=obj_method,
                     opt_method=opt_method,
                     **opt_kwargs,
                 )
@@ -286,11 +289,12 @@ class OptimTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
@@ -325,6 +329,7 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
@@ -378,6 +383,7 @@ class OptimTest(parameterized.TestCase):
                     sim_train["input"],
                     sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
+                    obj_method=obj_method,
                     opt_method=opt_method,
                     **opt_kwargs,
                 )

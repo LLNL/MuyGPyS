@@ -38,7 +38,7 @@ from MuyGPyS._src.optimize.chassis import (
 
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.utils import _switch_on_opt_method
-from MuyGPyS.optimize.objective import make_loo_crossval_fn
+from MuyGPyS.optimize.objective import make_obj_fn
 from MuyGPyS.optimize.loss import get_loss_func
 
 
@@ -49,6 +49,7 @@ def optimize_from_indices(
     train_features: np.ndarray,
     train_targets: np.ndarray,
     loss_method: str = "mse",
+    obj_method: str = "loo_crossval",
     opt_method: str = "scipy",
     verbose: bool = False,
     **kwargs,
@@ -74,6 +75,7 @@ def optimize_from_indices(
         ...         train_features,
         ...         train_responses,
         ...         loss_method='mse',
+        ...         obj_method='loo_crossval',
         ...         opt_method='scipy',
         ...         verbose=True,
         ... )
@@ -109,6 +111,9 @@ def optimize_from_indices(
             vector-valued responses for each training element.
         loss_method:
             Indicates the loss function to be used.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` (alternately `"bayes"` or `"bayes_opt"`) and
@@ -140,6 +145,7 @@ def optimize_from_indices(
         crosswise_dists,
         pairwise_dists,
         loss_method=loss_method,
+        obj_method=obj_method,
         opt_method=opt_method,
         verbose=verbose,
         **kwargs,
@@ -153,6 +159,7 @@ def optimize_from_tensors(
     crosswise_dists: np.ndarray,
     pairwise_dists: np.ndarray,
     loss_method: str = "mse",
+    obj_method: str = "loo_crossval",
     opt_method: str = "scipy",
     verbose: bool = False,
     **kwargs,
@@ -180,6 +187,7 @@ def optimize_from_tensors(
         ...         pairwise_dists,
         ...         train_responses,
         ...         loss_method='mse',
+        ...         obj_method='loo_crossval',
         ...         opt_method='scipy',
         ...         verbose=True,
         ... )
@@ -219,6 +227,9 @@ def optimize_from_tensors(
             element.
         loss_method:
             Indicates the loss function to be used.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` (alternately `"bayes"` or `"bayes_opt"`) and
@@ -236,7 +247,8 @@ def optimize_from_tensors(
     kernel_fn = muygps.kernel.get_opt_fn(opt_method)
     predict_fn = muygps.get_opt_fn(opt_method)
 
-    obj_fn = make_loo_crossval_fn(
+    obj_fn = make_obj_fn(
+        obj_method,
         opt_method,
         loss_fn,
         kernel_fn,

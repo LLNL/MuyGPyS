@@ -413,11 +413,12 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
 class GPTensorsOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for om in ["loo_crossval"]
             for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
@@ -445,6 +446,7 @@ class GPTensorsOptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
@@ -507,6 +509,7 @@ class GPTensorsOptimTest(parameterized.TestCase):
                 crosswise_dists,
                 pairwise_dists,
                 loss_method=loss_method,
+                obj_method=obj_method,
                 opt_method=opt_method,
                 **opt_kwargs,
             )
@@ -523,10 +526,11 @@ class GPTensorsOptimTest(parameterized.TestCase):
 class GPIndicesOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
+            (1001, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for lm in ["mse"]
+            for om in ["loo_crossval"]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             # for opt_method_and_kwargs in [
             #     _advanced_opt_method_and_kwarg_options[0]
@@ -554,6 +558,7 @@ class GPIndicesOptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
@@ -595,6 +600,7 @@ class GPIndicesOptimTest(parameterized.TestCase):
             sim_train["input"],
             sim_train["output"],
             loss_method=loss_method,
+            obj_method=obj_method,
             opt_method=opt_method,
             **opt_kwargs,
         )
