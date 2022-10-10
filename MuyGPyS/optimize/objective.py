@@ -20,6 +20,7 @@ from MuyGPyS._src.optimize.objective import (
     _mse_fn,
     _cross_entropy_fn,
 )
+from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
 def get_loss_func(loss_method: str) -> Callable:
@@ -127,7 +128,7 @@ def loo_crossval_array(
         x0:
             Current guess for hyperparameter values of shape `(opt_count,)`.
         loss_fn:
-            The loss function to be minimizes. Can be any function that accepts
+            The loss function to be minimized. Can be any function that accepts
             two `numpy.ndarray` objects indicating the prediction and target
             values, in that order.
         kernel_fn:
@@ -170,6 +171,69 @@ def loo_crossval_array(
     return loss_fn(predictions, batch_targets)
 
 
+def make_loo_crossval_fn(
+    opt_method: str,
+    loss_fn: Callable,
+    kernel_fn: Callable,
+    predict_fn: Callable,
+    pairwise_dists: np.ndarray,
+    crosswise_dists: np.ndarray,
+    batch_nn_targets: np.ndarray,
+    batch_targets: np.ndarray,
+) -> Callable:
+    """
+    Prepare a leave-one-out cross validation function as a function purely of
+    the hyperparameters to be optimized.
+
+    This function is designed for use with
+    :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`, and the format
+    depends on the `opt_method` argument.
+
+    Args:
+        loss_fn:
+            The loss function to be minimized. Can be any function that accepts
+            two `numpy.ndarray` objects indicating the prediction and target
+            values, in that order.
+        kernel_fn:
+            A function that realizes kernel tensors given a list of the free
+            parameters.
+        predict_fn:
+            A function that realizes MuyGPs prediction given an epsilon value.
+            The given value is unused if epsilon is fixed.
+        pairwise_dists:
+            Distance tensor of floats of shape
+            `(batch_count, nn_count, nn_count)` whose second two dimensions give
+            the pairwise distances between the nearest neighbors of each batch
+            element.
+        crosswise_dists:
+            Distance matrix of floats of shape `(batch_count, nn_count)` whose
+            rows give the distances between each batch element and its nearest
+            neighbors.
+        batch_nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, response_count)`
+            containing the expected response for each nearest neighbor of each
+            batch element.
+        batch_targets:
+            Matrix of floats of shape `(batch_count, response_count)` whose rows
+            give the expected response for each  batch element.
+
+    Returns:
+        A Callable `objective_fn`, whose format depends on `opt_method`.
+    """
+    return _switch_on_opt_method(
+        opt_method,
+        make_loo_crossval_kwargs_fn,
+        make_loo_crossval_array_fn,
+        loss_fn,
+        kernel_fn,
+        predict_fn,
+        pairwise_dists,
+        crosswise_dists,
+        batch_nn_targets,
+        batch_targets,
+    )
+
+
 def make_loo_crossval_array_fn(
     loss_fn: Callable,
     kernel_fn: Callable,
@@ -190,7 +254,7 @@ def make_loo_crossval_array_fn(
 
     Args:
         loss_fn:
-            The loss function to be minimizes. Can be any function that accepts
+            The loss function to be minimized. Can be any function that accepts
             two `numpy.ndarray` objects indicating the prediction and target
             values, in that order.
         kernel_fn:
@@ -259,7 +323,7 @@ def loo_crossval_kwargs(
 
     Args:
         loss_fn:
-            The loss function to be minimizes. Can be any function that accepts
+            The loss function to be minimized. Can be any function that accepts
             two `numpy.ndarray` objects indicating the prediction and target
             values, in that order.
         kernel_fn:
@@ -324,7 +388,7 @@ def make_loo_crossval_kwargs_fn(
 
     Args:
         loss_fn:
-            The loss function to be minimizes. Can be any function that accepts
+            The loss function to be minimized. Can be any function that accepts
             two `numpy.ndarray` objects indicating the prediction and target
             values, in that order.
         kernel_fn:

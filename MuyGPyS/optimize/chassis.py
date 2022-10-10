@@ -28,8 +28,6 @@ documentation for details.
 import numpy as np
 import warnings
 
-from typing import Callable
-
 from MuyGPyS import config
 
 from MuyGPyS._src.gp.distance import _make_train_tensors
@@ -39,11 +37,8 @@ from MuyGPyS._src.optimize.chassis import (
 )
 
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.optimize.objective import (
-    get_loss_func,
-    make_loo_crossval_array_fn,
-    make_loo_crossval_kwargs_fn,
-)
+from MuyGPyS.optimize.utils import _switch_on_opt_method
+from MuyGPyS.optimize.objective import get_loss_func, make_loo_crossval_fn
 
 
 def optimize_from_indices(
@@ -150,18 +145,6 @@ def optimize_from_indices(
     )
 
 
-def _switch_on_opt_method(
-    opt_method: str, bayes_func: Callable, scipy_func: Callable, *args, **kwargs
-):
-    opt_method = opt_method.lower()
-    if opt_method in ["bayesian", "bayes", "bayes-opt"]:
-        return bayes_func(*args, **kwargs)
-    elif opt_method == "scipy":
-        return scipy_func(*args, **kwargs)
-    else:
-        raise ValueError(f"Unsupported optimization method: {opt_method}")
-
-
 def optimize_from_tensors(
     muygps: MuyGPS,
     batch_targets: np.ndarray,
@@ -247,153 +230,28 @@ def optimize_from_tensors(
     Returns:
         A new MuyGPs model whose specified hyperparameters have been optimized.
     """
-    loss_method = loss_method.lower()
-    opt_method = opt_method.lower()
+    loss_fn = get_loss_func(loss_method)
+
+    kernel_fn = muygps.kernel.get_opt_fn(opt_method)
+    predict_fn = muygps.get_opt_fn(opt_method)
+
+    obj_fn = make_loo_crossval_fn(
+        opt_method,
+        loss_fn,
+        kernel_fn,
+        predict_fn,
+        pairwise_dists,
+        crosswise_dists,
+        batch_nn_targets,
+        batch_targets,
+    )
 
     return _switch_on_opt_method(
         opt_method,
-        _bayes_opt_optimize_from_tensors,
-        _scipy_optimize_from_tensors,
+        _bayes_opt_optimize,
+        _scipy_optimize,
         muygps,
-        batch_targets,
-        batch_nn_targets,
-        crosswise_dists,
-        pairwise_dists,
-        loss_method=loss_method,
+        obj_fn,
         verbose=verbose,
         **kwargs,
     )
-
-
-def scipy_optimize_from_indices(
-    muygps: MuyGPS,
-    batch_indices: np.ndarray,
-    batch_nn_indices: np.ndarray,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-    loss_method: str = "mse",
-    verbose: bool = False,
-) -> MuyGPS:
-    """
-    Find the optimal model with scipy directly from the data.
-
-    Deprecated and will be removed in v0.6.0. Use
-    `func:~MuyGPyS.optimize.chassis.optimize_from_indices()` with
-    `opt_method="scipy"` instead.
-    """
-    warnings.warn(
-        "scipy_optimize_from_indices() is deprecated, and will be removed in "
-        "v0.6.0. "
-        'Use optimize_from_indices() with opt_method="scipy" instead.',
-        DeprecationWarning,
-    )
-    (
-        crosswise_dists,
-        pairwise_dists,
-        batch_targets,
-        batch_nn_targets,
-    ) = _make_train_tensors(
-        muygps.kernel.metric,
-        batch_indices,
-        batch_nn_indices,
-        train_features,
-        train_targets,
-    )
-    return _scipy_optimize_from_tensors(
-        muygps,
-        batch_targets,
-        batch_nn_targets,
-        crosswise_dists,
-        pairwise_dists,
-        loss_method=loss_method,
-        verbose=verbose,
-    )
-
-
-def scipy_optimize_from_tensors(
-    muygps: MuyGPS,
-    batch_targets: np.ndarray,
-    batch_nn_targets: np.ndarray,
-    crosswise_dists: np.ndarray,
-    pairwise_dists: np.ndarray,
-    loss_method: str = "mse",
-    verbose: bool = False,
-) -> MuyGPS:
-    """
-    Find the optimal model with scipy using existing distance matrices.
-
-    Deprecated and will be removed in v0.6.0. Use
-    `func:~MuyGPyS.optimize.chassis.optimize_from_tensors()` with
-    `opt_method="scipy"` instead.
-    """
-    warnings.warn(
-        "scipy_optimize_from_tensors() is deprecated, and will be removed in "
-        "v0.6.0. "
-        'Use optimize_from_tensors() with opt_method="scipy" instead.',
-        DeprecationWarning,
-    )
-    return _scipy_optimize_from_tensors(
-        muygps,
-        batch_targets,
-        batch_nn_targets,
-        crosswise_dists,
-        pairwise_dists,
-        loss_method=loss_method,
-        verbose=verbose,
-    )
-
-
-def _scipy_optimize_from_tensors(
-    muygps: MuyGPS,
-    batch_targets: np.ndarray,
-    batch_nn_targets: np.ndarray,
-    crosswise_dists: np.ndarray,
-    pairwise_dists: np.ndarray,
-    loss_method: str = "mse",
-    verbose: bool = False,
-    **kwargs,
-) -> MuyGPS:
-    loss_fn = get_loss_func(loss_method)
-
-    kernel_fn = muygps.kernel.get_array_opt_fn()
-    predict_fn = muygps.get_array_opt_fn()
-
-    obj_fn = make_loo_crossval_array_fn(
-        loss_fn,
-        kernel_fn,
-        predict_fn,
-        pairwise_dists,
-        crosswise_dists,
-        batch_nn_targets,
-        batch_targets,
-    )
-
-    return _scipy_optimize(muygps, obj_fn, verbose=verbose, **kwargs)
-
-
-def _bayes_opt_optimize_from_tensors(
-    muygps: MuyGPS,
-    batch_targets: np.ndarray,
-    batch_nn_targets: np.ndarray,
-    crosswise_dists: np.ndarray,
-    pairwise_dists: np.ndarray,
-    loss_method: str = "mse",
-    verbose: bool = False,
-    **kwargs,
-) -> MuyGPS:
-    loss_fn = get_loss_func(loss_method)
-
-    kernel_fn = muygps.kernel.get_kwargs_opt_fn()
-    predict_fn = muygps.get_kwargs_opt_fn()
-
-    obj_fn = make_loo_crossval_kwargs_fn(
-        loss_fn,
-        kernel_fn,
-        predict_fn,
-        pairwise_dists,
-        crosswise_dists,
-        batch_nn_targets,
-        batch_targets,
-    )
-
-    return _bayes_opt_optimize(muygps, obj_fn, verbose=verbose, **kwargs)

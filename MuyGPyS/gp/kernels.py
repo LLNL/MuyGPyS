@@ -57,6 +57,7 @@ from MuyGPyS._src.gp.kernels import (
     _matern_gen_fn,
 )
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
+from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
 class SigmaSq:
@@ -452,6 +453,11 @@ class KernelFn:
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         pass
+
+    def get_opt_fn(self, opt_method) -> Callable:
+        return _switch_on_opt_method(
+            opt_method, self.get_kwargs_opt_fn, self.get_array_opt_fn
+        )
 
     def get_array_opt_fn(self) -> Callable:
         pass

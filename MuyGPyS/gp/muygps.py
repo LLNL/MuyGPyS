@@ -30,6 +30,7 @@ from MuyGPyS._src.gp.muygps import (
     _muygps_sigma_sq_optim,
 )
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
+from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
 class MuyGPS:
@@ -454,6 +455,23 @@ class MuyGPS:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
             )
+
+    def get_opt_fn(self, opt_method) -> Callable:
+        """
+        Return a regress function for use in optimization.
+
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`. The
+        `opt_method` parameter determines the format of the returned function.
+
+        Returns:
+            A function implementing regression, where `eps` is either fixed or
+            takes updating values during optimization. The format of the
+            function depends upon `opt_method`.
+        """
+        return _switch_on_opt_method(
+            opt_method, self.get_kwargs_opt_fn, self.get_array_opt_fn
+        )
 
     def get_array_opt_fn(self) -> Callable:
         """
