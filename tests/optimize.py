@@ -29,8 +29,8 @@ from MuyGPyS.optimize.chassis import (
     optimize_from_tensors,
     optimize_from_indices,
 )
+from MuyGPyS.optimize.loss import get_loss_func
 from MuyGPyS.optimize.objective import (
-    get_loss_func,
     make_loo_crossval_array_fn,
     make_loo_crossval_kwargs_fn,
 )

@@ -38,7 +38,8 @@ from MuyGPyS._src.optimize.chassis import (
 
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.utils import _switch_on_opt_method
-from MuyGPyS.optimize.objective import get_loss_func, make_loo_crossval_fn
+from MuyGPyS.optimize.objective import make_loo_crossval_fn
+from MuyGPyS.optimize.loss import get_loss_func
 
 
 def optimize_from_indices(

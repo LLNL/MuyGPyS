@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: MIT
 
 """
-Objective and Loss Function Handling
+Objective Handling
 
-MuyGPyS includes predefined loss functions and convenience functions for
+MuyGPyS includes predefined objective functions and convenience functions for
 indicating them to optimization.
 """
 
@@ -16,91 +16,70 @@ from typing import Callable
 
 from MuyGPyS import config
 
-from MuyGPyS._src.optimize.objective import (
-    _mse_fn,
-    _cross_entropy_fn,
-)
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
-def get_loss_func(loss_method: str) -> Callable:
+def make_loo_crossval_fn(
+    opt_method: str,
+    loss_fn: Callable,
+    kernel_fn: Callable,
+    predict_fn: Callable,
+    pairwise_dists: np.ndarray,
+    crosswise_dists: np.ndarray,
+    batch_nn_targets: np.ndarray,
+    batch_targets: np.ndarray,
+) -> Callable:
     """
-    Select a loss function based upon string key.
+    Prepare a leave-one-out cross validation function as a function purely of
+    the hyperparameters to be optimized.
 
-    Currently supports strings `"log"` or `"cross-entropy"` for
-    :func:`MuyGPyS.optimize.objective.cross_entropy_fn` and `"mse"` for
-    :func:`MuyGPyS.optimize.objective.mse_fn`.
+    This function is designed for use with
+    :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`, and the format
+    depends on the `opt_method` argument.
 
     Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
+        loss_fn:
+            The loss function to be minimized. Can be any function that accepts
+            two `numpy.ndarray` objects indicating the prediction and target
+            values, in that order.
+        kernel_fn:
+            A function that realizes kernel tensors given a list of the free
+            parameters.
+        predict_fn:
+            A function that realizes MuyGPs prediction given an epsilon value.
+            The given value is unused if epsilon is fixed.
+        pairwise_dists:
+            Distance tensor of floats of shape
+            `(batch_count, nn_count, nn_count)` whose second two dimensions give
+            the pairwise distances between the nearest neighbors of each batch
+            element.
+        crosswise_dists:
+            Distance matrix of floats of shape `(batch_count, nn_count)` whose
+            rows give the distances between each batch element and its nearest
+            neighbors.
+        batch_nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, response_count)`
+            containing the expected response for each nearest neighbor of each
+            batch element.
+        batch_targets:
+            Matrix of floats of shape `(batch_count, response_count)` whose rows
+            give the expected response for each  batch element.
 
     Returns:
-        The loss function Callable.
-
-    Raises:
-        NotImplementedError:
-            Unrecognized strings will result in an error.
+        A Callable `objective_fn`, whose format depends on `opt_method`.
     """
-    loss_method = loss_method.lower()
-    if loss_method == "cross-entropy" or loss_method == "log":
-        return cross_entropy_fn
-    elif loss_method == "mse":
-        return mse_fn
-    else:
-        raise NotImplementedError(
-            f"Loss function {loss_method} is not implemented."
-        )
-
-
-def cross_entropy_fn(
-    predictions: np.ndarray,
-    targets: np.ndarray,
-) -> float:
-    """
-    Cross entropy function.
-
-    Computes the cross entropy loss the predicted versus known response.
-    Transforms `predictions` to be row-stochastic, and ensures that `targets`
-    contains no negative elements.
-
-    @NOTE[bwp] I don't remember why we hard-coded eps=1e-6. Might need to
-    revisit.
-
-    Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
-
-    Returns:
-        The cross-entropy loss of the prediction.
-    """
-    return _cross_entropy_fn(predictions, targets, ll_eps=1e-6)
-
-
-def mse_fn(
-    predictions: np.ndarray,
-    targets: np.ndarray,
-) -> float:
-    """
-    Mean squared error function.
-
-    Computes mean squared error loss of the predicted versus known response.
-    Treats multivariate outputs as interchangeable in terms of loss penalty.
-
-    Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
-
-    Returns:
-        The mse loss of the prediction.
-    """
-    return _mse_fn(predictions, targets)
+    return _switch_on_opt_method(
+        opt_method,
+        make_loo_crossval_kwargs_fn,
+        make_loo_crossval_array_fn,
+        loss_fn,
+        kernel_fn,
+        predict_fn,
+        pairwise_dists,
+        crosswise_dists,
+        batch_nn_targets,
+        batch_targets,
+    )
 
 
 def loo_crossval_array(
@@ -169,69 +148,6 @@ def loo_crossval_array(
     )
 
     return loss_fn(predictions, batch_targets)
-
-
-def make_loo_crossval_fn(
-    opt_method: str,
-    loss_fn: Callable,
-    kernel_fn: Callable,
-    predict_fn: Callable,
-    pairwise_dists: np.ndarray,
-    crosswise_dists: np.ndarray,
-    batch_nn_targets: np.ndarray,
-    batch_targets: np.ndarray,
-) -> Callable:
-    """
-    Prepare a leave-one-out cross validation function as a function purely of
-    the hyperparameters to be optimized.
-
-    This function is designed for use with
-    :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`, and the format
-    depends on the `opt_method` argument.
-
-    Args:
-        loss_fn:
-            The loss function to be minimized. Can be any function that accepts
-            two `numpy.ndarray` objects indicating the prediction and target
-            values, in that order.
-        kernel_fn:
-            A function that realizes kernel tensors given a list of the free
-            parameters.
-        predict_fn:
-            A function that realizes MuyGPs prediction given an epsilon value.
-            The given value is unused if epsilon is fixed.
-        pairwise_dists:
-            Distance tensor of floats of shape
-            `(batch_count, nn_count, nn_count)` whose second two dimensions give
-            the pairwise distances between the nearest neighbors of each batch
-            element.
-        crosswise_dists:
-            Distance matrix of floats of shape `(batch_count, nn_count)` whose
-            rows give the distances between each batch element and its nearest
-            neighbors.
-        batch_nn_targets:
-            Tensor of floats of shape `(batch_count, nn_count, response_count)`
-            containing the expected response for each nearest neighbor of each
-            batch element.
-        batch_targets:
-            Matrix of floats of shape `(batch_count, response_count)` whose rows
-            give the expected response for each  batch element.
-
-    Returns:
-        A Callable `objective_fn`, whose format depends on `opt_method`.
-    """
-    return _switch_on_opt_method(
-        opt_method,
-        make_loo_crossval_kwargs_fn,
-        make_loo_crossval_array_fn,
-        loss_fn,
-        kernel_fn,
-        predict_fn,
-        pairwise_dists,
-        crosswise_dists,
-        batch_nn_targets,
-        batch_targets,
-    )
 
 
 def make_loo_crossval_array_fn(

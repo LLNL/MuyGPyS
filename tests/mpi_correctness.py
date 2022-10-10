@@ -596,11 +596,11 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                 )
                 self.assertAlmostEqual(serial_sigma_sq[0], parallel_sigma_sq[0])
 
-    from MuyGPyS._src.optimize.objective.numpy import (
+    from MuyGPyS._src.optimize.loss.numpy import (
         _mse_fn as mse_fn_n,
         _cross_entropy_fn as cross_entropy_fn_n,
     )
-    from MuyGPyS._src.optimize.objective.mpi import (
+    from MuyGPyS._src.optimize.loss.mpi import (
         _mse_fn as mse_fn_m,
         _cross_entropy_fn as cross_entropy_fn_m,
     )

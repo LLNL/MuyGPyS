@@ -428,11 +428,11 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 )
             )
 
-    from MuyGPyS._src.optimize.objective.numpy import (
+    from MuyGPyS._src.optimize.loss.numpy import (
         _mse_fn as mse_fn_n,
         _cross_entropy_fn as cross_entropy_fn_n,
     )
-    from MuyGPyS._src.optimize.objective.jax import (
+    from MuyGPyS._src.optimize.loss.jax import (
         _mse_fn as mse_fn_j,
         _cross_entropy_fn as cross_entropy_fn_j,
     )
