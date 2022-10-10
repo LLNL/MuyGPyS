@@ -50,7 +50,7 @@ def optimize_from_indices(
     train_targets: np.ndarray,
     loss_method: str = "mse",
     obj_method: str = "loo_crossval",
-    opt_method: str = "scipy",
+    opt_method: str = "bayes",
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:
@@ -160,7 +160,7 @@ def optimize_from_tensors(
     pairwise_dists: np.ndarray,
     loss_method: str = "mse",
     obj_method: str = "loo_crossval",
-    opt_method: str = "scipy",
+    opt_method: str = "bayes",
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:

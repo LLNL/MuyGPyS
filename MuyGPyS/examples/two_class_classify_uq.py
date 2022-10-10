@@ -68,7 +68,7 @@ def do_classify_uq(
     uq_batch_count: int = 500,
     loss_method: str = "log",
     obj_method: str = "loo_crossval",
-    opt_method: str = "scipy",
+    opt_method: str = "bayes",
     uq_objectives: Union[
         List[Callable], Tuple[Callable, ...]
     ] = example_lambdas,
@@ -108,7 +108,7 @@ def do_classify_uq(
         ...         batch_count=200,
         ...         loss_method="log",
         ...         obj_method="loo_crossval",
-        ...         opt_method="scipy",
+        ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
