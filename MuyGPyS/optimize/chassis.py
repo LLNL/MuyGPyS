@@ -28,6 +28,8 @@ documentation for details.
 import numpy as np
 import warnings
 
+from typing import Callable
+
 from MuyGPyS import config
 
 from MuyGPyS._src.gp.distance import _make_train_tensors
@@ -148,6 +150,18 @@ def optimize_from_indices(
     )
 
 
+def _switch_on_opt_method(
+    opt_method: str, bayes_func: Callable, scipy_func: Callable, *args, **kwargs
+):
+    opt_method = opt_method.lower()
+    if opt_method in ["bayesian", "bayes", "bayes-opt"]:
+        return bayes_func(*args, **kwargs)
+    elif opt_method == "scipy":
+        return scipy_func(*args, **kwargs)
+    else:
+        raise ValueError(f"Unsupported optimization method: {opt_method}")
+
+
 def optimize_from_tensors(
     muygps: MuyGPS,
     batch_targets: np.ndarray,
@@ -236,30 +250,19 @@ def optimize_from_tensors(
     loss_method = loss_method.lower()
     opt_method = opt_method.lower()
 
-    if opt_method == "scipy":
-        return _scipy_optimize_from_tensors(
-            muygps,
-            batch_targets,
-            batch_nn_targets,
-            crosswise_dists,
-            pairwise_dists,
-            loss_method=loss_method,
-            verbose=verbose,
-            **kwargs,
-        )
-    if opt_method in ["bayesian", "bayes", "bayes-opt"]:
-        return _bayes_opt_optimize_from_tensors(
-            muygps,
-            batch_targets,
-            batch_nn_targets,
-            crosswise_dists,
-            pairwise_dists,
-            loss_method=loss_method,
-            verbose=verbose,
-            **kwargs,
-        )
-    else:
-        raise ValueError(f"Unsupported optimization method: {opt_method}")
+    return _switch_on_opt_method(
+        opt_method,
+        _bayes_opt_optimize_from_tensors,
+        _scipy_optimize_from_tensors,
+        muygps,
+        batch_targets,
+        batch_nn_targets,
+        crosswise_dists,
+        pairwise_dists,
+        loss_method=loss_method,
+        verbose=verbose,
+        **kwargs,
+    )
 
 
 def scipy_optimize_from_indices(
