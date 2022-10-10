@@ -29,9 +29,9 @@ from MuyGPyS.optimize.chassis import (
     optimize_from_tensors,
     optimize_from_indices,
 )
+from MuyGPyS.optimize.loss import get_loss_func
 from MuyGPyS.optimize.objective import (
-    get_loss_func,
-    make_loo_crossval_fn,
+    make_loo_crossval_array_fn,
     make_loo_crossval_kwargs_fn,
 )
 from MuyGPyS._test.gp import (
@@ -413,11 +413,12 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
 class GPTensorsOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for om in ["loo_crossval"]
             for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
@@ -445,6 +446,7 @@ class GPTensorsOptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
@@ -507,6 +509,7 @@ class GPTensorsOptimTest(parameterized.TestCase):
                 crosswise_dists,
                 pairwise_dists,
                 loss_method=loss_method,
+                obj_method=obj_method,
                 opt_method=opt_method,
                 **opt_kwargs,
             )
@@ -523,10 +526,11 @@ class GPTensorsOptimTest(parameterized.TestCase):
 class GPIndicesOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
+            (1001, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for lm in ["mse"]
+            for om in ["loo_crossval"]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             # for opt_method_and_kwargs in [
             #     _advanced_opt_method_and_kwarg_options[0]
@@ -554,6 +558,7 @@ class GPIndicesOptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
@@ -595,6 +600,7 @@ class GPIndicesOptimTest(parameterized.TestCase):
             sim_train["input"],
             sim_train["output"],
             loss_method=loss_method,
+            obj_method=obj_method,
             opt_method=opt_method,
             **opt_kwargs,
         )
@@ -681,7 +687,7 @@ class MethodsAgreementTest(parameterized.TestCase):
 
         x0 = self._make_x0(params)
 
-        array_kernel_fn = muygps.kernel.get_opt_fn()
+        array_kernel_fn = muygps.kernel.get_array_opt_fn()
         kwargs_kernel_fn = muygps.kernel.get_kwargs_opt_fn()
 
         K_array = array_kernel_fn(self.pairwise_dists, x0)
@@ -693,7 +699,7 @@ class MethodsAgreementTest(parameterized.TestCase):
         self.assertTrue(np.allclose(K_array, K_kwargs))
         self.assertTrue(np.allclose(Kcross_array, Kcross_kwargs))
 
-        array_predict_fn = muygps.get_opt_fn()
+        array_predict_fn = muygps.get_array_opt_fn()
         kwargs_predict_fn = muygps.get_kwargs_opt_fn()
 
         predictions_array = array_predict_fn(
@@ -705,7 +711,7 @@ class MethodsAgreementTest(parameterized.TestCase):
 
         self.assertTrue(np.allclose(predictions_array, predictions_kwargs))
 
-        array_obj_fn = make_loo_crossval_fn(
+        array_obj_fn = make_loo_crossval_array_fn(
             loss_fn,
             array_kernel_fn,
             array_predict_fn,

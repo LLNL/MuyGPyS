@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS._src.optimize.objective.numpy import (
+from MuyGPyS._src.optimize.loss.numpy import (
     _mse_fn_unnormalized,
     _cross_entropy_fn as _cross_entropy_fn_n,
 )

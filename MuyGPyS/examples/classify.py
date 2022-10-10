@@ -40,7 +40,8 @@ def make_classifier(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "log",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -74,7 +75,8 @@ def make_classifier(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="log",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -86,7 +88,8 @@ def make_classifier(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="log",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         return_distances=True,
@@ -113,6 +116,9 @@ def make_classifier(
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
             metric, epsilon and sigma hyperparameter specifications, and
@@ -194,6 +200,7 @@ def make_classifier(
             crosswise_dists,
             pairwise_dists,
             loss_method=loss_method,
+            obj_method=obj_method,
             opt_method=opt_method,
             verbose=verbose,
             **opt_kwargs,
@@ -218,7 +225,8 @@ def make_multivariate_classifier(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     kern: str = "matern",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
@@ -258,7 +266,8 @@ def make_multivariate_classifier(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
@@ -271,7 +280,8 @@ def make_multivariate_classifier(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
@@ -295,6 +305,9 @@ def make_multivariate_classifier(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -392,6 +405,7 @@ def make_multivariate_classifier(
                     crosswise_dists,
                     pairwise_dists,
                     loss_method=loss_method,
+                    obj_method=obj_method,
                     opt_method=opt_method,
                     verbose=verbose,
                     **opt_kwargs,
@@ -416,7 +430,8 @@ def _decide_and_make_classifier(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "log",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
@@ -434,6 +449,7 @@ def _decide_and_make_classifier(
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            obj_method=obj_method,
             opt_method=opt_method,
             kern=kern,
             k_args=k_kwargs,
@@ -450,6 +466,7 @@ def _decide_and_make_classifier(
                 nn_count=nn_count,
                 batch_count=batch_count,
                 loss_method=loss_method,
+                obj_method=obj_method,
                 opt_method=opt_method,
                 k_kwargs=k_kwargs,
                 nn_kwargs=nn_kwargs,
@@ -472,7 +489,8 @@ def do_classify(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "log",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
@@ -512,6 +530,8 @@ def do_classify(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="log",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -524,6 +544,8 @@ def do_classify(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="log",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         return_distances=return_distances,
@@ -557,6 +579,9 @@ def do_classify(
             all of the parameters specified by `k_kwargs` are fixed. Currently
             supports only `"log"` (also known as `"cross_entropy"`) and `"mse"`
             for classification.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -605,6 +630,7 @@ def do_classify(
         nn_count=nn_count,
         batch_count=batch_count,
         loss_method=loss_method,
+        obj_method=obj_method,
         opt_method=opt_method,
         kern=kern,
         k_kwargs=k_kwargs,

@@ -11,5 +11,6 @@ optimize
 
    optimize/batch
    optimize/chassis
+   optimize/loss
    optimize/objective
 

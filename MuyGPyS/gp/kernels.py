@@ -57,6 +57,7 @@ from MuyGPyS._src.gp.kernels import (
     _matern_gen_fn,
 )
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
+from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
 class SigmaSq:
@@ -453,7 +454,12 @@ class KernelFn:
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         pass
 
-    def get_opt_fn(self) -> Callable:
+    def get_opt_fn(self, opt_method) -> Callable:
+        return _switch_on_opt_method(
+            opt_method, self.get_kwargs_opt_fn, self.get_array_opt_fn
+        )
+
+    def get_array_opt_fn(self) -> Callable:
         pass
 
     def get_kwargs_opt_fn(self) -> Callable:
@@ -555,7 +561,7 @@ class RBF(KernelFn):
             bounds.append(self.length_scale.get_bounds())
         return names, params, bounds
 
-    def get_opt_fn(self) -> Callable:
+    def get_array_opt_fn(self) -> Callable:
         """
         Return a kernel function with fixed parameters set.
 
@@ -571,10 +577,12 @@ class RBF(KernelFn):
             order matching how they are set in
             :func:`~MuyGPyS.gp.kernel.RBF.get_optim_params()`.
         """
-        return self._get_opt_fn(_rbf_fn, self.length_scale)
+        return self._get_array_opt_fn(_rbf_fn, self.length_scale)
 
     @staticmethod
-    def _get_opt_fn(rbf_fn: Callable, length_scale: Hyperparameter) -> Callable:
+    def _get_array_opt_fn(
+        rbf_fn: Callable, length_scale: Hyperparameter
+    ) -> Callable:
         if not length_scale.fixed():
 
             def caller_fn(dists, x0):
@@ -737,7 +745,7 @@ class Matern(KernelFn):
             bounds.append(self.length_scale.get_bounds())
         return names, params, bounds
 
-    def get_opt_fn(self) -> Callable:
+    def get_array_opt_fn(self) -> Callable:
         """
         Return a kernel function with fixed parameters set.
 
@@ -753,7 +761,7 @@ class Matern(KernelFn):
             order matching how they are set in
             :func:`~MuyGPyS.gp.kernel.Matern.get_optim_params()`.
         """
-        return self._get_opt_fn(
+        return self._get_array_opt_fn(
             _matern_05_fn,
             _matern_15_fn,
             _matern_25_fn,
@@ -764,7 +772,7 @@ class Matern(KernelFn):
         )
 
     @staticmethod
-    def _get_opt_fn(
+    def _get_array_opt_fn(
         m_05_fn: Callable,
         m_15_fn: Callable,
         m_25_fn: Callable,
