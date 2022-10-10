@@ -605,7 +605,7 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
         _cross_entropy_fn as cross_entropy_fn_m,
     )
     from MuyGPyS.optimize.objective import (
-        make_loo_crossval_fn,
+        make_loo_crossval_array_fn,
         make_loo_crossval_kwargs_fn,
     )
 
@@ -702,7 +702,7 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
         # Numpy objective functions
         def _get_array_obj_fn_n(self):
-            return make_loo_crossval_fn(
+            return make_loo_crossval_array_fn(
                 mse_fn_n,
                 self._get_array_kernel_fn_n(),
                 self._get_array_predict_fn_n(),
@@ -725,7 +725,7 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
         # MPI objective functions
         def _get_array_obj_fn_m(self):
-            return make_loo_crossval_fn(
+            return make_loo_crossval_array_fn(
                 mse_fn_m,
                 self._get_array_kernel_fn_m(),
                 self._get_array_predict_fn_m(),

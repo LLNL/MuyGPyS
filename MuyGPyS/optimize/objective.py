@@ -102,7 +102,7 @@ def mse_fn(
     return _mse_fn(predictions, targets)
 
 
-def loo_crossval(
+def loo_crossval_array(
     x0: np.ndarray,
     loss_fn: Callable,
     kernel_fn: Callable,
@@ -170,7 +170,7 @@ def loo_crossval(
     return loss_fn(predictions, batch_targets)
 
 
-def make_loo_crossval_fn(
+def make_loo_crossval_array_fn(
     loss_fn: Callable,
     kernel_fn: Callable,
     predict_fn: Callable,
@@ -222,7 +222,7 @@ def make_loo_crossval_fn(
     """
 
     def caller_fn(x0):
-        return loo_crossval(
+        return loo_crossval_array(
             x0,
             loss_fn,
             kernel_fn,

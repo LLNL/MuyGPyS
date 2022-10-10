@@ -437,7 +437,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _cross_entropy_fn as cross_entropy_fn_j,
     )
     from MuyGPyS.optimize.objective import (
-        make_loo_crossval_fn,
+        make_loo_crossval_array_fn,
         make_loo_crossval_kwargs_fn,
     )
     from MuyGPyS._src.optimize.chassis.numpy import (
@@ -529,7 +529,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
 
         def _get_obj_fn_n(self):
-            return make_loo_crossval_fn(
+            return make_loo_crossval_array_fn(
                 mse_fn_n,
                 self._get_array_kernel_fn_n(),
                 self._get_array_predict_fn_n(),
@@ -551,7 +551,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
 
         def _get_obj_fn_j(self):
-            return make_loo_crossval_fn(
+            return make_loo_crossval_array_fn(
                 mse_fn_j,
                 self._get_array_kernel_fn_j(),
                 self._get_array_predict_fn_j(),
@@ -573,7 +573,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
 
         def _get_obj_fn_h(self):
-            return make_loo_crossval_fn(
+            return make_loo_crossval_array_fn(
                 mse_fn_j,
                 self._get_array_kernel_fn_j(),
                 self._get_array_predict_fn_n(),

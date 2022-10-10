@@ -41,7 +41,7 @@ from MuyGPyS._src.optimize.chassis import (
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.objective import (
     get_loss_func,
-    make_loo_crossval_fn,
+    make_loo_crossval_array_fn,
     make_loo_crossval_kwargs_fn,
 )
 
@@ -358,7 +358,7 @@ def _scipy_optimize_from_tensors(
     kernel_fn = muygps.kernel.get_array_opt_fn()
     predict_fn = muygps.get_array_opt_fn()
 
-    obj_fn = make_loo_crossval_fn(
+    obj_fn = make_loo_crossval_array_fn(
         loss_fn,
         kernel_fn,
         predict_fn,

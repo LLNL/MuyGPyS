@@ -31,7 +31,7 @@ from MuyGPyS.optimize.chassis import (
 )
 from MuyGPyS.optimize.objective import (
     get_loss_func,
-    make_loo_crossval_fn,
+    make_loo_crossval_array_fn,
     make_loo_crossval_kwargs_fn,
 )
 from MuyGPyS._test.gp import (
@@ -705,7 +705,7 @@ class MethodsAgreementTest(parameterized.TestCase):
 
         self.assertTrue(np.allclose(predictions_array, predictions_kwargs))
 
-        array_obj_fn = make_loo_crossval_fn(
+        array_obj_fn = make_loo_crossval_array_fn(
             loss_fn,
             array_kernel_fn,
             array_predict_fn,
