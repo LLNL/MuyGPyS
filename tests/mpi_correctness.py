@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import re
-from tabnanny import verbose
 from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
@@ -636,7 +634,7 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
         # Numpy kernel functions
         def _get_array_kernel_fn_n(self):
-            return self.muygps.kernel._get_opt_fn(
+            return self.muygps.kernel._get_array_opt_fn(
                 matern_05_fn_n,
                 matern_15_fn_n,
                 matern_25_fn_n,
@@ -659,7 +657,7 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
         # MPI kernel functions
         def _get_array_kernel_fn_m(self):
-            return self.muygps.kernel._get_opt_fn(
+            return self.muygps.kernel._get_array_opt_fn(
                 matern_05_fn_m,
                 matern_15_fn_m,
                 matern_25_fn_m,
@@ -682,7 +680,7 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
         # Numpy predict functions
         def _get_array_predict_fn_n(self):
-            return self.muygps._get_opt_fn(
+            return self.muygps._get_array_opt_fn(
                 muygps_compute_solve_n, self.muygps.eps
             )
 
@@ -693,7 +691,7 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
         # MPI predict functions
         def _get_array_predict_fn_m(self):
-            return self.muygps._get_opt_fn(
+            return self.muygps._get_array_opt_fn(
                 muygps_compute_solve_m, self.muygps.eps
             )
 

@@ -681,7 +681,7 @@ class MethodsAgreementTest(parameterized.TestCase):
 
         x0 = self._make_x0(params)
 
-        array_kernel_fn = muygps.kernel.get_opt_fn()
+        array_kernel_fn = muygps.kernel.get_array_opt_fn()
         kwargs_kernel_fn = muygps.kernel.get_kwargs_opt_fn()
 
         K_array = array_kernel_fn(self.pairwise_dists, x0)
@@ -693,7 +693,7 @@ class MethodsAgreementTest(parameterized.TestCase):
         self.assertTrue(np.allclose(K_array, K_kwargs))
         self.assertTrue(np.allclose(Kcross_array, Kcross_kwargs))
 
-        array_predict_fn = muygps.get_opt_fn()
+        array_predict_fn = muygps.get_array_opt_fn()
         kwargs_predict_fn = muygps.get_kwargs_opt_fn()
 
         predictions_array = array_predict_fn(

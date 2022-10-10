@@ -464,8 +464,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.x0_names, cls.x0_n, cls.bounds = cls.muygps.get_optim_params()
             cls.x0_j = jnp.array(cls.x0_n)
 
-        def _get_kernel_fn_n(self):
-            return self.muygps.kernel._get_opt_fn(
+        def _get_array_kernel_fn_n(self):
+            return self.muygps.kernel._get_array_opt_fn(
                 matern_05_fn_n,
                 matern_15_fn_n,
                 matern_25_fn_n,
@@ -486,8 +486,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.muygps.kernel.length_scale,
             )
 
-        def _get_kernel_fn_j(self):
-            return self.muygps.kernel._get_opt_fn(
+        def _get_array_kernel_fn_j(self):
+            return self.muygps.kernel._get_array_opt_fn(
                 matern_05_fn_j,
                 matern_15_fn_j,
                 matern_25_fn_j,
@@ -508,8 +508,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.muygps.kernel.length_scale,
             )
 
-        def _get_predict_fn_n(self):
-            return self.muygps._get_opt_fn(
+        def _get_array_predict_fn_n(self):
+            return self.muygps._get_array_opt_fn(
                 muygps_compute_solve_n, self.muygps.eps
             )
 
@@ -518,8 +518,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 muygps_compute_solve_n, self.muygps.eps
             )
 
-        def _get_predict_fn_j(self):
-            return self.muygps._get_opt_fn(
+        def _get_array_predict_fn_j(self):
+            return self.muygps._get_array_opt_fn(
                 muygps_compute_solve_j, self.muygps.eps
             )
 
@@ -531,8 +531,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         def _get_obj_fn_n(self):
             return make_loo_crossval_fn(
                 mse_fn_n,
-                self._get_kernel_fn_n(),
-                self._get_predict_fn_n(),
+                self._get_array_kernel_fn_n(),
+                self._get_array_predict_fn_n(),
                 self.pairwise_dists_n,
                 self.crosswise_dists_n,
                 self.batch_nn_targets_n,
@@ -553,8 +553,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         def _get_obj_fn_j(self):
             return make_loo_crossval_fn(
                 mse_fn_j,
-                self._get_kernel_fn_j(),
-                self._get_predict_fn_j(),
+                self._get_array_kernel_fn_j(),
+                self._get_array_predict_fn_j(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -575,8 +575,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         def _get_obj_fn_h(self):
             return make_loo_crossval_fn(
                 mse_fn_j,
-                self._get_kernel_fn_j(),
-                self._get_predict_fn_n(),
+                self._get_array_kernel_fn_j(),
+                self._get_array_predict_fn_n(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -635,8 +635,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
 
         def test_kernel_fn(self):
-            kernel_fn_n = self._get_kernel_fn_n()
-            kernel_fn_j = self._get_kernel_fn_j()
+            kernel_fn_n = self._get_array_kernel_fn_n()
+            kernel_fn_j = self._get_array_kernel_fn_j()
             self.assertTrue(
                 allclose_gen(
                     kernel_fn_n(self.pairwise_dists_n, self.x0_n),
@@ -645,8 +645,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
 
         def test_predict_fn(self):
-            predict_fn_n = self._get_predict_fn_n()
-            predict_fn_j = self._get_predict_fn_j()
+            predict_fn_n = self._get_array_predict_fn_n()
+            predict_fn_j = self._get_array_predict_fn_j()
             self.assertTrue(
                 allclose_inv(
                     predict_fn_n(
