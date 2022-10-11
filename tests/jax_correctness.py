@@ -356,12 +356,16 @@ if config.muygpys_jax_enabled is True:  # type: ignore
     from MuyGPyS._src.gp.muygps.numpy import (
         _muygps_compute_solve as muygps_compute_solve_n,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
-        _muygps_sigma_sq_optim as muygps_sigma_sq_optim_n,
     )
     from MuyGPyS._src.gp.muygps.jax import (
         _muygps_compute_solve as muygps_compute_solve_j,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_j,
-        _muygps_sigma_sq_optim as muygps_sigma_sq_optim_j,
+    )
+    from MuyGPyS._src.optimize.sigma_sq.numpy import (
+        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
+    )
+    from MuyGPyS._src.optimize.sigma_sq.jax import (
+        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
     )
 
     class MuyGPSTestCase(KernelTestCase):
@@ -415,12 +419,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         def test_sigma_sq_optim(self):
             self.assertTrue(
                 allclose_inv(
-                    muygps_sigma_sq_optim_n(
+                    analytic_sigma_sq_optim_n(
                         self.K_n,
                         self.batch_nn_targets_n,
                         self.muygps.eps(),
                     ),
-                    muygps_sigma_sq_optim_j(
+                    analytic_sigma_sq_optim_j(
                         self.K_j,
                         self.batch_nn_targets_j,
                         self.muygps.eps(),

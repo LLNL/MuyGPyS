@@ -24,6 +24,7 @@ from MuyGPyS.gp.distance import (
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_dict,
@@ -644,9 +645,10 @@ class MakeRegressorTest(parameterized.TestCase):
 class GPSigmaSqTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, f, r, 10, nn_kwargs, k_kwargs)
+            (1000, f, r, sm, 10, nn_kwargs, k_kwargs)
             for f in [100, 1]
             for r in [10, 2, 1]
+            for sm in ["analytic"]
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in (
                 {
@@ -673,6 +675,7 @@ class GPSigmaSqTest(parameterized.TestCase):
         data_count,
         feature_count,
         response_count,
+        sigma_method,
         nn_count,
         nn_kwargs,
         k_kwargs,
@@ -695,7 +698,9 @@ class GPSigmaSqTest(parameterized.TestCase):
         )
 
         K = muygps.kernel(F2_dists)
-        muygps.sigma_sq_optim(K, nn_targets)
+        muygps = muygps_sigma_sq_optim(
+            muygps, F2_dists, nn_targets, sigma_method=sigma_method
+        )
 
         K = _consistent_unchunk_tensor(K)
         nn_targets = _consistent_unchunk_tensor(nn_targets)

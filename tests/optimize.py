@@ -34,6 +34,7 @@ from MuyGPyS.optimize.objective import (
     make_loo_crossval_array_fn,
     make_loo_crossval_kwargs_fn,
 )
+from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 from MuyGPyS._test.gp import (
     benchmark_pairwise_distances,
     benchmark_sample,
@@ -321,11 +322,12 @@ class GPSigmaSqBaselineTest(parameterized.TestCase):
 class GPSigmaSqOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 5, b, n, nn_kwargs, ss, k_kwargs)
+            (1001, 5, b, n, nn_kwargs, ss, sm, k_kwargs)
             for b in [250]
             for n in [34]
-            for nn_kwargs in _basic_nn_kwarg_options
-            for ss in ((1.0, 5e-2), (0.002453, 5e-2), (19.32, 5e-2))
+            # for nn_kwargs in _basic_nn_kwarg_options
+            # for ss in ((1.0, 5e-2), (0.002453, 5e-2), (19.32, 5e-2))
+            for sm in ["analytic"]
             for k_kwargs in (
                 {
                     "kern": "matern",
@@ -334,22 +336,22 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
                     "length_scale": {"val": 1e-2},
                     "eps": {"val": 1e-5},
                 },
-                {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "nu": {"val": 2.5},
-                    "length_scale": {"val": 1e-2},
-                    "eps": {"val": 1e-5},
-                },
-                {
-                    "kern": "rbf",
-                    "metric": "F2",
-                    "length_scale": {"val": 1e-2},
-                    "eps": {"val": 1e-5},
-                },
+                # {
+                #     "kern": "matern",
+                #     "metric": "l2",
+                #     "nu": {"val": 2.5},
+                #     "length_scale": {"val": 1e-2},
+                #     "eps": {"val": 1e-5},
+                # },
+                # {
+                #     "kern": "rbf",
+                #     "metric": "F2",
+                #     "length_scale": {"val": 1e-2},
+                #     "eps": {"val": 1e-5},
+                # },
             )
-            # for nn_kwargs in [_basic_nn_kwarg_options][0]
-            # for ss in [(1.0, 5e-2)]
+            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for ss in [(1.0, 5e-2)]
         )
     )
     def test_sigma_sq_optim(
@@ -360,6 +362,7 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         sigma_sq,
+        sigma_method,
         k_kwargs,
     ):
         sigma_sq, tol = sigma_sq
@@ -401,7 +404,12 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
             )
 
             # Find MuyGPyS optim
-            muygps.sigma_sq_optim(K, batch_nn_targets)
+            muygps = muygps_sigma_sq_optim(
+                muygps,
+                pairwise_dists,
+                batch_nn_targets,
+                sigma_method=sigma_method,
+            )
             estimate = muygps.sigma_sq()[0]
 
             mrse += _sq_rel_err(sigma_sq, estimate)

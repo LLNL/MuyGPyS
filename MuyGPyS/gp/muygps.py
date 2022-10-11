@@ -27,7 +27,6 @@ from MuyGPyS._src.gp.distance.numpy import (
 from MuyGPyS._src.gp.muygps import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
-    _muygps_sigma_sq_optim,
 )
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 from MuyGPyS.optimize.utils import _switch_on_opt_method
@@ -537,45 +536,6 @@ class MuyGPS:
 
         return caller_fn
 
-    def sigma_sq_optim(
-        self,
-        K: np.ndarray,
-        nn_targets: np.ndarray,
-    ) -> np.ndarray:
-        """
-        Optimize the value of the :math:`\\sigma^2` scale parameter for each
-        response dimension.
-
-        We approximate :math:`\\sigma^2` by way of averaging over the analytic
-        solution from each local kernel.
-
-        .. math::
-            \\sigma^2 = \\frac{1}{bk} * \\sum_{i \\in B}
-                        Y_{nn_i}^T K_{nn_i}^{-1} Y_{nn_i}
-
-        Here :math:`Y_{nn_i}` and :math:`K_{nn_i}` are the target and kernel
-        matrices with respect to the nearest neighbor set in scope, where
-        :math:`k` is the number of nearest neighbors and :math:`b = |B|` is the
-        number of batch elements considered.
-
-        Args:
-            K:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count` -shaped kernel matrices corresponding
-                to each of the batch elements.
-            nn_targets:
-                Tensor of floats of shape
-                `(batch_count, nn_count, response_count)` containing the
-                expected response for each nearest neighbor of each batch
-                element.
-
-        Returns:
-            A vector of shape `(response_count)` listing the value of sigma^2
-            for each dimension.
-        """
-        self.sigma_sq._set(_muygps_sigma_sq_optim(K, nn_targets, self.eps()))
-        return self.sigma_sq()
-
 
 class MultivariateMuyGPS:
     """
@@ -645,64 +605,6 @@ class MultivariateMuyGPS:
             `False` otherwise.
         """
         return bool(np.all([model.fixed() for model in self.models]))
-
-    def sigma_sq_optim(
-        self,
-        pairwise_dists: np.ndarray,
-        nn_targets: np.ndarray,
-    ) -> np.ndarray:
-        """
-        Optimize the value of the :math:`\\sigma^2` scale parameter for each
-        response dimension.
-
-        We approximate :math:`\\sigma^2` by way of averaging over the analytic
-        solution from each local kernel.
-
-        .. math::
-            \\sigma^2 = \\frac{1}{n} * Y^T  K^{-1}  Y
-
-        Args:
-            pairwise_dists:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count)` -shaped pairwise nearest neighbor
-                distance matrices corresponding to each of the batch elements.
-            nn_targets:
-                Tensor of floats of shape
-                `(batch_count, nn_count, response_count)` containing the
-                expected response for each nearest neighbor of each batch
-                element.
-
-        Returns:
-            A vector of shape `(response_count,)` listing the found value of
-            :math:`\\sigma^2` for each response dimension.
-        """
-
-        self.sigma_sq._set(
-            self._sigma_sq_optim(self.models, pairwise_dists, nn_targets)
-        )
-        return self.sigma_sq()
-
-    @staticmethod
-    def _sigma_sq_optim(
-        models: List[MuyGPS],
-        pairwise_dists: np.ndarray,
-        nn_targets: np.ndarray,
-    ) -> np.ndarray:
-        batch_count, nn_count, response_count = nn_targets.shape
-        if response_count != len(models):
-            raise ValueError(
-                f"Response count ({response_count}) does not match the number "
-                f"of models ({len(models)})."
-            )
-
-        K = np.zeros((batch_count, nn_count, nn_count))
-        sigma_sqs = np.zeros((response_count,))
-        for i, muygps in enumerate(models):
-            K = muygps.kernel(pairwise_dists)
-            sigma_sqs[i] = muygps.sigma_sq_optim(
-                K, nn_targets[:, :, i].reshape(batch_count, nn_count, 1)
-            )
-        return sigma_sqs
 
     def regress_from_indices(
         self,
