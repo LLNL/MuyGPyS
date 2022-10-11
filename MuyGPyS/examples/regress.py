@@ -28,6 +28,10 @@ from MuyGPyS.optimize.chassis import optimize_from_tensors
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
+from MuyGPyS.optimize.sigma_sq import (
+    muygps_sigma_sq_optim,
+    mmuygps_sigma_sq_optim,
+)
 
 
 def make_regressor(
@@ -221,11 +225,12 @@ def make_regressor(
         time_opt = perf_counter()
 
         if sigma_method is not None:
-            if sigma_method.lower() == "analytic":
-                K = muygps.kernel(pairwise_dists)
-                muygps.sigma_sq_optim(K, batch_nn_targets)
-            else:
-                raise ValueError(f"Unrecognized sigma_method {sigma_method}")
+            muygps = muygps_sigma_sq_optim(
+                muygps,
+                pairwise_dists,
+                batch_nn_targets,
+                sigma_method=sigma_method,
+            )
             if verbose is True:
                 print(f"Optimized sigma_sq values " f"{muygps.sigma_sq()}")
         time_sopt = perf_counter()
@@ -453,10 +458,12 @@ def make_multivariate_regressor(
         time_opt = perf_counter()
 
         if sigma_method is not None:
-            if sigma_method.lower() == "analytic":
-                mmuygps.sigma_sq_optim(pairwise_dists, batch_nn_targets)
-            else:
-                raise ValueError(f"Unrecognized sigma_method {sigma_method}")
+            mmuygps = mmuygps_sigma_sq_optim(
+                mmuygps,
+                pairwise_dists,
+                batch_nn_targets,
+                sigma_method=sigma_method,
+            )
             if verbose is True:
                 print(f"Optimized sigma_sq values " f"{mmuygps.sigma_sq()}")
         time_sopt = perf_counter()

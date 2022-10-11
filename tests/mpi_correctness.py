@@ -526,12 +526,16 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
     from MuyGPyS._src.gp.muygps.numpy import (
         _muygps_compute_solve as muygps_compute_solve_n,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
-        _muygps_sigma_sq_optim as muygps_sigma_sq_optim_n,
     )
     from MuyGPyS._src.gp.muygps.mpi import (
         _muygps_compute_solve as muygps_compute_solve_m,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_m,
-        _muygps_sigma_sq_optim as muygps_sigma_sq_optim_m,
+    )
+    from MuyGPyS._src.optimize.sigma_sq.numpy import (
+        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
+    )
+    from MuyGPyS._src.optimize.sigma_sq.mpi import (
+        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_m,
     )
 
     class MuyGPSTestCase(KernelTestCase):
@@ -582,14 +586,14 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
             )
 
         def test_sigma_sq_optim(self):
-            parallel_sigma_sq = muygps_sigma_sq_optim_m(
+            parallel_sigma_sq = analytic_sigma_sq_optim_m(
                 self.batch_covariance_gen_chunk,
                 self.batch_nn_targets_chunk,
                 self.muygps.eps(),
             )
 
             if rank == 0:
-                serial_sigma_sq = muygps_sigma_sq_optim_n(
+                serial_sigma_sq = analytic_sigma_sq_optim_n(
                     self.batch_covariance_gen,
                     self.batch_nn_targets,
                     self.muygps.eps(),

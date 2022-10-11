@@ -3,7 +3,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS._src.gp.muygps.numpy import (
-    _muygps_compute_solve,
-    _muygps_compute_diagonal_variance,
+from MuyGPyS._src.util import _collect_implementation
+
+[_analytic_sigma_sq_optim] = _collect_implementation(
+    "MuyGPyS._src.optimize.sigma_sq",
+    "_analytic_sigma_sq_optim",
 )

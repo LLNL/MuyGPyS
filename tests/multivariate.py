@@ -21,6 +21,7 @@ from MuyGPyS.optimize.chassis import (
     optimize_from_indices,
     optimize_from_tensors,
 )
+from MuyGPyS.optimize.sigma_sq import mmuygps_sigma_sq_optim
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.gp import (
     benchmark_prepare_cholK,
@@ -94,9 +95,10 @@ class InitTest(parameterized.TestCase):
 class SigmaSqTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, f, 10, nn_kwargs, model_args)
+            (1000, f, sm, 10, nn_kwargs, model_args)
             for nn_kwargs in _basic_nn_kwarg_options
             for f in [100]
+            for sm in ["analytic"]
             for model_args in (
                 (
                     "matern",
@@ -125,6 +127,7 @@ class SigmaSqTest(parameterized.TestCase):
         self,
         data_count,
         feature_count,
+        sigma_method,
         nn_count,
         nn_kwargs,
         model_args,
@@ -146,7 +149,9 @@ class SigmaSqTest(parameterized.TestCase):
         )
 
         # fit sigmas
-        mmuygps.sigma_sq_optim(pairwise_dists, nn_targets)
+        mmuygps = mmuygps_sigma_sq_optim(
+            mmuygps, pairwise_dists, nn_targets, sigma_method=sigma_method
+        )
 
         K = np.zeros((data_count, nn_count, nn_count))
         nn_targets = _consistent_unchunk_tensor(nn_targets)
