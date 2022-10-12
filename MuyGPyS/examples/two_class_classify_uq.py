@@ -35,6 +35,11 @@ from MuyGPyS.examples.classify import (
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import get_balanced_batch
+from MuyGPyS._src.mpi_utils import (
+    _is_mpi_mode,
+    _consistent_chunk_tensor,
+    _consistent_reduce_scalar,
+)
 
 
 example_lambdas = [
@@ -62,7 +67,8 @@ def do_classify_uq(
     opt_batch_count: int = 200,
     uq_batch_count: int = 500,
     loss_method: str = "log",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     uq_objectives: Union[
         List[Callable], Tuple[Callable, ...]
     ] = example_lambdas,
@@ -101,6 +107,8 @@ def do_classify_uq(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="log",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -137,6 +145,9 @@ def do_classify_uq(
             all of the parameters specified by `k_kwargs` are fixed. Currently
             supports only `"log"` (also known as `"cross_entropy"`) and `"mse"`
             for classification.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -185,6 +196,7 @@ def do_classify_uq(
         nn_count=nn_count,
         batch_count=opt_batch_count,
         loss_method=loss_method,
+        obj_method=obj_method,
         opt_method=opt_method,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
@@ -370,17 +382,19 @@ def classify_two_class_uq(
     test_count, _ = test_features.shape
     # train_count, _ = train_features.shape
 
-    means = np.zeros((test_count, 2))
-    variances = np.zeros(test_count)
-
     time_start = perf_counter()
+    test_feature = _consistent_chunk_tensor(test_features)
     test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
+
+    means = np.zeros((nn_labels.shape[0], 2))
+    variances = np.zeros(nn_labels.shape[0])
     nonconstant_mask = np.max(nn_labels[:, :, 0], axis=-1) != np.min(
         nn_labels[:, :, 0], axis=-1
     )
+
     means[np.invert(nonconstant_mask)] = nn_labels[
         np.invert(nonconstant_mask), 0
     ]
@@ -399,6 +413,7 @@ def classify_two_class_uq(
             train_labels,
             variance_mode="diagonal",
             apply_sigma_sq=False,
+            indices_by_rank=_is_mpi_mode(),
         )
 
     time_pred = perf_counter()
@@ -454,6 +469,10 @@ def train_two_class_interval(
         scale parameter that minimizes each considered objective function.
     """
     targets = train_labels[batch_indices]
+    targets = _consistent_chunk_tensor(targets)
+    batch_indices = _consistent_chunk_tensor(batch_indices)
+    batch_nn_indices = _consistent_chunk_tensor(batch_nn_indices)
+
     mean, variance = surrogate.regress_from_indices(
         batch_indices,
         batch_nn_indices,
@@ -462,6 +481,7 @@ def train_two_class_interval(
         train_responses,
         variance_mode="diagonal",
         apply_sigma_sq=False,
+        indices_by_rank=_is_mpi_mode(),
     )
     predicted_labels = 2 * np.argmax(mean, axis=1) - 1
 
@@ -487,6 +507,7 @@ def train_two_class_interval(
                 > 0.0,
             )
         )
+        _alpha[i] = _consistent_reduce_scalar(_alpha[i])
         _beta[i] = np.mean(
             np.logical_and(
                 (
@@ -501,9 +522,12 @@ def train_two_class_interval(
                 > 0.0,
             )
         )
+        _beta[i] = _consistent_reduce_scalar(_beta[i])
 
     correct_count = np.sum(correct_mask)
+    correct_count = _consistent_reduce_scalar(correct_count)
     incorrect_count = np.sum(incorrect_mask)
+    incorrect_count = _consistent_reduce_scalar(incorrect_count)
     cutoffs = np.array(
         [
             cutv[obj_f(_alpha, _beta, correct_count, incorrect_count)]

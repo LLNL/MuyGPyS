@@ -28,6 +28,10 @@ from MuyGPyS.optimize.chassis import optimize_from_tensors
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
+from MuyGPyS.optimize.sigma_sq import (
+    muygps_sigma_sq_optim,
+    mmuygps_sigma_sq_optim,
+)
 
 
 def make_regressor(
@@ -36,7 +40,8 @@ def make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
@@ -71,7 +76,8 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
@@ -84,7 +90,8 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
@@ -108,6 +115,9 @@ def make_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -207,6 +217,7 @@ def make_regressor(
                 crosswise_dists,
                 pairwise_dists,
                 loss_method=loss_method,
+                obj_method=obj_method,
                 opt_method=opt_method,
                 verbose=verbose,
                 **opt_kwargs,
@@ -214,11 +225,12 @@ def make_regressor(
         time_opt = perf_counter()
 
         if sigma_method is not None:
-            if sigma_method.lower() == "analytic":
-                K = muygps.kernel(pairwise_dists)
-                muygps.sigma_sq_optim(K, batch_nn_indices, train_targets)
-            else:
-                raise ValueError(f"Unrecognized sigma_method {sigma_method}")
+            muygps = muygps_sigma_sq_optim(
+                muygps,
+                pairwise_dists,
+                batch_nn_targets,
+                sigma_method=sigma_method,
+            )
             if verbose is True:
                 print(f"Optimized sigma_sq values " f"{muygps.sigma_sq()}")
         time_sopt = perf_counter()
@@ -242,7 +254,8 @@ def make_multivariate_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
     kern: str = "matern",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
@@ -283,7 +296,8 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         sigma_method="analytic",
         ...         kern="rbf",
         ...         k_args=k_args,
@@ -297,7 +311,8 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         sigma_method="analytic",
         ...         kern="rbf",
         ...         k_args=k_args,
@@ -322,6 +337,9 @@ def make_multivariate_regressor(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -425,13 +443,14 @@ def make_multivariate_regressor(
                 if muygps.fixed() is False:
                     mmuygps.models[i] = optimize_from_tensors(
                         muygps,
-                        batch_targets[:, i].reshape(batch_count, 1),
+                        batch_targets[:, i].reshape(batch_targets.shape[0], 1),
                         batch_nn_targets[:, :, i].reshape(
-                            batch_count, nn_count, 1
+                            batch_nn_targets.shape[0], nn_count, 1
                         ),
                         crosswise_dists,
                         pairwise_dists,
                         loss_method=loss_method,
+                        obj_method=obj_method,
                         opt_method=opt_method,
                         verbose=verbose,
                         **opt_kwargs,
@@ -439,12 +458,12 @@ def make_multivariate_regressor(
         time_opt = perf_counter()
 
         if sigma_method is not None:
-            if sigma_method.lower() == "analytic":
-                mmuygps.sigma_sq_optim(
-                    pairwise_dists, batch_nn_indices, train_targets
-                )
-            else:
-                raise ValueError(f"Unrecognized sigma_method {sigma_method}")
+            mmuygps = mmuygps_sigma_sq_optim(
+                mmuygps,
+                pairwise_dists,
+                batch_nn_targets,
+                sigma_method=sigma_method,
+            )
             if verbose is True:
                 print(f"Optimized sigma_sq values " f"{mmuygps.sigma_sq()}")
         time_sopt = perf_counter()
@@ -502,7 +521,8 @@ def _decide_and_make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
@@ -523,6 +543,7 @@ def _decide_and_make_regressor(
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
             kern=kern,
@@ -540,6 +561,7 @@ def _decide_and_make_regressor(
                 nn_count=nn_count,
                 batch_count=batch_count,
                 loss_method=loss_method,
+                obj_method=obj_method,
                 opt_method=opt_method,
                 sigma_method=sigma_method,
                 k_kwargs=k_kwargs,
@@ -563,7 +585,8 @@ def do_regress(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
     variance_mode: Optional[str] = None,
     kern: Optional[str] = None,
@@ -618,6 +641,8 @@ def do_regress(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         variance_mode="diagonal",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
@@ -631,6 +656,8 @@ def do_regress(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         variance_mode="diagonal",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
@@ -660,6 +687,9 @@ def do_regress(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -740,6 +770,7 @@ def do_regress(
         nn_count=nn_count,
         batch_count=batch_count,
         loss_method=loss_method,
+        obj_method=obj_method,
         opt_method=opt_method,
         sigma_method=sigma_method,
         kern=kern,

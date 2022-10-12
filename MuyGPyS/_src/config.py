@@ -10,7 +10,6 @@ except Exception:
     jax_config = None  # type: ignore
     from MuyGPyS._src.jaxconfig import Config as JaxConfig  # type: ignore
 
-
 import itertools
 import sys
 
@@ -19,6 +18,7 @@ class MuyGPySConfig(JaxConfig):
     def __init__(self):
         super(MuyGPySConfig, self).__init__()
         self.state = MuyGPySState()
+        self.mpi_state = MPIState()
 
     def parse_flags_with_absl(self):
         if self.state.already_configured_with_absl is False:
@@ -44,7 +44,20 @@ class MuyGPySState:
         self.jax_enabled = False
         self.hnswlib_enabled = False
         self.gpu_enabled = False
+        self.mpi_enabled = False
         self.already_configured_with_absl = False
+
+
+class MPIState:
+    def __init__(self):
+        self._comm_world = None
+
+    @property
+    def comm_world(self):
+        return self._comm_world
+
+    def set_comm(self, comm):
+        self._comm_world = comm
 
 
 config = MuyGPySConfig()
@@ -101,6 +114,22 @@ enable_gpu = config.define_bool_state(
 )
 
 
+def _update_mpi_global(val):
+    config.state.mpi_enabled = val
+
+
+def _update_mpi_thread_local(val):
+    config.state.mpi_enabled = val
+
+
+enable_mpi = config.define_bool_state(
+    name="muygpys_mpi_enabled",
+    default=False,
+    help="Enable use of mpi for parallelization.",
+    update_global_hook=_update_mpi_global,
+    update_thread_local_hook=_update_mpi_thread_local,
+)
+
 try:
     from jax import default_backend as _default_backend
 
@@ -119,3 +148,14 @@ try:
     del _hnswlib
 except Exception:
     config.update("muygpys_hnswlib_enabled", False)
+
+try:
+    from mpi4py import MPI
+
+    config.mpi_state.set_comm(MPI.COMM_WORLD)
+
+    if config.mpi_state.comm_world.Get_size() > 1:
+        config.update("muygpys_mpi_enabled", True)
+except Exception as e:
+    MPI = None  # type: ignore
+    config.update("muygpys_mpi_enabled", False)

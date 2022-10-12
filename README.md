@@ -11,16 +11,33 @@ This feature affords the optimization of hyperparameters by way of leave-one-out
 required by similar sparse methods. 
 
 
-## Just-In-Time Compiled or Numpy?
+## Under-The-Hood Math Implementation Options
 
-With release v0.5.0, `MuyGPyS` supports just-in-time compilation of the 
+As of release v0.6.0, `MuyGPyS` supports three distinct implementations of all
+of its underlying math functions:
+
+- `numpy` - basic numpy (the default)
+- [JAX](https://github.com/google/jax) - GPU acceleration
+- [MPI](https://github.com/mpi4py/mpi4py) - distributed memory acceleration
+
+Most users will specify the desired implementation at install-time.
+Please see the below installation instructions.
+
+Note that the current version of the code supports either JAX OR MPI, not both.
+Future versions will support both simultaneously.
+
+`MuyGPyS` detects which versions of its math functions to use at import time.
+`MuyGPyS.config` allows the user to toggle both JAX and MPI support on and off.
+Presently, JAX will take precedence if both JAX and MPI dependencies are
+installed and both are enabled.
+
+### Just-In-Time Compilation with JAX?,
+
+`MuyGPyS` supports just-in-time compilation of the 
 underlying math functions to CPU or GPU using 
-[JAX](https://github.com/google/jax).
-The JAX-compiled versions of the code are significantly faster, especially on 
+[JAX](https://github.com/google/jax) since version v0.5.0.
+The JAX-compiled versions of the code are significantly faster especially on 
 GPUs.
-Both pure numpy and JAX-compiled versions of the library are supported, with 
-most users specifying at install-time whether to use JAX.
-See the below installation instructions.
 
 If for some reason you want to swap between numpy and JAX implementations (and
 have installed the JAX dependencies as below), `MuyGPyS.config` allows this.
@@ -34,7 +51,7 @@ config.update("muygpys_jax_enabled", False)
 # subsequent imports...
 ```
 
-### Precision
+#### JAX precision
 
 JAX uses 32 bit types by default, whereas numpy tends to promote everything to
 64 bits.
@@ -59,6 +76,37 @@ jax_config.update("jax_enable_x64", False)
 If confused, you can also query for whether 64 bit types are enabled via
 the `jax_config.x64_enabled` boolean.
 
+### MPI support
+
+The current version of `MuyGPyS` requires that the user manually enable MPI
+before importing any other `MuyGPyS` functions.
+If the user has installed the JAX dependencies, the user will also need to
+disable JAX support.
+```
+from MuyGPyS import config
+
+config.update("muygpys_mpi_enabled", True)
+config.update("muygpys_jax_enabled", False)  # if JAX is installed
+
+# subsequent imports...
+```
+
+The MPI version of `MuyGPyS` performs all tensor manipulation in distributed
+memory.
+The tensor creation functions will in fact create and distribute a chunk of each
+tensor to each MPI rank.
+This data and subsequent data such as posterior means and variances remains
+partitioned, and most operations are embarassingly parallel.
+Global operations such as loss function computation make use of MPI collectives
+like allreduce.
+If the user needs to reason about all products of an experiment, such the full
+posterior distribution in local memory, it is necessary to employ a collective
+such as `MPI.gather`.
+
+The wrapped KNN algorithms are not distributed, and so `MuyGPyS` does not yet
+have an internal distributed KNN implementation.
+Future versions will support a distributed memory approximate KNN solution.
+
 ## Installation
 
 ### Pip: CPU
@@ -73,6 +121,9 @@ support fast approximate nearest neighbors indexing
 - `jax_cpu` - install [JAX](https://github.com/google/jax) dependencies to 
 support just-in-time compilation of math functions on CPU (see below to install
 on GPU CUDA architectures)
+- `mpi` - install [MPI](https://github.com/mpi4py/mpi4py) dependencies to
+support distributed memory parallel computation. Requires that the user has
+installed a version of MPI such as mvapich or open-mpi.
 ```
 $ # numpy-only installation. Functions will internally use numpy.
 $ pip install --upgrade muygpys
@@ -82,6 +133,8 @@ $ # CPU-only JAX installation. Functions will be jit-compiled using JAX.
 $ pip install --upgrade muygpys[jax_cpu]
 $ # The same, but includes hnswlib.
 $ pip install --upgrade muygpys[jax_cpu,hnswlib]
+$ # MPI installation. Functions will operate in distributed memory.
+$ pip install --upgrade muygpys[mpi]
 ```
 
 ### Pip: GPU (CUDA)
@@ -166,6 +219,8 @@ CUDA >= 11.1 and CuDNN >= 8.2 (pip only)
 - `jax_cuda11_cudnn805` - install JAX dependencies with NVidia GPU support with 
 CUDA >= 11.1 and CuDNN >= 8.0.5 (pip only)
 - `jax_cuda` (shorthand for `jax_cuda11_cudnn805`, pip only)
+- `mpi` - install [MPI](https://github.com/mpi4py/mpi4py) dependency to support
+parallel computation
 - `tests` - install dependencies necessary to run [tests](tests/)
 - `docs` - install dependencies necessary to build the [docs](docs/)
 - `dev` - install dependencies for maintaining code style, linting, and 
@@ -224,9 +279,12 @@ $ python tests/kernels.py DistancesTest
 
 MuyGPyS has been used the in the following papers (newest first):
 
-1. [Gaussian Process Classification fo Galaxy Blend Identification in LSST](https://arxiv.org/abs/2107.09246)
-2. [Star-Galaxy Image Separation with Computationally Efficient Gaussian Process Classification](https://arxiv.org/abs/2105.01106)
-3. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
+1. [Scalable Gaussian Process Hyperparameter Optimization via Coverage Regularization](http://export.arxiv.org/abs/2209.11280)
+2. [Light Curve Completion and Forecasting Using Fast and Scalable Gaussian Processes (MuyGPs)](https://arxiv.org/abs/2208.14592)
+3. [Fast Gaussian Process Posterior Mean Prediction via Local Cross Validation and Precomputation](https://arxiv.org/abs/2205.10879v1)
+4. [Gaussian Process Classification fo Galaxy Blend Identification in LSST](https://arxiv.org/abs/2107.09246)
+5. [Star-Galaxy Image Separation with Computationally Efficient Gaussian Process Classification](https://arxiv.org/abs/2105.01106)
+6. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
 
 ## Citation
 

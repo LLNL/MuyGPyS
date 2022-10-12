@@ -3,11 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
+from MuyGPyS import config
+from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
 from typing import Dict, Generator, Tuple, Union
 
-from MuyGPyS import config
+import numpy as np
 
 if config.muygpys_hnswlib_enabled is True:  # type: ignore
     _basic_nn_kwarg_options = [
@@ -259,8 +260,7 @@ def _normalize(X: np.ndarray) -> np.ndarray:
 
 def _get_sigma_sq_series(
     K: np.ndarray,
-    nn_indices: np.ndarray,
-    target_col: np.ndarray,
+    nn_targets_column: np.ndarray,
     eps: float,
 ) -> np.ndarray:
     """
@@ -274,29 +274,26 @@ def _get_sigma_sq_series(
             A tensor of shape `(batch_count, nn_count, nn_count)` containing
             the `(nn_count, nn_count` -shaped kernel matrices corresponding
             to each of the batch elements.
-        nn_indices:
-            An integral matrix of shape `(batch_count, nn_count)` listing the
-            nearest neighbor indices for all observations in the test batch.
-        target_col:
-            A vector of shape `(batch_count)` consisting of the target for
-            each nearest neighbor.
+        nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, 1)` containing
+            one dimension of the expected response for each nearest neighbor of
+            each batch element.
 
     Returns:
         A vector of shape `(response_count)` listing the value of sigma^2
         for the given response dimension.
     """
-    batch_count, nn_count = nn_indices.shape
+    batch_count, nn_count, _ = nn_targets_column.shape
 
     sigmas = np.zeros((batch_count,))
-    for i, el in enumerate(_get_sigma_sq(K, target_col, nn_indices, eps)):
+    for i, el in enumerate(_get_sigma_sq(K, nn_targets_column, eps)):
         sigmas[i] = el
     return sigmas / nn_count
 
 
 def _get_sigma_sq(
     K: np.ndarray,
-    target_col: np.ndarray,
-    nn_indices: np.ndarray,
+    nn_targets_column: np.ndarray,
     eps: float,
 ) -> Generator[float, None, None]:
     """
@@ -315,19 +312,38 @@ def _get_sigma_sq(
             A tensor of shape `(batch_count, nn_count, nn_count)` containing
             the `(nn_count, nn_count` -shaped kernel matrices corresponding
             to each of the batch elements.
-        target_col:
-            A vector of shape `(batch_count)` consisting of the target for
-            each nearest neighbor.
-        nn_indices:
-            An integral matrix of shape `(batch_count, nn_count)` listing the
-            nearest neighbor indices for all observations in the test batch.
+        nn_targets_column:
+            Tensor of floats of shape `(batch_count, nn_count, 1)` containing
+            one dimension of the expected response for each nearest neighbor of
+            each batch element.
 
     Return:
         A generator producing `batch_count` optimal values of
         :math:`\\sigma^2` for each neighborhood for the given response
         dimension.
     """
-    batch_count, nn_count = nn_indices.shape
+    batch_count, nn_count, _ = nn_targets_column.shape
     for j in range(batch_count):
-        Y_0 = target_col[nn_indices[j, :]]
+        Y_0 = nn_targets_column[j, :, 0]
         yield Y_0 @ np.linalg.solve(K[j, :, :] + eps * np.eye(nn_count), Y_0)
+
+
+def _consistent_assert(assert_fn, *args):
+    """
+    Performs an assert on the root core if in mpi, otherwise performs the assert
+    as normal.
+
+    The purpose of this function is to allow the existing serial testing harness
+    to also test the mpi implementations without the need for additional codes.
+
+    Args:
+        assert_fn:
+            An absl assert function.
+        args:
+            Arguments to the assert function
+    """
+    if _is_mpi_mode() is True:
+        if config.mpi_state.comm_world.Get_rank() == 0:
+            assert_fn(*args)
+    else:
+        assert_fn(*args)

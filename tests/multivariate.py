@@ -21,6 +21,7 @@ from MuyGPyS.optimize.chassis import (
     optimize_from_indices,
     optimize_from_tensors,
 )
+from MuyGPyS.optimize.sigma_sq import mmuygps_sigma_sq_optim
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.gp import (
     benchmark_prepare_cholK,
@@ -33,6 +34,10 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
     _get_sigma_sq_series,
+)
+from MuyGPyS._src.mpi_utils import (
+    _consistent_unchunk_tensor,
+    _consistent_chunk_tensor,
 )
 
 
@@ -90,9 +95,10 @@ class InitTest(parameterized.TestCase):
 class SigmaSqTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, f, 10, nn_kwargs, model_args)
+            (1000, f, sm, 10, nn_kwargs, model_args)
             for nn_kwargs in _basic_nn_kwarg_options
             for f in [100]
+            for sm in ["analytic"]
             for model_args in (
                 (
                     "matern",
@@ -121,6 +127,7 @@ class SigmaSqTest(parameterized.TestCase):
         self,
         data_count,
         feature_count,
+        sigma_method,
         nn_count,
         nn_kwargs,
         model_args,
@@ -136,18 +143,24 @@ class SigmaSqTest(parameterized.TestCase):
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices = np.arange(data_count)
         nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
+        nn_targets = _consistent_chunk_tensor(data["output"][nn_indices, :])
         pairwise_dists = pairwise_distances(
             data["input"], nn_indices, metric=mmuygps.metric
         )
 
         # fit sigmas
-        mmuygps.sigma_sq_optim(pairwise_dists, nn_indices, data["output"])
+        mmuygps = mmuygps_sigma_sq_optim(
+            mmuygps, pairwise_dists, nn_targets, sigma_method=sigma_method
+        )
 
         K = np.zeros((data_count, nn_count, nn_count))
+        nn_targets = _consistent_unchunk_tensor(nn_targets)
         for i, muygps in enumerate(mmuygps.models):
-            K = muygps.kernel(pairwise_dists)
+            K = _consistent_unchunk_tensor(muygps.kernel(pairwise_dists))
             sigmas = _get_sigma_sq_series(
-                K, nn_indices, data["output"][:, i], muygps.eps()
+                K,
+                nn_targets[:, :, i].reshape(data_count, nn_count, 1),
+                muygps.eps(),
             )
             self.assertEqual(sigmas.shape, (data_count,))
             self.assertAlmostEqual(muygps.sigma_sq()[0], np.mean(sigmas), 5)
@@ -156,11 +169,12 @@ class SigmaSqTest(parameterized.TestCase):
 class OptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
@@ -181,6 +195,10 @@ class OptimTest(parameterized.TestCase):
                     ],
                 ),
             )
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[1]
+            # ]
         )
     )
     def test_hyper_optim(
@@ -191,6 +209,7 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
@@ -250,13 +269,20 @@ class OptimTest(parameterized.TestCase):
             batch_nn_targets = sim_train["output"][batch_nn_indices, :]
 
             for i, muygps in enumerate(mmuygps.models):
+                b_t = _consistent_chunk_tensor(
+                    batch_targets[:, i].reshape(batch_count, 1)
+                )
+                b_nn_t = _consistent_chunk_tensor(
+                    batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1)
+                )
                 mmuygps.models[i] = optimize_from_tensors(
                     muygps,
-                    batch_targets[:, i].reshape(batch_count, 1),
-                    batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+                    b_t,
+                    b_nn_t,
                     crosswise_dists,
                     pairwise_dists,
                     loss_method=loss_method,
+                    obj_method=obj_method,
                     opt_method=opt_method,
                     **opt_kwargs,
                 )
@@ -268,11 +294,12 @@ class OptimTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, opt_method_and_kwargs, k_kwargs)
+            (1001, 10, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
             for lm in ["mse"]
+            for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
                 (
@@ -293,6 +320,10 @@ class OptimTest(parameterized.TestCase):
                     ],
                 ),
             )
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[1]
+            # ]
         )
     )
     def test_hyper_optim_from_indices(
@@ -303,6 +334,7 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
+        obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
@@ -356,6 +388,7 @@ class OptimTest(parameterized.TestCase):
                     sim_train["input"],
                     sim_train["output"][:, i].reshape(train_count, 1),
                     loss_method=loss_method,
+                    obj_method=obj_method,
                     opt_method=opt_method,
                     **opt_kwargs,
                 )
@@ -372,9 +405,10 @@ class ClassifyTest(parameterized.TestCase):
             (1000, 200, f, nn, nn_kwargs, k_kwargs)
             for f in [100, 10, 2]
             for nn in [5, 10, 100]
+            for nn_kwargs in _basic_nn_kwarg_options
             # for f in [10]
             # for nn in [5]
-            for nn_kwargs in _basic_nn_kwarg_options
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for k_kwargs in (
                 (
                     "matern",
@@ -404,6 +438,7 @@ class ClassifyTest(parameterized.TestCase):
         nn_kwargs,
         k_kwargs,
     ):
+        # skip if we are using the MPI implementation
         kern, args = k_kwargs
         response_count = len(args)
 
@@ -425,6 +460,7 @@ class ClassifyTest(parameterized.TestCase):
             nbrs_lookup,
             train["output"],
         )
+        predictions = _consistent_unchunk_tensor(predictions)
         self.assertEqual(predictions.shape, (test_count, response_count))
 
 
@@ -495,9 +531,11 @@ class RegressTest(parameterized.TestCase):
         )
         if variance_mode is not None:
             predictions, diagonal_variance = predictions
+            diagonal_variance = _consistent_unchunk_tensor(diagonal_variance)
             self.assertEqual(
                 diagonal_variance.shape, (test_count, response_count)
             )
+        predictions = _consistent_unchunk_tensor(predictions)
         self.assertEqual(predictions.shape, (test_count, response_count))
 
 
@@ -554,6 +592,7 @@ class MakeClassifierTest(parameterized.TestCase):
         return_distances,
         k_kwargs,
     ):
+        # skip if we are using the MPI implementation
         kern, args = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
@@ -585,6 +624,8 @@ class MakeClassifierTest(parameterized.TestCase):
             mmuygps, _ = classifier_args
         elif len(classifier_args) == 4:
             mmuygps, _, crosswise_dists, pairwise_dists = classifier_args
+            crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
+            pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
             self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
             self.assertEqual(
                 pairwise_dists.shape, (batch_count, nn_count, nn_count)
@@ -662,6 +703,7 @@ class MakeRegressorTest(parameterized.TestCase):
         return_distances,
         k_kwargs,
     ):
+        # skip if we are using the MPI implementation
         kern, args = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
@@ -694,6 +736,8 @@ class MakeRegressorTest(parameterized.TestCase):
             mmuygps, _ = regressor_args
         elif len(regressor_args) == 4:
             mmuygps, _, crosswise_dists, pairwise_dists = regressor_args
+            crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
+            pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
             self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
             self.assertEqual(
                 pairwise_dists.shape, (batch_count, nn_count, nn_count)

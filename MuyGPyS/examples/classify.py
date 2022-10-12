@@ -28,6 +28,10 @@ from MuyGPyS.optimize.chassis import optimize_from_tensors
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import get_balanced_batch
+from MuyGPyS._src.mpi_utils import (
+    _is_mpi_mode,
+    _consistent_chunk_tensor,
+)
 
 
 def make_classifier(
@@ -36,7 +40,8 @@ def make_classifier(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "log",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -70,7 +75,8 @@ def make_classifier(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="log",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -82,7 +88,8 @@ def make_classifier(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="log",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         return_distances=True,
@@ -109,6 +116,9 @@ def make_classifier(
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
             metric, epsilon and sigma hyperparameter specifications, and
@@ -190,6 +200,7 @@ def make_classifier(
             crosswise_dists,
             pairwise_dists,
             loss_method=loss_method,
+            obj_method=obj_method,
             opt_method=opt_method,
             verbose=verbose,
             **opt_kwargs,
@@ -214,7 +225,8 @@ def make_multivariate_classifier(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "mse",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     kern: str = "matern",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
@@ -254,7 +266,8 @@ def make_multivariate_classifier(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
@@ -267,7 +280,8 @@ def make_multivariate_classifier(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="mse",
-        ...         opt_method="scipy",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
@@ -291,6 +305,9 @@ def make_multivariate_classifier(
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
             Currently supports only `"mse"` for regression.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -381,11 +398,14 @@ def make_multivariate_classifier(
             if muygps.fixed() is False:
                 mmuygps.models[i] = optimize_from_tensors(
                     muygps,
-                    batch_targets[:, i].reshape(batch_count, 1),
-                    batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+                    batch_targets[:, i].reshape(batch_targets.shape[0], 1),
+                    batch_nn_targets[:, :, i].reshape(
+                        batch_nn_targets.shape[0], nn_count, 1
+                    ),
                     crosswise_dists,
                     pairwise_dists,
                     loss_method=loss_method,
+                    obj_method=obj_method,
                     opt_method=opt_method,
                     verbose=verbose,
                     **opt_kwargs,
@@ -410,7 +430,8 @@ def _decide_and_make_classifier(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "log",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
@@ -428,6 +449,7 @@ def _decide_and_make_classifier(
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            obj_method=obj_method,
             opt_method=opt_method,
             kern=kern,
             k_args=k_kwargs,
@@ -444,6 +466,7 @@ def _decide_and_make_classifier(
                 nn_count=nn_count,
                 batch_count=batch_count,
                 loss_method=loss_method,
+                obj_method=obj_method,
                 opt_method=opt_method,
                 k_kwargs=k_kwargs,
                 nn_kwargs=nn_kwargs,
@@ -466,7 +489,8 @@ def do_classify(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "log",
-    opt_method: str = "scipy",
+    obj_method: str = "loo_crossval",
+    opt_method: str = "bayes",
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
@@ -506,6 +530,8 @@ def do_classify(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="log",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -518,6 +544,8 @@ def do_classify(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_method="log",
+        ...         obj_method="loo_crossval",
+        ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         return_distances=return_distances,
@@ -551,6 +579,9 @@ def do_classify(
             all of the parameters specified by `k_kwargs` are fixed. Currently
             supports only `"log"` (also known as `"cross_entropy"`) and `"mse"`
             for classification.
+        obj_method:
+            Indicates the objective function to be minimized. Currently
+            restricted to `"loo_crossval"`.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -599,6 +630,7 @@ def do_classify(
         nn_count=nn_count,
         batch_count=batch_count,
         loss_method=loss_method,
+        obj_method=obj_method,
         opt_method=opt_method,
         kern=kern,
         k_kwargs=k_kwargs,
@@ -671,13 +703,15 @@ def classify_any(
 
     # detect one hot encoding, e.g. {0,1}, {-0.1, 0.9}, {-1,1}, ...
     one_hot_false = float(np.min(train_labels[0, :]))
-    predictions = np.full((test_count, class_count), one_hot_false)
 
     time_start = perf_counter()
+    test_features = _consistent_chunk_tensor(test_features)
     test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
     nn_labels = train_labels[test_nn_indices, :]
+
+    predictions = np.full((nn_labels.shape[0], class_count), one_hot_false)
     nonconstant_mask = np.max(nn_labels[:, :, 0], axis=-1) != np.min(
         nn_labels[:, :, 0], axis=-1
     )
@@ -688,13 +722,16 @@ def classify_any(
     time_agree = perf_counter()
 
     if np.sum(nonconstant_mask) > 0:
+        nonconstant_indices = np.where(nonconstant_mask == True)[0]
+        nonconstant_nn_indices = test_nn_indices[nonconstant_mask, :]
         predictions[nonconstant_mask] = surrogate.regress_from_indices(
-            np.where(nonconstant_mask == True)[0],
-            test_nn_indices[nonconstant_mask, :],
+            nonconstant_indices,
+            nonconstant_nn_indices,
             test_features,
             train_features,
             train_labels,
             apply_sigma_sq=False,
+            indices_by_rank=_is_mpi_mode(),
         )
     time_pred = perf_counter()
 

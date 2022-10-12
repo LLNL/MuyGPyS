@@ -5,9 +5,13 @@
 
 """Public MuyGPyS modules and functions."""
 
-__version__ = "0.5.2"
+__version__ = "0.6.0"
 
-from MuyGPyS._src.config import config as config, jax_config as jax_config
+from MuyGPyS._src.config import (
+    config as config,
+    jax_config as jax_config,
+    MPI as MPI,
+)
 
 if config.muygpys_jax_enabled is True and jax_config is not None:  # type: ignore
     jax_config.update("jax_enable_x64", True)
