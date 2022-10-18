@@ -223,6 +223,6 @@ def make_raw_kwargs_predict_and_loss_fn(
             **kwargs,
         )
 
-        return loss_fn(predictions, batch_targets)
+        return -loss_fn(predictions, batch_targets)
 
     return predict_and_loss_fn
