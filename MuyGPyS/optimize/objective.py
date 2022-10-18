@@ -51,6 +51,7 @@ def make_obj_fn(
 def make_loo_crossval_fn(
     opt_method: str,
     loss_method: str,
+    loss_fn: Callable,
     kernel_fn: Callable,
     predict_fn: Callable,
     pairwise_dists: np.ndarray,
@@ -97,7 +98,6 @@ def make_loo_crossval_fn(
     Returns:
         A Callable `objective_fn`, whose format depends on `opt_method`.
     """
-    loss_fn = get_loss_func(loss_method)
     kernels_fn = _switch_on_opt_method(
         opt_method,
         make_kwargs_kernels_fn,

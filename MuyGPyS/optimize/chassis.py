@@ -242,6 +242,7 @@ def optimize_from_tensors(
     Returns:
         A new MuyGPs model whose specified hyperparameters have been optimized.
     """
+    loss_fn = get_loss_func(loss_method)
     kernel_fn = muygps.kernel.get_opt_fn(opt_method)
     predict_fn = muygps.get_opt_fn(opt_method)
 
@@ -249,6 +250,7 @@ def optimize_from_tensors(
         obj_method,
         opt_method,
         loss_method,
+        loss_fn,
         kernel_fn,
         predict_fn,
         pairwise_dists,

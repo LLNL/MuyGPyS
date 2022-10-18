@@ -608,10 +608,7 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
         _mse_fn as mse_fn_m,
         _cross_entropy_fn as cross_entropy_fn_m,
     )
-    from MuyGPyS.optimize.objective import (
-        make_loo_crossval_array_fn,
-        make_loo_crossval_kwargs_fn,
-    )
+    from MuyGPyS.optimize.objective import make_loo_crossval_fn
 
     from MuyGPyS._src.optimize.chassis.numpy import (
         _scipy_optimize as scipy_optimize_n,
@@ -706,7 +703,9 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
         # Numpy objective functions
         def _get_array_obj_fn_n(self):
-            return make_loo_crossval_array_fn(
+            return make_loo_crossval_fn(
+                "scipy",
+                "mse",
                 mse_fn_n,
                 self._get_array_kernel_fn_n(),
                 self._get_array_predict_fn_n(),
@@ -717,7 +716,9 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
             )
 
         def _get_kwargs_obj_fn_n(self):
-            return make_loo_crossval_kwargs_fn(
+            return make_loo_crossval_fn(
+                "bayes",
+                "mse",
                 mse_fn_n,
                 self._get_kwargs_kernel_fn_n(),
                 self._get_kwargs_predict_fn_n(),
@@ -729,7 +730,9 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
         # MPI objective functions
         def _get_array_obj_fn_m(self):
-            return make_loo_crossval_array_fn(
+            return make_loo_crossval_fn(
+                "scipy",
+                "mse",
                 mse_fn_m,
                 self._get_array_kernel_fn_m(),
                 self._get_array_predict_fn_m(),
@@ -740,7 +743,9 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
             )
 
         def _get_kwargs_obj_fn_m(self):
-            return make_loo_crossval_kwargs_fn(
+            return make_loo_crossval_fn(
+                "bayes",
+                "mse",
                 mse_fn_m,
                 self._get_kwargs_kernel_fn_m(),
                 self._get_kwargs_predict_fn_m(),

@@ -440,10 +440,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _mse_fn as mse_fn_j,
         _cross_entropy_fn as cross_entropy_fn_j,
     )
-    from MuyGPyS.optimize.objective import (
-        make_loo_crossval_array_fn,
-        make_loo_crossval_kwargs_fn,
-    )
+    from MuyGPyS.optimize.objective import make_loo_crossval_fn
     from MuyGPyS._src.optimize.chassis.numpy import (
         _scipy_optimize as scipy_optimize_n,
         _bayes_opt_optimize as bayes_optimize_n,
@@ -532,8 +529,10 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 muygps_compute_solve_j, self.muygps.eps
             )
 
-        def _get_obj_fn_n(self):
-            return make_loo_crossval_array_fn(
+        def _get_array_obj_fn_n(self):
+            return make_loo_crossval_fn(
+                "scipy",
+                "mse",
                 mse_fn_n,
                 self._get_array_kernel_fn_n(),
                 self._get_array_predict_fn_n(),
@@ -544,7 +543,9 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
 
         def _get_kwargs_obj_fn_n(self):
-            return make_loo_crossval_kwargs_fn(
+            return make_loo_crossval_fn(
+                "bayes",
+                "mse",
                 mse_fn_n,
                 self._get_kwargs_kernel_fn_n(),
                 self._get_kwargs_predict_fn_n(),
@@ -554,8 +555,10 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.batch_targets_n,
             )
 
-        def _get_obj_fn_j(self):
-            return make_loo_crossval_array_fn(
+        def _get_array_obj_fn_j(self):
+            return make_loo_crossval_fn(
+                "scipy",
+                "mse",
                 mse_fn_j,
                 self._get_array_kernel_fn_j(),
                 self._get_array_predict_fn_j(),
@@ -566,7 +569,9 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
 
         def _get_kwargs_obj_fn_j(self):
-            return make_loo_crossval_kwargs_fn(
+            return make_loo_crossval_fn(
+                "bayes",
+                "mse",
                 mse_fn_j,
                 self._get_kwargs_kernel_fn_j(),
                 self._get_kwargs_predict_fn_j(),
@@ -576,8 +581,10 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.batch_targets_j,
             )
 
-        def _get_obj_fn_h(self):
-            return make_loo_crossval_array_fn(
+        def _get_array_obj_fn_h(self):
+            return make_loo_crossval_fn(
+                "scipy",
+                "mse",
                 mse_fn_j,
                 self._get_array_kernel_fn_j(),
                 self._get_array_predict_fn_n(),
@@ -588,7 +595,9 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
 
         def _get_kwargs_obj_fn_h(self):
-            return make_loo_crossval_kwargs_fn(
+            return make_loo_crossval_fn(
+                "bayes",
+                "mse",
                 mse_fn_j,
                 self._get_kwargs_kernel_fn_j(),
                 self._get_kwargs_predict_fn_n(),
@@ -669,9 +678,9 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
 
         def test_loo_crossval(self):
-            obj_fn_n = self._get_obj_fn_n()
-            obj_fn_j = self._get_obj_fn_j()
-            obj_fn_h = self._get_obj_fn_h()
+            obj_fn_n = self._get_array_obj_fn_n()
+            obj_fn_j = self._get_array_obj_fn_j()
+            obj_fn_h = self._get_array_obj_fn_h()
             self.assertTrue(
                 allclose_inv(obj_fn_n(self.x0_n), obj_fn_j(self.x0_j))
             )
@@ -686,9 +695,9 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.sopt_kwargs = {"verbose": False}
 
         def test_scipy_optimize(self):
-            obj_fn_n = self._get_obj_fn_n()
-            obj_fn_j = self._get_obj_fn_j()
-            obj_fn_h = self._get_obj_fn_h()
+            obj_fn_n = self._get_array_obj_fn_n()
+            obj_fn_j = self._get_array_obj_fn_j()
+            obj_fn_h = self._get_array_obj_fn_h()
 
             mopt_n = scipy_optimize_n(self.muygps, obj_fn_n, **self.sopt_kwargs)
             mopt_j = scipy_optimize_j(self.muygps, obj_fn_j, **self.sopt_kwargs)
@@ -711,7 +720,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 "n_iter": 5,
             }
 
-        def test_scipy_optimize(self):
+        def test_optimize(self):
             obj_fn_n = self._get_kwargs_obj_fn_n()
             obj_fn_j = self._get_kwargs_obj_fn_j()
             obj_fn_h = self._get_kwargs_obj_fn_h()
