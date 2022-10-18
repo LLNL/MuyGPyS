@@ -244,7 +244,7 @@ def optimize_from_tensors(
     """
     loss_fn = get_loss_func(loss_method)
     kernel_fn = muygps.kernel.get_opt_fn(opt_method)
-    predict_fn = muygps.get_opt_fn(opt_method)
+    predict_fn = muygps.get_opt_mean_fn(opt_method)
 
     obj_fn = make_obj_fn(
         obj_method,
