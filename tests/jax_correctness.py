@@ -509,24 +509,44 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.muygps.kernel.length_scale,
             )
 
-        def _get_array_predict_fn_n(self):
-            return self.muygps._get_array_opt_fn(
+        def _get_array_mean_fn_n(self):
+            return self.muygps._get_array_opt_mean_fn(
                 muygps_compute_solve_n, self.muygps.eps
             )
 
-        def _get_kwargs_predict_fn_n(self):
-            return self.muygps._get_kwargs_opt_fn(
+        def _get_kwargs_mean_fn_n(self):
+            return self.muygps._get_kwargs_opt_mean_fn(
                 muygps_compute_solve_n, self.muygps.eps
             )
 
-        def _get_array_predict_fn_j(self):
-            return self.muygps._get_array_opt_fn(
+        def _get_array_var_fn_n(self):
+            return self.muygps._get_array_opt_var_fn(
+                muygps_compute_diagonal_variance_n, self.muygps.eps
+            )
+
+        def _get_kwargs_var_fn_n(self):
+            return self.muygps._get_kwargs_opt_var_fn(
+                muygps_compute_diagonal_variance_n, self.muygps.eps
+            )
+
+        def _get_array_mean_fn_j(self):
+            return self.muygps._get_array_opt_mean_fn(
                 muygps_compute_solve_j, self.muygps.eps
             )
 
-        def _get_kwargs_predict_fn_j(self):
-            return self.muygps._get_kwargs_opt_fn(
+        def _get_kwargs_mean_fn_j(self):
+            return self.muygps._get_kwargs_opt_mean_fn(
                 muygps_compute_solve_j, self.muygps.eps
+            )
+
+        def _get_array_var_fn_j(self):
+            return self.muygps._get_array_opt_var_fn(
+                muygps_compute_diagonal_variance_j, self.muygps.eps
+            )
+
+        def _get_kwargs_var_fn_j(self):
+            return self.muygps._get_kwargs_opt_var_fn(
+                muygps_compute_diagonal_variance_j, self.muygps.eps
             )
 
         def _get_array_obj_fn_n(self):
@@ -535,7 +555,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 "mse",
                 mse_fn_n,
                 self._get_array_kernel_fn_n(),
-                self._get_array_predict_fn_n(),
+                self._get_array_mean_fn_n(),
+                self._get_array_var_fn_n(),
                 self.pairwise_dists_n,
                 self.crosswise_dists_n,
                 self.batch_nn_targets_n,
@@ -548,7 +569,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 "mse",
                 mse_fn_n,
                 self._get_kwargs_kernel_fn_n(),
-                self._get_kwargs_predict_fn_n(),
+                self._get_kwargs_mean_fn_n(),
+                self._get_kwargs_var_fn_n(),
                 self.pairwise_dists_n,
                 self.crosswise_dists_n,
                 self.batch_nn_targets_n,
@@ -561,7 +583,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 "mse",
                 mse_fn_j,
                 self._get_array_kernel_fn_j(),
-                self._get_array_predict_fn_j(),
+                self._get_array_mean_fn_j(),
+                self._get_array_var_fn_j(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -574,7 +597,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 "mse",
                 mse_fn_j,
                 self._get_kwargs_kernel_fn_j(),
-                self._get_kwargs_predict_fn_j(),
+                self._get_kwargs_mean_fn_j(),
+                self._get_kwargs_var_fn_j(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -587,7 +611,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 "mse",
                 mse_fn_j,
                 self._get_array_kernel_fn_j(),
-                self._get_array_predict_fn_n(),
+                self._get_array_mean_fn_n(),
+                self._get_array_var_fn_n(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -600,7 +625,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 "mse",
                 mse_fn_j,
                 self._get_kwargs_kernel_fn_j(),
-                self._get_kwargs_predict_fn_n(),
+                self._get_kwargs_mean_fn_n(),
+                self._get_kwargs_var_fn_n(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -657,21 +683,77 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 )
             )
 
-        def test_predict_fn(self):
-            predict_fn_n = self._get_array_predict_fn_n()
-            predict_fn_j = self._get_array_predict_fn_j()
+        def test_kwargs_mean_fn(self):
+            mean_fn_n = self._get_kwargs_mean_fn_n()
+            mean_fn_j = self._get_kwargs_mean_fn_j()
             self.assertTrue(
                 allclose_inv(
-                    predict_fn_n(
+                    mean_fn_n(
+                        self.K_n,
+                        self.Kcross_n,
+                        self.batch_nn_targets_n,
+                        self.kwargs["eps"],
+                    ),
+                    mean_fn_j(
+                        self.K_j,
+                        self.Kcross_j,
+                        self.batch_nn_targets_j,
+                        self.kwargs["eps"],
+                    ),
+                )
+            )
+
+        def test_array_mean_fn(self):
+            mean_fn_n = self._get_array_mean_fn_n()
+            mean_fn_j = self._get_array_mean_fn_j()
+            self.assertTrue(
+                allclose_inv(
+                    mean_fn_n(
                         self.K_n,
                         self.Kcross_n,
                         self.batch_nn_targets_n,
                         self.x0_n[-1],
                     ),
-                    predict_fn_j(
+                    mean_fn_j(
                         self.K_j,
                         self.Kcross_j,
                         self.batch_nn_targets_j,
+                        self.x0_j[-1],
+                    ),
+                )
+            )
+
+        def test_kwargs_var_fn(self):
+            var_fn_n = self._get_kwargs_var_fn_n()
+            var_fn_j = self._get_kwargs_var_fn_j()
+            self.assertTrue(
+                allclose_inv(
+                    var_fn_n(
+                        self.K_n,
+                        self.Kcross_n,
+                        self.kwargs["eps"],
+                    ),
+                    var_fn_j(
+                        self.K_j,
+                        self.Kcross_j,
+                        self.kwargs["eps"],
+                    ),
+                )
+            )
+
+        def test_array_var_fn(self):
+            var_fn_n = self._get_array_var_fn_n()
+            var_fn_j = self._get_array_var_fn_j()
+            self.assertTrue(
+                allclose_inv(
+                    var_fn_n(
+                        self.K_n,
+                        self.Kcross_n,
+                        self.x0_n[-1],
+                    ),
+                    var_fn_j(
+                        self.K_j,
+                        self.Kcross_j,
                         self.x0_j[-1],
                     ),
                 )

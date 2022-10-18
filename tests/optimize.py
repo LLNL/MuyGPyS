@@ -706,13 +706,15 @@ class MethodsAgreementTest(parameterized.TestCase):
         self.assertTrue(np.allclose(K_array, K_kwargs))
         self.assertTrue(np.allclose(Kcross_array, Kcross_kwargs))
 
-        array_predict_fn = muygps.get_array_opt_fn()
-        kwargs_predict_fn = muygps.get_kwargs_opt_fn()
+        array_mean_fn = muygps.get_array_opt_mean_fn()
+        array_var_fn = muygps.get_array_opt_var_fn()
+        kwargs_mean_fn = muygps.get_kwargs_opt_mean_fn()
+        kwargs_var_fn = muygps.get_kwargs_opt_var_fn()
 
-        predictions_array = array_predict_fn(
+        predictions_array = array_mean_fn(
             K_array, Kcross_array, self.batch_nn_targets, x0
         )
-        predictions_kwargs = kwargs_predict_fn(
+        predictions_kwargs = kwargs_mean_fn(
             K_kwargs, Kcross_kwargs, self.batch_nn_targets, **params
         )
 
@@ -723,7 +725,8 @@ class MethodsAgreementTest(parameterized.TestCase):
             loss_method,
             loss_fn,
             array_kernel_fn,
-            array_predict_fn,
+            array_mean_fn,
+            array_var_fn,
             self.pairwise_dists,
             self.crosswise_dists,
             self.batch_nn_targets,
@@ -734,7 +737,8 @@ class MethodsAgreementTest(parameterized.TestCase):
             loss_method,
             loss_fn,
             kwargs_kernel_fn,
-            kwargs_predict_fn,
+            kwargs_mean_fn,
+            kwargs_var_fn,
             self.pairwise_dists,
             self.crosswise_dists,
             self.batch_nn_targets,

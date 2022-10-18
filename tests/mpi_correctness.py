@@ -680,25 +680,45 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
             )
 
         # Numpy predict functions
-        def _get_array_predict_fn_n(self):
-            return self.muygps._get_array_opt_fn(
+        def _get_array_mean_fn_n(self):
+            return self.muygps._get_array_opt_mean_fn(
                 muygps_compute_solve_n, self.muygps.eps
             )
 
-        def _get_kwargs_predict_fn_n(self):
-            return self.muygps._get_kwargs_opt_fn(
+        def _get_kwargs_mean_fn_n(self):
+            return self.muygps._get_kwargs_opt_mean_fn(
                 muygps_compute_solve_n, self.muygps.eps
+            )
+
+        def _get_array_var_fn_n(self):
+            return self.muygps._get_array_opt_var_fn(
+                muygps_compute_diagonal_variance_n, self.muygps.eps
+            )
+
+        def _get_kwargs_var_fn_n(self):
+            return self.muygps._get_kwargs_opt_var_fn(
+                muygps_compute_diagonal_variance_n, self.muygps.eps
             )
 
         # MPI predict functions
-        def _get_array_predict_fn_m(self):
-            return self.muygps._get_array_opt_fn(
+        def _get_array_mean_fn_m(self):
+            return self.muygps._get_array_opt_mean_fn(
                 muygps_compute_solve_m, self.muygps.eps
             )
 
-        def _get_kwargs_predict_fn_m(self):
-            return self.muygps._get_kwargs_opt_fn(
+        def _get_kwargs_mean_fn_m(self):
+            return self.muygps._get_kwargs_opt_mean_fn(
                 muygps_compute_solve_m, self.muygps.eps
+            )
+
+        def _get_array_var_fn_m(self):
+            return self.muygps._get_array_opt_var_fn(
+                muygps_compute_diagonal_variance_m, self.muygps.eps
+            )
+
+        def _get_kwargs_var_fn_m(self):
+            return self.muygps._get_kwargs_opt_var_fn(
+                muygps_compute_diagonal_variance_m, self.muygps.eps
             )
 
         # Numpy objective functions
@@ -708,7 +728,8 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                 "mse",
                 mse_fn_n,
                 self._get_array_kernel_fn_n(),
-                self._get_array_predict_fn_n(),
+                self._get_array_mean_fn_n(),
+                self._get_array_var_fn_n(),
                 self.batch_pairwise_dists,
                 self.batch_crosswise_dists,
                 self.batch_nn_targets,
@@ -721,7 +742,8 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                 "mse",
                 mse_fn_n,
                 self._get_kwargs_kernel_fn_n(),
-                self._get_kwargs_predict_fn_n(),
+                self._get_kwargs_mean_fn_n(),
+                self._get_kwargs_var_fn_n(),
                 self.batch_pairwise_dists,
                 self.batch_crosswise_dists,
                 self.batch_nn_targets,
@@ -735,7 +757,8 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                 "mse",
                 mse_fn_m,
                 self._get_array_kernel_fn_m(),
-                self._get_array_predict_fn_m(),
+                self._get_array_mean_fn_m(),
+                self._get_array_var_fn_m(),
                 self.batch_pairwise_dists_chunk,
                 self.batch_crosswise_dists_chunk,
                 self.batch_nn_targets_chunk,
@@ -748,7 +771,8 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                 "mse",
                 mse_fn_m,
                 self._get_kwargs_kernel_fn_m(),
-                self._get_kwargs_predict_fn_m(),
+                self._get_kwargs_mean_fn_m(),
+                self._get_kwargs_var_fn_m(),
                 self.batch_pairwise_dists_chunk,
                 self.batch_crosswise_dists_chunk,
                 self.batch_nn_targets_chunk,
@@ -831,49 +855,89 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
             self._compare_tensors(kernel, kernel_chunk)
 
-        def test_array_predict_fn(self):
+        def test_array_mean_fn(self):
             if rank == 0:
-                predict_fn_n = self._get_array_predict_fn_n()
-                prediction = predict_fn_n(
+                mean_fn_n = self._get_array_mean_fn_n()
+                mean = mean_fn_n(
                     self.batch_covariance_gen,
                     self.batch_crosscov_gen,
                     self.batch_nn_targets,
                     self.x0,
                 )
             else:
-                prediction = None
+                mean = None
 
-            predict_fn_m = self._get_array_predict_fn_m()
-            prediction_chunk = predict_fn_m(
+            mean_fn_m = self._get_array_mean_fn_m()
+            mean_chunk = mean_fn_m(
                 self.batch_covariance_gen_chunk,
                 self.batch_crosscov_gen_chunk,
                 self.batch_nn_targets_chunk,
                 self.x0,
             )
 
-            self._compare_tensors(prediction, prediction_chunk)
+            self._compare_tensors(mean, mean_chunk)
 
-        def test_kwargs_predict_fn(self):
+        def test_kwargs_mean_fn(self):
             if rank == 0:
-                predict_fn_n = self._get_kwargs_predict_fn_n()
-                prediction = predict_fn_n(
+                mean_fn_n = self._get_kwargs_mean_fn_n()
+                mean = mean_fn_n(
                     self.batch_covariance_gen,
                     self.batch_crosscov_gen,
                     self.batch_nn_targets,
                     **self.x0_map,
                 )
             else:
-                prediction = None
+                mean = None
 
-            predict_fn_m = self._get_kwargs_predict_fn_m()
-            prediction_chunk = predict_fn_m(
+            mean_fn_m = self._get_kwargs_mean_fn_m()
+            mean_chunk = mean_fn_m(
                 self.batch_covariance_gen_chunk,
                 self.batch_crosscov_gen_chunk,
                 self.batch_nn_targets_chunk,
                 **self.x0_map,
             )
 
-            self._compare_tensors(prediction, prediction_chunk)
+            self._compare_tensors(mean, mean_chunk)
+
+        def test_array_var_fn(self):
+            if rank == 0:
+                var_fn_n = self._get_array_var_fn_n()
+                var = var_fn_n(
+                    self.batch_covariance_gen,
+                    self.batch_crosscov_gen,
+                    self.x0,
+                )
+            else:
+                var = None
+
+            var_fn_m = self._get_array_var_fn_m()
+            var_chunk = var_fn_m(
+                self.batch_covariance_gen_chunk,
+                self.batch_crosscov_gen_chunk,
+                self.x0,
+            )
+
+            self._compare_tensors(var, var_chunk)
+
+        def test_kwargs_var_fn(self):
+            if rank == 0:
+                var_fn_n = self._get_kwargs_var_fn_n()
+                var = var_fn_n(
+                    self.batch_covariance_gen,
+                    self.batch_crosscov_gen,
+                    **self.x0_map,
+                )
+            else:
+                var = None
+
+            var_fn_m = self._get_kwargs_var_fn_m()
+            var_chunk = var_fn_m(
+                self.batch_covariance_gen_chunk,
+                self.batch_crosscov_gen_chunk,
+                **self.x0_map,
+            )
+
+            self._compare_tensors(var, var_chunk)
 
         def test_array_loo_crossval(self):
             obj_fn_m = self._get_array_obj_fn_m()
