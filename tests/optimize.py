@@ -721,6 +721,7 @@ class MethodsAgreementTest(parameterized.TestCase):
         array_obj_fn = make_loo_crossval_fn(
             "scipy",
             loss_method,
+            loss_fn,
             array_kernel_fn,
             array_predict_fn,
             self.pairwise_dists,
@@ -731,6 +732,7 @@ class MethodsAgreementTest(parameterized.TestCase):
         kwargs_obj_fn = make_loo_crossval_fn(
             "bayes",
             loss_method,
+            loss_fn,
             kwargs_kernel_fn,
             kwargs_predict_fn,
             self.pairwise_dists,
