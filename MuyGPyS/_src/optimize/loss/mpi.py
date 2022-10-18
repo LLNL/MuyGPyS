@@ -6,6 +6,7 @@
 from MuyGPyS._src.optimize.loss.numpy import (
     _mse_fn_unnormalized,
     _cross_entropy_fn as _cross_entropy_fn_n,
+    _lool_fn as _lool_fn_n,
 )
 from MuyGPyS import config
 
@@ -44,3 +45,14 @@ def _cross_entropy_fn(
     local_log_loss = _cross_entropy_fn_n(predictions, targets, ll_eps=ll_eps)
     global_log_loss = world.allreduce(local_log_loss, op=MPI.SUM)
     return global_log_loss
+
+def _lool_fn(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    variances: np.ndarray,
+) -> float:
+    local_batch_count, response_count = predictions.shape
+    local_likelihoods = _lool_fn_n(predictions, targets,variances)
+    global_batch_count = world.allreduce(local_batch_count, op=MPI.SUM)
+    global_squared_errors = world.allreduce(local_likelihoods, op=MPI.SUM)
+    return global_squared_errors / (global_batch_count * response_count)

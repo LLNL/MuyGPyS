@@ -19,6 +19,7 @@ from MuyGPyS import config
 from MuyGPyS._src.optimize.loss import (
     _mse_fn,
     _cross_entropy_fn,
+    _lool_fn,
 )
 
 
@@ -100,3 +101,27 @@ def mse_fn(
         The mse loss of the prediction.
     """
     return _mse_fn(predictions, targets)
+
+def lool_fn(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    variances: np.ndarray,
+) -> float:
+    """
+    Leave-one-out likelihood function.
+
+    Computes leave-one-out likelihood (LOOL) loss of the predicted versus known response.
+    Treats multivariate outputs as interchangeable in terms of loss penalty.
+
+    Args:
+        predictions:
+            The predicted response of shape `(batch_count, response_count)`.
+        targets:
+            The expected response of shape `(batch_count, response_count)`.
+        variances:
+            The variance of the predicted responses of shape `(batch_count, response_count)`.
+
+    Returns:
+        The LOOL loss of the prediction.
+    """
+    return _lool_fn(predictions, targets,variances)

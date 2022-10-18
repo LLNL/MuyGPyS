@@ -37,3 +37,12 @@ def _mse_fn(
     return _mse_fn_unnormalized(predictions, targets) / (
         batch_count * response_count
     )
+
+def _lool_fn(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    variances: np.ndarray,
+) -> float:
+    return np.sum(np.divide((predictions - targets) ** 2,variances) + np.log(variances)
+    )
+    
