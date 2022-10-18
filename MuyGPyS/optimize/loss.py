@@ -21,6 +21,7 @@ from MuyGPyS._src.optimize.loss import (
     _cross_entropy_fn,
     _lool_fn,
 )
+from MuyGPyS.optimize.utils import _switch_on_loss_method
 
 
 def get_loss_func(loss_method: str) -> Callable:
@@ -44,15 +45,9 @@ def get_loss_func(loss_method: str) -> Callable:
         NotImplementedError:
             Unrecognized strings will result in an error.
     """
-    loss_method = loss_method.lower()
-    if loss_method == "cross-entropy" or loss_method == "log":
-        return cross_entropy_fn
-    elif loss_method == "mse":
-        return mse_fn
-    else:
-        raise NotImplementedError(
-            f"Loss function {loss_method} is not implemented."
-        )
+    return _switch_on_loss_method(
+        loss_method, lambda: cross_entropy_fn, lambda: mse_fn, lambda: lool_fn
+    )
 
 
 def cross_entropy_fn(
@@ -102,6 +97,7 @@ def mse_fn(
     """
     return _mse_fn(predictions, targets)
 
+
 def lool_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
@@ -124,4 +120,4 @@ def lool_fn(
     Returns:
         The LOOL loss of the prediction.
     """
-    return _lool_fn(predictions, targets,variances)
+    return _lool_fn(predictions, targets, variances)

@@ -16,3 +16,24 @@ def _switch_on_opt_method(
         return scipy_func(*args, **kwargs)
     else:
         raise ValueError(f"Unsupported optimization method: {opt_method}")
+
+
+def _switch_on_loss_method(
+    loss_method: str,
+    cross_entropy_func: Callable,
+    mse_func: Callable,
+    lool_func: Callable,
+    *args,
+    **kwargs,
+):
+    loss_method = loss_method.lower()
+    if loss_method in ["cross-entropy", "log"]:
+        return cross_entropy_func(*args, **kwargs)
+    elif loss_method == "mse":
+        return mse_func(*args, **kwargs)
+    elif loss_method == "lool":
+        return lool_func(*args, **kwargs)
+    else:
+        raise NotImplementedError(
+            f"Loss function {loss_method} is not implemented."
+        )

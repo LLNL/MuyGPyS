@@ -31,8 +31,7 @@ from MuyGPyS.optimize.chassis import (
 )
 from MuyGPyS.optimize.loss import get_loss_func
 from MuyGPyS.optimize.objective import (
-    make_loo_crossval_array_fn,
-    make_loo_crossval_kwargs_fn,
+    make_loo_crossval_fn,
 )
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 from MuyGPyS._test.gp import (
@@ -719,8 +718,9 @@ class MethodsAgreementTest(parameterized.TestCase):
 
         self.assertTrue(np.allclose(predictions_array, predictions_kwargs))
 
-        array_obj_fn = make_loo_crossval_array_fn(
-            loss_fn,
+        array_obj_fn = make_loo_crossval_fn(
+            "scipy",
+            loss_method,
             array_kernel_fn,
             array_predict_fn,
             self.pairwise_dists,
@@ -728,8 +728,9 @@ class MethodsAgreementTest(parameterized.TestCase):
             self.batch_nn_targets,
             self.batch_targets,
         )
-        kwargs_obj_fn = make_loo_crossval_kwargs_fn(
-            loss_fn,
+        kwargs_obj_fn = make_loo_crossval_fn(
+            "bayes",
+            loss_method,
             kwargs_kernel_fn,
             kwargs_predict_fn,
             self.pairwise_dists,
