@@ -118,7 +118,7 @@ def make_loo_crossval_fn(
         loss_method,
         make_raw_predict_and_loss_fn,
         make_raw_predict_and_loss_fn,
-        make_raw_predict_and_loss_fn,
+        make_var_predict_and_loss_fn,
         opt_method,
         loss_fn,
         mean_fn,
@@ -221,12 +221,6 @@ def make_raw_array_predict_and_loss_fn(
         )
 
         return loss_fn(predictions, batch_targets)
-        # sigma_sq = sigma_sq_fn(K, batch_nn_targets, x0)
-
-        # variances = var_fn(K, Kcross, x0)
-        # variances *= sigma_sq
-
-        # return loss_fn(predictions, batch_targets, variances)
 
     return predict_and_loss_fn
 
@@ -248,5 +242,77 @@ def make_raw_kwargs_predict_and_loss_fn(
         )
 
         return -loss_fn(predictions, batch_targets)
+
+    return predict_and_loss_fn
+
+def make_var_predict_and_loss_fn(
+    opt_method: str,
+    loss_fn: Callable,
+    mean_fn: Callable,
+    var_fn: Callable,
+    sigma_sq_fn: Callable,
+    batch_nn_targets: np.ndarray,
+    batch_targets: np.ndarray,
+) -> Callable:
+    return _switch_on_opt_method(
+        opt_method,
+        make_var_kwargs_predict_and_loss_fn,
+        make_var_array_predict_and_loss_fn,
+        loss_fn,
+        mean_fn,
+        var_fn,
+        sigma_sq_fn,
+        batch_nn_targets,
+        batch_targets,
+    )
+
+
+def make_var_array_predict_and_loss_fn(
+    loss_fn: Callable,
+    mean_fn: Callable,
+    var_fn: Callable,
+    sigma_sq_fn: Callable,
+    batch_nn_targets: np.ndarray,
+    batch_targets: np.ndarray,
+) -> Callable:
+    def predict_and_loss_fn(K, Kcross, x0):
+        predictions = mean_fn(
+            K,
+            Kcross,
+            batch_nn_targets,
+            x0,
+        )
+
+        sigma_sq = sigma_sq_fn(K, batch_nn_targets, x0)
+
+        variances = var_fn(K, Kcross, x0)
+        variances *= sigma_sq
+
+        return loss_fn(predictions, batch_targets, variances)
+
+    return predict_and_loss_fn
+
+
+def make_var_kwargs_predict_and_loss_fn(
+    loss_fn: Callable,
+    mean_fn: Callable,
+    var_fn: Callable,
+    sigma_sq_fn: Callable,
+    batch_nn_targets: np.ndarray,
+    batch_targets: np.ndarray,
+) -> Callable:
+    def predict_and_loss_fn(K, Kcross, **kwargs):
+        predictions = mean_fn(
+            K,
+            Kcross,
+            batch_nn_targets,
+            **kwargs,
+        )
+        sigma_sq = sigma_sq_fn(K, batch_nn_targets, **kwargs)
+
+        variances = var_fn(K, Kcross, **kwargs)
+        variances *= sigma_sq
+
+        return -loss_fn(predictions, batch_targets, variances)
 
     return predict_and_loss_fn
