@@ -648,7 +648,7 @@ class MethodsAgreementTest(parameterized.TestCase):
     def setUpClass(cls):
         data_count = 1001
         feature_count = 10
-        response_count = 2
+        response_count = 3
         batch_count = 250
         nn_count = 20
 
