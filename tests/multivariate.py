@@ -169,11 +169,21 @@ class SigmaSqTest(parameterized.TestCase):
 class OptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
+            (
+                1001,
+                10,
+                b,
+                n,
+                nn_kwargs,
+                loss_and_sigma_methods,
+                om,
+                opt_method_and_kwargs,
+                k_kwargs,
+            )
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
-            for lm in ["mse"]
+            for loss_and_sigma_methods in [["mse", None]]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
@@ -208,12 +218,13 @@ class OptimTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_and_sigma_methods,
         obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
         kern, metric, target, args = k_kwargs
+        loss_method, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
@@ -284,6 +295,7 @@ class OptimTest(parameterized.TestCase):
                     loss_method=loss_method,
                     obj_method=obj_method,
                     opt_method=opt_method,
+                    sigma_method=sigma_method,
                     **opt_kwargs,
                 )
                 estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
@@ -294,11 +306,21 @@ class OptimTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
+            (
+                1001,
+                10,
+                b,
+                n,
+                nn_kwargs,
+                loss_and_sigma_methods,
+                om,
+                opt_method_and_kwargs,
+                k_kwargs,
+            )
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
-            for lm in ["mse"]
+            for loss_and_sigma_methods in [["mse", None]]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for k_kwargs in (
@@ -333,12 +355,13 @@ class OptimTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_and_sigma_methods,
         obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
         kern, metric, target, args = k_kwargs
+        loss_method, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
@@ -390,6 +413,7 @@ class OptimTest(parameterized.TestCase):
                     loss_method=loss_method,
                     obj_method=obj_method,
                     opt_method=opt_method,
+                    sigma_method=sigma_method,
                     **opt_kwargs,
                 )
                 estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()

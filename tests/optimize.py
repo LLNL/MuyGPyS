@@ -33,7 +33,7 @@ from MuyGPyS.optimize.loss import get_loss_func
 from MuyGPyS.optimize.objective import (
     make_loo_crossval_fn,
 )
-from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
+from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim, make_sigma_sq_optim
 from MuyGPyS._test.gp import (
     benchmark_pairwise_distances,
     benchmark_sample,
@@ -420,11 +420,21 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
 class GPTensorsOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
+            (
+                1001,
+                10,
+                b,
+                n,
+                nn_kwargs,
+                loss_and_sigma_methods,
+                om,
+                opt_method_and_kwargs,
+                k_kwargs,
+            )
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
-            for lm in ["mse"]
+            for loss_and_sigma_methods in [["mse", None]]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
             for k_kwargs in (
@@ -452,12 +462,13 @@ class GPTensorsOptimTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_and_sigma_methods,
         obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
         target, kwargs = k_kwargs
+        loss_method, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
 
         # construct the observation locations
@@ -518,6 +529,7 @@ class GPTensorsOptimTest(parameterized.TestCase):
                 loss_method=loss_method,
                 obj_method=obj_method,
                 opt_method=opt_method,
+                sigma_method=sigma_method,
                 **opt_kwargs,
             )
 
@@ -533,10 +545,19 @@ class GPTensorsOptimTest(parameterized.TestCase):
 class GPIndicesOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
+            (
+                1001,
+                b,
+                n,
+                nn_kwargs,
+                loss_and_sigma_methods,
+                om,
+                opt_method_and_kwargs,
+                k_kwargs,
+            )
             for b in [250]
             for n in [20]
-            for lm in ["mse"]
+            for loss_and_sigma_methods in [["mse", None]]
             for om in ["loo_crossval"]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             # for opt_method_and_kwargs in [
@@ -564,12 +585,13 @@ class GPIndicesOptimTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_and_sigma_methods,
         obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
         target, kwargs = k_kwargs
+        loss_method, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
 
         # construct the observation locations
@@ -609,6 +631,7 @@ class GPIndicesOptimTest(parameterized.TestCase):
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
+            sigma_method=sigma_method,
             **opt_kwargs,
         )
 
@@ -708,8 +731,10 @@ class MethodsAgreementTest(parameterized.TestCase):
 
         array_mean_fn = muygps.get_array_opt_mean_fn()
         array_var_fn = muygps.get_array_opt_var_fn()
+        array_sigma_fn = make_sigma_sq_optim("analytic", "scipy", muygps)
         kwargs_mean_fn = muygps.get_kwargs_opt_mean_fn()
         kwargs_var_fn = muygps.get_kwargs_opt_var_fn()
+        kwargs_sigma_fn = make_sigma_sq_optim("analytic", "bayes", muygps)
 
         predictions_array = array_mean_fn(
             K_array, Kcross_array, self.batch_nn_targets, x0
@@ -727,6 +752,7 @@ class MethodsAgreementTest(parameterized.TestCase):
             array_kernel_fn,
             array_mean_fn,
             array_var_fn,
+            array_sigma_fn,
             self.pairwise_dists,
             self.crosswise_dists,
             self.batch_nn_targets,
@@ -739,6 +765,7 @@ class MethodsAgreementTest(parameterized.TestCase):
             kwargs_kernel_fn,
             kwargs_mean_fn,
             kwargs_var_fn,
+            kwargs_sigma_fn,
             self.pairwise_dists,
             self.crosswise_dists,
             self.batch_nn_targets,

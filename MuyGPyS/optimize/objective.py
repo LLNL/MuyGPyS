@@ -55,6 +55,7 @@ def make_loo_crossval_fn(
     kernel_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
+    sigma_sq_fn: Callable,
     pairwise_dists: np.ndarray,
     crosswise_dists: np.ndarray,
     batch_nn_targets: np.ndarray,
@@ -82,6 +83,9 @@ def make_loo_crossval_fn(
         var_fn:
             A function that realizes MuyGPs posterior variance prediction given
             an epsilon value. The given value is unused if epsilon is fixed.
+        sigma_sq_fn:
+            A function that realizes `sigma_sq` optimization given an epsilon
+            value. The given value is unused if epsilon is fixed.
         pairwise_dists:
             Distance tensor of floats of shape
             `(batch_count, nn_count, nn_count)` whose second two dimensions give
@@ -119,6 +123,7 @@ def make_loo_crossval_fn(
         loss_fn,
         mean_fn,
         var_fn,
+        sigma_sq_fn,
         batch_nn_targets,
         batch_targets,
     )
@@ -182,6 +187,7 @@ def make_raw_predict_and_loss_fn(
     loss_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
+    sigma_sq_fn: Callable,
     batch_nn_targets: np.ndarray,
     batch_targets: np.ndarray,
 ) -> Callable:
@@ -192,6 +198,7 @@ def make_raw_predict_and_loss_fn(
         loss_fn,
         mean_fn,
         var_fn,
+        sigma_sq_fn,
         batch_nn_targets,
         batch_targets,
     )
@@ -201,6 +208,7 @@ def make_raw_array_predict_and_loss_fn(
     loss_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
+    sigma_sq_fn: Callable,
     batch_nn_targets: np.ndarray,
     batch_targets: np.ndarray,
 ) -> Callable:
@@ -213,7 +221,7 @@ def make_raw_array_predict_and_loss_fn(
         )
 
         return loss_fn(predictions, batch_targets)
-        # sigma_sq = _analytic_sigma_sq_optim(K, batch_nn_targets, x0)
+        # sigma_sq = sigma_sq_fn(K, batch_nn_targets, x0)
 
         # variances = var_fn(K, Kcross, x0)
         # variances *= sigma_sq
@@ -227,6 +235,7 @@ def make_raw_kwargs_predict_and_loss_fn(
     loss_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
+    sigma_sq_fn: Callable,
     batch_nn_targets: np.ndarray,
     batch_targets: np.ndarray,
 ) -> Callable:

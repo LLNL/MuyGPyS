@@ -14,10 +14,14 @@ methods in the future.
 import numpy as np
 
 from copy import deepcopy
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
+from MuyGPyS.optimize.utils import (
+    _switch_on_opt_method,
+    _switch_on_sigma_method,
+)
 
 
 def muygps_sigma_sq_optim(
@@ -50,16 +54,14 @@ def muygps_sigma_sq_optim(
     Returns:
         A new MuyGPs model whose sigma_sq parameter has been optimized.
     """
-    if sigma_method is None:
-        return muygps
-
-    sigma_method = sigma_method.lower()
-    if sigma_method == "analytic":
-        return muygps_analytic_sigma_sq_optim(
-            muygps, pairwise_dists, nn_targets
-        )
-    else:
-        raise ValueError(f"Unrecognized sigma_method {sigma_method}")
+    return _switch_on_sigma_method(
+        sigma_method,
+        muygps_analytic_sigma_sq_optim,
+        lambda muygps, pairwise_dists, nn_targets: muygps,
+        muygps,
+        pairwise_dists,
+        nn_targets,
+    )
 
 
 def mmuygps_sigma_sq_optim(
@@ -93,16 +95,76 @@ def mmuygps_sigma_sq_optim(
         A new MultivariateMuyGPs model whose sigma_sq parameter has been
         optimized.
     """
-    if sigma_method is None:
-        return mmuygps
+    return _switch_on_sigma_method(
+        sigma_method,
+        mmuygps_analytic_sigma_sq_optim,
+        lambda mmuygps, pairwise_dists, nn_targets: mmuygps,
+        mmuygps,
+        pairwise_dists,
+        nn_targets,
+    )
 
-    sigma_method = sigma_method.lower()
-    if sigma_method == "analytic":
-        return mmuygps_analytic_sigma_sq_optim(
-            mmuygps, pairwise_dists, nn_targets
-        )
+
+def make_sigma_sq_optim(
+    sigma_method: Optional[str], opt_method: str, muygps: MuyGPS
+) -> Callable:
+    return _switch_on_sigma_method(
+        sigma_method,
+        make_analytic_sigma_sq_optim,
+        make_none_sigma_sq_optim,
+        opt_method,
+        muygps,
+    )
+
+
+def make_none_sigma_sq_optim(opt_method: str, muygps: MuyGPS) -> Callable:
+    return _switch_on_opt_method(
+        opt_method,
+        lambda: lambda K, nn_targets, **kwargs: muygps.sigma_sq(),
+        lambda: lambda K, nn_targets, x0: muygps.sigma_sq(),
+    )
+
+
+def make_analytic_sigma_sq_optim(opt_method: str, muygps: MuyGPS) -> Callable:
+    return _switch_on_opt_method(
+        opt_method,
+        make_kwargs_analytic_sigma_sq_optim,
+        make_array_analytic_sigma_sq_optim,
+        muygps,
+        _analytic_sigma_sq_optim,
+    )
+
+
+def make_kwargs_analytic_sigma_sq_optim(
+    muygps: MuyGPS, sigma_fn: Callable
+) -> Callable:
+    if not muygps.eps.fixed():
+
+        def ss_opt_fn(K, nn_targets, **kwargs):
+            return sigma_fn(K, nn_targets, kwargs["eps"])
+
     else:
-        raise ValueError(f"Unrecognized sigma_method {sigma_method}")
+
+        def ss_opt_fn(K, nn_targets, **kwargs):
+            return sigma_fn(K, nn_targets, muygps.eps())
+
+    return ss_opt_fn
+
+
+def make_array_analytic_sigma_sq_optim(
+    muygps: MuyGPS, sigma_fn: Callable
+) -> Callable:
+    if not muygps.eps.fixed():
+
+        def ss_opt_fn(K, nn_targets, x0):
+            return sigma_fn(K, nn_targets, x0[-1])
+
+    else:
+
+        def ss_opt_fn(K, nn_targets, x0):
+            return sigma_fn(K, nn_targets, muygps.eps())
+
+    return ss_opt_fn
 
 
 def muygps_analytic_sigma_sq_optim(

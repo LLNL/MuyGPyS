@@ -202,6 +202,7 @@ def make_classifier(
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
+            sigma_method=None,
             verbose=verbose,
             **opt_kwargs,
         )
@@ -407,6 +408,7 @@ def make_multivariate_classifier(
                     loss_method=loss_method,
                     obj_method=obj_method,
                     opt_method=opt_method,
+                    sigma_method=None,
                     verbose=verbose,
                     **opt_kwargs,
                 )

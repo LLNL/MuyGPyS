@@ -23,6 +23,67 @@ if config.muygpys_jax_enabled is True:  # type: ignore
     from MuyGPyS.gp.muygps import MuyGPS
     from MuyGPyS.neighbors import NN_Wrapper
     from MuyGPyS.optimize.batch import sample_batch
+    from MuyGPyS._src.gp.distance.numpy import (
+        _pairwise_distances as pairwise_distances_n,
+        _crosswise_distances as crosswise_distances_n,
+        _make_train_tensors as make_train_tensors_n,
+    )
+    from MuyGPyS._src.gp.distance.jax import (
+        _pairwise_distances as pairwise_distances_j,
+        _crosswise_distances as crosswise_distances_j,
+        _make_train_tensors as make_train_tensors_j,
+    )
+    from MuyGPyS._src.gp.kernels.numpy import (
+        _rbf_fn as rbf_fn_n,
+        _matern_05_fn as matern_05_fn_n,
+        _matern_15_fn as matern_15_fn_n,
+        _matern_25_fn as matern_25_fn_n,
+        _matern_inf_fn as matern_inf_fn_n,
+        _matern_gen_fn as matern_gen_fn_n,
+    )
+    from MuyGPyS._src.gp.kernels.jax import (
+        _rbf_fn as rbf_fn_j,
+        _matern_05_fn as matern_05_fn_j,
+        _matern_15_fn as matern_15_fn_j,
+        _matern_25_fn as matern_25_fn_j,
+        _matern_inf_fn as matern_inf_fn_j,
+        _matern_gen_fn as matern_gen_fn_j,
+    )
+    from MuyGPyS._src.gp.muygps.numpy import (
+        _muygps_compute_solve as muygps_compute_solve_n,
+        _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
+    )
+    from MuyGPyS._src.gp.muygps.jax import (
+        _muygps_compute_solve as muygps_compute_solve_j,
+        _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_j,
+    )
+    from MuyGPyS._src.optimize.sigma_sq.numpy import (
+        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
+    )
+    from MuyGPyS._src.optimize.sigma_sq.jax import (
+        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
+    )
+    from MuyGPyS.optimize.sigma_sq import (
+        make_kwargs_analytic_sigma_sq_optim,
+        make_array_analytic_sigma_sq_optim,
+    )
+    from MuyGPyS._src.optimize.loss.numpy import (
+        _mse_fn as mse_fn_n,
+        _cross_entropy_fn as cross_entropy_fn_n,
+    )
+    from MuyGPyS._src.optimize.loss.jax import (
+        _mse_fn as mse_fn_j,
+        _cross_entropy_fn as cross_entropy_fn_j,
+    )
+    from MuyGPyS.optimize.objective import make_loo_crossval_fn
+    from MuyGPyS._src.optimize.chassis.numpy import (
+        _scipy_optimize as scipy_optimize_n,
+        _bayes_opt_optimize as bayes_optimize_n,
+    )
+    from MuyGPyS._src.optimize.chassis.jax import (
+        _scipy_optimize as scipy_optimize_j,
+        _bayes_opt_optimize as bayes_optimize_j,
+    )
 
     def allclose_gen(a: np.ndarray, b: np.ndarray) -> bool:
         if jax_config.x64_enabled:  # type: ignore
@@ -87,17 +148,6 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
             cls.batch_indices_j = jnp.array(cls.batch_indices_n)
             cls.batch_nn_indices_j = jnp.array(cls.batch_nn_indices_n)
-
-    from MuyGPyS._src.gp.distance.numpy import (
-        _pairwise_distances as pairwise_distances_n,
-        _crosswise_distances as crosswise_distances_n,
-        _make_train_tensors as make_train_tensors_n,
-    )
-    from MuyGPyS._src.gp.distance.jax import (
-        _pairwise_distances as pairwise_distances_j,
-        _crosswise_distances as crosswise_distances_j,
-        _make_train_tensors as make_train_tensors_j,
-    )
 
     class DistanceTest(DistanceTestCase):
         @classmethod
@@ -165,23 +215,6 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             self.assertTrue(
                 allclose_gen(batch_nn_targets_n, batch_nn_targets_j)
             )
-
-    from MuyGPyS._src.gp.kernels.numpy import (
-        _rbf_fn as rbf_fn_n,
-        _matern_05_fn as matern_05_fn_n,
-        _matern_15_fn as matern_15_fn_n,
-        _matern_25_fn as matern_25_fn_n,
-        _matern_inf_fn as matern_inf_fn_n,
-        _matern_gen_fn as matern_gen_fn_n,
-    )
-    from MuyGPyS._src.gp.kernels.jax import (
-        _rbf_fn as rbf_fn_j,
-        _matern_05_fn as matern_05_fn_j,
-        _matern_15_fn as matern_15_fn_j,
-        _matern_25_fn as matern_25_fn_j,
-        _matern_inf_fn as matern_inf_fn_j,
-        _matern_gen_fn as matern_gen_fn_j,
-    )
 
     class KernelTestCase(DistanceTestCase):
         @classmethod
@@ -353,21 +386,6 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 )
             )
 
-    from MuyGPyS._src.gp.muygps.numpy import (
-        _muygps_compute_solve as muygps_compute_solve_n,
-        _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
-    )
-    from MuyGPyS._src.gp.muygps.jax import (
-        _muygps_compute_solve as muygps_compute_solve_j,
-        _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_j,
-    )
-    from MuyGPyS._src.optimize.sigma_sq.numpy import (
-        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
-    )
-    from MuyGPyS._src.optimize.sigma_sq.jax import (
-        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
-    )
-
     class MuyGPSTestCase(KernelTestCase):
         @classmethod
         def setUpClass(cls):
@@ -432,24 +450,6 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 )
             )
 
-    from MuyGPyS._src.optimize.loss.numpy import (
-        _mse_fn as mse_fn_n,
-        _cross_entropy_fn as cross_entropy_fn_n,
-    )
-    from MuyGPyS._src.optimize.loss.jax import (
-        _mse_fn as mse_fn_j,
-        _cross_entropy_fn as cross_entropy_fn_j,
-    )
-    from MuyGPyS.optimize.objective import make_loo_crossval_fn
-    from MuyGPyS._src.optimize.chassis.numpy import (
-        _scipy_optimize as scipy_optimize_n,
-        _bayes_opt_optimize as bayes_optimize_n,
-    )
-    from MuyGPyS._src.optimize.chassis.jax import (
-        _scipy_optimize as scipy_optimize_j,
-        _bayes_opt_optimize as bayes_optimize_j,
-    )
-
     class OptimTestCase(MuyGPSTestCase):
         @classmethod
         def setUpClass(cls):
@@ -464,6 +464,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.predictions_j = jnp.array(cls.predictions_n)
             cls.x0_names, cls.x0_n, cls.bounds = cls.muygps.get_optim_params()
             cls.x0_j = jnp.array(cls.x0_n)
+            cls.x0_map_n = {n: cls.x0_n[i] for i, n in enumerate(cls.x0_names)}
+            cls.x0_map_j = {n: cls.x0_j[i] for i, n in enumerate(cls.x0_names)}
 
         def _get_array_kernel_fn_n(self):
             return self.muygps.kernel._get_array_opt_fn(
@@ -529,6 +531,16 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 muygps_compute_diagonal_variance_n, self.muygps.eps
             )
 
+        def _get_array_sigma_sq_fn_n(self):
+            return make_array_analytic_sigma_sq_optim(
+                self.muygps, analytic_sigma_sq_optim_n
+            )
+
+        def _get_kwargs_sigma_sq_fn_n(self):
+            return make_kwargs_analytic_sigma_sq_optim(
+                self.muygps, analytic_sigma_sq_optim_n
+            )
+
         def _get_array_mean_fn_j(self):
             return self.muygps._get_array_opt_mean_fn(
                 muygps_compute_solve_j, self.muygps.eps
@@ -549,6 +561,16 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 muygps_compute_diagonal_variance_j, self.muygps.eps
             )
 
+        def _get_array_sigma_sq_fn_j(self):
+            return make_array_analytic_sigma_sq_optim(
+                self.muygps, analytic_sigma_sq_optim_j
+            )
+
+        def _get_kwargs_sigma_sq_fn_j(self):
+            return make_kwargs_analytic_sigma_sq_optim(
+                self.muygps, analytic_sigma_sq_optim_j
+            )
+
         def _get_array_obj_fn_n(self):
             return make_loo_crossval_fn(
                 "scipy",
@@ -557,6 +579,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self._get_array_kernel_fn_n(),
                 self._get_array_mean_fn_n(),
                 self._get_array_var_fn_n(),
+                self._get_array_sigma_sq_fn_n(),
                 self.pairwise_dists_n,
                 self.crosswise_dists_n,
                 self.batch_nn_targets_n,
@@ -571,6 +594,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self._get_kwargs_kernel_fn_n(),
                 self._get_kwargs_mean_fn_n(),
                 self._get_kwargs_var_fn_n(),
+                self._get_kwargs_sigma_sq_fn_n(),
                 self.pairwise_dists_n,
                 self.crosswise_dists_n,
                 self.batch_nn_targets_n,
@@ -585,6 +609,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self._get_array_kernel_fn_j(),
                 self._get_array_mean_fn_j(),
                 self._get_array_var_fn_j(),
+                self._get_array_sigma_sq_fn_j(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -599,6 +624,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self._get_kwargs_kernel_fn_j(),
                 self._get_kwargs_mean_fn_j(),
                 self._get_kwargs_var_fn_j(),
+                self._get_kwargs_sigma_sq_fn_j(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -613,6 +639,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self._get_array_kernel_fn_j(),
                 self._get_array_mean_fn_n(),
                 self._get_array_var_fn_n(),
+                self._get_array_sigma_sq_fn_n(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -627,6 +654,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self._get_kwargs_kernel_fn_j(),
                 self._get_kwargs_mean_fn_n(),
                 self._get_kwargs_var_fn_n(),
+                self._get_kwargs_sigma_sq_fn_n(),
                 self.pairwise_dists_j,
                 self.crosswise_dists_j,
                 self.batch_nn_targets_j,
@@ -692,13 +720,13 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                         self.K_n,
                         self.Kcross_n,
                         self.batch_nn_targets_n,
-                        self.kwargs["eps"],
+                        **self.x0_map_n,
                     ),
                     mean_fn_j(
                         self.K_j,
                         self.Kcross_j,
                         self.batch_nn_targets_j,
-                        self.kwargs["eps"],
+                        **self.x0_map_j,
                     ),
                 )
             )
@@ -731,12 +759,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                     var_fn_n(
                         self.K_n,
                         self.Kcross_n,
-                        self.kwargs["eps"],
+                        **self.x0_map_n,
                     ),
                     var_fn_j(
                         self.K_j,
                         self.Kcross_j,
-                        self.kwargs["eps"],
+                        **self.x0_map_j,
                     ),
                 )
             )
@@ -754,6 +782,42 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                     var_fn_j(
                         self.K_j,
                         self.Kcross_j,
+                        self.x0_j[-1],
+                    ),
+                )
+            )
+
+        def test_kwargs_sigma_sq_fn(self):
+            ss_fn_n = self._get_kwargs_sigma_sq_fn_n()
+            ss_fn_j = self._get_kwargs_sigma_sq_fn_j()
+            self.assertTrue(
+                allclose_inv(
+                    ss_fn_n(
+                        self.K_n,
+                        self.batch_nn_targets_n,
+                        **self.x0_map_n,
+                    ),
+                    ss_fn_j(
+                        self.K_j,
+                        self.batch_nn_targets_j,
+                        **self.x0_map_j,
+                    ),
+                )
+            )
+
+        def test_array_sigma_sq_fn(self):
+            ss_fn_n = self._get_array_sigma_sq_fn_n()
+            ss_fn_j = self._get_array_sigma_sq_fn_j()
+            self.assertTrue(
+                allclose_inv(
+                    ss_fn_n(
+                        self.K_n,
+                        self.batch_nn_targets_n,
+                        self.x0_n[-1],
+                    ),
+                    ss_fn_j(
+                        self.K_j,
+                        self.batch_nn_targets_j,
                         self.x0_j[-1],
                     ),
                 )
