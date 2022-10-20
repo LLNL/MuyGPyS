@@ -27,6 +27,61 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
     )
     from MuyGPyS._src.mpi_utils import _chunk_tensor
 
+    from MuyGPyS._src.gp.kernels.numpy import (
+        _rbf_fn as rbf_fn_n,
+        _matern_05_fn as matern_05_fn_n,
+        _matern_15_fn as matern_15_fn_n,
+        _matern_25_fn as matern_25_fn_n,
+        _matern_inf_fn as matern_inf_fn_n,
+        _matern_gen_fn as matern_gen_fn_n,
+    )
+    from MuyGPyS._src.gp.kernels.mpi import (
+        _rbf_fn as rbf_fn_m,
+        _matern_05_fn as matern_05_fn_m,
+        _matern_15_fn as matern_15_fn_m,
+        _matern_25_fn as matern_25_fn_m,
+        _matern_inf_fn as matern_inf_fn_m,
+        _matern_gen_fn as matern_gen_fn_m,
+    )
+    from MuyGPyS._src.gp.muygps.numpy import (
+        _muygps_compute_solve as muygps_compute_solve_n,
+        _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
+    )
+    from MuyGPyS._src.gp.muygps.mpi import (
+        _muygps_compute_solve as muygps_compute_solve_m,
+        _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_m,
+    )
+    from MuyGPyS._src.optimize.sigma_sq.numpy import (
+        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
+    )
+    from MuyGPyS._src.optimize.sigma_sq.mpi import (
+        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_m,
+    )
+    from MuyGPyS.optimize.sigma_sq import (
+        make_kwargs_analytic_sigma_sq_optim,
+        make_array_analytic_sigma_sq_optim,
+    )
+    from MuyGPyS._src.optimize.loss.numpy import (
+        _mse_fn as mse_fn_n,
+        _cross_entropy_fn as cross_entropy_fn_n,
+        _lool_fn as lool_fn_n,
+    )
+    from MuyGPyS._src.optimize.loss.mpi import (
+        _mse_fn as mse_fn_m,
+        _cross_entropy_fn as cross_entropy_fn_m,
+        _lool_fn as lool_fn_m,
+    )
+    from MuyGPyS.optimize.objective import make_loo_crossval_fn
+
+    from MuyGPyS._src.optimize.chassis.numpy import (
+        _scipy_optimize as scipy_optimize_n,
+        _bayes_opt_optimize as bayes_optimize_n,
+    )
+    from MuyGPyS._src.optimize.chassis.mpi import (
+        _scipy_optimize as scipy_optimize_m,
+        _bayes_opt_optimize as bayes_optimize_m,
+    )
+
     from absl.testing import absltest
     from absl.testing import parameterized
     from mpi4py import MPI
@@ -203,23 +258,6 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
             self._compare_tensors(
                 self.test_nn_targets, self.test_nn_targets_chunk
             )
-
-    from MuyGPyS._src.gp.kernels.numpy import (
-        _rbf_fn as rbf_fn_n,
-        _matern_05_fn as matern_05_fn_n,
-        _matern_15_fn as matern_15_fn_n,
-        _matern_25_fn as matern_25_fn_n,
-        _matern_inf_fn as matern_inf_fn_n,
-        _matern_gen_fn as matern_gen_fn_n,
-    )
-    from MuyGPyS._src.gp.kernels.mpi import (
-        _rbf_fn as rbf_fn_m,
-        _matern_05_fn as matern_05_fn_m,
-        _matern_15_fn as matern_15_fn_m,
-        _matern_25_fn as matern_25_fn_m,
-        _matern_inf_fn as matern_inf_fn_m,
-        _matern_gen_fn as matern_gen_fn_m,
-    )
 
     class KernelTestCase(DistanceTestCase):
         @classmethod
@@ -523,21 +561,6 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                 self.test_crosscov_gen, self.test_crosscov_gen_chunk
             )
 
-    from MuyGPyS._src.gp.muygps.numpy import (
-        _muygps_compute_solve as muygps_compute_solve_n,
-        _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
-    )
-    from MuyGPyS._src.gp.muygps.mpi import (
-        _muygps_compute_solve as muygps_compute_solve_m,
-        _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_m,
-    )
-    from MuyGPyS._src.optimize.sigma_sq.numpy import (
-        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
-    )
-    from MuyGPyS._src.optimize.sigma_sq.mpi import (
-        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_m,
-    )
-
     class MuyGPSTestCase(KernelTestCase):
         @classmethod
         def setUpClass(cls):
@@ -600,28 +623,6 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                 )
                 self.assertAlmostEqual(serial_sigma_sq[0], parallel_sigma_sq[0])
 
-    from MuyGPyS._src.optimize.loss.numpy import (
-        _mse_fn as mse_fn_n,
-        _cross_entropy_fn as cross_entropy_fn_n,
-    )
-    from MuyGPyS._src.optimize.loss.mpi import (
-        _mse_fn as mse_fn_m,
-        _cross_entropy_fn as cross_entropy_fn_m,
-    )
-    from MuyGPyS.optimize.objective import (
-        make_loo_crossval_array_fn,
-        make_loo_crossval_kwargs_fn,
-    )
-
-    from MuyGPyS._src.optimize.chassis.numpy import (
-        _scipy_optimize as scipy_optimize_n,
-        _bayes_opt_optimize as bayes_optimize_n,
-    )
-    from MuyGPyS._src.optimize.chassis.mpi import (
-        _scipy_optimize as scipy_optimize_m,
-        _bayes_opt_optimize as bayes_optimize_m,
-    )
-
     class OptimTestCase(MuyGPSTestCase):
         @classmethod
         def setUpClass(cls):
@@ -683,33 +684,77 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
             )
 
         # Numpy predict functions
-        def _get_array_predict_fn_n(self):
-            return self.muygps._get_array_opt_fn(
+        def _get_array_mean_fn_n(self):
+            return self.muygps._get_array_opt_mean_fn(
                 muygps_compute_solve_n, self.muygps.eps
             )
 
-        def _get_kwargs_predict_fn_n(self):
-            return self.muygps._get_kwargs_opt_fn(
+        def _get_kwargs_mean_fn_n(self):
+            return self.muygps._get_kwargs_opt_mean_fn(
                 muygps_compute_solve_n, self.muygps.eps
+            )
+
+        def _get_array_var_fn_n(self):
+            return self.muygps._get_array_opt_var_fn(
+                muygps_compute_diagonal_variance_n, self.muygps.eps
+            )
+
+        def _get_kwargs_var_fn_n(self):
+            return self.muygps._get_kwargs_opt_var_fn(
+                muygps_compute_diagonal_variance_n, self.muygps.eps
+            )
+
+        def _get_array_sigma_sq_fn_n(self):
+            return make_array_analytic_sigma_sq_optim(
+                self.muygps, analytic_sigma_sq_optim_n
+            )
+
+        def _get_kwargs_sigma_sq_fn_n(self):
+            return make_kwargs_analytic_sigma_sq_optim(
+                self.muygps, analytic_sigma_sq_optim_n
             )
 
         # MPI predict functions
-        def _get_array_predict_fn_m(self):
-            return self.muygps._get_array_opt_fn(
+        def _get_array_mean_fn_m(self):
+            return self.muygps._get_array_opt_mean_fn(
                 muygps_compute_solve_m, self.muygps.eps
             )
 
-        def _get_kwargs_predict_fn_m(self):
-            return self.muygps._get_kwargs_opt_fn(
+        def _get_kwargs_mean_fn_m(self):
+            return self.muygps._get_kwargs_opt_mean_fn(
                 muygps_compute_solve_m, self.muygps.eps
+            )
+
+        def _get_array_var_fn_m(self):
+            return self.muygps._get_array_opt_var_fn(
+                muygps_compute_diagonal_variance_m, self.muygps.eps
+            )
+
+        def _get_kwargs_var_fn_m(self):
+            return self.muygps._get_kwargs_opt_var_fn(
+                muygps_compute_diagonal_variance_m, self.muygps.eps
+            )
+
+        def _get_array_sigma_sq_fn_m(self):
+            return make_array_analytic_sigma_sq_optim(
+                self.muygps, analytic_sigma_sq_optim_m
+            )
+
+        def _get_kwargs_sigma_sq_fn_m(self):
+            return make_kwargs_analytic_sigma_sq_optim(
+                self.muygps, analytic_sigma_sq_optim_m
             )
 
         # Numpy objective functions
         def _get_array_obj_fn_n(self):
-            return make_loo_crossval_array_fn(
+            return make_loo_crossval_fn(
+                "scipy",
+                "mse",
                 mse_fn_n,
                 self._get_array_kernel_fn_n(),
-                self._get_array_predict_fn_n(),
+                self._get_array_mean_fn_n(),
+                self._get_array_var_fn_n(),
+                self._get_array_sigma_sq_fn_n(),
                 self.batch_pairwise_dists,
                 self.batch_crosswise_dists,
                 self.batch_nn_targets,
@@ -717,10 +762,14 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
             )
 
         def _get_kwargs_obj_fn_n(self):
-            return make_loo_crossval_kwargs_fn(
+            return make_loo_crossval_fn(
+                "bayes",
+                "mse",
                 mse_fn_n,
                 self._get_kwargs_kernel_fn_n(),
-                self._get_kwargs_predict_fn_n(),
+                self._get_kwargs_mean_fn_n(),
+                self._get_kwargs_var_fn_n(),
+                self._get_kwargs_sigma_sq_fn_n(),
                 self.batch_pairwise_dists,
                 self.batch_crosswise_dists,
                 self.batch_nn_targets,
@@ -729,10 +778,14 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
         # MPI objective functions
         def _get_array_obj_fn_m(self):
-            return make_loo_crossval_array_fn(
+            return make_loo_crossval_fn(
+                "scipy",
+                "mse",
                 mse_fn_m,
                 self._get_array_kernel_fn_m(),
-                self._get_array_predict_fn_m(),
+                self._get_array_mean_fn_m(),
+                self._get_array_var_fn_m(),
+                self._get_array_sigma_sq_fn_m(),
                 self.batch_pairwise_dists_chunk,
                 self.batch_crosswise_dists_chunk,
                 self.batch_nn_targets_chunk,
@@ -740,10 +793,14 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
             )
 
         def _get_kwargs_obj_fn_m(self):
-            return make_loo_crossval_kwargs_fn(
+            return make_loo_crossval_fn(
+                "bayes",
+                "mse",
                 mse_fn_m,
                 self._get_kwargs_kernel_fn_m(),
-                self._get_kwargs_predict_fn_m(),
+                self._get_kwargs_mean_fn_m(),
+                self._get_kwargs_var_fn_m(),
+                self._get_kwargs_sigma_sq_fn_m(),
                 self.batch_pairwise_dists_chunk,
                 self.batch_crosswise_dists_chunk,
                 self.batch_nn_targets_chunk,
@@ -782,10 +839,37 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                     serial_cross_entropy, parallel_cross_entropy
                 )
 
+    class LOOLTest(OptimTestCase):
+        @classmethod
+        def setUpClass(cls):
+            super(LOOLTest, cls).setUpClass()
+            cls.batch_sigma_sq = cls.muygps.sigma_sq()
+
+        def test_lool(self):
+            parallel_mse = lool_fn_m(
+                self.batch_prediction_chunk,
+                self.batch_targets_chunk,
+                self.batch_variance_chunk,
+                self.batch_sigma_sq,
+            )
+
+            if rank == 0:
+                serial_mse = lool_fn_n(
+                    self.batch_prediction,
+                    self.batch_targets,
+                    self.batch_variance,
+                    self.batch_sigma_sq,
+                )
+                self.assertAlmostEqual(serial_mse, parallel_mse)
+
     class ObjectiveTest(OptimTestCase):
         @classmethod
         def setUpClass(cls):
             super(ObjectiveTest, cls).setUpClass()
+
+            cls.batch_sigma_sq = cls.muygps.sigma_sq()
+            cls.batch_sigma_sq_chunk = _chunk_tensor(cls.muygps.sigma_sq())
+            cls.batch_variance_chunk
 
         def test_mse(self):
             parallel_mse = mse_fn_m(
@@ -794,6 +878,23 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
             if rank == 0:
                 serial_mse = mse_fn_n(self.batch_prediction, self.batch_targets)
+                self.assertAlmostEqual(serial_mse, parallel_mse)
+
+        def test_lool(self):
+            parallel_mse = lool_fn_m(
+                self.batch_prediction_chunk,
+                self.batch_targets_chunk,
+                self.batch_variance_chunk,
+                self.batch_sigma_sq_chunk,
+            )
+
+            if rank == 0:
+                serial_mse = lool_fn_n(
+                    self.batch_prediction,
+                    self.batch_targets,
+                    self.batch_variance,
+                    self.batch_sigma_sq,
+                )
                 self.assertAlmostEqual(serial_mse, parallel_mse)
 
         # def test_cross_entropy(self):
@@ -826,49 +927,129 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
             self._compare_tensors(kernel, kernel_chunk)
 
-        def test_array_predict_fn(self):
+        def test_array_mean_fn(self):
             if rank == 0:
-                predict_fn_n = self._get_array_predict_fn_n()
-                prediction = predict_fn_n(
+                mean_fn_n = self._get_array_mean_fn_n()
+                mean = mean_fn_n(
                     self.batch_covariance_gen,
                     self.batch_crosscov_gen,
                     self.batch_nn_targets,
                     self.x0,
                 )
             else:
-                prediction = None
+                mean = None
 
-            predict_fn_m = self._get_array_predict_fn_m()
-            prediction_chunk = predict_fn_m(
+            mean_fn_m = self._get_array_mean_fn_m()
+            mean_chunk = mean_fn_m(
                 self.batch_covariance_gen_chunk,
                 self.batch_crosscov_gen_chunk,
                 self.batch_nn_targets_chunk,
                 self.x0,
             )
 
-            self._compare_tensors(prediction, prediction_chunk)
+            self._compare_tensors(mean, mean_chunk)
 
-        def test_kwargs_predict_fn(self):
+        def test_kwargs_mean_fn(self):
             if rank == 0:
-                predict_fn_n = self._get_kwargs_predict_fn_n()
-                prediction = predict_fn_n(
+                mean_fn_n = self._get_kwargs_mean_fn_n()
+                mean = mean_fn_n(
                     self.batch_covariance_gen,
                     self.batch_crosscov_gen,
                     self.batch_nn_targets,
                     **self.x0_map,
                 )
             else:
-                prediction = None
+                mean = None
 
-            predict_fn_m = self._get_kwargs_predict_fn_m()
-            prediction_chunk = predict_fn_m(
+            mean_fn_m = self._get_kwargs_mean_fn_m()
+            mean_chunk = mean_fn_m(
                 self.batch_covariance_gen_chunk,
                 self.batch_crosscov_gen_chunk,
                 self.batch_nn_targets_chunk,
                 **self.x0_map,
             )
 
-            self._compare_tensors(prediction, prediction_chunk)
+            self._compare_tensors(mean, mean_chunk)
+
+        def test_array_var_fn(self):
+            if rank == 0:
+                var_fn_n = self._get_array_var_fn_n()
+                var = var_fn_n(
+                    self.batch_covariance_gen,
+                    self.batch_crosscov_gen,
+                    self.x0,
+                )
+            else:
+                var = None
+
+            var_fn_m = self._get_array_var_fn_m()
+            var_chunk = var_fn_m(
+                self.batch_covariance_gen_chunk,
+                self.batch_crosscov_gen_chunk,
+                self.x0,
+            )
+
+            self._compare_tensors(var, var_chunk)
+
+        def test_kwargs_var_fn(self):
+            if rank == 0:
+                var_fn_n = self._get_kwargs_var_fn_n()
+                var = var_fn_n(
+                    self.batch_covariance_gen,
+                    self.batch_crosscov_gen,
+                    **self.x0_map,
+                )
+            else:
+                var = None
+
+            var_fn_m = self._get_kwargs_var_fn_m()
+            var_chunk = var_fn_m(
+                self.batch_covariance_gen_chunk,
+                self.batch_crosscov_gen_chunk,
+                **self.x0_map,
+            )
+
+            self._compare_tensors(var, var_chunk)
+
+        def test_kwargs_sigma_sq_fn(self):
+            if rank == 0:
+                ss_fn_n = self._get_kwargs_sigma_sq_fn_n()
+                ss = ss_fn_n(
+                    self.batch_covariance_gen,
+                    self.batch_nn_targets,
+                    **self.x0_map,
+                )
+            else:
+                ss = None
+
+            ss_fn_m = self._get_kwargs_sigma_sq_fn_m()
+            ss_chunk = ss_fn_m(
+                self.batch_covariance_gen_chunk,
+                self.batch_nn_targets_chunk,
+                **self.x0_map,
+            )
+
+            self._compare_tensors(ss, ss_chunk)
+
+        def test_array_sigma_sq_fn(self):
+            if rank == 0:
+                ss_fn_n = self._get_array_sigma_sq_fn_n()
+                ss = ss_fn_n(
+                    self.batch_covariance_gen,
+                    self.batch_nn_targets,
+                    self.x0,
+                )
+            else:
+                ss = None
+
+            ss_fn_m = self._get_array_sigma_sq_fn_m()
+            ss_chunk = ss_fn_m(
+                self.batch_covariance_gen_chunk,
+                self.batch_nn_targets_chunk,
+                self.x0,
+            )
+
+            self._compare_tensors(ss, ss_chunk)
 
         def test_array_loo_crossval(self):
             obj_fn_m = self._get_array_obj_fn_m()

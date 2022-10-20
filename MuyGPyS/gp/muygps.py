@@ -393,8 +393,8 @@ class MuyGPS:
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
             batch_nn_targets:
-                A tensor of shape `(batch_count, nn_count, response_count)` whose
-                last dimension lists the vector-valued responses for the
+                A tensor of shape `(batch_count, nn_count, response_count)`
+                whose last dimension lists the vector-valued responses for the
                 nearest neighbors of each batch element.
             variance_mode:
                 Specifies the type of variance to return. Currently supports
@@ -455,26 +455,26 @@ class MuyGPS:
                 f"Variance mode {variance_mode} is not implemented."
             )
 
-    def get_opt_fn(self, opt_method) -> Callable:
+    def get_opt_mean_fn(self, opt_method) -> Callable:
         """
-        Return a regress function for use in optimization.
+        Return a posterior mean function for use in optimization.
 
         This function is designed for use with
         :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`. The
         `opt_method` parameter determines the format of the returned function.
 
         Returns:
-            A function implementing regression, where `eps` is either fixed or
-            takes updating values during optimization. The format of the
-            function depends upon `opt_method`.
+            A function implementing a posterior mean, where `eps` is either
+            fixed or takes updating values during optimization. The format of
+            the function depends upon `opt_method`.
         """
         return _switch_on_opt_method(
-            opt_method, self.get_kwargs_opt_fn, self.get_array_opt_fn
+            opt_method, self.get_kwargs_opt_mean_fn, self.get_array_opt_mean_fn
         )
 
-    def get_array_opt_fn(self) -> Callable:
+    def get_array_opt_mean_fn(self) -> Callable:
         """
-        Return a regress function for use in optimization.
+        Return a posterior mean function for use in optimization.
 
         This function is designed for use with
         :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
@@ -483,16 +483,18 @@ class MuyGPS:
         element or is not included.
 
         Returns:
-            A function implementing regression, where `eps` is either fixed or
-            takes updating values during optimization. The function expects a
+            A function implementing posterior mean, where `eps` is either fixed
+            or takes updating values during optimization. The function expects a
             list of current hyperparameter values for unfixed parameters, which
             are expected to occur in a certain order matching how they are set
             in `~MuyGPyS.gp.muygps.MuyGPS.get_optim_params()`.
         """
-        return self._get_array_opt_fn(_muygps_compute_solve, self.eps)
+        return self._get_array_opt_mean_fn(_muygps_compute_solve, self.eps)
 
     @staticmethod
-    def _get_array_opt_fn(solve_fn: Callable, eps: Hyperparameter) -> Callable:
+    def _get_array_opt_mean_fn(
+        solve_fn: Callable, eps: Hyperparameter
+    ) -> Callable:
         if not eps.fixed():
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
@@ -505,9 +507,9 @@ class MuyGPS:
 
         return caller_fn
 
-    def get_kwargs_opt_fn(self) -> Callable:
+    def get_kwargs_opt_mean_fn(self) -> Callable:
         """
-        Return a regress function for use in optimization.
+        Return a posterior mean function for use in optimization.
 
         This function is designed for use with
         :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
@@ -515,15 +517,17 @@ class MuyGPS:
         via a keyword argument or not at all.
 
         Returns:
-            A function implementing regression, where `eps` is either fixed or
-            takes updating values during optimization. The function expects
-            keyword arguments corresponding to current hyperparameter values for
-            unfixed parameters.
+            A function implementing the posterior mean, where `eps` is either
+            fixed or takes updating values during optimization. The function
+            expects keyword arguments corresponding to current hyperparameter
+            values for unfixed parameters.
         """
-        return self._get_kwargs_opt_fn(_muygps_compute_solve, self.eps)
+        return self._get_kwargs_opt_mean_fn(_muygps_compute_solve, self.eps)
 
     @staticmethod
-    def _get_kwargs_opt_fn(solve_fn: Callable, eps: Hyperparameter) -> Callable:
+    def _get_kwargs_opt_mean_fn(
+        solve_fn: Callable, eps: Hyperparameter
+    ) -> Callable:
         if not eps.fixed():
 
             def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
@@ -533,6 +537,65 @@ class MuyGPS:
 
             def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
                 return solve_fn(K, Kcross, batch_nn_targets, eps())
+
+        return caller_fn
+
+    def get_opt_var_fn(self, opt_method) -> Callable:
+        """
+        Return a posterior variance function for use in optimization.
+
+        This function is designed for use with
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`. The
+        `opt_method` parameter determines the format of the returned function.
+
+        Returns:
+            A function implementing posterior variance, where `eps` is either
+            fixed or takes updating values during optimization. The format of
+            the function depends upon `opt_method`.
+        """
+        return _switch_on_opt_method(
+            opt_method, self.get_kwargs_opt_var_fn, self.get_array_opt_var_fn
+        )
+
+    def get_array_opt_var_fn(self) -> Callable:
+        return self._get_array_opt_var_fn(
+            _muygps_compute_diagonal_variance, self.eps
+        )
+
+    @staticmethod
+    def _get_array_opt_var_fn(
+        var_fn: Callable, eps: Hyperparameter
+    ) -> Callable:
+        if not eps.fixed():
+
+            def caller_fn(K, Kcross, x0):
+                return var_fn(K, Kcross, x0[-1])
+
+        else:
+
+            def caller_fn(K, Kcross, x0):
+                return var_fn(K, Kcross, eps())
+
+        return caller_fn
+
+    def get_kwargs_opt_var_fn(self) -> Callable:
+        return self._get_kwargs_opt_var_fn(
+            _muygps_compute_diagonal_variance, self.eps
+        )
+
+    @staticmethod
+    def _get_kwargs_opt_var_fn(
+        var_fn: Callable, eps: Hyperparameter
+    ) -> Callable:
+        if not eps.fixed():
+
+            def caller_fn(K, Kcross, **kwargs):
+                return var_fn(K, Kcross, kwargs["eps"])
+
+        else:
+
+            def caller_fn(K, Kcross, **kwargs):
+                return var_fn(K, Kcross, eps())
 
         return caller_fn
 

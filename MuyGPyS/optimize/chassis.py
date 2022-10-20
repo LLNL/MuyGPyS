@@ -28,6 +28,8 @@ documentation for details.
 import numpy as np
 import warnings
 
+from typing import Optional
+
 from MuyGPyS import config
 
 from MuyGPyS._src.gp.distance import _make_train_tensors
@@ -40,6 +42,7 @@ from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 from MuyGPyS.optimize.objective import make_obj_fn
 from MuyGPyS.optimize.loss import get_loss_func
+from MuyGPyS.optimize.sigma_sq import make_sigma_sq_optim
 
 
 def optimize_from_indices(
@@ -51,6 +54,7 @@ def optimize_from_indices(
     loss_method: str = "mse",
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
+    sigma_method: Optional[str] = "analytic",
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:
@@ -118,6 +122,9 @@ def optimize_from_indices(
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` (alternately `"bayes"` or `"bayes_opt"`) and
             `"scipy"`.
+        sigma_method:
+            The optimization method to be employed to learn the `sigma_sq`
+            hyperparameter.
         verbose:
             If True, print debug messages.
         kwargs:
@@ -161,6 +168,7 @@ def optimize_from_tensors(
     loss_method: str = "mse",
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
+    sigma_method: Optional[str] = "analytic",
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:
@@ -234,6 +242,9 @@ def optimize_from_tensors(
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` (alternately `"bayes"` or `"bayes_opt"`) and
             `"scipy"`.
+        sigma_method:
+            The optimization method to be employed to learn the `sigma_sq`
+            hyperparameter.
         verbose:
             If True, print debug messages.
         kwargs:
@@ -243,16 +254,20 @@ def optimize_from_tensors(
         A new MuyGPs model whose specified hyperparameters have been optimized.
     """
     loss_fn = get_loss_func(loss_method)
-
     kernel_fn = muygps.kernel.get_opt_fn(opt_method)
-    predict_fn = muygps.get_opt_fn(opt_method)
+    mean_fn = muygps.get_opt_mean_fn(opt_method)
+    var_fn = muygps.get_opt_var_fn(opt_method)
+    sigma_sq_fn = make_sigma_sq_optim(sigma_method, opt_method, muygps)
 
     obj_fn = make_obj_fn(
         obj_method,
         opt_method,
+        loss_method,
         loss_fn,
         kernel_fn,
-        predict_fn,
+        mean_fn,
+        var_fn,
+        sigma_sq_fn,
         pairwise_dists,
         crosswise_dists,
         batch_nn_targets,

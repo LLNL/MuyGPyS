@@ -5,8 +5,9 @@
 
 from MuyGPyS._src.util import _collect_implementation
 
-_mse_fn, _cross_entropy_fn = _collect_implementation(
+_mse_fn, _cross_entropy_fn, _lool_fn = _collect_implementation(
     "MuyGPyS._src.optimize.loss",
     "_mse_fn",
     "_cross_entropy_fn",
+    "_lool_fn",
 )

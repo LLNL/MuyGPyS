@@ -31,10 +31,9 @@ from MuyGPyS.optimize.chassis import (
 )
 from MuyGPyS.optimize.loss import get_loss_func
 from MuyGPyS.optimize.objective import (
-    make_loo_crossval_array_fn,
-    make_loo_crossval_kwargs_fn,
+    make_loo_crossval_fn,
 )
-from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
+from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim, make_sigma_sq_optim
 from MuyGPyS._test.gp import (
     benchmark_pairwise_distances,
     benchmark_sample,
@@ -421,11 +420,21 @@ class GPSigmaSqOptimTest(parameterized.TestCase):
 class GPTensorsOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, 10, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
+            (
+                1001,
+                10,
+                b,
+                n,
+                nn_kwargs,
+                loss_and_sigma_methods,
+                om,
+                opt_method_and_kwargs,
+                k_kwargs,
+            )
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
-            for lm in ["mse"]
+            for loss_and_sigma_methods in [["lool", None],["mse", None]]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
             for k_kwargs in (
@@ -453,12 +462,13 @@ class GPTensorsOptimTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_and_sigma_methods,
         obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
         target, kwargs = k_kwargs
+        loss_method, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
 
         # construct the observation locations
@@ -519,6 +529,7 @@ class GPTensorsOptimTest(parameterized.TestCase):
                 loss_method=loss_method,
                 obj_method=obj_method,
                 opt_method=opt_method,
+                sigma_method=sigma_method,
                 **opt_kwargs,
             )
 
@@ -534,10 +545,19 @@ class GPTensorsOptimTest(parameterized.TestCase):
 class GPIndicesOptimTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1001, b, n, nn_kwargs, lm, om, opt_method_and_kwargs, k_kwargs)
+            (
+                1001,
+                b,
+                n,
+                nn_kwargs,
+                loss_and_sigma_methods,
+                om,
+                opt_method_and_kwargs,
+                k_kwargs,
+            )
             for b in [250]
             for n in [20]
-            for lm in ["mse"]
+            for loss_and_sigma_methods in [["lool", None],["mse", None]]
             for om in ["loo_crossval"]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             # for opt_method_and_kwargs in [
@@ -565,12 +585,13 @@ class GPIndicesOptimTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_and_sigma_methods,
         obj_method,
         opt_method_and_kwargs,
         k_kwargs,
     ):
         target, kwargs = k_kwargs
+        loss_method, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
 
         # construct the observation locations
@@ -610,6 +631,7 @@ class GPIndicesOptimTest(parameterized.TestCase):
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
+            sigma_method=sigma_method,
             **opt_kwargs,
         )
 
@@ -626,7 +648,7 @@ class MethodsAgreementTest(parameterized.TestCase):
     def setUpClass(cls):
         data_count = 1001
         feature_count = 10
-        response_count = 2
+        response_count = 3
         batch_count = 250
         nn_count = 20
 
@@ -660,7 +682,7 @@ class MethodsAgreementTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (lm, k_kwargs)
-            for lm in ["mse"]
+            for lm in ["lool","mse"]
             for k_kwargs in (
                 (
                     {"nu": 0.38},
@@ -707,31 +729,43 @@ class MethodsAgreementTest(parameterized.TestCase):
         self.assertTrue(np.allclose(K_array, K_kwargs))
         self.assertTrue(np.allclose(Kcross_array, Kcross_kwargs))
 
-        array_predict_fn = muygps.get_array_opt_fn()
-        kwargs_predict_fn = muygps.get_kwargs_opt_fn()
+        array_mean_fn = muygps.get_array_opt_mean_fn()
+        array_var_fn = muygps.get_array_opt_var_fn()
+        array_sigma_fn = make_sigma_sq_optim("analytic", "scipy", muygps)
+        kwargs_mean_fn = muygps.get_kwargs_opt_mean_fn()
+        kwargs_var_fn = muygps.get_kwargs_opt_var_fn()
+        kwargs_sigma_fn = make_sigma_sq_optim("analytic", "bayes", muygps)
 
-        predictions_array = array_predict_fn(
+        predictions_array = array_mean_fn(
             K_array, Kcross_array, self.batch_nn_targets, x0
         )
-        predictions_kwargs = kwargs_predict_fn(
+        predictions_kwargs = kwargs_mean_fn(
             K_kwargs, Kcross_kwargs, self.batch_nn_targets, **params
         )
 
         self.assertTrue(np.allclose(predictions_array, predictions_kwargs))
 
-        array_obj_fn = make_loo_crossval_array_fn(
+        array_obj_fn = make_loo_crossval_fn(
+            "scipy",
+            loss_method,
             loss_fn,
             array_kernel_fn,
-            array_predict_fn,
+            array_mean_fn,
+            array_var_fn,
+            array_sigma_fn,
             self.pairwise_dists,
             self.crosswise_dists,
             self.batch_nn_targets,
             self.batch_targets,
         )
-        kwargs_obj_fn = make_loo_crossval_kwargs_fn(
+        kwargs_obj_fn = make_loo_crossval_fn(
+            "bayes",
+            loss_method,
             loss_fn,
             kwargs_kernel_fn,
-            kwargs_predict_fn,
+            kwargs_mean_fn,
+            kwargs_var_fn,
+            kwargs_sigma_fn,
             self.pairwise_dists,
             self.crosswise_dists,
             self.batch_nn_targets,

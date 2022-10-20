@@ -60,3 +60,17 @@ def _mse_fn(
     return _mse_fn_unnormalized(predictions, targets) / (
         batch_count * response_count
     )
+
+
+@jit
+def _lool_fn(
+    predictions: jnp.ndarray,
+    targets: jnp.ndarray,
+    variances: jnp.ndarray,
+    sigma_sq: jnp.ndarray,
+) -> float:
+    scaled_variances = jnp.outer(variances, sigma_sq)
+    return jnp.sum(
+        jnp.divide((predictions - targets) ** 2, scaled_variances)
+        + jnp.log(scaled_variances)
+    )

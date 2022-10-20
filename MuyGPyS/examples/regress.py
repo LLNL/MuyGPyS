@@ -219,6 +219,7 @@ def make_regressor(
                 loss_method=loss_method,
                 obj_method=obj_method,
                 opt_method=opt_method,
+                sigma_method=sigma_method,
                 verbose=verbose,
                 **opt_kwargs,
             )
@@ -452,6 +453,7 @@ def make_multivariate_regressor(
                         loss_method=loss_method,
                         obj_method=obj_method,
                         opt_method=opt_method,
+                        sigma_method=sigma_method,
                         verbose=verbose,
                         **opt_kwargs,
                     )
