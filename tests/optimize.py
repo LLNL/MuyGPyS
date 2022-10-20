@@ -434,7 +434,7 @@ class GPTensorsOptimTest(parameterized.TestCase):
             for b in [250]
             for n in [20]
             for nn_kwargs in _basic_nn_kwarg_options
-            for loss_and_sigma_methods in [["lool", None]]
+            for loss_and_sigma_methods in [["lool", None],["mse", None]]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
             for k_kwargs in (
@@ -557,7 +557,7 @@ class GPIndicesOptimTest(parameterized.TestCase):
             )
             for b in [250]
             for n in [20]
-            for loss_and_sigma_methods in [["lool", None]]
+            for loss_and_sigma_methods in [["lool", None],["mse", None]]
             for om in ["loo_crossval"]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             # for opt_method_and_kwargs in [
@@ -682,7 +682,7 @@ class MethodsAgreementTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (lm, k_kwargs)
-            for lm in ["lool"]
+            for lm in ["lool","mse"]
             for k_kwargs in (
                 (
                     {"nu": 0.38},

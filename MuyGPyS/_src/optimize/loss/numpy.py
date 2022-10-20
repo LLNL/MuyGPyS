@@ -38,12 +38,15 @@ def _mse_fn(
         batch_count * response_count
     )
 
+
 def _lool_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
     sigma_sq: np.ndarray,
 ) -> float:
-    return np.sum(np.divide((predictions - targets) ** 2,np.outer(variances,sigma_sq)) + np.log(np.outer(variances,sigma_sq))
+    scaled_variances = np.outer(variances, sigma_sq)
+    return np.sum(
+        np.divide((predictions - targets) ** 2, scaled_variances)
+        + np.log(scaled_variances)
     )
-    

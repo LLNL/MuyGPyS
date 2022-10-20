@@ -310,6 +310,6 @@ def make_var_kwargs_predict_and_loss_fn(
 
         variances = var_fn(K, Kcross, **kwargs)
 
-        return -loss_fn(predictions, batch_targets, variances,sigma_sq)
+        return -loss_fn(predictions, batch_targets, variances, sigma_sq)
 
     return predict_and_loss_fn

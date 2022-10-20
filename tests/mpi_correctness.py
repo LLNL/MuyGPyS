@@ -64,10 +64,12 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
     from MuyGPyS._src.optimize.loss.numpy import (
         _mse_fn as mse_fn_n,
         _cross_entropy_fn as cross_entropy_fn_n,
+        _lool_fn as lool_fn_n,
     )
     from MuyGPyS._src.optimize.loss.mpi import (
         _mse_fn as mse_fn_m,
         _cross_entropy_fn as cross_entropy_fn_m,
+        _lool_fn as lool_fn_m,
     )
     from MuyGPyS.optimize.objective import make_loo_crossval_fn
 
@@ -837,10 +839,37 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                     serial_cross_entropy, parallel_cross_entropy
                 )
 
+    class LOOLTest(OptimTestCase):
+        @classmethod
+        def setUpClass(cls):
+            super(LOOLTest, cls).setUpClass()
+            cls.batch_sigma_sq = cls.muygps.sigma_sq()
+
+        def test_lool(self):
+            parallel_mse = lool_fn_m(
+                self.batch_prediction_chunk,
+                self.batch_targets_chunk,
+                self.batch_variance_chunk,
+                self.batch_sigma_sq,
+            )
+
+            if rank == 0:
+                serial_mse = lool_fn_n(
+                    self.batch_prediction,
+                    self.batch_targets,
+                    self.batch_variance,
+                    self.batch_sigma_sq,
+                )
+                self.assertAlmostEqual(serial_mse, parallel_mse)
+
     class ObjectiveTest(OptimTestCase):
         @classmethod
         def setUpClass(cls):
             super(ObjectiveTest, cls).setUpClass()
+
+            cls.batch_sigma_sq = cls.muygps.sigma_sq()
+            cls.batch_sigma_sq_chunk = _chunk_tensor(cls.muygps.sigma_sq())
+            cls.batch_variance_chunk
 
         def test_mse(self):
             parallel_mse = mse_fn_m(
@@ -849,6 +878,23 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
 
             if rank == 0:
                 serial_mse = mse_fn_n(self.batch_prediction, self.batch_targets)
+                self.assertAlmostEqual(serial_mse, parallel_mse)
+
+        def test_lool(self):
+            parallel_mse = lool_fn_m(
+                self.batch_prediction_chunk,
+                self.batch_targets_chunk,
+                self.batch_variance_chunk,
+                self.batch_sigma_sq_chunk,
+            )
+
+            if rank == 0:
+                serial_mse = lool_fn_n(
+                    self.batch_prediction,
+                    self.batch_targets,
+                    self.batch_variance,
+                    self.batch_sigma_sq,
+                )
                 self.assertAlmostEqual(serial_mse, parallel_mse)
 
         # def test_cross_entropy(self):
