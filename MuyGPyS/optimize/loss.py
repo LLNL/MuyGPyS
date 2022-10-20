@@ -102,6 +102,7 @@ def lool_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
+    sigma_sq: np.ndarray,
 ) -> float:
     """
     Leave-one-out likelihood function.
@@ -120,4 +121,4 @@ def lool_fn(
     Returns:
         The LOOL loss of the prediction.
     """
-    return _lool_fn(predictions, targets, variances)
+    return _lool_fn(predictions, targets, variances,sigma_sq)

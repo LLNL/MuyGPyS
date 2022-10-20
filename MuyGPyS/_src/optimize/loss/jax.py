@@ -66,6 +66,7 @@ def _lool_fn(
     predictions: jnp.ndarray,
     targets: jnp.ndarray,
     variances: jnp.ndarray,
+    sigma_sq: jnp.ndarray,
 ) -> float:
-    return jnp.sum(jnp.divide((predictions - targets) ** 2,variances) + jnp.log(variances)
+    return jnp.sum(jnp.divide((predictions - targets) ** 2,jnp.outer(variances,sigma_sq)) + jnp.log(jnp.outer(variances,sigma_sq))
     )

@@ -42,7 +42,8 @@ def _lool_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
+    sigma_sq: np.ndarray,
 ) -> float:
-    return np.sum(np.divide((predictions - targets) ** 2,variances) + np.log(variances)
+    return np.sum(np.divide((predictions - targets) ** 2,np.outer(variances,sigma_sq)) + np.log(np.outer(variances,sigma_sq))
     )
     

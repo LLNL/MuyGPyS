@@ -286,9 +286,7 @@ def make_var_array_predict_and_loss_fn(
         sigma_sq = sigma_sq_fn(K, batch_nn_targets, x0)
 
         variances = var_fn(K, Kcross, x0)
-        variances = np.outer(variances,sigma_sq)
-
-        return loss_fn(predictions, batch_targets, variances)
+        return loss_fn(predictions, batch_targets, variances,sigma_sq)
 
     return predict_and_loss_fn
 
@@ -311,8 +309,7 @@ def make_var_kwargs_predict_and_loss_fn(
         sigma_sq = sigma_sq_fn(K, batch_nn_targets, **kwargs)
 
         variances = var_fn(K, Kcross, **kwargs)
-        variances = np.outer(variances,sigma_sq)
 
-        return -loss_fn(predictions, batch_targets, variances)
+        return -loss_fn(predictions, batch_targets, variances,sigma_sq)
 
     return predict_and_loss_fn
