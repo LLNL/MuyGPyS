@@ -15,6 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.8", "3.9", "3.10"]
+        impl-type: [numpy, jax, mpi]
 
     steps:
     - uses: actions/checkout@v2
@@ -26,7 +27,15 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install flake8
-        python -m pip install -e .[tests,hnswlib,jax_cpu]
+        python -m pip install -e .[tests,hnswlib]
+    - name: Install JAX
+      if: matrix.impl-type == 'jax'
+      run: python -m pip install jax[cpu]>=0.2.26
+    - name: Install MPI
+      if: matrix.impl-type == 'mpi'
+      run: |
+        sudo apt-get install mpich
+        python -m pip install mpi4py>=3.1.3
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -34,15 +43,21 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with absl
+      if: matrix.impl-type == 'numpy'
       run: |
         python tests/data.py
-        python tests/neighbors.py --muygpys_jax_enabled=False
-        python tests/kernels.py --muygpys_jax_enabled=False
-        python tests/gp.py --muygpys_jax_enabled=False
-        python tests/optimize.py --muygpys_jax_enabled=False
-        python tests/predict.py --muygpys_jax_enabled=False
-        python tests/multivariate.py --muygpys_jax_enabled=False
-        python tests/jax_correctness.py
+        python tests/neighbors.py
+        python tests/kernels.py
+        python tests/gp.py
+        python tests/optimize.py
+        python tests/predict.py
+        python tests/multivariate.py
+    - name: Test JAX correctness
+      if: matrix.impl-type == 'jax'
+      run: python tests/jax_correctness.py
+    - name: Test MPI correctness
+      if: matrix.impl-type == 'mpi'
+      run: mpirun -n 4 python tests/mpi_correctness.py
 
   build-docs:
 
