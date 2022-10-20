@@ -107,8 +107,9 @@ def lool_fn(
     """
     Leave-one-out likelihood function.
 
-    Computes leave-one-out likelihood (LOOL) loss of the predicted versus known response.
-    Treats multivariate outputs as interchangeable in terms of loss penalty.
+    Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
+    response. Treats multivariate outputs as interchangeable in terms of loss
+    penalty.
 
     Args:
         predictions:

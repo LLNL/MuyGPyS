@@ -393,8 +393,8 @@ class MuyGPS:
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
             batch_nn_targets:
-                A tensor of shape `(batch_count, nn_count, response_count)` whose
-                last dimension lists the vector-valued responses for the
+                A tensor of shape `(batch_count, nn_count, response_count)`
+                whose last dimension lists the vector-valued responses for the
                 nearest neighbors of each batch element.
             variance_mode:
                 Specifies the type of variance to return. Currently supports
