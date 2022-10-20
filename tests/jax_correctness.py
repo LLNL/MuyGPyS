@@ -70,10 +70,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
     from MuyGPyS._src.optimize.loss.numpy import (
         _mse_fn as mse_fn_n,
         _cross_entropy_fn as cross_entropy_fn_n,
+        _lool_fn as lool_fn_n,
     )
     from MuyGPyS._src.optimize.loss.jax import (
         _mse_fn as mse_fn_j,
         _cross_entropy_fn as cross_entropy_fn_j,
+        _lool_fn as lool_fn_j,
     )
     from MuyGPyS.optimize.objective import make_loo_crossval_fn
     from MuyGPyS._src.optimize.chassis.numpy import (
@@ -454,14 +456,17 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         @classmethod
         def setUpClass(cls):
             super(OptimTestCase, cls).setUpClass()
-            cls.predictions_n = cls.muygps._regress(
+            cls.predictions_n, cls.variances_n = cls.muygps._regress(
                 cls.K_n,
                 cls.Kcross_n,
                 cls.batch_nn_targets_n,
                 cls.muygps.eps(),
                 cls.muygps.sigma_sq(),
+                variance_mode="diagonal",
+                apply_sigma_sq=False,
             )
             cls.predictions_j = jnp.array(cls.predictions_n)
+            cls.variances_j = jnp.array(cls.variances_n)
             cls.x0_names, cls.x0_n, cls.bounds = cls.muygps.get_optim_params()
             cls.x0_j = jnp.array(cls.x0_n)
             cls.x0_map_n = {n: cls.x0_n[i] for i, n in enumerate(cls.x0_names)}
@@ -666,11 +671,32 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         def setUpClass(cls):
             super(ObjectiveTest, cls).setUpClass()
 
+            cls.sigma_sq_n = cls.muygps.sigma_sq()
+            cls.sigma_sq_j = jnp.array(cls.muygps.sigma_sq())
+
         def test_mse(self):
             self.assertTrue(
                 np.isclose(
                     mse_fn_n(self.predictions_n, self.batch_targets_n),
                     mse_fn_j(self.predictions_j, self.batch_targets_j),
+                )
+            )
+
+        def test_lool(self):
+            self.assertTrue(
+                np.isclose(
+                    lool_fn_n(
+                        self.predictions_n,
+                        self.batch_targets_n,
+                        self.variances_n,
+                        self.sigma_sq_n,
+                    ),
+                    lool_fn_j(
+                        self.predictions_j,
+                        self.batch_targets_j,
+                        self.variances_j,
+                        self.sigma_sq_j,
+                    ),
                 )
             )
 

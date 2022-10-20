@@ -61,6 +61,7 @@ def _mse_fn(
         batch_count * response_count
     )
 
+
 @jit
 def _lool_fn(
     predictions: jnp.ndarray,
@@ -68,5 +69,8 @@ def _lool_fn(
     variances: jnp.ndarray,
     sigma_sq: jnp.ndarray,
 ) -> float:
-    return jnp.sum(jnp.divide((predictions - targets) ** 2,jnp.outer(variances,sigma_sq)) + jnp.log(jnp.outer(variances,sigma_sq))
+    scaled_variances = jnp.outer(variances, sigma_sq)
+    return jnp.sum(
+        jnp.divide((predictions - targets) ** 2, scaled_variances)
+        + jnp.log(scaled_variances)
     )
