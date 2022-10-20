@@ -116,9 +116,13 @@ def lool_fn(
         targets:
             The expected response of shape `(batch_count, response_count)`.
         variances:
-            The variance of the predicted responses of shape `(batch_count, response_count)`.
+            The unscaled variance of the predicted responses of shape
+            `(batch_count, response_count)`.
+        sigma_sq:
+            The sigma_sq variance scaling parameter of shape
+            `(response_count,)`.
 
     Returns:
         The LOOL loss of the prediction.
     """
-    return _lool_fn(predictions, targets, variances,sigma_sq)
+    return _lool_fn(predictions, targets, variances, sigma_sq)

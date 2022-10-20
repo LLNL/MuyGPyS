@@ -107,6 +107,15 @@ The wrapped KNN algorithms are not distributed, and so `MuyGPyS` does not yet
 have an internal distributed KNN implementation.
 Future versions will support a distributed memory approximate KNN solution.
 
+The user can run a script `myscript.py` with MPI using, e.g. `mpirun` (or `srun`
+if using slurm) via
+```
+$ # mpirun version
+$ mpirun -n 4 python myscript.py
+$ # srun version
+$ srun -N 1 --tasks-per-node 4 -p pbatch python myscript.py
+```
+
 ## Installation
 
 ### Pip: CPU
@@ -123,7 +132,9 @@ support just-in-time compilation of math functions on CPU (see below to install
 on GPU CUDA architectures)
 - `mpi` - install [MPI](https://github.com/mpi4py/mpi4py) dependencies to
 support distributed memory parallel computation. Requires that the user has
-installed a version of MPI such as mvapich or open-mpi.
+installed a version of MPI such as
+[mvapich](https://mvapich.cse.ohio-state.edu/) or
+[open-mpi](https://github.com/open-mpi/ompi).
 ```
 $ # numpy-only installation. Functions will internally use numpy.
 $ pip install --upgrade muygpys
@@ -135,8 +146,14 @@ $ # The same, but includes hnswlib.
 $ pip install --upgrade muygpys[jax_cpu,hnswlib]
 $ # MPI installation. Functions will operate in distributed memory.
 $ pip install --upgrade muygpys[mpi]
+$ # The same, but includes hnswlib.
+$ pip install --upgrade muygpys[mpi,hnswlib]
 ```
 
+It is possible to install both MPI and JAX dependencies, but at present only one
+can be enabled at a time.
+If both dependencies are found and the user does not manually specify which
+version to use with the `config` object, `MuyGPyS` will default to use JAX.
 ### Pip: GPU (CUDA)
 
 [JAX](https://github.com/google/jax) also supports just-in-time compilation to
@@ -266,6 +283,28 @@ $ python tests/kernels.py
 Individual `absl` unit test classes can be run in isolation, e.g.
 ```
 $ python tests/kernels.py DistancesTest
+```
+
+The user can also modify the `MuyGPyS.config` object when running `absl` tests
+from the command line.
+For example, if you have installed the JAX dependencies but want to run a test
+without using JAX, run
+```
+$ python tests/kernels.py --muygpys_jax_enabled=False
+```
+
+If the MPI dependencies are installed, the user can also run `absl` tests using
+MPI, e.g. using `mpirun`
+```
+$ mpirun -n 4 python tests/kernels.py
+$ # If JAX dependencies are installed and you want to use the pure MPI implementation, use
+$ mpirun -n 4 python tests/kernels.py --muygpys_jax_enabled=False
+```
+or using `srun`
+```
+$ srun -N 1 --tasks-per-node 4 -p pdebug python tests/kernels.py
+$ # If JAX dependencies are installed and you want to use the pure MPI implementation, use
+$ srun -N 1 --tasks-per-node 4 -p pdebug python tests/kernels.py --muygpys_jax_enabled=False
 ```
 
 # About
