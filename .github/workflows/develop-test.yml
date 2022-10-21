@@ -14,6 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.8", "3.9", "3.10"]
+        test-group: [short, optimize, multivariate]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -31,15 +32,20 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with absl
+    - name: Short Tests
+      if: matrix.test_group == 'short'
       run: |
         python tests/data.py
         python tests/neighbors.py
         python tests/kernels.py
         python tests/gp.py
-        python tests/optimize.py
         python tests/predict.py
-        python tests/multivariate.py
+    - name: Optimize Tests
+      if: matrix.test_group == 'optimize'
+      run: python tests/optimize.py
+    - name: Multivariate Tests
+      if: matrix.test_group == 'multivariate'
+      run: python tests/multivariate.py
 
   build-jax:
     runs-on: ubuntu-latest
