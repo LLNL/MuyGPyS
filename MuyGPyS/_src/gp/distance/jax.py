@@ -12,17 +12,37 @@ from functools import partial
 from jax import jit
 
 # from sklearn.metrics.pairwise import cosine_similarity
+@partial(jit, static_argnums=(0,))
+def _make_fast_regress_tensors(
+    metric: str,
+    batch_nn_indices: jnp.ndarray,
+    test_features: jnp.ndarray,
+    train_features: jnp.ndarray,
+    train_targets: jnp.ndarray,
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    if test_features is None:
+        test_features = train_features
+    num_train, _ = train_features.shape
+    batch_nn_indices_fast = jnp.concatenate(
+        jnp.arange(0, num_train), batch_nn_indices[:-1], axis=0
+    )
+
+    pairwise_dists_fast = _pairwise_distances(
+        train_features, batch_nn_indices_fast, metric=metric
+    )
+    batch_nn_targets_fast = train_targets[batch_nn_indices_fast, :]
+    return pairwise_dists_fast, batch_nn_targets_fast
 
 
 @partial(jit, static_argnums=(0,))
 def _make_regress_tensors(
     metric: str,
-    batch_indices: np.ndarray,
-    batch_nn_indices: np.ndarray,
-    test_features: np.ndarray,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    batch_indices: jnp.ndarray,
+    batch_nn_indices: jnp.ndarray,
+    test_features: jnp.ndarray,
+    train_features: jnp.ndarray,
+    train_targets: jnp.ndarray,
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     if test_features is None:
         test_features = train_features
     crosswise_dists = _crosswise_distances(

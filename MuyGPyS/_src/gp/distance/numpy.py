@@ -10,6 +10,27 @@ from typing import Tuple
 # from sklearn.metrics.pairwise import cosine_similarity
 
 
+def _make_fast_regress_tensors(
+    metric: str,
+    batch_nn_indices: np.ndarray,
+    test_features: np.ndarray,
+    train_features: np.ndarray,
+    train_targets: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    if test_features is None:
+        test_features = train_features
+    num_train, _ = train_features.shape
+    batch_nn_indices_fast = np.concatenate(
+        np.arange(0, num_train), batch_nn_indices[:-1], axis=0
+    )
+
+    pairwise_dists_fast = _pairwise_distances(
+        train_features, batch_nn_indices_fast, metric=metric
+    )
+    batch_nn_targets_fast = train_targets[batch_nn_indices_fast, :]
+    return pairwise_dists_fast, batch_nn_targets_fast
+
+
 def _make_regress_tensors(
     metric: str,
     batch_indices: np.ndarray,
