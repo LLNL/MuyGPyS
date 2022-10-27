@@ -16,12 +16,9 @@ from jax import jit
 def _make_fast_regress_tensors(
     metric: str,
     batch_nn_indices: jnp.ndarray,
-    test_features: jnp.ndarray,
     train_features: jnp.ndarray,
     train_targets: jnp.ndarray,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    if test_features is None:
-        test_features = train_features
     num_train, _ = train_features.shape
     batch_nn_indices_fast = jnp.concatenate(
         jnp.arange(0, num_train), batch_nn_indices[:-1], axis=0

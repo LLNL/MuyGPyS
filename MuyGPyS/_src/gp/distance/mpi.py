@@ -23,7 +23,6 @@ import numpy as np
 def _make_fast_regress_tensors(
     metric: str,
     batch_nn_indices: np.ndarray,
-    test_features: np.ndarray,
     train_features: np.ndarray,
     train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -31,7 +30,6 @@ def _make_fast_regress_tensors(
         _make_fast_regress_tensors_n,
         metric,
         batch_nn_indices,
-        test_features,
         train_features,
         train_targets,
         return_count=3,

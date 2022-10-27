@@ -13,12 +13,9 @@ from typing import Tuple
 def _make_fast_regress_tensors(
     metric: str,
     batch_nn_indices: np.ndarray,
-    test_features: np.ndarray,
     train_features: np.ndarray,
     train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if test_features is None:
-        test_features = train_features
+) -> Tuple[np.ndarray, np.ndarray]:
     num_train, _ = train_features.shape
     batch_nn_indices_fast = np.concatenate(
         np.arange(0, num_train), batch_nn_indices[:-1], axis=0

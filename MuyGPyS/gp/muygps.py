@@ -334,11 +334,10 @@ class MuyGPS:
                 responses, variances = responses
                 return responses, variances, crosswise_dists, pairwise_dists
 
-    def build_fast_regress_coeffs_from_indices(
+    def build_fast_regress_coeffs(
         self,
-        nn_indices: np.ndarray,
-        test: np.ndarray,
         train: np.ndarray,
+        nn_indices: np.ndarray,
         targets: np.ndarray,
     ) -> np.ndarray
         """
@@ -350,9 +349,6 @@ class MuyGPS:
         :func:`~MuyGPyS.gp.muygps.MuyGPS.regress`.
 
         Args:
-            nn_indices:
-                An integral matrix of shape `(batch_count, nn_count)` listing the
-                nearest neighbor indices for all observations in the test batch.
             test:
                 The full testing data matrix of shape
                 `(test_count, feature_count)`.
@@ -369,6 +365,7 @@ class MuyGPS:
             the precomputed coefficients for fast regression.
         
         """
+        train_count,_ = train.shape
         tensor_fn = (
             _make_fast_regress_tensors_n
             if _is_mpi_mode() is True and indices_by_rank is True
@@ -377,7 +374,7 @@ class MuyGPS:
         (
             pairwise_dists_fast,
             batch_nn_targets_fast,
-        ) = tensor_fn(self.kernel.metric, nn_indices, test, train, targets)
+        ) = tensor_fn(self.kernel.metric, nn_indices, train, targets)
         _,nn_count = nn_indices.shape
         K = self.kernel(pairwise_dists_fast)
         coeffs_mat = np.linalg.solve(
@@ -512,6 +509,56 @@ class MuyGPS:
                 f"Variance mode {variance_mode} is not implemented."
             )
 
+    def fast_regress_from_indices(
+        self,
+        Kcross: np.array,
+        closest_index: np.array,
+        coeffs_mat: np.array,
+    ) -> np.ndarray:
+        """
+        Performs fast regression using provided
+        cross-covariance, the index of the training point closest to the 
+        queried test point, and precomputed coefficient matrix.        
+
+        Returns the predicted response in the form of a posterior
+        mean for each element of the batch of observations, as computed in
+        Equation (9) of [dunton2022fast]_. For each test point
+        :math:`\\mathbf{z}`, we compute
+
+        .. math::
+            \\widehat{Y} (\\mathbf{z} \\mid X) =
+                K_\\theta (\\mathbf{z}, X_{N^*}) \mathbf{C}_{N^*}.
+
+        Here :math:`X_{N^*}` is the union of the nearest neighbor of the queried 
+        test point :math:`\\mathbf{z}` and the nearest neighbors of that 
+        training point, :math:`K_\\theta` is the kernel functor specified 
+        by `self.kernel`, and :math:`\mathbf{C}_{N^*}` is the matrix of 
+        precomputed coefficients given in Equation (8) of [dunton2022fast]_.
+
+        Args:
+            Kcross:
+                A tensor of shape `(batch_count, nn_count)` containing the
+                `1 x nn_count` -shaped cross-covariance matrix corresponding
+                to each of the batch elements.
+            closest_index:
+                A tensor for which each entry is the index of the training point
+                closest to each queried test point.
+            coeffs_mat:
+                A tensor whose rows are given by precomputed coefficients for 
+                fast regression.
+            
+        Returns
+        -------
+        responses:
+            A matrix of shape `(batch_count, response_count,)` whose rows are
+            the predicted response for each of the given indices.
+        """
+        return self._fast_regress(
+            Kcross,
+            coeffs_mat[closest_index,:],
+        )
+
+
     def fast_regress(
         self,
         Kcross: np.array,
@@ -519,65 +566,42 @@ class MuyGPS:
     ) -> np.ndarray:
         """
         Performs fast regression using provided
-        cross-covariance and precomputed coefficient matrix .
+        cross-covariance and precomputed coefficient matrix.
 
-        Assumes that cross-covariance matrix `Kcross` are already computed and
-        given as arguments. To implicitly construct these values from indices
-        (useful if the kernel or distance tensors and matrices are not needed
-        for later reference) instead use
-        :func:`~MuyGPyS.gp.muygps.MuyGPS.regress_from_indices`.
+        Assumes that cross-covariance matrix `Kcross` is already computed and
+        given as an argument. To implicitly construct these values from indices
+        instead use :func:`~MuyGPyS.gp.muygps.MuyGPS.fast_regress_from_indices`.
 
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations, as computed in
-        Equation (3.4) of [muyskens2021muygps]_. For each batch element
-        :math:`\\mathbf{x}_i`, we compute
+        Equation (9) of [dunton2022fast]_. For each test point
+        :math:`\\mathbf{z}`, we compute
 
         .. math::
-            \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}) =
-                K_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
-                Y(X_{N_i}).
+            \\widehat{Y} (\\mathbf{z} \\mid X) =
+                K_\\theta (\\mathbf{z}, X_{N^*}) \mathbf{C}_{N^*}.
 
-        Here :math:`X_{N_i}` is the set of nearest neighbors of
-        :math:`\\mathbf{x}_i` in the training data, :math:`K_\\theta` is the
-        kernel functor specified by `self.kernel`, :math:`\\varepsilon I_k` is a
-        diagonal homoscedastic noise matrix whose diagonal is the value of the
-        `self.eps` hyperparameter, and :math:`Y(X_{N_i})` is the
-        `(nn_count, respones_count)` matrix of responses of the nearest
-        neighbors given by the second two dimensions of the `batch_nn_targets`
-        argument.
+        Here :math:`X_{N^*}` is the union of the nearest neighbor of the queried 
+        test point :math:`\\mathbf{z}` and that training point, 
+        :math:`K_\\theta` is the kernel functor specified by `self.kernel`, 
+        and :math:`\mathbf{C}_{N^*}` is the matrix of precomputed coefficients 
+        given in Equation (8) of [dunton2022fast]_.
 
         Args:
-            K:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count` -shaped kernel matrices corresponding
-                to each of the batch elements.
             Kcross:
                 A tensor of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
-            batch_nn_targets:
-                A tensor of shape `(batch_count, nn_count, response_count)`
-                whose last dimension lists the vector-valued responses for the
-                nearest neighbors of each batch element.
-            variance_mode:
-                Specifies the type of variance to return. Currently supports
-                `"diagonal"` and None. If None, report no variance term.
-            apply_sigma_sq:
-                Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or
-                `sigma_sq.trained() is False`.
+            coeffs_mat:
+                A tensor whose rows are given by precomputed coefficients for 
+                fast regression.
+            
 
         Returns
         -------
         responses:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
-        diagonal_variance:
-            A vector of shape `(batch_count,)` consisting of the diagonal
-            elements of the posterior variance, or a matrix of shape
-            `(batch_count, response_count)` for a multidimensional response.
-            Only returned where `variance_mode == "diagonal"`.
         """
         return self._fast_regress(
             Kcross,
