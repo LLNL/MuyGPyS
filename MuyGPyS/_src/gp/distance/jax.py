@@ -21,7 +21,11 @@ def _make_fast_regress_tensors(
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     num_train, _ = train_features.shape
     batch_nn_indices_fast = jnp.concatenate(
-        jnp.arange(0, num_train), batch_nn_indices[:-1], axis=0
+        (
+            jnp.expand_dims(jnp.arange(0, num_train), axis=1),
+            batch_nn_indices[:, :-1],
+        ),
+        axis=1,
     )
 
     pairwise_dists_fast = _pairwise_distances(

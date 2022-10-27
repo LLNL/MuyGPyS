@@ -18,7 +18,11 @@ def _make_fast_regress_tensors(
 ) -> Tuple[np.ndarray, np.ndarray]:
     num_train, _ = train_features.shape
     batch_nn_indices_fast = np.concatenate(
-        np.arange(0, num_train), batch_nn_indices[:-1], axis=0
+        (
+            np.expand_dims(np.arange(0, num_train), axis=1),
+            batch_nn_indices[:, :-1],
+        ),
+        axis=1,
     )
 
     pairwise_dists_fast = _pairwise_distances(
