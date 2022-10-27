@@ -10,6 +10,7 @@ MuyGPs implementation
 import numpy as np
 
 from typing import Callable, Dict, List, Optional, Tuple, Union
+from MuyGPyS.gp.distance import crosswise_distances
 
 from MuyGPyS.gp.kernels import (
     _get_kernel,
@@ -20,9 +21,13 @@ from MuyGPyS.gp.kernels import (
 
 from MuyGPyS import config
 
-from MuyGPyS._src.gp.distance import _make_regress_tensors
+from MuyGPyS._src.gp.distance import (
+    _make_regress_tensors,
+    _make_fast_regress_tensors,
+)
 from MuyGPyS._src.gp.distance.numpy import (
     _make_regress_tensors as _make_regress_tensors_n,
+    _make_fast_regress_tensors as _make_fast_regress_tensors_n,
 )
 from MuyGPyS._src.gp.muygps import (
     _muygps_compute_solve,
@@ -329,6 +334,58 @@ class MuyGPS:
                 responses, variances = responses
                 return responses, variances, crosswise_dists, pairwise_dists
 
+    def build_fast_regress_coeffs_from_indices(
+        self,
+        nn_indices: np.ndarray,
+        test: np.ndarray,
+        train: np.ndarray,
+        targets: np.ndarray,
+    ) -> np.ndarray
+        """
+        Performs simultaneous regression on a list of observations.
+
+        This is similar to the old regress API in that it implicitly creates and
+        discards the distance and kernel tensors and matrices. If these data
+        structures are needed for later reference, instead use
+        :func:`~MuyGPyS.gp.muygps.MuyGPS.regress`.
+
+        Args:
+            nn_indices:
+                An integral matrix of shape `(batch_count, nn_count)` listing the
+                nearest neighbor indices for all observations in the test batch.
+            test:
+                The full testing data matrix of shape
+                `(test_count, feature_count)`.
+            train:
+                The full training data matrix of shape
+                `(train_count, feature_count)`.
+            targets:
+                A matrix of shape `(train_count, response_count)` whose rows are
+                vector-valued responses for each training element.
+        Returns
+        -------
+        coeffs_mat:
+            A matrix of shape `(batch_count, nn_count,)` whose rows are
+            the precomputed coefficients for fast regression.
+        
+        """
+        tensor_fn = (
+            _make_fast_regress_tensors_n
+            if _is_mpi_mode() is True and indices_by_rank is True
+            else _make_fast_regress_tensors
+        )
+        (
+            pairwise_dists_fast,
+            batch_nn_targets_fast,
+        ) = tensor_fn(self.kernel.metric, nn_indices, test, train, targets)
+        _,nn_count = nn_indices.shape
+        K = self.kernel(pairwise_dists_fast)
+        coeffs_mat = np.linalg.solve(
+            K + self.eps() * np.eye(nn_count), batch_nn_targets_fast
+        )
+
+        return coeffs_mat
+
     def regress(
         self,
         K: np.array,
@@ -454,6 +511,86 @@ class MuyGPS:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
             )
+
+    def fast_regress(
+        self,
+        Kcross: np.array,
+        coeffs_mat: np.array,
+    ) -> np.ndarray:
+        """
+        Performs fast regression using provided
+        cross-covariance and precomputed coefficient matrix .
+
+        Assumes that cross-covariance matrix `Kcross` are already computed and
+        given as arguments. To implicitly construct these values from indices
+        (useful if the kernel or distance tensors and matrices are not needed
+        for later reference) instead use
+        :func:`~MuyGPyS.gp.muygps.MuyGPS.regress_from_indices`.
+
+        Returns the predicted response in the form of a posterior
+        mean for each element of the batch of observations, as computed in
+        Equation (3.4) of [muyskens2021muygps]_. For each batch element
+        :math:`\\mathbf{x}_i`, we compute
+
+        .. math::
+            \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}) =
+                K_\\theta (\\mathbf{x}_i, X_{N_i})
+                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
+                Y(X_{N_i}).
+
+        Here :math:`X_{N_i}` is the set of nearest neighbors of
+        :math:`\\mathbf{x}_i` in the training data, :math:`K_\\theta` is the
+        kernel functor specified by `self.kernel`, :math:`\\varepsilon I_k` is a
+        diagonal homoscedastic noise matrix whose diagonal is the value of the
+        `self.eps` hyperparameter, and :math:`Y(X_{N_i})` is the
+        `(nn_count, respones_count)` matrix of responses of the nearest
+        neighbors given by the second two dimensions of the `batch_nn_targets`
+        argument.
+
+        Args:
+            K:
+                A tensor of shape `(batch_count, nn_count, nn_count)` containing
+                the `(nn_count, nn_count` -shaped kernel matrices corresponding
+                to each of the batch elements.
+            Kcross:
+                A tensor of shape `(batch_count, nn_count)` containing the
+                `1 x nn_count` -shaped cross-covariance matrix corresponding
+                to each of the batch elements.
+            batch_nn_targets:
+                A tensor of shape `(batch_count, nn_count, response_count)`
+                whose last dimension lists the vector-valued responses for the
+                nearest neighbors of each batch element.
+            variance_mode:
+                Specifies the type of variance to return. Currently supports
+                `"diagonal"` and None. If None, report no variance term.
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained() is False`.
+
+        Returns
+        -------
+        responses:
+            A matrix of shape `(batch_count, response_count,)` whose rows are
+            the predicted response for each of the given indices.
+        diagonal_variance:
+            A vector of shape `(batch_count,)` consisting of the diagonal
+            elements of the posterior variance, or a matrix of shape
+            `(batch_count, response_count)` for a multidimensional response.
+            Only returned where `variance_mode == "diagonal"`.
+        """
+        return self._fast_regress(
+            Kcross,
+            coeffs_mat,
+        )
+
+    @staticmethod
+    def _fast_regress(
+        Kcross: np.array,
+        coeffs_mat: np.array,
+    ) -> np.ndarray:
+        responses = np.sum(np.multiply(Kcross, coeffs_mat), axis=1)
+        return responses
 
     def get_opt_mean_fn(self, opt_method) -> Callable:
         """
