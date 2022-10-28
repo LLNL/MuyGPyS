@@ -553,7 +553,6 @@ class MuyGPS:
             the predicted response for each of the given indices.
         """
         return self.fast_regress(
-            self,
             Kcross,
             coeffs_mat[closest_index, :],
         )
