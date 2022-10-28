@@ -28,7 +28,8 @@ def _make_fast_regress_tensors(
     pairwise_dists_fast = _pairwise_distances(
         train_features, batch_nn_indices_fast, metric=metric
     )
-    batch_nn_targets_fast = train_targets[batch_nn_indices_fast, :]
+    batch_nn_targets_fast = train_targets[batch_nn_indices_fast]
+
     return pairwise_dists_fast, batch_nn_targets_fast
 
 
