@@ -349,12 +349,12 @@ class MuyGPS:
         :func:`~MuyGPyS.gp.muygps.MuyGPS.regress`.
 
         Args:
-            test:
-                The full testing data matrix of shape
-                `(test_count, feature_count)`.
             train:
                 The full training data matrix of shape
                 `(train_count, feature_count)`.
+            nn_indices:
+                The nearest neighbors indices of each
+                training points of shape `(train_count, nn_count)`.
             targets:
                 A matrix of shape `(train_count, response_count)` whose rows are
                 vector-valued responses for each training element.
@@ -1080,28 +1080,23 @@ class MultivariateMuyGPS:
         targets: np.ndarray,
     ) -> np.ndarray:
         """
-        Performs simultaneous regression on a list of observations.
-
-        This is similar to the old regress API in that it implicitly creates and
-        discards the distance and kernel tensors and matrices. If these data
-        structures are needed for later reference, instead use
-        :func:`~MuyGPyS.gp.muygps.MuyGPS.regress`.
+        Builds coefficient matrix for fast regression in multivariate case.
 
         Args:
-            test:
-                The full testing data matrix of shape
-                `(test_count, feature_count)`.
             train:
                 The full training data matrix of shape
                 `(train_count, feature_count)`.
+            nn_indices:
+                The nearest neighbors indices of each
+                training points of shape `(train_count, nn_count)`.
             targets:
                 A matrix of shape `(train_count, response_count)` whose rows are
                 vector-valued responses for each training element.
         Returns
         -------
         coeffs_mat:
-            A matrix of shape `(batch_count, nn_count,)` whose rows are
-            the precomputed coefficients for fast regression.
+            A matrix of shape `(batch_count, nn_count, response_count)`
+            whose rows are the precomputed coefficients for fast regression.
 
         """
         tensor_fn = (
@@ -1203,9 +1198,9 @@ class MultivariateMuyGPS:
 
         Args:
             Kcross:
-                A tensor of shape `(batch_count, nn_count)` containing the
-                `1 x nn_count` -shaped cross-covariance matrix corresponding
-                to each of the batch elements.
+                A tensor of shape `(batch_count, nn_count, response_count)`
+                containing the `1 x nn_count` -shaped cross-covariance matrix
+                corresponding to each of the training points for each response.
             coeffs_mat:
                 A tensor whose rows are given by precomputed coefficients for
                 fast regression.
@@ -1233,6 +1228,6 @@ class MultivariateMuyGPS:
         responses = np.zeros((num_train_points, response_count))
         for i, _ in enumerate(models):
             responses[:, i] = np.sum(
-                np.multiply(Kcross, coeffs_mat[:, :, i]), axis=1
+                np.multiply(Kcross[:, :, i], coeffs_mat[:, :, i]), axis=1
             )
         return responses
