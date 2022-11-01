@@ -32,3 +32,35 @@ from MuyGPyS.optimize.sigma_sq import (
     muygps_sigma_sq_optim,
     mmuygps_sigma_sq_optim,
 )
+
+
+def make_fast_regressor():
+    return
+
+
+def make_fast_multivariate_regressor():
+    return
+
+
+def _empirical_covariance():
+    return
+
+
+def _empirical_correlation():
+    return
+
+
+def _decide_and_make_fast_regressor():
+    return
+
+
+def _unpack():
+    return
+
+
+def do_fast_regress():
+    return
+
+
+def fast_regress_any():
+    return
