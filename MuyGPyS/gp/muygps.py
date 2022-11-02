@@ -341,12 +341,7 @@ class MuyGPS:
         targets: np.ndarray,
     ) -> np.ndarray:
         """
-        Performs simultaneous regression on a list of observations.
-
-        This is similar to the old regress API in that it implicitly creates and
-        discards the distance and kernel tensors and matrices. If these data
-        structures are needed for later reference, instead use
-        :func:`~MuyGPyS.gp.muygps.MuyGPS.regress`.
+        Produces coefficient matrix for fast regression.
 
         Args:
             train:
