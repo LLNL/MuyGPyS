@@ -538,7 +538,7 @@ class MuyGPS:
                 A tensor for which each entry is the index of the training point
                 closest to each queried point.
             coeffs_mat:
-                A tensor whose rows are given by precomputed coefficients for
+                A tensor whose first dimensions provides precomputed coefficients for
                 fast regression.
 
         Returns
@@ -1090,8 +1090,9 @@ class MultivariateMuyGPS:
         Returns
         -------
         coeffs_mat:
-            A matrix of shape `(batch_count, nn_count, response_count)`
-            whose rows are the precomputed coefficients for fast regression.
+            A tensor of shape `(batch_count, nn_count, response_count)`
+            whose entries comprise the precomputed coefficients for fast
+            regression.
 
         """
         tensor_fn = (
@@ -1120,7 +1121,7 @@ class MultivariateMuyGPS:
         coeffs_mat: np.array,
     ) -> np.ndarray:
         """
-        Performs fast regression using provided
+        Performs fast multivariate regression using provided
         cross-covariance, the index of the training point closest to the
         queried test point, and precomputed coefficient matrix.
 
@@ -1160,13 +1161,13 @@ class MultivariateMuyGPS:
         return self.fast_regress(
             self,
             Kcross,
-            coeffs_mat[closest_index, :],
+            coeffs_mat[closest_index, :, :],
         )
 
     def fast_regress(
         self,
-        Kcross: np.array,
-        coeffs_mat: np.array,
+        Kcross: np.ndarray,
+        coeffs_mat: np.ndarray,
     ) -> np.ndarray:
         """
         Performs fast regression using provided
@@ -1216,8 +1217,8 @@ class MultivariateMuyGPS:
     @staticmethod
     def _fast_regress(
         models: List[MuyGPS],
-        Kcross: np.array,
-        coeffs_mat: np.array,
+        Kcross: np.ndarray,
+        coeffs_mat: np.ndarray,
     ) -> np.ndarray:
         num_train_points, _, response_count = coeffs_mat.shape
         responses = np.zeros((num_train_points, response_count))
