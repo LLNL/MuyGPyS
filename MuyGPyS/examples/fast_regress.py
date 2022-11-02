@@ -131,7 +131,6 @@ def make_fast_multivariate_regressor(
     return precomputed_coefficients_matrix, nn_indices
 
 
-# choose between multivariate and univariate
 def _decide_and_make_fast_regressor(
     muygps: Union[MuyGPS, MMuyGPS],
     nbrs_lookup: NN_Wrapper,
