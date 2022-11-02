@@ -7,14 +7,15 @@
 Resources and high-level API for a fast regression workflow.
 
 :func:`~MuyGPyS.examples.regress.make_fast_regressor` is a high-level API for
-creating and training :class:`MuyGPyS.gp.muygps.MuyGPS` objects for regression.
-:func:`~MuyGPyS.examples.regress.make_multivariate_regressor` is a high-level
-API for creating and training :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS`
-objects for regression.
+creating the necessary components for fast regression.
+:func:`~MuyGPyS.examples.regress.make_fast_multivariate_regressor` is a high-level
+API for creating the necessary components for fast regression with multiple
+outputs. 
 
 :func:`~MuyGPyS.examples.regress.do_fast_regress` is a high-level api 
 for executing a simple, generic regression workflow given data. 
-It calls the maker APIs above and :func:`~MuyGPyS.examples.regress.regress_any`.
+It calls the maker APIs above and 
+:func:`~MuyGPyS.examples.fast_regress.fast_regress_any`.
 """
 
 import numpy as np
