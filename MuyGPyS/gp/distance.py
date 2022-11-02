@@ -94,7 +94,7 @@ def make_fast_regress_tensors(
     test_features: np.ndarray,
     train_features: np.ndarray,
     train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Create the distance and target tensors for fast regression.
 
