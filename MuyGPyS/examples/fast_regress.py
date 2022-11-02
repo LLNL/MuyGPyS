@@ -43,7 +43,6 @@ from MuyGPyS.examples.regress import (
 )
 
 
-# build coefficients matrix, neighbor lookup
 def make_fast_regressor(
     muygps: MuyGPS,
     nbrs_lookup: NN_Wrapper,
