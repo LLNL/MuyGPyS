@@ -37,10 +37,6 @@ from MuyGPyS.optimize.sigma_sq import (
 )
 
 from MuyGPyS.examples.regress import (
-    make_regressor,
-    make_multivariate_regressor,
-    _empirical_correlation,
-    _empirical_covariance,
     _decide_and_make_regressor,
     _unpack,
 )
@@ -53,6 +49,33 @@ def make_fast_regressor(
     train_features: np.ndarray,
     train_responses: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
+
+    """
+    Convenience function for creating precomputed coefficient matrix and neighbor lookup data
+    structure.
+
+    Args:
+        muygps:
+            A trained MuyGPS object.
+        nbrs_lookup:
+            A nearest neighbor lookup structure.
+        train_features:
+            A matrix of shape `(train_count, feature_count)` whose rows consist
+            of observation vectors of the train data.
+        train_targets:
+            A matrix of shape `(train_count, response_count)` whose rows consist
+            of response vectors of the train data.
+
+    Returns
+    -------
+    precomputed_coefficients_matrix:
+        A matrix of shape `(train_count, nn_count)` whose rows list the
+        precomputed coefficients for each nearest neighbors set in the
+        training data.
+    nn_indices:
+        A numpy.ndarrray supporting nearest neighbor queries.
+    """
+
     num_training_samples, _ = train_features.shape
     nn_indices, _ = nbrs_lookup.get_batch_nns(
         np.arange(0, num_training_samples)
@@ -71,6 +94,32 @@ def make_fast_multivariate_regressor(
     train_features: np.ndarray,
     train_responses: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
+
+    """
+    Convenience function for creating precomputed coefficient matrix and neighbor lookup data
+    structure.
+
+    Args:
+        muygps:
+            A trained MultivariateMuyGPS object.
+        nbrs_lookup:
+            A nearest neighbor lookup structure.
+        train_features:
+            A matrix of shape `(train_count, feature_count)` whose rows consist
+            of observation vectors of the train data.
+        train_targets:
+            A matrix of shape `(train_count, response_count)` whose rows consist
+            of response vectors of the train data.
+
+    Returns
+    -------
+    precomputed_coefficients_matrix:
+        A matrix of shape `(train_count, nn_count)` whose rows list the
+        precomputed coefficients for each nearest neighbors set in the
+        training data.
+    nn_indices:
+        A numpy.ndarrray supporting nearest neighbor queries.
+    """
     num_training_samples, _ = train_features.shape
     nn_indices, _ = nbrs_lookup.get_batch_nns(
         np.arange(0, num_training_samples)
@@ -123,8 +172,6 @@ def do_fast_regress(
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
-    apply_sigma_sq: bool = True,
-    return_distances: bool = False,
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -140,7 +187,7 @@ def do_fast_regress(
 
     Example:
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
-        >>> from MuyGPyS.examples.regress import do_regress
+        >>> from MuyGPyS.examples.fast_regress import do_fast_regress
         >>> from MuyGPyS.optimize.objective import mse_fn
         >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
@@ -151,7 +198,7 @@ def do_fast_regress(
         ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
         ... }
         >>> muygps, nbrs_lookup, predictions, precomputed_coefficients_matrix
-        ...         = do_regress(
+        ...         = do_fast_regress(
         ...         test['input'],
         ...         train['input'],
         ...         train['output'],
@@ -160,7 +207,6 @@ def do_fast_regress(
         ...         loss_method="mse",
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
-        ...         variance_mode="diagonal",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -217,15 +263,6 @@ def do_fast_regress(
         opt_kwargs:
             Parameters for the wrapped optimizer. See the docs of the
             corresponding library for supported parameters.
-        apply_sigma_sq:
-            If `True` and `variance_mode is not None`, automatically scale the
-            posterior variances by `sigma_sq`.
-        return_distances:
-            If `True`, returns a `(test_count, nn_count)` matrix containing the
-            crosswise distances between the test elements and their nearest
-            neighbor sets and a `(test_count, nn_count, nn_count)` tensor
-            containing the pairwise distances between the test's nearest
-            neighbor sets.
         verbose:
             If `True`, print summary statistics.
 
@@ -302,7 +339,7 @@ def fast_regress_any(
             A matrix of shape `(train_count, feature_count)` whose rows consist
             of observation vectors of the train data.
         nbrs_lookup:
-            A nearest neighbor data structure
+            A nearest neighbor data structure NN_Wrapper object.
         train_targets:
             A matrix of shape `(train_count, response_count)` whose rows consist
             of response vectors of the train data.
