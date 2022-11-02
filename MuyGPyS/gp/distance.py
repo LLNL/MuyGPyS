@@ -104,9 +104,6 @@ def make_fast_regress_tensors(
     Args:
         metric:
             The metric to be used to compute distances.
-        batch_indices:
-            A vector of integers of shape `(batch_count,)` identifying the
-            training batch of observations to be approximated.
         batch_nn_indices:
             A matrix of integers of shape `(batch_count, nn_count)` listing the
             nearest neighbor indices for all observations in the batch.
