@@ -47,7 +47,7 @@ def make_fast_regressor(
     muygps: MuyGPS,
     nbrs_lookup: NN_Wrapper,
     train_features: np.ndarray,
-    train_responses: np.ndarray,
+    train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
 
     """
@@ -83,7 +83,7 @@ def make_fast_regressor(
     nn_indices = np.array(nn_indices).astype(int)
 
     precomputed_coefficients_matrix = muygps.build_fast_regress_coeffs(
-        train_features, nn_indices, train_responses
+        train_features, nn_indices, train_targets
     )
     return precomputed_coefficients_matrix, nn_indices
 
@@ -92,7 +92,7 @@ def make_fast_multivariate_regressor(
     muygps: MMuyGPS,
     nbrs_lookup: NN_Wrapper,
     train_features: np.ndarray,
-    train_responses: np.ndarray,
+    train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
 
     """
@@ -126,7 +126,7 @@ def make_fast_multivariate_regressor(
     )
 
     precomputed_coefficients_matrix = muygps.build_fast_regress_coeffs(
-        train_features, nn_indices, train_responses
+        train_features, nn_indices, train_targets
     )
     return precomputed_coefficients_matrix, nn_indices
 
@@ -136,14 +136,14 @@ def _decide_and_make_fast_regressor(
     muygps: Union[MuyGPS, MMuyGPS],
     nbrs_lookup: NN_Wrapper,
     train_features: np.ndarray,
-    train_responses: np.ndarray,
+    train_targets: np.ndarray,
 ) -> np.ndarray:
     if isinstance(muygps, MuyGPS):
         precomputed_coefficients_matrix, nn_indices = make_fast_regressor(
             muygps,
             nbrs_lookup,
             train_features,
-            train_responses,
+            train_targets,
         )
     else:
         (
@@ -153,7 +153,7 @@ def _decide_and_make_fast_regressor(
             muygps,
             nbrs_lookup,
             train_features,
-            train_responses,
+            train_targets,
         )
     return precomputed_coefficients_matrix, nn_indices
 
