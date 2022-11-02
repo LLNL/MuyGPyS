@@ -65,7 +65,8 @@ Example:
     ...         metric="l2"
     ... )
 
-The helper functions :func:`MuyGPyS.gp.distance.make_regress_tensors` and
+The helper functions :func:`MuyGPyS.gp.distance.make_regress_tensors`,
+:func:`MuyGPyS.gp.distance.make_fast_regress_tensors`, and
 :func:`MuyGPyS.gp.distance.make_train_tensors` wrap these distances tensors and
 also return the nearest neighbors sets' training targets and (in the latter
 case) the training targets of the training batch. These functions are convenient
