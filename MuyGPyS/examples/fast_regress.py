@@ -56,9 +56,10 @@ def make_fast_regressor(
 
     Args:
         muygps:
-            A trained MuyGPS object.
+            A (possibly trained) MuyGPS object.
         nbrs_lookup:
-            A nearest neighbor lookup structure.
+             A data structure supporting nearest neighbor queries into
+            `train_features`.
         train_features:
             A matrix of shape `(train_count, feature_count)` whose rows consist
             of observation vectors of the train data.
@@ -103,7 +104,8 @@ def make_fast_multivariate_regressor(
         muygps:
             A trained MultivariateMuyGPS object.
         nbrs_lookup:
-            A nearest neighbor lookup structure.
+             A data structure supporting nearest neighbor queries into
+            `train_features`.
         train_features:
             A matrix of shape `(train_count, feature_count)` whose rows consist
             of observation vectors of the train data.
@@ -330,7 +332,7 @@ def fast_regress_any(
 
     Args:
         muygps:
-            A trained MuyGPS object.
+            A (possibly trained) MuyGPS object.
         test_features:
             A matrix of shape `(test_count, feature_count)` whose rows consist
             of observation vectors of the test data.
@@ -338,7 +340,8 @@ def fast_regress_any(
             A matrix of shape `(train_count, feature_count)` whose rows consist
             of observation vectors of the train data.
         nbrs_lookup:
-            A nearest neighbor data structure NN_Wrapper object.
+             A data structure supporting nearest neighbor queries into
+            `train_features`.
         train_targets:
             A matrix of shape `(train_count, response_count)` whose rows consist
             of response vectors of the train data.
