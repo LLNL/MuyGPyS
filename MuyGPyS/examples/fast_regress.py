@@ -33,34 +33,82 @@ from MuyGPyS.optimize.sigma_sq import (
     mmuygps_sigma_sq_optim,
 )
 
-
-def make_fast_regressor():
-    return
-
-
-def make_fast_multivariate_regressor():
-    return
-
-
-def _empirical_covariance():
-    return
+from MuyGPyS.examples.regress import (
+    make_regressor,
+    make_multivariate_regressor,
+    _empirical_correlation,
+    _empirical_covariance,
+)
 
 
-def _empirical_correlation():
-    return
+# build coefficients matrix, neighbor lookup
+def make_fast_regressor(
+    muygps: MuyGPS,
+    nbrs_lookup: NN_Wrapper,
+    train_features: np.ndarray,
+    train_responses: np.ndarray,
+) -> np.ndarray:
+    num_training_samples, _ = train_features.shape
+    nn_indices, _ = nbrs_lookup.get_batch_nns(
+        np.arange(0, num_training_samples)
+    )
+    nn_indices = np.array(nn_indices).astype(int)
+    precomputed_coefficients_matrix = muygps.build_fast_regress_coeffs(
+        train_features, nn_indices, train_responses
+    )
+    return precomputed_coefficients_matrix
 
 
-def _decide_and_make_fast_regressor():
-    return
+def make_fast_multivariate_regressor(
+    muygps: MMuyGPS,
+    nbrs_lookup: NN_Wrapper,
+    train_features: np.ndarray,
+    train_responses: np.ndarray,
+) -> np.ndarray:
+    num_training_samples, _ = train_features.shape
+    nn_indices, _ = nbrs_lookup.get_batch_nns(
+        np.arange(0, num_training_samples)
+    )
+    nn_indices = np.array(nn_indices).astype(int)
+    precomputed_coefficients_matrix = muygps.build_fast_regress_coeffs(
+        train_features, nn_indices, train_responses
+    )
+    return precomputed_coefficients_matrix
+
+
+# choose between multivariate and univariate
+def _decide_and_make_fast_regressor(
+    muygps: MMuyGPS,
+    nbrs_lookup: NN_Wrapper,
+    train_features: np.ndarray,
+    train_responses: np.ndarray,
+) -> np.ndarray:
+    if isinstance(muygps, MuyGPS):
+        return make_fast_regressor(
+            muygps, nbrs_lookup, train_features, train_responses
+        )
+    else:
+        return make_fast_multivariate_regressor(
+            muygps, nbrs_lookup, train_features, train_responses
+        )
 
 
 def _unpack():
     return
 
 
-def do_fast_regress():
+# workflow, return relevant structures
+def do_fast_regress(
+    muygps: MMuyGPS,
+    nbrs_lookup: NN_Wrapper,
+    train_features: np.ndarray,
+    train_responses: np.ndarray,
+    test_features: np.ndarray,
+) -> np.ndarray:
+
     return
 
 
+# fast regression with timing
 def fast_regress_any():
     return
