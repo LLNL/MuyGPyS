@@ -126,7 +126,7 @@ def do_fast_regress(
     apply_sigma_sq: bool = True,
     return_distances: bool = False,
     verbose: bool = False,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Convenience function initializing a model and performing regression.
 
@@ -150,7 +150,8 @@ def do_fast_regress(
         ...         "eps": {"val": 1e-5},
         ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
         ... }
-        >>> muygps, nbrs_lookup, predictions, variance = do_regress(
+        >>> muygps, nbrs_lookup, predictions, precomputed_coefficients_matrix
+        ...         = do_regress(
         ...         test['input'],
         ...         train['input'],
         ...         train['output'],
@@ -164,26 +165,6 @@ def do_fast_regress(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> # Can alternately return distance tensors for reuse
-        >>> muygps, nbrs_lookup, predictions, variance, crosswise_dists, pairwise_dists = do_regress(
-        ...         test['input'],
-        ...         train['input'],
-        ...         train['output'],
-        ...         nn_count=30,
-        ...         batch_count=200,
-        ...         loss_method="mse",
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
-        ...         variance_mode="diagonal",
-        ...         k_kwargs=k_kwargs,
-        ...         nn_kwargs=nn_kwargs,
-        ...         return_distances=True,
-        ...         verbose=False,
-        ... )
-        >>> mse = mse_fn(test['output'], predictions)
-        >>> print(f"obtained mse: {mse}")
-        obtained mse: 0.20842...
-
     Args:
         test_features:
             A matrix of shape `(test_count, feature_count)` whose rows consist
@@ -217,9 +198,6 @@ def do_fast_regress(
             member whose value, invoked via `muygps.sigma_sq()`, is a
             `(response_count,)` vector to be used for scaling posterior
             variances.
-        variance_mode:
-            Specifies the type of variance to return. Currently supports
-            `diagonal` and None. If None, report no variance term.
         kern:
             The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
             details. Only used in the multivariate case. If `None`, assume
@@ -260,22 +238,10 @@ def do_fast_regress(
         `train_features`.
     predictions:
         The predicted response associated with each test observation.
-    variance:
-        Estimated posterior variance of each test prediction. If
-        `variance_mode == "diagonal"` return a `(test_count, response_count)`
-        matrix where each row is the posterior variance. If
-        `sigma_method is not None` and `apply_sigma_sq is True`, each column
-        of the variance is automatically scaled by the corresponding `sigma_sq`
-        parameter.
-    crosswise_dists:
-        A matrix of shape `(test_count, nn_count)` whose rows list the distance
-        of the corresponding test element to each of its nearest neighbors.
-        Only returned if `return_distances is True`.
-    pairwise_dists:
-        A tensor of shape `(test_count, nn_count, nn_count,)` whose latter two
-        dimensions contain square matrices containing the pairwise distances
-        between the nearest neighbors of the test elements. Only returned if
-        `return_distances is True`.
+    precomputed_coefficients_matrix:
+        A matrix of shape `(train_count, nn_count)` whose rows list the
+        precomputed coefficients for each nearest neighbors set in the
+        training data.
     """
     if sigma_method is None:
         apply_sigma_sq = False
@@ -303,24 +269,54 @@ def do_fast_regress(
         # crosswise_dists, pairwise_dists = regressor_args_less2
         pass
 
-    predictions = fast_regress_any(
+    predictions, precomputed_coefficients_matrix = fast_regress_any(
         regressor,
         test_features,
         train_features,
         nbrs_lookup,
         train_targets,
     )
-    return regressor, nbrs_lookup, predictions
+    return regressor, nbrs_lookup, predictions, precomputed_coefficients_matrix
 
 
-# workflow, return relevant structures
 def fast_regress_any(
     muygps: Union[MuyGPS, MMuyGPS],
     test_features: np.ndarray,
     train_features: np.ndarray,
     nbrs_lookup: NN_Wrapper,
     train_targets: np.ndarray,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
+
+    """
+    Convenience function performing regression using a pre-trained model.
+
+    Also supports workflows relying upon multivariate models.
+
+    Args:
+        muygps:
+            A trained MuyGPS object.
+        test_features:
+            A matrix of shape `(test_count, feature_count)` whose rows consist
+            of observation vectors of the test data.
+        train_features:
+            A matrix of shape `(train_count, feature_count)` whose rows consist
+            of observation vectors of the train data.
+        nbrs_lookup:
+            A nearest neighbor data structure
+        train_targets:
+            A matrix of shape `(train_count, response_count)` whose rows consist
+            of response vectors of the train data.
+
+
+    Returns
+    -------
+    predictions:
+        The predicted response associated with each test observation.
+    precomputed_coefficients_matrix:
+        A matrix of shape `(train_count, nn_count)` whose rows list the
+        precomputed coefficients for each nearest neighbors set in the
+        training data.
+    """
 
     (
         precomputed_coefficients_matrix,
@@ -356,4 +352,4 @@ def fast_regress_any(
         precomputed_coefficients_matrix,
     )
 
-    return predictions
+    return predictions, precomputed_coefficients_matrix
