@@ -536,7 +536,7 @@ class MuyGPS:
                 to each of the batch elements.
             closest_index:
                 A tensor for which each entry is the index of the training point
-                closest to each queried test point.
+                closest to each queried point.
             coeffs_mat:
                 A tensor whose rows are given by precomputed coefficients for
                 fast regression.
