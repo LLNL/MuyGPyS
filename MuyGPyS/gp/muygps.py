@@ -356,7 +356,7 @@ class MuyGPS:
         Returns
         -------
         coeffs_mat:
-            A matrix of shape `(batch_count, nn_count,)` whose rows are
+            A matrix of shape `(train_count, nn_count,)` whose rows are
             the precomputed coefficients for fast regression.
 
         """
