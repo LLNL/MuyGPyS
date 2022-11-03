@@ -1073,6 +1073,7 @@ class MultivariateMuyGPS:
         train: np.ndarray,
         nn_indices: np.ndarray,
         targets: np.ndarray,
+        indices_by_rank: bool = False,
     ) -> np.ndarray:
         """
         Builds coefficient matrix for fast regression in multivariate case.
@@ -1103,13 +1104,14 @@ class MultivariateMuyGPS:
         (
             pairwise_dists_fast,
             train_nn_targets_fast,
-        ) = tensor_fn(self.kernel.metric, nn_indices, train, targets)
+        ) = tensor_fn(self.metric, nn_indices, train, targets)
         num_train, nn_count, response_count = train_nn_targets_fast.shape
         coeffs_mat = np.zeros((num_train, nn_count, response_count))
         for i, model in enumerate(self.models):
             K = model.kernel(pairwise_dists_fast)
             coeffs_mat[:, :, i] = np.linalg.solve(
-                K + self.eps() * np.eye(nn_count), train_nn_targets_fast
+                K + model.eps() * np.eye(nn_count),
+                train_nn_targets_fast[:, :, i],
             )
 
         return np.squeeze(coeffs_mat)
@@ -1158,8 +1160,8 @@ class MultivariateMuyGPS:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         """
+
         return self.fast_regress(
-            self,
             Kcross,
             coeffs_mat[closest_index, :, :],
         )
@@ -1208,22 +1210,13 @@ class MultivariateMuyGPS:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         """
-        return self._fast_regress(
-            self.models,
-            Kcross,
-            coeffs_mat,
-        )
+        responses = self._fast_regress(Kcross, coeffs_mat)
+        return responses
 
     @staticmethod
     def _fast_regress(
-        models: List[MuyGPS],
         Kcross: np.ndarray,
         coeffs_mat: np.ndarray,
     ) -> np.ndarray:
-        num_train_points, _, response_count = coeffs_mat.shape
-        responses = np.zeros((num_train_points, response_count))
-        for i, _ in enumerate(models):
-            responses[:, i] = np.sum(
-                np.multiply(Kcross[:, :, i], coeffs_mat[:, :, i]), axis=1
-            )
+        responses = np.sum(np.multiply(Kcross, coeffs_mat), axis=1)
         return responses

@@ -367,6 +367,7 @@ def fast_regress_any(
         train_targets,
     )
     num_training_samples, _ = train_features.shape
+    _, num_training_responses = train_targets.shape
     _, nn_count = nn_indices.shape
     nn_indices_with_self = np.zeros((num_training_samples, nn_count + 1))
     nn_indices_with_self[:, 1 : nn_count + 1] = nn_indices
@@ -384,7 +385,17 @@ def fast_regress_any(
         np.arange(0, num_test_samples),
         closest_set_new,
     )
-    Kcross_test_tens = muygps.kernel(crosswise_dist_tens)
+
+    if isinstance(muygps, MuyGPS):
+        Kcross_test_tens = muygps.kernel(crosswise_dist_tens)
+
+    else:
+        Kcross_test_tens = np.zeros(
+            (num_test_samples, nn_count, num_training_responses)
+        )
+        for i, model in enumerate(muygps.models):
+            Kcross_test_tens[:, :, i] = model.kernel(crosswise_dist_tens)
+
     predictions = muygps.fast_regress_from_indices(
         Kcross_test_tens,
         closest_neighbor,
