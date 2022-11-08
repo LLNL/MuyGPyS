@@ -461,23 +461,23 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nn_indices_all_n = np.array(
                 cls.nbrs_lookup.get_batch_nns(np.arange(0, cls.train_count))
             ).astype(int)
-            # (
-            #     cls.K_fast_n,
-            #     cls.train_nn_targets_fast_n,
-            # ) = make_fast_regress_tensors_n(
-            #     cls.muygps.kernel.metric,
-            #     cls.nn_indices_all_n,
-            #     cls.train_features_n,
-            #     cls.train_responses_n,
-            # )
-            # cls.fast_regress_coeffs_n = cls.muygps._build_fast_regress_coeffs(
-            #     cls.K_fast_n, cls.muygps.eps(), cls.train_nn_targets_fast_n
-            # )
-            cls.fast_regress_coeffs_n = cls.muygps.build_fast_regress_coeffs(
-                cls.train_features_n,
+            (
+                cls.K_fast_n,
+                cls.train_nn_targets_fast_n,
+            ) = make_fast_regress_tensors_n(
+                cls.muygps.kernel.metric,
                 cls.nn_indices_all_n,
+                cls.train_features_n,
                 cls.train_responses_n,
             )
+            cls.fast_regress_coeffs_n = cls.muygps._build_fast_regress_coeffs(
+                cls.K_fast_n, cls.muygps.eps(), cls.train_nn_targets_fast_n
+            )
+            # cls.fast_regress_coeffs_n = cls.muygps.build_fast_regress_coeffs(
+            #     cls.train_features_n,
+            #     cls.nn_indices_all_n,
+            #     cls.train_responses_n,
+            # )
 
             cls.test_neighbors_n, _ = cls.nbrs_lookup.get_nns(
                 cls.test_features_n
@@ -526,6 +526,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.fast_regress_coeffs_j = cls.muygps._build_fast_regress_coeffs(
                 cls.K_fast_j, cls.muygps.eps(), cls.train_nn_targets_fast_j
             )
+
+            # cls.fast_regress_coeffs_j = cls.muygps.build_fast_regress_coeffs(
+            #     cls.train_features_j,
+            #     cls.nn_indices_all_j,
+            #     cls.train_responses_j,
+            # )
 
             cls.test_neighbors_j, _ = cls.nbrs_lookup.get_nns(
                 cls.test_features_j
