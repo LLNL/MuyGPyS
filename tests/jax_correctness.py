@@ -545,6 +545,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nn_indices_with_self_j = jnp.zeros(
                 (cls.train_count, cls.nn_count + 1)
             )
+            print(cls.nn_indices_all_j.shape)
             cls.new_nn_indices_j = jnp.concatenate(
                 (
                     jnp.expand_dims(jnp.arange(0, cls.train_count), axis=1),
