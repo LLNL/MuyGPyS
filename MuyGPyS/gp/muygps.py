@@ -32,6 +32,8 @@ from MuyGPyS._src.gp.distance.numpy import (
 from MuyGPyS._src.gp.muygps import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
+    _muygps_fast_regress_solve,
+    _muygps_fast_regress_precompute,
 )
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 from MuyGPyS.optimize.utils import _switch_on_opt_method
@@ -382,12 +384,8 @@ class MuyGPS:
         eps: float,
         train_nn_targets_fast: np.ndarray,
     ) -> np.ndarray:
-        _, nn_count, _ = K.shape
-        coeffs_mat = np.linalg.solve(
-            K + eps * np.eye(nn_count), train_nn_targets_fast
-        )
 
-        return np.squeeze(coeffs_mat)
+        return _muygps_fast_regress_precompute(K, eps, train_nn_targets_fast)
 
     def regress(
         self,
@@ -619,7 +617,7 @@ class MuyGPS:
         Kcross: np.ndarray,
         coeffs_mat: np.ndarray,
     ) -> np.ndarray:
-        responses = np.sum(np.multiply(Kcross, coeffs_mat), axis=1)
+        responses = _muygps_fast_regress_solve(Kcross, coeffs_mat)
         return responses
 
     def get_opt_mean_fn(self, opt_method) -> Callable:
@@ -1132,12 +1130,11 @@ class MultivariateMuyGPS:
         coeffs_mat = np.zeros((train_count, nn_count, response_count))
         for i, model in enumerate(models):
             K = model.kernel(pairwise_dists_fast)
-            coeffs_mat[:, :, i] = np.linalg.solve(
-                K + model.eps() * np.eye(nn_count),
-                train_nn_targets_fast[:, :, i],
+            coeffs_mat[:, :, i] = _muygps_fast_regress_precompute(
+                K, model.eps(), train_nn_targets_fast[:, :, i]
             )
 
-        return np.squeeze(coeffs_mat)
+        return coeffs_mat
 
     def fast_regress_from_indices(
         self,
@@ -1241,5 +1238,4 @@ class MultivariateMuyGPS:
         Kcross: np.ndarray,
         coeffs_mat: np.ndarray,
     ) -> np.ndarray:
-        responses = np.sum(np.multiply(Kcross, coeffs_mat), axis=1)
-        return responses
+        return _muygps_fast_regress_solve(Kcross, coeffs_mat)

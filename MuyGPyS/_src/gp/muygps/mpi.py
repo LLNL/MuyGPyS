@@ -6,4 +6,6 @@
 from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
+    _muygps_fast_regress_solve,
+    _muygps_fast_regress_precompute,
 )
