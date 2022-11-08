@@ -339,6 +339,7 @@ class MuyGPS:
         train: np.ndarray,
         nn_indices: np.ndarray,
         targets: np.ndarray,
+        indices_by_rank: bool = False,
     ) -> np.ndarray:
         """
         Produces coefficient matrix for fast regression.
@@ -367,12 +368,44 @@ class MuyGPS:
         )
         (
             pairwise_dists_fast,
-            batch_nn_targets_fast,
+            train_nn_targets_fast,
         ) = tensor_fn(self.kernel.metric, nn_indices, train, targets)
-        _, nn_count = nn_indices.shape
         K = self.kernel(pairwise_dists_fast)
+
+        return self._build_fast_regress_coeffs(
+            K, self.eps(), train_nn_targets_fast
+        )
+
+    @staticmethod
+    def _build_fast_regress_coeffs(
+        K: np.ndarray,
+        eps: float,
+        train_nn_targets_fast: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Produces coefficient matrix for fast regression.
+
+        Args:
+            K:
+                A tensor of shape `(train_count, nn_count, nn_count)` containing
+                the `(nn_count, nn_count` -shaped kernel matrices corresponding
+                to each of the training points.
+            eps:
+                The nugget of the kernel matrix.
+            train_nn_targets_fast:
+                A matrix of shape `(train_count, nn_count, response_count)`
+                whose rows are vector-valued responses for each training
+                element.
+        Returns
+        -------
+        coeffs_mat:
+            A matrix of shape `(train_count, nn_count,)` whose rows are
+            the precomputed coefficients for fast regression.
+
+        """
+        _, nn_count, _ = K.shape
         coeffs_mat = np.linalg.solve(
-            K + self.eps() * np.eye(nn_count), batch_nn_targets_fast
+            K + eps * np.eye(nn_count), batch_nn_targets_fast
         )
 
         return np.squeeze(coeffs_mat)
@@ -505,9 +538,9 @@ class MuyGPS:
 
     def fast_regress_from_indices(
         self,
-        Kcross: np.array,
-        closest_index: np.array,
-        coeffs_mat: np.array,
+        Kcross: np.ndarray,
+        closest_index: np.ndarray,
+        coeffs_mat: np.ndarray,
     ) -> np.ndarray:
         """
         Performs fast regression using provided
@@ -554,8 +587,8 @@ class MuyGPS:
 
     def fast_regress(
         self,
-        Kcross: np.array,
-        coeffs_mat: np.array,
+        Kcross: np.ndarray,
+        coeffs_mat: np.ndarray,
     ) -> np.ndarray:
         """
         Performs fast regression using provided
@@ -604,8 +637,8 @@ class MuyGPS:
 
     @staticmethod
     def _fast_regress(
-        Kcross: np.array,
-        coeffs_mat: np.array,
+        Kcross: np.ndarray,
+        coeffs_mat: np.ndarray,
     ) -> np.ndarray:
         responses = np.sum(np.multiply(Kcross, coeffs_mat), axis=1)
         return responses
@@ -1105,9 +1138,42 @@ class MultivariateMuyGPS:
             pairwise_dists_fast,
             train_nn_targets_fast,
         ) = tensor_fn(self.metric, nn_indices, train, targets)
-        num_train, nn_count, response_count = train_nn_targets_fast.shape
-        coeffs_mat = np.zeros((num_train, nn_count, response_count))
-        for i, model in enumerate(self.models):
+
+        return self._build_fast_regress_coeffs(
+            self.models, pairwise_dists_fast, train_nn_targets_fast
+        )
+
+    @staticmethod
+    def _build_fast_regress_coeffs(
+        models: List[MuyGPS],
+        pairwise_dists_fast: np.ndarray,
+        train_nn_targets_fast: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Produces coefficient matrix for fast regression.
+
+        Args:
+            models:
+                A list of MuyGPS objects, providing a model for each response
+                variable.
+            pairwise_dists_fast:
+                A tensor of shape `(train_count, nn_count, nn_count)` providing 
+                the pairwise distances between all training points and their \
+                nearest neighbors.
+            batch_nn_targets_fast:
+                A tensor of shape `(train_count, nn_count, response_count)`
+                whose rows are vector-valued responses for each training
+                element.
+        Returns
+        -------
+        coeffs_mat:
+            A tensor of shape `(train_count, nn_count, response_count)` whose rows are
+            the precomputed coefficients for fast regression.
+
+        """
+        train_count, nn_count, response_count = train_nn_targets_fast.shape
+        coeffs_mat = np.zeros((train_count, nn_count, response_count))
+        for i, model in enumerate(models):
             K = model.kernel(pairwise_dists_fast)
             coeffs_mat[:, :, i] = np.linalg.solve(
                 K + model.eps() * np.eye(nn_count),

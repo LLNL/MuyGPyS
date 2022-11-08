@@ -452,6 +452,15 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 )
             )
 
+    # class FastPredictTestCase(MuyGPSTestCase):
+    #     @classmethod
+    #     def setUpClass(cls):
+    #         super(FastPredictTestCase, cls).setUpClass()
+    #         cls.fast_regress_coeffs = cls.muygps.build_fast_regress_coeffs()
+    #         cls.fast_predictions_n = cls.muygps._fast_regress(
+    #             cls.Kcross_fast_n, cls.fast_regress_coeffs
+    #         )
+
     class OptimTestCase(MuyGPSTestCase):
         @classmethod
         def setUpClass(cls):
