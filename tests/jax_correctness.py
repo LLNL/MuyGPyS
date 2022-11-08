@@ -560,7 +560,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.fast_regress_coeffs_j[cls.closest_neighbor_j, :],
             )
 
-        def test_compute_solve(self):
+        def test_fast_predict(self):
             self.assertTrue(
                 allclose_inv(
                     self.muygps._fast_regress(
