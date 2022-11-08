@@ -545,14 +545,11 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nn_indices_with_self_j = jnp.zeros(
                 (cls.train_count, cls.nn_count + 1)
             )
-            cls.nn_indices_with_self_j[
-                :, 1 : cls.nn_count + 1
-            ] = cls.nn_indices_all_j
-            cls.nn_indices_with_self_j[:, 0] = jnp.arange(0, cls.train_count)
-            cls.new_nn_indices_j = cls.nn_indices_with_self_j[:, :-1].astype(
-                int
+            cls.new_nn_indices_j = jnp.concatenate(
+                jnp.arange(0, cls.train_count),
+                cls.nn_indices_all_j[:, -1],
+                axis=1,
             )
-
             cls.closest_set_new_j = cls.new_nn_indices_j[
                 cls.closest_neighbor_j
             ].astype(int)
