@@ -505,7 +505,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.crosswise_dists_fast_n = crosswise_distances_n(
                 cls.test_features_n,
                 cls.train_features_n,
-                np.arange(0, cls.train_count),
+                np.arange(0, cls.test_count),
                 cls.new_nn_indices_n,
             )
             cls.Kcross_fast_n = cls.muygps.kernel(cls.crosswise_dists_fast_n)
