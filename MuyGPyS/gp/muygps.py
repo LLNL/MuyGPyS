@@ -382,30 +382,9 @@ class MuyGPS:
         eps: float,
         train_nn_targets_fast: np.ndarray,
     ) -> np.ndarray:
-        """
-        Produces coefficient matrix for fast regression.
-
-        Args:
-            K:
-                A tensor of shape `(train_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count` -shaped kernel matrices corresponding
-                to each of the training points.
-            eps:
-                The nugget of the kernel matrix.
-            train_nn_targets_fast:
-                A matrix of shape `(train_count, nn_count, response_count)`
-                whose rows are vector-valued responses for each training
-                element.
-        Returns
-        -------
-        coeffs_mat:
-            A matrix of shape `(train_count, nn_count,)` whose rows are
-            the precomputed coefficients for fast regression.
-
-        """
         _, nn_count, _ = K.shape
         coeffs_mat = np.linalg.solve(
-            K + eps * np.eye(nn_count), batch_nn_targets_fast
+            K + eps * np.eye(nn_count), train_nn_targets_fast
         )
 
         return np.squeeze(coeffs_mat)
@@ -1149,28 +1128,6 @@ class MultivariateMuyGPS:
         pairwise_dists_fast: np.ndarray,
         train_nn_targets_fast: np.ndarray,
     ) -> np.ndarray:
-        """
-        Produces coefficient matrix for fast regression.
-
-        Args:
-            models:
-                A list of MuyGPS objects, providing a model for each response
-                variable.
-            pairwise_dists_fast:
-                A tensor of shape `(train_count, nn_count, nn_count)` providing 
-                the pairwise distances between all training points and their \
-                nearest neighbors.
-            batch_nn_targets_fast:
-                A tensor of shape `(train_count, nn_count, response_count)`
-                whose rows are vector-valued responses for each training
-                element.
-        Returns
-        -------
-        coeffs_mat:
-            A tensor of shape `(train_count, nn_count, response_count)` whose rows are
-            the precomputed coefficients for fast regression.
-
-        """
         train_count, nn_count, response_count = train_nn_targets_fast.shape
         coeffs_mat = np.zeros((train_count, nn_count, response_count))
         for i, model in enumerate(models):
