@@ -458,9 +458,10 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         @classmethod
         def setUpClass(cls):
             super(FastPredictTestCase, cls).setUpClass()
-            cls.nn_indices_all_n = np.array(
-                cls.nbrs_lookup.get_batch_nns(np.arange(0, cls.train_count))
-            ).astype(int)
+            cls.nn_indices_all_n, _ = cls.nbrs_lookup.get_batch_nns(
+                np.arange(0, cls.train_count)
+            )
+            cls.nn_indices_all_n = np.array(cls.nn_indices_all_n).astype(int)
             (
                 cls.K_fast_n,
                 cls.train_nn_targets_fast_n,
@@ -509,11 +510,11 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
             cls.Kcross_fast_n = cls.muygps.kernel(cls.crosswise_dists_fast_n)
 
-            cls.nn_indices_all_j = jnp.array(
-                cls.nbrs_lookup.get_batch_nns(
-                    jnp.arange(0, cls.train_count)
-                ).astype(int)
+            cls.nn_indices_all_j, _ = cls.nbrs_lookup.get_batch_nns(
+                jnp.arange(0, cls.train_count)
             )
+            cls.nn_indices_all_j = jnp.array(cls.nn_indices_all_j).astype(int)
+
             (
                 cls.K_fast_j,
                 cls.train_nn_targets_fast_j,
