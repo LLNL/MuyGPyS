@@ -555,6 +555,14 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 )
             )
 
+        def test_fast_predict_coeffs(self):
+            self.assertTrue(
+                allclose_inv(
+                    self.fast_regress_coeffs_n,
+                    self.fast_regress_coeffs_j,
+                )
+            )
+
     class OptimTestCase(MuyGPSTestCase):
         @classmethod
         def setUpClass(cls):
