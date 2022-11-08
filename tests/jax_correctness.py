@@ -503,7 +503,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.closest_neighbor_n
             ].astype(int)
             cls.crosswise_dists_fast_n = crosswise_distances_n(
-                cls.train_features_n,
+                cls.test_features_n,
                 cls.train_features_n,
                 np.arange(0, cls.train_count),
                 cls.new_nn_indices_n,
@@ -554,7 +554,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.closest_neighbor_j
             ].astype(int)
             cls.crosswise_dists_fast_j = crosswise_distances_j(
-                cls.train_features_j,
+                cls.test_features_j,
                 cls.train_features_j,
                 jnp.arange(0, cls.train_count),
                 cls.new_nn_indices_j,
