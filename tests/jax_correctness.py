@@ -503,10 +503,6 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.new_nn_indices_n,
             )
             cls.Kcross_fast_n = cls.muygps.kernel(cls.crosswise_dists_fast_n)
-            cls.fast_predictions_n = cls.muygps._fast_regress(
-                cls.Kcross_fast_n,
-                cls.fast_regress_coeffs_n[cls.closest_neighbor_n, :],
-            )
 
             cls.nn_indices_all_j = jnp.array(
                 cls.nbrs_lookup.get_batch_nns(
@@ -555,10 +551,6 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.new_nn_indices_j,
             )
             cls.Kcross_fast_j = cls.muygps.kernel(cls.crosswise_dists_fast_j)
-            cls.fast_predictions_j = cls.muygps._fast_regress(
-                cls.Kcross_fast_j,
-                cls.fast_regress_coeffs_j[cls.closest_neighbor_j, :],
-            )
 
         def test_fast_predict(self):
             self.assertTrue(
