@@ -495,7 +495,9 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nn_indices_with_self_n[:, 0] = np.arange(0, cls.train_count)
             cls.new_nn_indices_n = cls.nn_indices_with_self_n[:, :-1]
 
-            cls.closest_set_new_n = cls.new_nn_indices_n[cls.closest_neighbor_n]
+            cls.closest_set_new_n = cls.new_nn_indices_n[
+                cls.closest_neighbor_n
+            ].astype(int)
             cls.crosswise_dists_fast_n = crosswise_distances_n(
                 cls.test_features_n,
                 cls.train_features_n,
@@ -527,7 +529,9 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.test_features_j
             )
             cls.closest_neighbor_j = cls.test_neighbors_j[:, 0]
-            cls.closest_set_j = cls.nn_indices_all_j[cls.closest_neighbor_j]
+            cls.closest_set_j = cls.nn_indices_all_j[
+                cls.closest_neighbor_j
+            ].astype(int)
 
             print(cls.nn_indices_all_j.shape)
             cls.new_nn_indices_j = jnp.concatenate(
