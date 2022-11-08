@@ -54,10 +54,14 @@ if config.muygpys_jax_enabled is True:  # type: ignore
     from MuyGPyS._src.gp.muygps.numpy import (
         _muygps_compute_solve as muygps_compute_solve_n,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
+        _muygps_fast_regress_solve as _muygps_fast_regress_solve_n,
+        _muygps_fast_regress_precompute as _muygps_fast_regress_precompute_n,
     )
     from MuyGPyS._src.gp.muygps.jax import (
         _muygps_compute_solve as muygps_compute_solve_j,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_j,
+        _muygps_fast_regress_solve as _muygps_fast_regress_solve_j,
+        _muygps_fast_regress_precompute as _muygps_fast_regress_precompute_j,
     )
     from MuyGPyS._src.optimize.sigma_sq.numpy import (
         _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
@@ -471,14 +475,10 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.train_features_n,
                 cls.train_responses_n,
             )
-            cls.fast_regress_coeffs_n = cls.muygps._build_fast_regress_coeffs(
+
+            cls.fast_regress_coeffs_n = _muygps_fast_regress_precompute_n(
                 cls.K_fast_n, cls.muygps.eps(), cls.train_nn_targets_fast_n
             )
-            # cls.fast_regress_coeffs_n = cls.muygps.build_fast_regress_coeffs(
-            #     cls.train_features_n,
-            #     cls.nn_indices_all_n,
-            #     cls.train_responses_n,
-            # )
 
             cls.test_neighbors_n, _ = cls.nbrs_lookup.get_nns(
                 cls.test_features_n
@@ -518,15 +518,10 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.train_features_j,
                 cls.train_responses_j,
             )
-            cls.fast_regress_coeffs_j = cls.muygps._build_fast_regress_coeffs(
+
+            cls.fast_regress_coeffs_j = _muygps_fast_regress_precompute_j(
                 cls.K_fast_j, cls.muygps.eps(), cls.train_nn_targets_fast_j
             )
-
-            # cls.fast_regress_coeffs_j = cls.muygps.build_fast_regress_coeffs(
-            #     cls.train_features_j,
-            #     cls.nn_indices_all_j,
-            #     cls.train_responses_j,
-            # )
 
             cls.test_neighbors_j, _ = cls.nbrs_lookup.get_nns(
                 cls.test_features_j
@@ -554,11 +549,11 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         def test_fast_predict(self):
             self.assertTrue(
                 allclose_inv(
-                    self.muygps._fast_regress(
+                    _muygps_fast_regress_solve_n(
                         self.Kcross_fast_n,
                         self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
                     ),
-                    self.muygps._fast_regress(
+                    _muygps_fast_regress_solve_j(
                         self.Kcross_fast_j,
                         self.fast_regress_coeffs_j[self.closest_neighbor_j, :],
                     ),
