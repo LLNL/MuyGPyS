@@ -15,7 +15,6 @@ config.parse_flags_with_absl()  # Affords option setting from CLI
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.examples.fast_regress import (
-    make_fast_multivariate_regressor,
     do_fast_regress,
 )
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
