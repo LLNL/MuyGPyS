@@ -13,6 +13,7 @@ from absl.testing import parameterized
 from MuyGPyS.examples.classify import do_classify
 from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq
 from MuyGPyS.examples.regress import do_regress
+from MuyGPyS.examples.fast_regress import do_fast_regress
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize.loss import mse_fn
 
@@ -522,14 +523,7 @@ class FastRegressionAPITest(parameterized.TestCase):
         return_distances: bool = False,
         verbose: bool = False,
     ) -> None:
-        (
-            regressor,
-            predictions,
-            mse,
-            variance,
-            crosswise_dists,
-            pairwise_dists,
-        ) = self._do_fast_regress(
+        (regressor, predictions, mse) = self._do_fast_regress(
             train,
             test,
             nn_count,
@@ -548,47 +542,14 @@ class FastRegressionAPITest(parameterized.TestCase):
             verbose=verbose,
         )
         self.assertEqual(predictions.shape, test["output"].shape)
-        if isinstance(regressor, MuyGPS):
-            self._verify_regressor(
-                regressor, variance, test["output"], sigma_method
-            )
-        else:
-            test_count, _ = test["output"].shape
-            for i, model in enumerate(regressor.models):
-                self._verify_regressor(
-                    model,
-                    variance[:, i] if variance is not None else None,
-                    test["output"][:, i].reshape(test_count, 1),
-                    sigma_method,
-                )
         print(f"obtains mse: {mse}")
         self.assertLessEqual(mse, target_mse)
-        if crosswise_dists is not None:
-            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
-        if pairwise_dists is not None:
-            self.assertEqual(
-                pairwise_dists.shape, (batch_count, nn_count, nn_count)
-            )
 
-    def _verify_regressor(self, regressor, variance, targets, sigma_method):
         param_names, param_vals, _ = regressor.get_optim_params()
         if len(param_names) > 0:
             print("finds hyperparameters:")
             for i, p in enumerate(param_names):
                 print(f"\t{p} : {param_vals[i]}")
-        if variance is not None:
-            test_count, response_count = targets.shape
-            if response_count > 1:
-                self.assertEqual(variance.shape, (test_count, response_count))
-            else:
-                self.assertEqual(variance.shape, (test_count,))
-        if sigma_method is None:
-            self.assertFalse(regressor.sigma_sq.trained())
-        elif sigma_method.lower() == "analytic":
-            self.assertEqual(regressor.sigma_sq().shape, (response_count,))
-            self.assertEqual(regressor.sigma_sq().dtype, float)
-        else:
-            raise ValueError(f"Unsupported sigma method {sigma_method}")
 
     def _do_fast_regress(
         self,
@@ -617,7 +578,13 @@ class FastRegressionAPITest(parameterized.TestCase):
         np.ndarray,
     ]:
         # print("gets here")
-        ret = do_regress(
+        (
+            regressor,
+            _,
+            predictions,
+            precomputed_coefficient_matrix,
+            _,
+        ) = do_fast_regress(
             test["input"],
             train["input"],
             train["output"],
@@ -627,66 +594,16 @@ class FastRegressionAPITest(parameterized.TestCase):
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
-            variance_mode=variance_mode,
             kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
-            apply_sigma_sq=apply_sigma_sq,
-            return_distances=return_distances,
             verbose=verbose,
         )
-        variance = None
-        crosswise_dists = None
-        pairwise_dists = None
-        if variance_mode is None and return_distances is False:
-            regressor, _, predictions = cast(
-                Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray], ret
-            )
-        elif variance_mode == "diagonal":
-            if return_distances is False:
-                regressor, _, predictions, variance = cast(
-                    Tuple[
-                        Union[MuyGPS, MMuyGPS],
-                        NN_Wrapper,
-                        np.ndarray,
-                        np.ndarray,
-                    ],
-                    ret,
-                )
-            else:
-                (
-                    regressor,
-                    _,
-                    predictions,
-                    variance,
-                    crosswise_dists,
-                    pairwise_dists,
-                ) = cast(
-                    Tuple[
-                        Union[MuyGPS, MMuyGPS],
-                        NN_Wrapper,
-                        np.ndarray,
-                        np.ndarray,
-                        np.ndarray,
-                        np.ndarray,
-                    ],
-                    ret,
-                )
-        else:
-            raise ValueError(f"Variance mode {variance_mode} is not supported.")
-
-        predictions = _consistent_unchunk_tensor(predictions)
-        variance = _consistent_unchunk_tensor(variance)
-        crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
-        pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
 
         mse = mse_fn(predictions, test["output"])
         return (
             regressor,
             predictions,
             mse,
-            variance,
-            crosswise_dists,
-            pairwise_dists,
         )
