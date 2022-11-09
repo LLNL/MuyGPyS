@@ -372,6 +372,7 @@ def fast_regress_any(
     )
     _, num_training_responses = train_targets.shape
     nn_indices = _muygps_fast_nn_update(nn_indices)
+    _, nn_count = nn_indices.shape
 
     test_neighbors, _ = nbrs_lookup.get_nns(test_features)
     closest_neighbor = test_neighbors[:, 0]
