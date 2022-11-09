@@ -589,6 +589,91 @@ class HeatonTest(RegressionAPITest):
         )
 
 
+class HeatonTest(FastRegressionAPITest):
+    @classmethod
+    def setUpClass(cls):
+        super(HeatonTest, cls).setUpClass()
+        with open(os.path.join(hardpath, heaton_file), "rb") as f:
+            cls.train, cls.test = pkl.load(f)
+
+    @parameterized.parameters(
+        (
+            (nn, bs, vm, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            for nn in [30]
+            for bs in [500]
+            for vm in ["diagonal", None]
+            for lm in ["mse"]
+            for om in ["loo_crossval"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for nn_kwargs in _basic_nn_kwarg_options
+            for k_kwargs in (
+                (
+                    11.0,
+                    {
+                        "kern": "matern",
+                        "metric": "l2",
+                        "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
+                        "length_scale": {"val": 1.5},
+                        "eps": {"val": 1e-3},
+                    },
+                ),
+                # (
+                #     11.0,
+                #     {
+                #         "kern": "rbf",
+                #         "metric": "F2",
+                #         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                #         "eps": {"val": 1e-3},
+                #     },
+                # ),
+            )
+            # for vm in ["diagonal"]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[0]
+            # ]
+        )
+    )
+    def test_fast_regress(
+        self,
+        nn_count,
+        batch_count,
+        variance_mode,
+        loss_method,
+        obj_method,
+        opt_method_and_kwargs,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        target_mse, k_kwargs = k_kwargs
+        opt_method, opt_kwargs = opt_method_and_kwargs
+
+        if variance_mode is None:
+            sigma_method = None
+            apply_sigma_sq = False
+        else:
+            sigma_method = "analytic"
+            apply_sigma_sq = True
+
+        self._do_fast_regress_test_chassis(
+            train=self.train,
+            test=self.test,
+            target_mse=target_mse,
+            nn_count=nn_count,
+            batch_count=batch_count,
+            loss_method=loss_method,
+            obj_method=obj_method,
+            opt_method=opt_method,
+            sigma_method=sigma_method,
+            variance_mode=variance_mode,
+            nn_kwargs=nn_kwargs,
+            k_kwargs=k_kwargs,
+            opt_kwargs=opt_kwargs,
+            apply_sigma_sq=apply_sigma_sq,
+            verbose=False,
+        )
+
+
 if __name__ == "__main__":
     if os.path.isdir(sys.argv[-1]):
         hardpath = sys.argv[-1]
