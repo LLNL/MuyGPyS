@@ -42,6 +42,10 @@ from MuyGPyS.examples.regress import (
     _unpack,
 )
 
+from MuyGPyS._src.gp.muygps import (
+    _muygps_fast_nn_update,
+)
+
 
 def make_fast_regressor(
     muygps: MuyGPS,
@@ -366,13 +370,8 @@ def fast_regress_any(
         train_features,
         train_targets,
     )
-    num_training_samples, _ = train_features.shape
     _, num_training_responses = train_targets.shape
-    _, nn_count = nn_indices.shape
-    nn_indices_with_self = np.zeros((num_training_samples, nn_count + 1))
-    nn_indices_with_self[:, 1 : nn_count + 1] = nn_indices
-    nn_indices_with_self[:, 0] = np.arange(0, num_training_samples)
-    nn_indices = nn_indices_with_self[:, :-1].astype(int)
+    nn_indices = _muygps_fast_nn_update(nn_indices)
 
     test_neighbors, _ = nbrs_lookup.get_nns(test_features)
     closest_neighbor = test_neighbors[:, 0]
