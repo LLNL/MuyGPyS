@@ -178,7 +178,7 @@ def do_fast_regress(
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
     verbose: bool = False,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict]:
     """
     Convenience function initializing a model and performing regression.
 
