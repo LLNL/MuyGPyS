@@ -885,6 +885,12 @@ class MakeFastRegressorTest(parameterized.TestCase):
             opt_kwargs=opt_kwargs,
         )
 
+        self.assertEqual(
+            precomputed_coefficient_matrix.shape,
+            (train_count, nn_count, response_count),
+        )
+        self.assertEqual(predictions.shape, (test_count, response_count))
+
         for i, muygps in enumerate(mmuygps.models):
             print(f"For model {i}:")
             for key in args[i]:

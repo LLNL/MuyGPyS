@@ -545,6 +545,45 @@ class HeatonTest(RegressionAPITest):
             verbose=False,
         )
 
+    # def test_fast_regress(
+    #     self,
+    #     nn_count,
+    #     batch_count,
+    #     variance_mode,
+    #     loss_method,
+    #     obj_method,
+    #     opt_method_and_kwargs,
+    #     nn_kwargs,
+    #     k_kwargs,
+    # ):
+    #     target_mse, k_kwargs = k_kwargs
+    #     opt_method, opt_kwargs = opt_method_and_kwargs
+
+    #     if variance_mode is None:
+    #         sigma_method = None
+    #         apply_sigma_sq = False
+    #     else:
+    #         sigma_method = "analytic"
+    #         apply_sigma_sq = True
+
+    #     self._do_regress_test_chassis(
+    #         train=self.train,
+    #         test=self.test,
+    #         target_mse=target_mse,
+    #         nn_count=nn_count,
+    #         batch_count=batch_count,
+    #         loss_method=loss_method,
+    #         obj_method=obj_method,
+    #         opt_method=opt_method,
+    #         sigma_method=sigma_method,
+    #         variance_mode=variance_mode,
+    #         nn_kwargs=nn_kwargs,
+    #         k_kwargs=k_kwargs,
+    #         opt_kwargs=opt_kwargs,
+    #         apply_sigma_sq=apply_sigma_sq,
+    #         verbose=False,
+    #     )
+
 
 if __name__ == "__main__":
     if os.path.isdir(sys.argv[-1]):
