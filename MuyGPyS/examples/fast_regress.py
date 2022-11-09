@@ -373,7 +373,7 @@ def fast_regress_any(
         nearest neighbor computation, and prediction.
 
     """
-    time_start = perf_counter
+    time_start = perf_counter()
     (
         precomputed_coefficients_matrix,
         nn_indices,
