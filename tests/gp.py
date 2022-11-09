@@ -715,7 +715,10 @@ class MakeFastRegressorTest(parameterized.TestCase):
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
         )
-
+        self.assertEqual(
+            precomputed_coefficient_matrix.shape, (train_count, nn_count)
+        )
+        self.assertEqual(predictions.shape, (test_count, response_count))
         for key in k_kwargs:
             if key == "eps":
                 self.assertEqual(k_kwargs[key]["val"], muygps.eps())
