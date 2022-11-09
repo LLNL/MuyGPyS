@@ -284,6 +284,9 @@ def do_fast_regress(
         A matrix of shape `(train_count, nn_count)` whose rows list the
         precomputed coefficients for each nearest neighbors set in the
         training data.
+    timing:
+        A dictionary containing timings for the training, precomputation,
+        nearest neighbor computation, and prediction.
     """
     if sigma_method is None:
         apply_sigma_sq = False
@@ -311,14 +314,20 @@ def do_fast_regress(
         # crosswise_dists, pairwise_dists = regressor_args_less2
         pass
 
-    predictions, precomputed_coefficients_matrix = fast_regress_any(
+    predictions, precomputed_coefficients_matrix, timing = fast_regress_any(
         regressor,
         test_features,
         train_features,
         nbrs_lookup,
         train_targets,
     )
-    return regressor, nbrs_lookup, predictions, precomputed_coefficients_matrix
+    return (
+        regressor,
+        nbrs_lookup,
+        predictions,
+        precomputed_coefficients_matrix,
+        timing,
+    )
 
 
 def fast_regress_any(
@@ -359,8 +368,12 @@ def fast_regress_any(
         A matrix of shape `(train_count, nn_count)` whose rows list the
         precomputed coefficients for each nearest neighbors set in the
         training data.
-    """
+    timing:
+        A dictionary containing timings for the training, precomputation,
+        nearest neighbor computation, and prediction.
 
+    """
+    time_start = perf_counter
     (
         precomputed_coefficients_matrix,
         nn_indices,
@@ -370,10 +383,12 @@ def fast_regress_any(
         train_features,
         train_targets,
     )
+    time_precomp = perf_counter()
     _, num_training_responses = train_targets.shape
     nn_indices = _muygps_fast_nn_update(nn_indices)
     _, nn_count = nn_indices.shape
 
+    time_agree = perf_counter()
     test_neighbors, _ = nbrs_lookup.get_nns(test_features)
     closest_neighbor = test_neighbors[:, 0]
     closest_set_new = nn_indices[closest_neighbor, :].astype(int)
@@ -401,5 +416,12 @@ def fast_regress_any(
         closest_neighbor,
         precomputed_coefficients_matrix,
     )
+    time_pred = perf_counter()
 
-    return predictions, precomputed_coefficients_matrix
+    timing = {
+        "precompute": time_precomp - time_start,
+        "agree": time_agree - time_precomp,
+        "pred": time_pred - time_agree,
+    }
+
+    return predictions, precomputed_coefficients_matrix, timing
