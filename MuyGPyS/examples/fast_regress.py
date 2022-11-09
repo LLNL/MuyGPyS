@@ -384,12 +384,15 @@ def fast_regress_any(
         train_targets,
     )
     time_precomp = perf_counter()
+
+    time_agree = perf_counter()
     _, num_training_responses = train_targets.shape
     nn_indices = _muygps_fast_nn_update(nn_indices)
     _, nn_count = nn_indices.shape
 
-    time_agree = perf_counter()
     test_neighbors, _ = nbrs_lookup.get_nns(test_features)
+    time_nn = perf_counter()
+
     closest_neighbor = test_neighbors[:, 0]
     closest_set_new = nn_indices[closest_neighbor, :].astype(int)
     num_test_samples, _ = test_features.shape
@@ -421,7 +424,8 @@ def fast_regress_any(
     timing = {
         "precompute": time_precomp - time_start,
         "agree": time_agree - time_precomp,
-        "pred": time_pred - time_agree,
+        "nn": time_nn - time_agree,
+        "pred": time_pred - time_nn,
     }
 
     return predictions, precomputed_coefficients_matrix, timing

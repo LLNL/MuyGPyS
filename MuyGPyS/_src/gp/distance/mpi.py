@@ -12,7 +12,6 @@ from MuyGPyS._src.gp.distance.numpy import (
     _pairwise_distances as _pairwise_distances_n,
     _make_train_tensors as _make_train_tensors_n,
     _make_regress_tensors as _make_regress_tensors_n,
-    _make_fast_regress_tensors as _make_fast_regress_tensors_n,
 )
 
 from typing import Tuple
@@ -26,13 +25,8 @@ def _make_fast_regress_tensors(
     train_features: np.ndarray,
     train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    return _chunk_function_tensor(
-        _make_fast_regress_tensors_n,
-        metric,
-        batch_nn_indices,
-        train_features,
-        train_targets,
-        return_count=3,
+    raise NotImplementedError(
+        f'Function "make_fast_regress_tensors" does not support mpi!'
     )
 
 

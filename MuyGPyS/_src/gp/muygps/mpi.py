@@ -2,11 +2,35 @@
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
-
+import numpy as np
 from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
-    _muygps_fast_regress_solve,
-    _muygps_fast_regress_precompute,
-    _muygps_fast_nn_update,
 )
+
+
+def _muygps_fast_regress_solve(
+    Kcross: np.ndarray,
+    coeffs_mat: np.ndarray,
+) -> np.ndarray:
+    raise NotImplementedError(
+        f'Function "make_fast_regress_tensors" does not support mpi!'
+    )
+
+
+def _muygps_fast_regress_precompute(
+    K: np.ndarray,
+    eps: float,
+    train_nn_targets_fast: np.ndarray,
+) -> np.ndarray:
+    raise NotImplementedError(
+        f'Function "make_fast_regress_tensors" does not support mpi!'
+    )
+
+
+def _muygps_fast_nn_update(
+    nn_indices: np.ndarray,
+) -> np.ndarray:
+    raise NotImplementedError(
+        f'Function "make_fast_regress_tensors" does not support mpi!'
+    )
