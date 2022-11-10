@@ -38,6 +38,24 @@ def _prepare_parallel_data(size, chunk_sizes, *args):
     return ret
 
 
+def _big_scatter(chunks, root=0):
+    """
+    Based upon this reply from a mpi4py dev
+    https://github.com/mpi4py/mpi4py/issues/119#issuecomment-945390731
+    """
+    if size == 0:
+        my_chunk = chunks
+    elif rank == 0:
+        for i, chunk in enumerate(chunks):
+            if i == 0:
+                my_chunk = chunk
+            else:
+                world.send(chunk, dest=i)
+    else:
+        my_chunk = world.recv(source=0)
+    return my_chunk
+
+
 def _chunk_tensor(tensors, return_count=1):
     if rank == 0:
         if return_count == 1:
@@ -49,7 +67,7 @@ def _chunk_tensor(tensors, return_count=1):
         tensor_chunks = [None for _ in range(return_count)]
     local_chunks = list()
     for chunks in tensor_chunks:
-        local_chunks.append(world.scatter(chunks, root=0))
+        local_chunks.append(_big_scatter(chunks, root=0))
     if return_count == 1:
         local_chunks = local_chunks[0]
     return local_chunks
