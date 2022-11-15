@@ -364,11 +364,12 @@ class MuyGPS:
             the precomputed coefficients for fast regression.
 
         """
-        tensor_fn = _make_fast_regress_tensors
         (
             pairwise_dists_fast,
             train_nn_targets_fast,
-        ) = tensor_fn(self.kernel.metric, nn_indices, train, targets)
+        ) = _make_fast_regress_tensors(
+            self.kernel.metric, nn_indices, train, targets
+        )
         K = self.kernel(pairwise_dists_fast)
 
         return self._build_fast_regress_coeffs(
@@ -1100,11 +1101,10 @@ class MultivariateMuyGPS:
             regression.
 
         """
-        tensor_fn = _make_fast_regress_tensors
         (
             pairwise_dists_fast,
             train_nn_targets_fast,
-        ) = tensor_fn(self.metric, nn_indices, train, targets)
+        ) = _make_fast_regress_tensors(self.metric, nn_indices, train, targets)
 
         return self._build_fast_regress_coeffs(
             self.models, pairwise_dists_fast, train_nn_targets_fast
