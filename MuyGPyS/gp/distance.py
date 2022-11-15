@@ -115,7 +115,7 @@ def make_fast_regress_tensors(
             The full floating point training data matrix of shape
             `(train_count, feature_count)`.
         train_targets:
-            A matrix of shape `(train_count, feature_count)` whose rows are
+            A matrix of shape `(train_count, response_count)` whose rows are
             vector-valued responses for each training element.
 
     Returns

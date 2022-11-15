@@ -29,7 +29,6 @@ from MuyGPyS._src.gp.distance import (
 
 from MuyGPyS._src.gp.distance.numpy import (
     _make_regress_tensors as _make_regress_tensors_n,
-    _make_fast_regress_tensors as _make_fast_regress_tensors_n,
 )
 from MuyGPyS._src.gp.muygps import (
     _muygps_compute_solve,
@@ -361,16 +360,11 @@ class MuyGPS:
                 vector-valued responses for each training element.
         Returns
         -------
-        coeffs_mat:
             A matrix of shape `(train_count, nn_count,)` whose rows are
             the precomputed coefficients for fast regression.
 
         """
-        tensor_fn = (
-            _make_fast_regress_tensors_n
-            if _is_mpi_mode() is True and indices_by_rank is True
-            else _make_fast_regress_tensors
-        )
+        tensor_fn = _make_fast_regress_tensors
         (
             pairwise_dists_fast,
             train_nn_targets_fast,
@@ -556,7 +550,6 @@ class MuyGPS:
 
         Returns
         -------
-        responses:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         """
@@ -606,7 +599,6 @@ class MuyGPS:
 
         Returns
         -------
-        responses:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         """
@@ -1103,17 +1095,12 @@ class MultivariateMuyGPS:
                 vector-valued responses for each training element.
         Returns
         -------
-        coeffs_mat:
             A tensor of shape `(batch_count, nn_count, response_count)`
             whose entries comprise the precomputed coefficients for fast
             regression.
 
         """
-        tensor_fn = (
-            _make_fast_regress_tensors_n
-            if _is_mpi_mode() is True and indices_by_rank is True
-            else _make_fast_regress_tensors
-        )
+        tensor_fn = _make_fast_regress_tensors
         (
             pairwise_dists_fast,
             train_nn_targets_fast,
@@ -1179,7 +1166,6 @@ class MultivariateMuyGPS:
 
         Returns
         -------
-        responses:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         """
@@ -1229,7 +1215,6 @@ class MultivariateMuyGPS:
 
         Returns
         -------
-        responses:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         """

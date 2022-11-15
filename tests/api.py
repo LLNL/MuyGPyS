@@ -589,10 +589,10 @@ class HeatonTest(RegressionAPITest):
         )
 
 
-class HeatonTest(FastRegressionAPITest):
+class HeatonFastTest(FastRegressionAPITest):
     @classmethod
     def setUpClass(cls):
-        super(HeatonTest, cls).setUpClass()
+        super(HeatonFastTest, cls).setUpClass()
         with open(os.path.join(hardpath, heaton_file), "rb") as f:
             cls.train, cls.test = pkl.load(f)
 

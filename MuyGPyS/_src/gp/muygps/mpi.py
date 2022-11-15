@@ -14,7 +14,7 @@ def _muygps_fast_regress_solve(
     coeffs_mat: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
-        f'Function "make_fast_regress_tensors" does not support mpi!'
+        f'Function "muygps_fast_regress_solve" does not support mpi!'
     )
 
 
@@ -24,7 +24,7 @@ def _muygps_fast_regress_precompute(
     train_nn_targets_fast: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
-        f'Function "make_fast_regress_tensors" does not support mpi!'
+        f'Function "muygps_fast_regress_precompute" does not support mpi!'
     )
 
 
@@ -32,5 +32,5 @@ def _muygps_fast_nn_update(
     nn_indices: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
-        f'Function "make_fast_regress_tensors" does not support mpi!'
+        f'Function "muygps_fast_nn_update" does not support mpi!'
     )

@@ -577,7 +577,6 @@ class FastRegressionAPITest(parameterized.TestCase):
         np.ndarray,
         np.ndarray,
     ]:
-        # print("gets here")
         (
             regressor,
             _,
