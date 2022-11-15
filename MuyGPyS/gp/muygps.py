@@ -358,8 +358,7 @@ class MuyGPS:
             targets:
                 A matrix of shape `(train_count, response_count)` whose rows are
                 vector-valued responses for each training element.
-        Returns
-        -------
+        Returns:
             A matrix of shape `(train_count, nn_count,)` whose rows are
             the precomputed coefficients for fast regression.
 
@@ -549,8 +548,7 @@ class MuyGPS:
                 A tensor whose first dimensions provides precomputed coefficients for
                 fast regression.
 
-        Returns
-        -------
+        Returns:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         """
@@ -598,8 +596,7 @@ class MuyGPS:
                 fast regression.
 
 
-        Returns
-        -------
+        Returns:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         """
@@ -1094,8 +1091,7 @@ class MultivariateMuyGPS:
             targets:
                 A matrix of shape `(train_count, response_count)` whose rows are
                 vector-valued responses for each training element.
-        Returns
-        -------
+        Returns:
             A tensor of shape `(batch_count, nn_count, response_count)`
             whose entries comprise the precomputed coefficients for fast
             regression.
@@ -1164,8 +1160,7 @@ class MultivariateMuyGPS:
                 A tensor whose rows are given by precomputed coefficients for
                 fast regression.
 
-        Returns
-        -------
+        Returns:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         """
@@ -1213,8 +1208,7 @@ class MultivariateMuyGPS:
                 fast regression.
 
 
-        Returns
-        -------
+        Returns:
             A matrix of shape `(batch_count, response_count,)` whose rows are
             the predicted response for each of the given indices.
         """
