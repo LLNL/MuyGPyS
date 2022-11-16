@@ -537,6 +537,22 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
             cls.Kcross_fast_j = cls.muygps.kernel(cls.crosswise_dists_fast_j)
 
+        def test_fast_nn_update(self):
+            self.assertTrue(
+                allclose_inv(
+                    muygps_fast_nn_update_j(self.nn_indices_all_j),
+                    muygps_fast_nn_update_n(self.nn_indices_all_n),
+                )
+            )
+
+        def test_make_fast_regress_tensors(self):
+            self.assertTrue(allclose_inv(self.K_fast_n, self.K_fast_j))
+            self.assertTrue(
+                allclose_inv(
+                    self.train_nn_targets_fast_n, self.train_nn_targets_fast_j
+                )
+            )
+
         def test_fast_predict(self):
             self.assertTrue(
                 allclose_inv(
