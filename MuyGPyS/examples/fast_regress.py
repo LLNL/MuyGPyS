@@ -386,9 +386,7 @@ def fast_regress_any(
     time_precomp = perf_counter()
 
     time_agree = perf_counter()
-    _, num_training_responses = train_targets.shape
     nn_indices = _muygps_fast_nn_update(nn_indices)
-    _, nn_count = nn_indices.shape
 
     test_neighbors, _ = nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
@@ -404,18 +402,8 @@ def fast_regress_any(
         closest_set_new,
     )
 
-    if isinstance(muygps, MuyGPS):
-        Kcross_test_tens = muygps.kernel(crosswise_dist_tens)
-
-    else:
-        Kcross_test_tens = np.zeros(
-            (num_test_samples, nn_count, num_training_responses)
-        )
-        for i, model in enumerate(muygps.models):
-            Kcross_test_tens[:, :, i] = model.kernel(crosswise_dist_tens)
-
     predictions = muygps.fast_regress_from_indices(
-        Kcross_test_tens,
+        crosswise_dist_tens,
         closest_neighbor,
         precomputed_coefficients_matrix,
     )
