@@ -559,9 +559,8 @@ class MuyGPS:
                 entry is the index of the training point closest to
                 each queried point.
             coeffs_mat:
-                A matrix of shape `('batch_count, nn_count)` whose first
-                dimensions provides precomputed coefficients for fast
-                regression.
+                A matrix of shape `('batch_count, nn_count)` providing
+                precomputed coefficients for fast regression.
 
         Returns:
             A matrix of shape `(batch_count,)` whose rows are
