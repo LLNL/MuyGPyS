@@ -403,7 +403,10 @@ def fast_regress_any(
     )
 
     predictions = muygps.fast_regress_from_indices(
-        crosswise_dist_tens,
+        np.arange(0, num_test_samples),
+        closest_set_new,
+        test_features,
+        train_features,
         closest_neighbor,
         precomputed_coefficients_matrix,
     )

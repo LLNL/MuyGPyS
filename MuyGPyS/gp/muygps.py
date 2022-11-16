@@ -188,7 +188,7 @@ class MuyGPS:
                 the `(nn_count, nn_count` -shaped kernel matrices corresponding
                 to each of the batch elements.
             Kcross:
-                A tensor of shape `(batch_count, nn_count)` containing the
+                A matrix of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
             batch_nn_targets:
@@ -222,8 +222,8 @@ class MuyGPS:
                 the `(nn_count, nn_count` -shaped kernel matrices corresponding
                 to each of the batch elements.
             Kcross:
-                A tensor of shape `(batch_count, nn_count)` containing the
-                `1 x nn_count` -shaped cross-covariance matrix corresponding
+                A matrix of shape `(batch_count, nn_count)` containing the
+                `1 x nn_count` -shaped cross-covariance vector corresponding
                 to each of the batch elements.
             eps:
                 The value of the homoscedastic nugget parameter.
@@ -444,7 +444,7 @@ class MuyGPS:
                 the `(nn_count, nn_count` -shaped kernel matrices corresponding
                 to each of the batch elements.
             Kcross:
-                A tensor of shape `(batch_count, nn_count)` containing the
+                A matrix of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
             batch_nn_targets:
@@ -512,7 +512,10 @@ class MuyGPS:
 
     def fast_regress_from_indices(
         self,
-        crosswise_dists: np.ndarray,
+        indices: np.ndarray,
+        nn_indices: np.ndarray,
+        test_features: np.ndarray,
+        train_features: np.ndarray,
         closest_index: np.ndarray,
         coeffs_mat: np.ndarray,
     ) -> np.ndarray:
@@ -537,16 +540,26 @@ class MuyGPS:
         precomputed coefficients given in Equation (8) of [dunton2022fast]_.
 
         Args:
-            crosswise_dists:
-                A tensor of shape `(batch_count, nn_count)` whose rows list the
-                distance of the corresponding test element to each of its
-                nearest neighbors.
+            indices:
+                A vector of shape `('batch_count,)` providing the indices of the
+                test features to be queried in the formation of the crosswise
+                distance tensor.
+            nn_indices:
+                A matrix of shape `('batch_count, nn_count)` providing the index
+                of the closest training point to each queried test point, as
+                well as the `nn_count - 1` closest neighbors of that point.
+            test_features:
+                A matrix of shape `(batch_count, feature_count)` containing
+                the test data points.
+            train_features:
+                A matrix of shape `(train_count, feature_count)` containing the
+                training data.
             closest_index:
-                A tensor of shape `('batch_count,)` for which each
+                A vector of shape `('batch_count,)` for which each
                 entry is the index of the training point closest to
                 each queried point.
             coeffs_mat:
-                A tensor of shape `('batch_count, nn_count)` whose first
+                A matrix of shape `('batch_count, nn_count)` whose first
                 dimensions provides precomputed coefficients for fast
                 regression.
 
@@ -554,6 +567,13 @@ class MuyGPS:
             A matrix of shape `(batch_count,)` whose rows are
             the predicted response for each of the given indices.
         """
+        crosswise_dists = crosswise_distances(
+            test_features,
+            train_features,
+            indices,
+            nn_indices,
+        )
+
         Kcross = self.kernel(crosswise_dists)
         return self.fast_regress(
             Kcross,
@@ -591,11 +611,11 @@ class MuyGPS:
 
         Args:
             Kcross:
-                A tensor of shape `(batch_count, nn_count)` containing the
-                `1 x nn_count` -shaped cross-covariance matrix corresponding
+                A matrix of shape `(batch_count, nn_count)` containing the
+                `1 x nn_count` -shaped cross-covariance vector corresponding
                 to each of the batch elements.
             coeffs_mat:
-                A tensor of shape `(batch_count, nn_count)` whose rows
+                A matrix of shape `(batch_count, nn_count)` whose rows
                 are given by precomputed coefficients for fast regression.
 
 
@@ -1127,9 +1147,12 @@ class MultivariateMuyGPS:
 
     def fast_regress_from_indices(
         self,
-        crosswise_dists: np.array,
-        closest_index: np.array,
-        coeffs_mat: np.array,
+        indices: np.ndarray,
+        nn_indices: np.ndarray,
+        test_features: np.ndarray,
+        train_features: np.ndarray,
+        closest_index: np.ndarray,
+        coeffs_mat: np.ndarray,
     ) -> np.ndarray:
         """
         Performs fast multivariate regression using provided
@@ -1152,12 +1175,22 @@ class MultivariateMuyGPS:
         precomputed coefficients given in Equation (8) of [dunton2022fast]_.
 
         Args:
-            crosswise_dists:
-                A tensor of shape `(batch_count, nn_count)` whose rows list the
-                distance of the corresponding test element to each of its
-                nearest neighbors.
+            indices:
+                A vector of shape `('batch_count,)` providing the indices of the
+                test features to be queried in the formation of the crosswise
+                distance tensor.
+            nn_indices:
+                A matrix of shape `('batch_count, nn_count)` providing the index
+                of the closest training point to each queried test point, as
+                well as the `nn_count - 1` closest neighbors of that point.
+            test_features:
+                A matrix of shape `(batch_count, feature_count)` containing
+                the test data points.
+            train_features:
+                A matrix of shape `(train_count, feature_count)` containing the
+                training data.
             closest_index:
-                A tensor of shape `(batch_count,)` for which each entry is
+                A vector of shape `(batch_count,)` for which each entry is
                 the index of the training point closest to each queried
                 test point.
             coeffs_mat:
@@ -1168,6 +1201,13 @@ class MultivariateMuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
+
+        crosswise_dists = crosswise_distances(
+            test_features,
+            train_features,
+            indices,
+            nn_indices,
+        )
 
         return self.fast_regress(
             crosswise_dists,
@@ -1204,7 +1244,7 @@ class MultivariateMuyGPS:
 
         Args:
             crosswise_dists:
-                A tensor of shape `(batch_count, nn_count)` whose rows list the
+                A matrix of shape `(batch_count, nn_count)` whose rows list the
                 distance of the corresponding test element to each of its
                 nearest neighbors.
             coeffs_mat:
