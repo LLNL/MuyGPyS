@@ -351,12 +351,12 @@ class MuyGPS:
 
         .. math::
             \\mathbf{C}_{N^*}(i, :) =
-                (K_\\{\\hat{\\theta}} (X_{N^*}, X_{N^*})
+                (K_{\\hat{\\theta}} (X_{N^*}, X_{N^*})
                 + \\varepsilon I_k)^{-1} Y(X_{N^*}).
 
         Here :math:`X_{N^*}` is the union of the nearest neighbor of the ith
         test point and the `nn_count - 1` nearest neighbors of this nearest
-        neighbor, :math:`K_\\{\\hat{\\theta}}` is the trained kernel functor
+        neighbor, :math:`K_{\\hat{\\theta}}` is the trained kernel functor
         specified by `self.kernel`, :math:`\\varepsilon I_k` is a diagonal
         homoscedastic noise matrix whose diagonal is the value of the
         `self.eps` hyperparameter, and :math:`Y(X_{N^*})` is the
@@ -1121,12 +1121,12 @@ class MultivariateMuyGPS:
 
         .. math::
             \\mathbf{C}_{N^*}(i, :, j) =
-                (K_\\{\\hat{\\theta_j}} (X_{N^*}, X_{N^*}) +
+                (K_{\\hat{\\theta_j}} (X_{N^*}, X_{N^*}) +
                 \\varepsilon I_k)^{-1} Y(X_{N^*}).
 
         Here :math:`X_{N^*}` is the union of the nearest neighbor of the ith
         test point and the `nn_count - 1` nearest neighbors of this nearest
-        neighbor, :math:`K_\\{\\hat{\\theta_j}}` is the trained kernel functor
+        neighbor, :math:`K_{\\hat{\\theta_j}}` is the trained kernel functor
         corresponding the jth response and specified by `self.models`,
         :math:`\\varepsilon I_k` is a diagonal homoscedastic noise matrix whose
         diagonal  is the value of the `self.eps` hyperparameter,

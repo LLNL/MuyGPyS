@@ -395,13 +395,6 @@ def fast_regress_any(
     closest_set_new = nn_indices[closest_neighbor, :].astype(int)
     num_test_samples, _ = test_features.shape
 
-    crosswise_dist_tens = crosswise_distances(
-        test_features,
-        train_features,
-        np.arange(0, num_test_samples),
-        closest_set_new,
-    )
-
     predictions = muygps.fast_regress_from_indices(
         np.arange(0, num_test_samples),
         closest_set_new,

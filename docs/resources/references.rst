@@ -14,4 +14,4 @@ References
 .. [dunton2022fast] Dunton, Alec M., Benjamin W. Priest, and Amanda Muyskens. 
     "Fast Gaussian Process Posterior Mean Prediction via Local Cross Validation 
     and Precomputation." arXiv preprint 
-    `arXiv:2205.10879 <https://arxiv.org/abs/2105.10879>`(2022).
+    `arXiv:2205.10879 <https://arxiv.org/abs/2205.10879>`_ (2022).
