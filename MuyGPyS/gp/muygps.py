@@ -295,7 +295,7 @@ class MuyGPS:
         Returns
         -------
         responses:
-            A matrix of shape `(batch_count, response_count,)` whose rows are
+            A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         diagonal_variance:
             A vector of shape `(batch_count,)` consisting of the diagonal
@@ -307,7 +307,7 @@ class MuyGPS:
             distance of the corresponding test element to each of its nearest
             neighbors. Only returned if `return_distances is True`.
         pairwise_dists:
-            A tensor of shape `(test_count, nn_count, nn_count,)` whose latter
+            A tensor of shape `(test_count, nn_count, nn_count)` whose latter
             two dimensions contain square matrices containing the pairwise
             distances between the nearest neighbors of the test elements. Only
             returned if `return_distances is True`.
@@ -354,12 +354,12 @@ class MuyGPS:
                 `(train_count, feature_count)`.
             nn_indices:
                 The nearest neighbors indices of each
-                training points of shape `(train_count, nn_count,)`.
+                training points of shape `(train_count, nn_count)`.
             targets:
-                A matrix of shape `(train_count, response_count,)` whose rows are
+                A matrix of shape `(train_count, response_count)` whose rows are
                 vector-valued responses for each training element.
         Returns:
-            A matrix of shape `(train_count, nn_count,)` whose rows are
+            A matrix of shape `(train_count, nn_count)` whose rows are
             the precomputed coefficients for fast regression.
 
         """
@@ -444,7 +444,7 @@ class MuyGPS:
                 the `(nn_count, nn_count` -shaped kernel matrices corresponding
                 to each of the batch elements.
             Kcross:
-                A tensor of shape `(batch_count, nn_count,)` containing the
+                A tensor of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
             batch_nn_targets:
@@ -462,12 +462,12 @@ class MuyGPS:
         Returns
         -------
         responses:
-            A matrix of shape `(batch_count, response_count,)` whose rows are
+            A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         diagonal_variance:
             A vector of shape `(batch_count,)` consisting of the diagonal
             elements of the posterior variance, or a matrix of shape
-            `(batch_count, response_count,)` for a multidimensional response.
+            `(batch_count, response_count)` for a multidimensional response.
             Only returned where `variance_mode == "diagonal"`.
         """
         return self._regress(
@@ -538,7 +538,7 @@ class MuyGPS:
 
         Args:
             crosswise_dists:
-                A tensor of shape `(batch_count, nn_count,)` whose rows list the
+                A tensor of shape `(batch_count, nn_count)` whose rows list the
                 distance of the corresponding test element to each of its
                 nearest neighbors.
             closest_index:
@@ -546,7 +546,7 @@ class MuyGPS:
                 entry is the index of the training point closest to
                 each queried point.
             coeffs_mat:
-                A tensor of shape `('batch_count, nn_count,)` whose first
+                A tensor of shape `('batch_count, nn_count)` whose first
                 dimensions provides precomputed coefficients for fast
                 regression.
 
@@ -591,16 +591,16 @@ class MuyGPS:
 
         Args:
             Kcross:
-                A tensor of shape `(batch_count, nn_count,)` containing the
+                A tensor of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
             coeffs_mat:
-                A tensor of shape `(batch_count, nn_count,)` whose rows
+                A tensor of shape `(batch_count, nn_count)` whose rows
                 are given by precomputed coefficients for fast regression.
 
 
         Returns:
-            A matrix of shape `(batch_count, response_count,)` whose rows are
+            A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
         return self._fast_regress(
@@ -889,7 +889,7 @@ class MultivariateMuyGPS:
         Returns
         -------
         responses:
-            A matrix of shape `(batch_count, response_count,)` whose rows are
+            A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         variance:
             A vector of shape `(batch_count,)` consisting of the diagonal
@@ -900,7 +900,7 @@ class MultivariateMuyGPS:
             distance of the corresponding test element to each of its nearest
             neighbors. Only returned if `return_distances is True`.
         pairwise_dists:
-            A tensor of shape `(test_count, nn_count, nn_count,)` whose latter
+            A tensor of shape `(test_count, nn_count, nn_count)` whose latter
             two dimensions contain square matrices containing the pairwise
             distances between the nearest neighbors of the test elements. Only
             returned if `return_distances is True`.
@@ -1018,7 +1018,7 @@ class MultivariateMuyGPS:
         Returns
         -------
         responses:
-            A matrix of shape `(batch_count, response_count,)` whose rows are
+            A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         diagonal_variance:
             A vector of shape `(batch_count, response_count)` consisting of the
@@ -1168,17 +1168,15 @@ class MultivariateMuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        Kcross = np.zeros(coeffs_mat.shape)
-        for i, model in enumerate(self.models):
-            Kcross[:, :, i] = model.kernel(crosswise_dists)
+
         return self.fast_regress(
-            Kcross,
+            crosswise_dists,
             coeffs_mat[closest_index, :, :],
         )
 
     def fast_regress(
         self,
-        Kcross: np.ndarray,
+        crosswise_dists: np.ndarray,
         coeffs_mat: np.ndarray,
     ) -> np.ndarray:
         """
@@ -1205,10 +1203,10 @@ class MultivariateMuyGPS:
         precomputed coefficients given in Equation (8) of [dunton2022fast]_.
 
         Args:
-            Kcross:
-                A tensor of shape `(batch_count, nn_count, response_count)`
-                containing the `1 x nn_count` -shaped cross-covariance matrix
-                corresponding to each of the training points for each response.
+            crosswise_dists:
+                A tensor of shape `(batch_count, nn_count)` whose rows list the
+                distance of the corresponding test element to each of its
+                nearest neighbors.
             coeffs_mat:
                 A tensor of shape `(batch_count, nn_count, response_count)`
                 providing the precomputed coefficients for fast regression.
@@ -1218,12 +1216,17 @@ class MultivariateMuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        responses = self._fast_regress(Kcross, coeffs_mat)
+        models = self.models
+        responses = self._fast_regress(models, crosswise_dists, coeffs_mat)
         return responses
 
     @staticmethod
     def _fast_regress(
-        Kcross: np.ndarray,
+        models: List[MuyGPS],
+        crosswise_dists: np.ndarray,
         coeffs_mat: np.ndarray,
     ) -> np.ndarray:
+        Kcross = np.zeros(coeffs_mat.shape)
+        for i, model in enumerate(models):
+            Kcross[:, :, i] = model.kernel(crosswise_dists)
         return _muygps_fast_regress_solve(Kcross, coeffs_mat)

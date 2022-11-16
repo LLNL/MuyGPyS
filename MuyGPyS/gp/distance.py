@@ -121,7 +121,7 @@ def make_fast_regress_tensors(
     Returns
     -------
     pairwise_dists:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
     batch_nn_targets:
@@ -177,7 +177,7 @@ def make_regress_tensors(
         A matrix of shape `(batch_count, nn_count)` whose rows list the distance
         of the corresponding batch element to each of its nearest neighbors.
     pairwise_dists:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
     batch_nn_targets:
@@ -231,7 +231,7 @@ def make_train_tensors(
         A matrix of shape `(batch_count, nn_count)` whose rows list the distance
         of the corresponding batch element to each of its nearest neighbors.
     pairwise_dists:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
     batch_targets:
@@ -319,7 +319,7 @@ def pairwise_distances(
             data is normalized to the unit hypersphere), and `cosine`.
 
     Returns:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
     """
