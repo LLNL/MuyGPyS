@@ -346,7 +346,22 @@ class MuyGPS:
         indices_by_rank: bool = False,
     ) -> np.ndarray:
         """
-        Produces coefficient matrix for fast regression.
+        Produces coefficient matrix for fast regression given in Equation
+        (8) of [dunton2022fast]_. To form each row of this matrix, we compute
+
+        .. math::
+            \\mathbf{C}_{N^*}(i, :) =
+                (K_\\{\\hat{\\theta}} (X_{N^*}, X_{N^*})
+                + \\varepsilon I_k)^{-1} Y(X_{N^*}).
+
+        Here :math:`X_{N^*}` is the union of the nearest neighbor of the ith
+        test point and the `nn_count - 1` nearest neighbors of this nearest
+        neighbor, :math:`K_\\{\\hat{\\theta}}` is the trained kernel functor
+        specified by `self.kernel`, :math:`\\varepsilon I_k` is a diagonal
+        homoscedastic noise matrix whose diagonal is the value of the
+        `self.eps` hyperparameter, and :math:`Y(X_{N^*})` is the
+        `(train_count,)` vector of responses corresponding to the
+        training features indexed by $N^*$.
 
         Args:
             train:
@@ -1101,7 +1116,23 @@ class MultivariateMuyGPS:
         indices_by_rank: bool = False,
     ) -> np.ndarray:
         """
-        Builds coefficient matrix for fast regression in multivariate case.
+        Produces coefficient tensor for fast regression given in Equation
+        (8) of [dunton2022fast]_. To form the tensor, we compute
+
+        .. math::
+            \\mathbf{C}_{N^*}(i, :, j) =
+                (K_\\{\\hat{\\theta_j}} (X_{N^*}, X_{N^*}) +
+                \\varepsilon I_k)^{-1} Y(X_{N^*}).
+
+        Here :math:`X_{N^*}` is the union of the nearest neighbor of the ith
+        test point and the `nn_count - 1` nearest neighbors of this nearest
+        neighbor, :math:`K_\\{\\hat{\\theta_j}}` is the trained kernel functor
+        corresponding the jth response and specified by `self.models`,
+        :math:`\\varepsilon I_k` is a diagonal homoscedastic noise matrix whose
+        diagonal  is the value of the `self.eps` hyperparameter,
+        and :math:`Y(X_{N^*})` is the `(train_count, response_count)`
+        matrix of responses corresponding to the training features indexed
+        by $N^*$.
 
         Args:
             train:
@@ -1155,8 +1186,9 @@ class MultivariateMuyGPS:
     ) -> np.ndarray:
         """
         Performs fast multivariate regression using provided
-        cross-covariance, the index of the training point closest to the
-        queried test point, and precomputed coefficient matrix.
+        vectors and matrices used in constructed the crosswise distances matrix,
+        the index of the training point closest to the queried test point,
+        and precomputed coefficient matrix.
 
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations, as computed in
@@ -1220,11 +1252,7 @@ class MultivariateMuyGPS:
     ) -> np.ndarray:
         """
         Performs fast regression using provided
-        cross-covariance and precomputed coefficient matrix.
-
-        Assumes that cross-covariance matrix `Kcross` is already computed and
-        given as an argument. To implicitly construct these values from indices
-        instead use :func:`~MuyGPyS.gp.muygps.MuyGPS.fast_regress_from_indices`.
+        crosswise distances and precomputed coefficient matrix.
 
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations, as computed in

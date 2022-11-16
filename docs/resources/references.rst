@@ -11,3 +11,7 @@ References
     Dana. "Star-Galaxy Image Separation with Computationally Efficient
     Gaussian Process Classification." arXiv preprint
     `arXiv:2105.01106 <https://arxiv.org/abs/2105.01106>`_ (2021).
+.. [dunton2022fast] Dunton, Alec M., Benjamin W. Priest, and Amanda Muyskens. 
+    "Fast Gaussian Process Posterior Mean Prediction via Local Cross Validation 
+    and Precomputation." arXiv preprint 
+    `arXiv:2205.10879 <https://arxiv.org/abs/2105.10879>`(2022).
