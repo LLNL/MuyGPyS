@@ -11,5 +11,6 @@ Includes the high-level APIs for automated model creation and training, and some
    :caption: Contents:
 
    examples/regress
+   examples/fast_regress
    examples/classify
    examples/two_class_classify_uq
