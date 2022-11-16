@@ -18,7 +18,7 @@ DEV_REQUIRES = [
 ]
 
 DOCS_REQUIRES = [
-    "sphinx==4.1.1",
+    "sphinx==4.2.0",
     "sphinx-rtd-theme==0.5.2",
     "sphinx-autodoc-typehints==1.12.0",
     "matplotlib>=3.2.1",

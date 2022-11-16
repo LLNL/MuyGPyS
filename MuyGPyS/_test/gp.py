@@ -296,7 +296,7 @@ def benchmark_prepare_cholK(
             `(train_count, feature_count)`.
 
     Returns:
-        The Cholesky depcomposition of a dense covariance matrix.
+        The Cholesky decomposition of a dense covariance matrix.
     """
     pairwise_dists = benchmark_pairwise_distances(data, metric=gp.kernel.metric)
     data_count, _ = data.shape

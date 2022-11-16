@@ -32,3 +32,37 @@ def _muygps_compute_diagonal_variance(
         ).reshape(batch_count, nn_count),
         axis=1,
     )
+
+
+def _muygps_fast_regress_solve(
+    Kcross: np.ndarray,
+    coeffs_mat: np.ndarray,
+) -> np.ndarray:
+    responses = np.sum(np.multiply(Kcross, coeffs_mat), axis=1)
+    return responses
+
+
+def _muygps_fast_regress_precompute(
+    K: np.ndarray,
+    eps: float,
+    train_nn_targets_fast: np.ndarray,
+) -> np.ndarray:
+    _, nn_count, _ = K.shape
+    coeffs_mat = np.linalg.solve(
+        K + eps * np.eye(nn_count), train_nn_targets_fast
+    )
+    return np.squeeze(coeffs_mat)
+
+
+def _muygps_fast_nn_update(
+    nn_indices: np.ndarray,
+) -> np.ndarray:
+    train_count, _ = nn_indices.shape
+    new_nn_indices = np.concatenate(
+        (
+            np.expand_dims(np.arange(0, train_count), axis=1),
+            nn_indices[:, :-1],
+        ),
+        axis=1,
+    )
+    return new_nn_indices

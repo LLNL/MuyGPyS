@@ -13,6 +13,7 @@ from absl.testing import parameterized
 from MuyGPyS.examples.classify import do_classify
 from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq
 from MuyGPyS.examples.regress import do_regress
+from MuyGPyS.examples.fast_regress import do_fast_regress
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize.loss import mse_fn
 
@@ -498,4 +499,110 @@ class RegressionAPITest(parameterized.TestCase):
             variance,
             crosswise_dists,
             pairwise_dists,
+        )
+
+
+class FastRegressionAPITest(parameterized.TestCase):
+    def _do_fast_regress_test_chassis(
+        self,
+        train: Dict[str, np.ndarray],
+        test: Dict[str, np.ndarray],
+        target_mse: float,
+        nn_count: int,
+        batch_count: int,
+        loss_method: str,
+        obj_method: str,
+        opt_method: str,
+        sigma_method: Optional[str],
+        variance_mode: Optional[str],
+        nn_kwargs: Dict,
+        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        opt_kwargs: Dict,
+        kern: Optional[str] = None,
+        apply_sigma_sq: bool = False,
+        return_distances: bool = False,
+        verbose: bool = False,
+    ) -> None:
+        (regressor, predictions, mse) = self._do_fast_regress(
+            train,
+            test,
+            nn_count,
+            batch_count,
+            loss_method,
+            obj_method,
+            opt_method,
+            sigma_method,
+            variance_mode,
+            nn_kwargs,
+            k_kwargs,
+            opt_kwargs,
+            kern=kern,
+            apply_sigma_sq=apply_sigma_sq,
+            return_distances=return_distances,
+            verbose=verbose,
+        )
+        self.assertEqual(predictions.shape, test["output"].shape)
+        print(f"obtains mse: {mse}")
+        self.assertLessEqual(mse, target_mse)
+
+        param_names, param_vals, _ = regressor.get_optim_params()
+        if len(param_names) > 0:
+            print("finds hyperparameters:")
+            for i, p in enumerate(param_names):
+                print(f"\t{p} : {param_vals[i]}")
+
+    def _do_fast_regress(
+        self,
+        train: Dict[str, np.ndarray],
+        test: Dict[str, np.ndarray],
+        nn_count: int,
+        batch_count: int,
+        loss_method: str,
+        obj_method: str,
+        opt_method: str,
+        sigma_method: Optional[str],
+        variance_mode: Optional[str],
+        nn_kwargs: Dict,
+        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        opt_kwargs: Dict,
+        kern: Optional[str] = None,
+        apply_sigma_sq: bool = True,
+        return_distances: bool = False,
+        verbose: bool = False,
+    ) -> Tuple[
+        Union[MuyGPS, MMuyGPS],
+        np.ndarray,
+        float,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+    ]:
+        (
+            regressor,
+            _,
+            predictions,
+            precomputed_coefficient_matrix,
+            _,
+        ) = do_fast_regress(
+            test["input"],
+            train["input"],
+            train["output"],
+            nn_count=nn_count,
+            batch_count=batch_count,
+            loss_method=loss_method,
+            obj_method=obj_method,
+            opt_method=opt_method,
+            sigma_method=sigma_method,
+            kern=kern,
+            k_kwargs=k_kwargs,
+            nn_kwargs=nn_kwargs,
+            opt_kwargs=opt_kwargs,
+            verbose=verbose,
+        )
+
+        mse = mse_fn(predictions, test["output"])
+        return (
+            regressor,
+            predictions,
+            mse,
         )

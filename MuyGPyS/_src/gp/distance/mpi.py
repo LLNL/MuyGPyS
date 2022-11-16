@@ -19,6 +19,17 @@ from typing import Tuple
 import numpy as np
 
 
+def _make_fast_regress_tensors(
+    metric: str,
+    batch_nn_indices: np.ndarray,
+    train_features: np.ndarray,
+    train_targets: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    raise NotImplementedError(
+        f'Function "make_fast_regress_tensors" does not support mpi!'
+    )
+
+
 def _make_regress_tensors(
     metric: str,
     batch_indices: np.ndarray,

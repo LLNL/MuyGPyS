@@ -65,7 +65,8 @@ Example:
     ...         metric="l2"
     ... )
 
-The helper functions :func:`MuyGPyS.gp.distance.make_regress_tensors` and
+The helper functions :func:`MuyGPyS.gp.distance.make_regress_tensors`,
+:func:`MuyGPyS.gp.distance.make_fast_regress_tensors`, and
 :func:`MuyGPyS.gp.distance.make_train_tensors` wrap these distances tensors and
 also return the nearest neighbors sets' training targets and (in the latter
 case) the training targets of the training batch. These functions are convenient
@@ -80,11 +81,61 @@ from typing import Optional, Tuple
 from MuyGPyS import config
 
 from MuyGPyS._src.gp.distance import (
+    _make_fast_regress_tensors,
     _make_regress_tensors,
     _make_train_tensors,
     _crosswise_distances,
     _pairwise_distances,
 )
+
+
+def make_fast_regress_tensors(
+    metric: str,
+    batch_nn_indices: np.ndarray,
+    test_features: np.ndarray,
+    train_features: np.ndarray,
+    train_targets: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Create the distance and target tensors for fast regression.
+
+    Creates `pairwise_dists` and `batch_nn_targets`
+    tensors required by :func:`MuyGPyS.gp.MuyGPyS.fast_regress`.
+
+    Args:
+        metric:
+            The metric to be used to compute distances.
+        batch_nn_indices:
+            A matrix of integers of shape `(batch_count, nn_count)` listing the
+            nearest neighbor indices for all observations in the batch.
+        test_features:
+            The full floating point testing data matrix of shape
+            `(test_count, feature_count)`.
+        train_features:
+            The full floating point training data matrix of shape
+            `(train_count, feature_count)`.
+        train_targets:
+            A matrix of shape `(train_count, response_count)` whose rows are
+            vector-valued responses for each training element.
+
+    Returns
+    -------
+    pairwise_dists:
+        A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
+        dimensions contain square matrices containing the pairwise distances
+        between the nearest neighbors of the batch elements.
+    batch_nn_targets:
+        Tensor of floats of shape `(batch_count, nn_count, response_count)`
+        containing the expected response for each nearest neighbor of each batch
+        element.
+    """
+    return _make_fast_regress_tensors(
+        metric,
+        batch_nn_indices,
+        test_features,
+        train_features,
+        train_targets,
+    )
 
 
 def make_regress_tensors(
@@ -126,7 +177,7 @@ def make_regress_tensors(
         A matrix of shape `(batch_count, nn_count)` whose rows list the distance
         of the corresponding batch element to each of its nearest neighbors.
     pairwise_dists:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
     batch_nn_targets:
@@ -180,7 +231,7 @@ def make_train_tensors(
         A matrix of shape `(batch_count, nn_count)` whose rows list the distance
         of the corresponding batch element to each of its nearest neighbors.
     pairwise_dists:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
     batch_targets:
@@ -268,7 +319,7 @@ def pairwise_distances(
             data is normalized to the unit hypersphere), and `cosine`.
 
     Returns:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
+        A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
     """

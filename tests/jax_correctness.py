@@ -27,11 +27,13 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _pairwise_distances as pairwise_distances_n,
         _crosswise_distances as crosswise_distances_n,
         _make_train_tensors as make_train_tensors_n,
+        _make_fast_regress_tensors as make_fast_regress_tensors_n,
     )
     from MuyGPyS._src.gp.distance.jax import (
         _pairwise_distances as pairwise_distances_j,
         _crosswise_distances as crosswise_distances_j,
         _make_train_tensors as make_train_tensors_j,
+        _make_fast_regress_tensors as make_fast_regress_tensors_j,
     )
     from MuyGPyS._src.gp.kernels.numpy import (
         _rbf_fn as rbf_fn_n,
@@ -52,10 +54,16 @@ if config.muygpys_jax_enabled is True:  # type: ignore
     from MuyGPyS._src.gp.muygps.numpy import (
         _muygps_compute_solve as muygps_compute_solve_n,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
+        _muygps_fast_regress_solve as muygps_fast_regress_solve_n,
+        _muygps_fast_regress_precompute as muygps_fast_regress_precompute_n,
+        _muygps_fast_nn_update as muygps_fast_nn_update_n,
     )
     from MuyGPyS._src.gp.muygps.jax import (
         _muygps_compute_solve as muygps_compute_solve_j,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_j,
+        _muygps_fast_regress_solve as muygps_fast_regress_solve_j,
+        _muygps_fast_regress_precompute as muygps_fast_regress_precompute_j,
+        _muygps_fast_nn_update as muygps_fast_nn_update_j,
     )
     from MuyGPyS._src.optimize.sigma_sq.numpy import (
         _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
@@ -449,6 +457,121 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                         self.batch_nn_targets_j,
                         self.muygps.eps(),
                     ),
+                )
+            )
+
+    class FastPredictTestCase(MuyGPSTestCase):
+        @classmethod
+        def setUpClass(cls):
+            super(FastPredictTestCase, cls).setUpClass()
+            cls.nn_indices_all_n, _ = cls.nbrs_lookup.get_batch_nns(
+                np.arange(0, cls.train_count)
+            )
+            cls.nn_indices_all_n = np.array(cls.nn_indices_all_n)
+            (
+                cls.K_fast_n,
+                cls.train_nn_targets_fast_n,
+            ) = make_fast_regress_tensors_n(
+                cls.muygps.kernel.metric,
+                cls.nn_indices_all_n,
+                cls.train_features_n,
+                cls.train_responses_n,
+            )
+
+            cls.fast_regress_coeffs_n = muygps_fast_regress_precompute_n(
+                cls.K_fast_n, cls.muygps.eps(), cls.train_nn_targets_fast_n
+            )
+
+            cls.test_neighbors_n, _ = cls.nbrs_lookup.get_nns(
+                cls.test_features_n
+            )
+            cls.closest_neighbor_n = cls.test_neighbors_n[:, 0]
+            cls.closest_set_n = cls.nn_indices_all_n[cls.closest_neighbor_n]
+
+            cls.new_nn_indices_n = muygps_fast_nn_update_n(cls.nn_indices_all_n)
+            cls.closest_set_new_n = cls.new_nn_indices_n[
+                cls.closest_neighbor_n
+            ].astype(int)
+            cls.crosswise_dists_fast_n = crosswise_distances_n(
+                cls.test_features_n,
+                cls.train_features_n,
+                np.arange(0, cls.test_count),
+                cls.closest_set_new_n,
+            )
+            cls.Kcross_fast_n = cls.muygps.kernel(cls.crosswise_dists_fast_n)
+
+            cls.nn_indices_all_j, _ = cls.nbrs_lookup.get_batch_nns(
+                jnp.arange(0, cls.train_count)
+            )
+            cls.nn_indices_all_j = jnp.array(cls.nn_indices_all_j)
+
+            (
+                cls.K_fast_j,
+                cls.train_nn_targets_fast_j,
+            ) = make_fast_regress_tensors_j(
+                cls.muygps.kernel.metric,
+                cls.nn_indices_all_j,
+                cls.train_features_j,
+                cls.train_responses_j,
+            )
+
+            cls.fast_regress_coeffs_j = muygps_fast_regress_precompute_j(
+                cls.K_fast_j, cls.muygps.eps(), cls.train_nn_targets_fast_j
+            )
+
+            cls.test_neighbors_j, _ = cls.nbrs_lookup.get_nns(
+                cls.test_features_j
+            )
+            cls.closest_neighbor_j = cls.test_neighbors_j[:, 0]
+            cls.closest_set_j = cls.nn_indices_all_j[
+                cls.closest_neighbor_j
+            ].astype(int)
+
+            cls.new_nn_indices_j = muygps_fast_nn_update_j(cls.nn_indices_all_j)
+            cls.closest_set_new_j = cls.new_nn_indices_j[cls.closest_neighbor_j]
+            cls.crosswise_dists_fast_j = crosswise_distances_j(
+                cls.test_features_j,
+                cls.train_features_j,
+                jnp.arange(0, cls.test_count),
+                cls.closest_set_new_j,
+            )
+            cls.Kcross_fast_j = cls.muygps.kernel(cls.crosswise_dists_fast_j)
+
+        def test_fast_nn_update(self):
+            self.assertTrue(
+                allclose_inv(
+                    muygps_fast_nn_update_j(self.nn_indices_all_j),
+                    muygps_fast_nn_update_n(self.nn_indices_all_n),
+                )
+            )
+
+        def test_make_fast_regress_tensors(self):
+            self.assertTrue(allclose_inv(self.K_fast_n, self.K_fast_j))
+            self.assertTrue(
+                allclose_inv(
+                    self.train_nn_targets_fast_n, self.train_nn_targets_fast_j
+                )
+            )
+
+        def test_fast_predict(self):
+            self.assertTrue(
+                allclose_inv(
+                    muygps_fast_regress_solve_n(
+                        self.Kcross_fast_n,
+                        self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
+                    ),
+                    muygps_fast_regress_solve_j(
+                        self.Kcross_fast_j,
+                        self.fast_regress_coeffs_j[self.closest_neighbor_j, :],
+                    ),
+                )
+            )
+
+        def test_fast_predict_coeffs(self):
+            self.assertTrue(
+                allclose_inv(
+                    self.fast_regress_coeffs_n,
+                    self.fast_regress_coeffs_j,
                 )
             )
 
