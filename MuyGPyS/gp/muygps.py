@@ -595,8 +595,8 @@ class MuyGPS:
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
             coeffs_mat:
-                A tensor whose rows are given by precomputed coefficients for
-                fast regression.
+                A tensor of shape `(batch_count, nn_count,)` whose rows
+                are given by precomputed coefficients for fast regression.
 
 
         Returns:
