@@ -23,27 +23,14 @@ import numpy as np
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
-from MuyGPyS.gp.distance import (
-    make_train_tensors,
-    crosswise_distances,
-)
-from MuyGPyS.optimize.chassis import optimize_from_tensors
+from MuyGPyS.gp.distance import fast_nn_update
 
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.sigma_sq import (
-    muygps_sigma_sq_optim,
-    mmuygps_sigma_sq_optim,
-)
 
 from MuyGPyS.examples.regress import (
     _decide_and_make_regressor,
     _unpack,
-)
-
-from MuyGPyS._src.gp.muygps import (
-    _muygps_fast_nn_update,
 )
 
 
@@ -336,7 +323,7 @@ def fast_regress_any(
     train_features: np.ndarray,
     nbrs_lookup: NN_Wrapper,
     train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, Dict]:
 
     """
     Convenience function performing regression using a pre-trained model.
@@ -386,7 +373,7 @@ def fast_regress_any(
     time_precomp = perf_counter()
 
     time_agree = perf_counter()
-    nn_indices = _muygps_fast_nn_update(nn_indices)
+    nn_indices = fast_nn_update(nn_indices)
 
     test_neighbors, _ = nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
