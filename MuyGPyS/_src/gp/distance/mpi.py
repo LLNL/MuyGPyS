@@ -96,3 +96,11 @@ def _pairwise_distances(
         nn_indices,
         metric,
     )
+
+
+def _muygps_fast_nn_update(
+    nn_indices: np.ndarray,
+) -> np.ndarray:
+    raise NotImplementedError(
+        f'Function "muygps_fast_nn_update" does not support mpi!'
+    )

@@ -26,11 +26,3 @@ def _muygps_fast_regress_precompute(
     raise NotImplementedError(
         f'Function "muygps_fast_regress_precompute" does not support mpi!'
     )
-
-
-def _muygps_fast_nn_update(
-    nn_indices: np.ndarray,
-) -> np.ndarray:
-    raise NotImplementedError(
-        f'Function "muygps_fast_nn_update" does not support mpi!'
-    )

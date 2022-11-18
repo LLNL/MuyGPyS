@@ -86,13 +86,19 @@ from MuyGPyS._src.gp.distance import (
     _make_train_tensors,
     _crosswise_distances,
     _pairwise_distances,
+    _muygps_fast_nn_update,
 )
+
+
+def muygps_fast_nn_update(
+    batch_nn_indices: np.ndarray,
+) -> np.ndarray:
+    return _muygps_fast_nn_update(batch_nn_indices)
 
 
 def make_fast_regress_tensors(
     metric: str,
     batch_nn_indices: np.ndarray,
-    test_features: np.ndarray,
     train_features: np.ndarray,
     train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -132,7 +138,6 @@ def make_fast_regress_tensors(
     return _make_fast_regress_tensors(
         metric,
         batch_nn_indices,
-        test_features,
         train_features,
         train_targets,
     )
