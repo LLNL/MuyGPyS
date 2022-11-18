@@ -98,7 +98,7 @@ def _pairwise_distances(
     )
 
 
-def _muygps_fast_nn_update(
+def _fast_nn_update(
     nn_indices: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(

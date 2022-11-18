@@ -148,7 +148,7 @@ def _l2(diffs: jnp.ndarray) -> jnp.ndarray:
 
 
 @jit
-def _muygps_fast_nn_update(
+def _fast_nn_update(
     nn_indices: jnp.ndarray,
 ) -> jnp.ndarray:
     train_count, _ = nn_indices.shape

@@ -140,7 +140,7 @@ def _l2(diffs: np.array) -> np.array:
     return np.sqrt(_F2(diffs))
 
 
-def _muygps_fast_nn_update(
+def _fast_nn_update(
     nn_indices: np.ndarray,
 ) -> np.ndarray:
     train_count, _ = nn_indices.shape
