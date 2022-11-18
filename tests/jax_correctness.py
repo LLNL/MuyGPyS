@@ -28,12 +28,14 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _crosswise_distances as crosswise_distances_n,
         _make_train_tensors as make_train_tensors_n,
         _make_fast_regress_tensors as make_fast_regress_tensors_n,
+        _fast_nn_update as fast_nn_update_n,
     )
     from MuyGPyS._src.gp.distance.jax import (
         _pairwise_distances as pairwise_distances_j,
         _crosswise_distances as crosswise_distances_j,
         _make_train_tensors as make_train_tensors_j,
         _make_fast_regress_tensors as make_fast_regress_tensors_j,
+        _fast_nn_update as fast_nn_update_j,
     )
     from MuyGPyS._src.gp.kernels.numpy import (
         _rbf_fn as rbf_fn_n,
@@ -56,14 +58,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
         _muygps_fast_regress_solve as muygps_fast_regress_solve_n,
         _muygps_fast_regress_precompute as muygps_fast_regress_precompute_n,
-        _muygps_fast_nn_update as muygps_fast_nn_update_n,
     )
     from MuyGPyS._src.gp.muygps.jax import (
         _muygps_compute_solve as muygps_compute_solve_j,
         _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_j,
         _muygps_fast_regress_solve as muygps_fast_regress_solve_j,
         _muygps_fast_regress_precompute as muygps_fast_regress_precompute_j,
-        _muygps_fast_nn_update as muygps_fast_nn_update_j,
     )
     from MuyGPyS._src.optimize.sigma_sq.numpy import (
         _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
@@ -488,7 +488,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.closest_neighbor_n = cls.test_neighbors_n[:, 0]
             cls.closest_set_n = cls.nn_indices_all_n[cls.closest_neighbor_n]
 
-            cls.new_nn_indices_n = muygps_fast_nn_update_n(cls.nn_indices_all_n)
+            cls.new_nn_indices_n = fast_nn_update_n(cls.nn_indices_all_n)
             cls.closest_set_new_n = cls.new_nn_indices_n[
                 cls.closest_neighbor_n
             ].astype(int)
@@ -527,7 +527,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.closest_neighbor_j
             ].astype(int)
 
-            cls.new_nn_indices_j = muygps_fast_nn_update_j(cls.nn_indices_all_j)
+            cls.new_nn_indices_j = fast_nn_update_j(cls.nn_indices_all_j)
             cls.closest_set_new_j = cls.new_nn_indices_j[cls.closest_neighbor_j]
             cls.crosswise_dists_fast_j = crosswise_distances_j(
                 cls.test_features_j,
@@ -540,8 +540,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         def test_fast_nn_update(self):
             self.assertTrue(
                 allclose_inv(
-                    muygps_fast_nn_update_j(self.nn_indices_all_j),
-                    muygps_fast_nn_update_n(self.nn_indices_all_n),
+                    fast_nn_update_j(self.nn_indices_all_j),
+                    fast_nn_update_n(self.nn_indices_all_n),
                 )
             )
 
