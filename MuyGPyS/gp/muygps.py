@@ -35,7 +35,6 @@ from MuyGPyS._src.gp.muygps import (
     _muygps_compute_diagonal_variance,
     _muygps_fast_regress_solve,
     _muygps_fast_regress_precompute,
-    _muygps_fast_nn_update,
 )
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 from MuyGPyS.optimize.utils import _switch_on_opt_method

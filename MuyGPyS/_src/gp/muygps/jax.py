@@ -59,18 +59,3 @@ def _muygps_fast_regress_precompute(
         K + eps * jnp.eye(nn_count), train_nn_targets_fast
     )
     return jnp.squeeze(coeffs_mat)
-
-
-@jit
-def _muygps_fast_nn_update(
-    nn_indices: jnp.ndarray,
-) -> jnp.ndarray:
-    train_count, _ = nn_indices.shape
-    new_nn_indices = jnp.concatenate(
-        (
-            jnp.expand_dims(jnp.arange(0, train_count), axis=1),
-            nn_indices[:, :-1],
-        ),
-        axis=1,
-    )
-    return new_nn_indices

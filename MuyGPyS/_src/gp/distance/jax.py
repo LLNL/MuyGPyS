@@ -145,3 +145,18 @@ def _F2(diffs: jnp.ndarray) -> jnp.ndarray:
 @jit
 def _l2(diffs: jnp.ndarray) -> jnp.ndarray:
     return jnp.sqrt(_F2(diffs))
+
+
+@jit
+def _fast_nn_update(
+    nn_indices: jnp.ndarray,
+) -> jnp.ndarray:
+    train_count, _ = nn_indices.shape
+    new_nn_indices = jnp.concatenate(
+        (
+            jnp.expand_dims(jnp.arange(0, train_count), axis=1),
+            nn_indices[:, :-1],
+        ),
+        axis=1,
+    )
+    return new_nn_indices

@@ -140,6 +140,20 @@ def _l2(diffs: np.array) -> np.array:
     return np.sqrt(_F2(diffs))
 
 
+def _fast_nn_update(
+    nn_indices: np.ndarray,
+) -> np.ndarray:
+    train_count, _ = nn_indices.shape
+    new_nn_indices = np.concatenate(
+        (
+            np.expand_dims(np.arange(0, train_count), axis=1),
+            nn_indices[:, :-1],
+        ),
+        axis=1,
+    )
+    return new_nn_indices
+
+
 # def _prods(points: np.array) -> np.array:
 #     if len(points.shape) == 3:
 #         return 1 - np.array([mat @ mat.T for mat in points])
