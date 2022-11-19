@@ -624,7 +624,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nbrs_lookup = NN_Wrapper(
                 cls.train_features_n, cls.nn_count, **_exact_nn_kwarg_options[0]
             )
-            cls.muygps = MMuyGPS("matern", *k_kwargs)
+            cls.muygps = MMuyGPS("matern", *cls.k_kwargs)
             cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
                 cls.nbrs_lookup, cls.batch_count, cls.train_count
             )
