@@ -21,6 +21,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _exact_nn_kwarg_options,
     )
     from MuyGPyS.gp.muygps import MuyGPS
+    from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
     from MuyGPyS.neighbors import NN_Wrapper
     from MuyGPyS.optimize.batch import sample_batch
     from MuyGPyS._src.gp.distance.numpy import (
@@ -591,12 +592,19 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nu = 0.55
             cls.nu_bounds = (1e-1, 1e1)
             cls.eps = 1e-3
-            cls.k_kwargs = {
+            cls.k_kwargs_1 = {
                 "kern": "matern",
                 "length_scale": {"val": cls.length_scale},
                 "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
                 "eps": {"val": cls.eps},
             }
+            cls.k_kwargs_2 = {
+                "kern": "matern",
+                "length_scale": {"val": cls.length_scale},
+                "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+                "eps": {"val": cls.eps},
+            }
+            cls.k_kwargs = (cls.k_kwargs_1, cls.k_kwargs_2)
             cls.train_features_n = _make_gaussian_matrix(
                 cls.train_count, cls.feature_count
             )
@@ -616,7 +624,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nbrs_lookup = NN_Wrapper(
                 cls.train_features_n, cls.nn_count, **_exact_nn_kwarg_options[0]
             )
-            cls.muygps = MuyGPS(**cls.k_kwargs)
+            cls.muygps = MMuyGPS(**cls.k_kwargs)
             cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
                 cls.nbrs_lookup, cls.batch_count, cls.train_count
             )
