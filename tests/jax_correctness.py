@@ -580,7 +580,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
     class FastMultivariatePredictTestCase(MuyGPSTestCase):
         @classmethod
         def setUpClass(cls):
-            super(FastPredictTestCase, cls).setUpClass()
+            super(FastMultivariatePredictTestCase, cls).setUpClass()
             cls.train_count = 1000
             cls.test_count = 100
             cls.feature_count = 10
