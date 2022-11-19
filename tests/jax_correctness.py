@@ -622,7 +622,7 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nbrs_lookup = NN_Wrapper(
                 cls.train_features_n, cls.nn_count, **_exact_nn_kwarg_options[0]
             )
-            cls.muygps = MMuyGPS(*cls.k_kwargs)
+            cls.muygps = MMuyGPS("matern", *cls.k_kwargs)
             cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
                 cls.nbrs_lookup, cls.batch_count, cls.train_count
             )
@@ -636,14 +636,14 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.K_fast_n,
                 cls.train_nn_targets_fast_n,
             ) = make_fast_regress_tensors_n(
-                cls.muygps.kernel.metric,
+                cls.muygps.metric,
                 cls.nn_indices_all_n,
                 cls.train_features_n,
                 cls.train_responses_n,
             )
 
             cls.fast_regress_coeffs_n = muygps_fast_regress_precompute_n(
-                cls.K_fast_n, cls.muygps.eps(), cls.train_nn_targets_fast_n
+                cls.K_fast_n, cls.eps, cls.train_nn_targets_fast_n
             )
 
             cls.test_neighbors_n, _ = cls.nbrs_lookup.get_nns(
@@ -662,7 +662,14 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 np.arange(0, cls.test_count),
                 cls.closest_set_new_n,
             )
-            cls.Kcross_fast_n = cls.muygps.kernel(cls.crosswise_dists_fast_n)
+            Kcross_fast_n = np.zeros(
+                (cls.test_count, cls.nn_count, cls.response_count)
+            )
+            for i, model in enumerate(cls.muygps.models):
+                Kcross_fast_n[:, :, i] = model.kernel(
+                    cls.crosswise_dists_fast_n
+                )
+            cls.Kcross_fast_n = Kcross_fast_n
 
             cls.nn_indices_all_j, _ = cls.nbrs_lookup.get_batch_nns(
                 jnp.arange(0, cls.train_count)
@@ -673,14 +680,14 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.K_fast_j,
                 cls.train_nn_targets_fast_j,
             ) = make_fast_regress_tensors_j(
-                cls.muygps.kernel.metric,
+                cls.muygps.metric,
                 cls.nn_indices_all_j,
                 cls.train_features_j,
                 cls.train_responses_j,
             )
 
             cls.fast_regress_coeffs_j = muygps_fast_regress_precompute_j(
-                cls.K_fast_j, cls.muygps.eps(), cls.train_nn_targets_fast_j
+                cls.K_fast_j, cls.eps, cls.train_nn_targets_fast_j
             )
 
             cls.test_neighbors_j, _ = cls.nbrs_lookup.get_nns(
@@ -699,7 +706,17 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 jnp.arange(0, cls.test_count),
                 cls.closest_set_new_j,
             )
-            cls.Kcross_fast_j = cls.muygps.kernel(cls.crosswise_dists_fast_j)
+
+            # Kcross_fast_j = jnp.zeros(
+            #     (cls.test_count, cls.nn_count, cls.response_count)
+            # )
+            # for i, model in enumerate(cls.muygps.models):
+            #     Kcross_fast_j[:, :, i] = model.kernel(
+            #         cls.crosswise_dists_fast_n
+            #     )
+            # cls.Kcross_fast_j = Kcross_fast_j
+
+            cls.Kcross_fast_j = jnp.array(Kcross_fast_n)
 
         def test_make_fast_multivariate_regress_tensors(self):
             self.assertTrue(allclose_inv(self.K_fast_n, self.K_fast_j))

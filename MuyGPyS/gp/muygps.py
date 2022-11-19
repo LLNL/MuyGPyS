@@ -574,7 +574,7 @@ class MuyGPS:
                 entry is the index of the training point closest to
                 each queried point.
             coeffs_tensor:
-                A matrix of shape `('batch_count, nn_count, 1)` providing
+                A matrix of shape `('batch_count, nn_count, response_count)` providing
                 precomputed coefficients for fast regression.
 
         Returns:
@@ -629,7 +629,7 @@ class MuyGPS:
                 `1 x nn_count` -shaped cross-covariance vector corresponding
                 to each of the batch elements.
             coeffs_tensor:
-                A matrix of shape `(batch_count, nn_count, 1)` whose rows
+                A matrix of shape `(batch_count, nn_count, response_count)` whose rows
                 are given by precomputed coefficients for fast regression.
 
 
