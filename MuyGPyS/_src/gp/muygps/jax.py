@@ -65,4 +65,4 @@ def _muygps_fast_regress_precompute(
     coeffs_tensor = jnp.linalg.solve(
         K + eps * jnp.eye(nn_count), train_nn_targets_fast
     )
-    return jnp.squeeze(coeffs_tensor)
+    return coeffs_tensor
