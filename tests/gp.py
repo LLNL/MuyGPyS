@@ -716,7 +716,7 @@ class MakeFastRegressorTest(parameterized.TestCase):
             opt_kwargs=opt_kwargs,
         )
         self.assertEqual(
-            precomputed_coefficient_matrix.shape, (train_count, nn_count)
+            precomputed_coefficient_matrix.shape, (train_count, nn_count, 1)
         )
         self.assertEqual(predictions.shape, (test_count, response_count))
         for key in k_kwargs:
