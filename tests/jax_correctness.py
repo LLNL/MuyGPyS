@@ -593,13 +593,11 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nu_bounds = (1e-1, 1e1)
             cls.eps = 1e-3
             cls.k_kwargs_1 = {
-                "kern": "matern",
                 "length_scale": {"val": cls.length_scale},
                 "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
                 "eps": {"val": cls.eps},
             }
             cls.k_kwargs_2 = {
-                "kern": "matern",
                 "length_scale": {"val": cls.length_scale},
                 "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
                 "eps": {"val": cls.eps},
