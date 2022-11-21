@@ -569,7 +569,7 @@ class HeatonFastTest(FastRegressionAPITest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in (
                 (
-                    1.0,
+                    11.0,
                     {
                         "kern": "matern",
                         "metric": "l2",
