@@ -647,15 +647,13 @@ class MakeRegressorTest(parameterized.TestCase):
 class MakeFastRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, rt, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lm, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
             # for ssm in ["analytic"]
             # for rt in [True]
-            for ssm in ["analytic", None]
-            for rt in [True, False]
             for k_kwargs in (
                 {
                     "kern": "matern",
@@ -677,71 +675,41 @@ class MakeFastRegressorTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
-        opt_method_and_kwargs,
-        sigma_method,
-        return_distances,
         k_kwargs,
     ):
         # skip if we are using the MPI implementation
-        kern, args = k_kwargs
-        opt_method, opt_kwargs = opt_method_and_kwargs
-        response_count = len(args)
 
         # construct the observation locations
+        response_count = 2
         train, test = _make_gaussian_data(
             train_count,
             test_count,
             feature_count,
-            response_count,
+            response_count=2,
             categorical=False,
         )
 
         (
-            muygps,
-            nbrs_lookup,
+            _,
+            _,
             predictions,
             precomputed_coefficient_matrix,
-            timings,
+            _,
         ) = do_fast_regress(
+            test["input"],
             train["input"],
             train["output"],
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
-            opt_method=opt_method,
-            sigma_method=sigma_method,
-            kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
-            opt_kwargs=opt_kwargs,
         )
         self.assertEqual(
-            precomputed_coefficient_matrix.shape, (train_count, nn_count, 1)
+            precomputed_coefficient_matrix.shape,
+            (train_count, nn_count, response_count),
         )
         self.assertEqual(predictions.shape, (test_count, response_count))
-        for key in k_kwargs:
-            if key == "eps":
-                self.assertEqual(k_kwargs[key]["val"], muygps.eps())
-            elif key == "kern":
-                self.assertEqual(k_kwargs[key], muygps.kern)
-            elif key == "metric":
-                self.assertEqual(k_kwargs[key], muygps.kernel.metric)
-            elif k_kwargs[key]["val"] == "sample":
-                print(
-                    f"\toptimized {key} to find value "
-                    f"{muygps.kernel.hyperparameters[key]()}"
-                )
-            else:
-                self.assertEqual(
-                    k_kwargs[key]["val"],
-                    muygps.kernel.hyperparameters[key](),
-                )
-        if sigma_method is None:
-            self.assertFalse(muygps.sigma_sq.trained())
-            self.assertEqual(np.array([1.0]), muygps.sigma_sq())
-        else:
-            self.assertTrue(muygps.sigma_sq.trained())
-            print(f"\toptimized sigma_sq to find value " f"{muygps.sigma_sq()}")
 
 
 class GPSigmaSqTest(parameterized.TestCase):

@@ -707,15 +707,6 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.closest_set_new_j,
             )
 
-            # Kcross_fast_j = jnp.zeros(
-            #     (cls.test_count, cls.nn_count, cls.response_count)
-            # )
-            # for i, model in enumerate(cls.muygps.models):
-            #     Kcross_fast_j[:, :, i] = model.kernel(
-            #         cls.crosswise_dists_fast_n
-            #     )
-            # cls.Kcross_fast_j = Kcross_fast_j
-
             cls.Kcross_fast_j = jnp.array(Kcross_fast_n)
 
         def test_make_fast_multivariate_regress_tensors(self):

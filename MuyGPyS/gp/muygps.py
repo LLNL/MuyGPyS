@@ -634,7 +634,7 @@ class MuyGPS:
 
 
         Returns:
-            A matrix of shape `(batch_count,)` whose rows are
+            A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
         return self._fast_regress(
