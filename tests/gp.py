@@ -685,7 +685,7 @@ class MakeFastRegressorTest(parameterized.TestCase):
             train_count,
             test_count,
             feature_count,
-            response_count=2,
+            response_count=response_count,
             categorical=False,
         )
 
