@@ -25,3 +25,11 @@ def _matern_25_fn(dists: torch.Tensor, length_scale: float) -> torch.Tensor:
 def _matern_inf_fn(dists: torch.Tensor, length_scale: float) -> torch.Tensor:
     dists = dists / length_scale
     return torch.exp(-(dists**2) / 2.0)
+
+
+def _matern_gen_fn(
+    dists: torch.Tensor, nu: float, length_scale: float
+) -> torch.Tensor:
+    raise NotImplementedError(
+        f'Function "matern_gen_fn" does not support torch!'
+    )
