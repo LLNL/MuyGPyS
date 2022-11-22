@@ -11,10 +11,19 @@ from MuyGPyS._src.gp.muygps.numpy import (
 
 def _muygps_fast_regress_solve(
     Kcross: np.ndarray,
-    coeffs_mat: np.ndarray,
+    coeffs_tensor: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
         f'Function "muygps_fast_regress_solve" does not support mpi!'
+    )
+
+
+def _mmuygps_fast_regress_solve(
+    Kcross: np.ndarray,
+    coeffs_tensor: np.ndarray,
+) -> np.ndarray:
+    raise NotImplementedError(
+        f'Function "mmuygps_fast_regress_solve" does not support mpi!'
     )
 
 

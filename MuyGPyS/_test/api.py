@@ -545,11 +545,16 @@ class FastRegressionAPITest(parameterized.TestCase):
         print(f"obtains mse: {mse}")
         self.assertLessEqual(mse, target_mse)
 
-        param_names, param_vals, _ = regressor.get_optim_params()
-        if len(param_names) > 0:
-            print("finds hyperparameters:")
+        if isinstance(regressor, MuyGPS):
+            param_names, param_vals, _ = regressor.get_optim_params()
             for i, p in enumerate(param_names):
                 print(f"\t{p} : {param_vals[i]}")
+        elif isinstance(regressor, MMuyGPS):
+            for i, model in enumerate(regressor.models):
+                print(f"model {i}:")
+                param_names, param_vals, _ = model.get_optim_params()
+                for i, p in enumerate(param_names):
+                    print(f"\t{p} : {param_vals[i]}")
 
     def _do_fast_regress(
         self,
@@ -569,14 +574,7 @@ class FastRegressionAPITest(parameterized.TestCase):
         apply_sigma_sq: bool = True,
         return_distances: bool = False,
         verbose: bool = False,
-    ) -> Tuple[
-        Union[MuyGPS, MMuyGPS],
-        np.ndarray,
-        float,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-    ]:
+    ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, float]:
         (
             regressor,
             _,

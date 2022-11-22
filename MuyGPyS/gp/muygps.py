@@ -35,6 +35,7 @@ from MuyGPyS._src.gp.muygps import (
     _muygps_compute_diagonal_variance,
     _muygps_fast_regress_solve,
     _muygps_fast_regress_precompute,
+    _mmuygps_fast_regress_solve,
 )
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 from MuyGPyS.optimize.utils import _switch_on_opt_method
@@ -531,7 +532,7 @@ class MuyGPS:
         test_features: np.ndarray,
         train_features: np.ndarray,
         closest_index: np.ndarray,
-        coeffs_mat: np.ndarray,
+        coeffs_tensor: np.ndarray,
     ) -> np.ndarray:
         """
         Performs fast regression using provided
@@ -572,8 +573,8 @@ class MuyGPS:
                 A vector of shape `('batch_count,)` for which each
                 entry is the index of the training point closest to
                 each queried point.
-            coeffs_mat:
-                A matrix of shape `('batch_count, nn_count)` providing
+            coeffs_tensor:
+                A matrix of shape `('batch_count, nn_count, response_count)` providing
                 precomputed coefficients for fast regression.
 
         Returns:
@@ -590,13 +591,13 @@ class MuyGPS:
         Kcross = self.kernel(crosswise_dists)
         return self.fast_regress(
             Kcross,
-            coeffs_mat[closest_index, :],
+            coeffs_tensor[closest_index, :],
         )
 
     def fast_regress(
         self,
         Kcross: np.ndarray,
-        coeffs_mat: np.ndarray,
+        coeffs_tensor: np.ndarray,
     ) -> np.ndarray:
         """
         Performs fast regression using provided
@@ -627,8 +628,8 @@ class MuyGPS:
                 A matrix of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance vector corresponding
                 to each of the batch elements.
-            coeffs_mat:
-                A matrix of shape `(batch_count, nn_count)` whose rows
+            coeffs_tensor:
+                A matrix of shape `(batch_count, nn_count, response_count)` whose rows
                 are given by precomputed coefficients for fast regression.
 
 
@@ -638,15 +639,15 @@ class MuyGPS:
         """
         return self._fast_regress(
             Kcross,
-            coeffs_mat,
+            coeffs_tensor,
         )
 
     @staticmethod
     def _fast_regress(
         Kcross: np.ndarray,
-        coeffs_mat: np.ndarray,
+        coeffs_tensor: np.ndarray,
     ) -> np.ndarray:
-        responses = _muygps_fast_regress_solve(Kcross, coeffs_mat)
+        responses = _muygps_fast_regress_solve(Kcross, coeffs_tensor)
         return responses
 
     def get_opt_mean_fn(self, opt_method) -> Callable:
@@ -1165,14 +1166,14 @@ class MultivariateMuyGPS:
         train_nn_targets_fast: np.ndarray,
     ) -> np.ndarray:
         train_count, nn_count, response_count = train_nn_targets_fast.shape
-        coeffs_mat = np.zeros((train_count, nn_count, response_count))
+        coeffs_tensor = np.zeros((train_count, nn_count, response_count))
         for i, model in enumerate(models):
             K = model.kernel(pairwise_dists_fast)
-            coeffs_mat[:, :, i] = _muygps_fast_regress_precompute(
+            coeffs_tensor[:, :, i] = _muygps_fast_regress_precompute(
                 K, model.eps(), train_nn_targets_fast[:, :, i]
             )
 
-        return coeffs_mat
+        return coeffs_tensor
 
     def fast_regress_from_indices(
         self,
@@ -1181,7 +1182,7 @@ class MultivariateMuyGPS:
         test_features: np.ndarray,
         train_features: np.ndarray,
         closest_index: np.ndarray,
-        coeffs_mat: np.ndarray,
+        coeffs_tensor: np.ndarray,
     ) -> np.ndarray:
         """
         Performs fast multivariate regression using provided
@@ -1223,7 +1224,7 @@ class MultivariateMuyGPS:
                 A vector of shape `(batch_count,)` for which each entry is
                 the index of the training point closest to each queried
                 test point.
-            coeffs_mat:
+            coeffs_tensor:
                 A tensor of shape `(batch_count, nn_count, response_count)`
                 providing the precomputed coefficients for fast regression.
 
@@ -1241,13 +1242,13 @@ class MultivariateMuyGPS:
 
         return self.fast_regress(
             crosswise_dists,
-            coeffs_mat[closest_index, :, :],
+            coeffs_tensor[closest_index, :, :],
         )
 
     def fast_regress(
         self,
         crosswise_dists: np.ndarray,
-        coeffs_mat: np.ndarray,
+        coeffs_tensor: np.ndarray,
     ) -> np.ndarray:
         """
         Performs fast regression using provided
@@ -1273,7 +1274,7 @@ class MultivariateMuyGPS:
                 A matrix of shape `(batch_count, nn_count)` whose rows list the
                 distance of the corresponding test element to each of its
                 nearest neighbors.
-            coeffs_mat:
+            coeffs_tensor:
                 A tensor of shape `(batch_count, nn_count, response_count)`
                 providing the precomputed coefficients for fast regression.
 
@@ -1283,16 +1284,16 @@ class MultivariateMuyGPS:
             the predicted response for each of the given indices.
         """
         models = self.models
-        responses = self._fast_regress(models, crosswise_dists, coeffs_mat)
+        responses = self._fast_regress(models, crosswise_dists, coeffs_tensor)
         return responses
 
     @staticmethod
     def _fast_regress(
         models: List[MuyGPS],
         crosswise_dists: np.ndarray,
-        coeffs_mat: np.ndarray,
+        coeffs_tensor: np.ndarray,
     ) -> np.ndarray:
-        Kcross = np.zeros(coeffs_mat.shape)
+        Kcross = np.zeros(coeffs_tensor.shape)
         for i, model in enumerate(models):
             Kcross[:, :, i] = model.kernel(crosswise_dists)
-        return _muygps_fast_regress_solve(Kcross, coeffs_mat)
+        return _mmuygps_fast_regress_solve(Kcross, coeffs_tensor)
