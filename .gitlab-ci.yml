@@ -56,4 +56,3 @@ all_tests:
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/classify_api.py /p/lustre1/madstare/muygps-data/ --muygpys_jax_enabled=False
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/fast_regress_api.py /p/lustre1/madstare/muygps-data/ --muygpys_jax_enabled=False
     - echo "done with MPI tests"
-o
