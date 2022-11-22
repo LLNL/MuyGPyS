@@ -72,7 +72,7 @@ def make_fast_regressor(
     nn_indices, _ = nbrs_lookup.get_batch_nns(
         np.arange(0, num_training_samples)
     )
-    nn_indices = np.array(nn_indices).astype(int)
+    nn_indices = nn_indices.astype(int)
 
     precomputed_coefficients_matrix = muygps.build_fast_regress_coeffs(
         train_features, nn_indices, train_targets
@@ -111,12 +111,13 @@ def make_fast_multivariate_regressor(
         precomputed coefficients for each nearest neighbors set in the
         training data.
     nn_indices:
-        A numpy.ndarrray supporting nearest neighbor queries.
+        An array supporting nearest neighbor queries.
     """
     num_training_samples, _ = train_features.shape
     nn_indices, _ = nbrs_lookup.get_batch_nns(
         np.arange(0, num_training_samples)
     )
+    nn_indices = nn_indices.astype(int)
 
     precomputed_coefficients_matrix = muygps.build_fast_regress_coeffs(
         train_features, nn_indices, train_targets
@@ -129,7 +130,7 @@ def _decide_and_make_fast_regressor(
     nbrs_lookup: NN_Wrapper,
     train_features: np.ndarray,
     train_targets: np.ndarray,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     if isinstance(muygps, MuyGPS):
         precomputed_coefficients_matrix, nn_indices = make_fast_regressor(
             muygps,
