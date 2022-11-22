@@ -42,7 +42,9 @@ all_tests:
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/predict.py --muygpys_mpi_enabled=False
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/multivariate.py --muygpys_mpi_enabled=False
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/jax_correctness.py --muygpys_mpi_enabled=False
-    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/api.py /p/lustre1/madstare/muygps-data/ --muygpys_mpi_enabled=False
+    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/regress_api.py /p/lustre1/madstare/muygps-data/ --muygpys_mpi_enabled=False
+    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/classify_api.py /p/lustre1/madstare/muygps-data/ --muygpys_mpi_enabled=False
+    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/fast_regress_api.py /p/lustre1/madstare/muygps-data/ --muygpys_mpi_enabled=False
     - echo "done with JAX tests"
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/kernels.py --muygpys_jax_enabled=False
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/gp.py --muygpys_jax_enabled=False
@@ -50,5 +52,7 @@ all_tests:
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/predict.py --muygpys_jax_enabled=False
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/multivariate.py --muygpys_jax_enabled=False
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/jax_correctness.py --muygpys_jax_enabled=False
-    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/api.py /p/lustre1/madstare/muygps-data/ --muygpys_jax_enabled=False
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/regress_api.py /p/lustre1/madstare/muygps-data/ --muygpys_jax_enabled=False
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/classify_api.py /p/lustre1/madstare/muygps-data/ --muygpys_jax_enabled=False
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/fast_regress_api.py /p/lustre1/madstare/muygps-data/ --muygpys_jax_enabled=False
     - echo "done with MPI tests"
