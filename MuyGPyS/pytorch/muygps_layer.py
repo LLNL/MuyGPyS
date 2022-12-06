@@ -116,7 +116,6 @@ def predict_single_model(
 
     test_count = test_x_numpy.shape[0]
 
-    ###compute GP prediction here
     crosswise_dists = crosswise_distances(
         test_x_numpy,
         train_x_numpy,
@@ -188,29 +187,46 @@ class MultivariateMuyGPs_layer(nn.Module):
         batch_count, nn_count, response_count = self.batch_nn_targets.shape
 
         Kcross = torch.zeros(batch_count, nn_count, response_count)
-        K = torch.zeros(nn_count, nn_count, response_count)
+        K = torch.zeros(batch_count, nn_count, nn_count, response_count)
 
         for i in range(self.num_models):
             Kcross[:, :, i] = kernel_func(
                 crosswise_dists,
-                nu=self.nu,
-                length_scale=self.length_scale,
+                nu=self.nu[i],
+                length_scale=self.length_scale[i],
             )
 
-            K[:, :, i] = kernel_func(
+            K[:, :, :, i] = kernel_func(
                 pairwise_dists,
-                nu=self.nu,
-                length_scale=self.length_scale,
+                nu=self.nu[i],
+                length_scale=self.length_scale[i],
             )
 
-        predictions = _muygps_compute_solve(
-            K, Kcross, self.batch_nn_targets, self.eps
+        predictions = torch.zeros(batch_count, response_count)
+        variances = torch.zeros(batch_count, response_count)
+        sigma_sq = torch.zeros(
+            response_count,
         )
 
-        variances = _muygps_compute_diagonal_variance(K, Kcross, self.eps)
-
-        sigma_sq = _analytic_sigma_sq_optim(K, self.batch_nn_targets, self.eps)
-
+        for i in range(self.num_models):
+            predictions[:, i] = _muygps_compute_solve(
+                K[:, :, :, i],
+                Kcross[:, :, i],
+                self.batch_nn_targets[:, :, i].reshape(
+                    batch_count, nn_count, 1
+                ),
+                self.eps,
+            ).reshape(batch_count)
+            variances[:, i] = _muygps_compute_diagonal_variance(
+                K[:, :, :, i], Kcross[:, :, i], self.eps
+            )
+            sigma_sq[i] = _analytic_sigma_sq_optim(
+                K[:, :, :, i],
+                self.batch_nn_targets[:, :, i].reshape(
+                    batch_count, nn_count, 1
+                ),
+                self.eps,
+            )
         return predictions, variances, sigma_sq
 
 
@@ -244,7 +260,6 @@ def predict_multiple_model(
 
     test_count = test_x_numpy.shape[0]
 
-    ###compute GP prediction here
     crosswise_dists = crosswise_distances(
         test_x_numpy,
         train_x_numpy,
@@ -256,8 +271,15 @@ def predict_multiple_model(
     pairwise_dists = pairwise_distances(
         train_x_numpy, nn_indices_test, metric="l2"
     )
-    Kcross = torch.zeros(batch_count, nn_count, response_count)
-    K = torch.zeros(nn_count, nn_count, response_count)
+
+    (
+        batch_count,
+        nn_count,
+        response_count,
+    ) = model.GP_layer.batch_nn_targets.shape
+
+    Kcross = torch.zeros(test_count, nn_count, response_count)
+    K = torch.zeros(test_count, nn_count, nn_count, response_count)
 
     for i in range(num_responses):
         Kcross[:, :, i] = kernel_func(
@@ -266,7 +288,7 @@ def predict_multiple_model(
             length_scale=model.GP_layer.length_scale[i],
         )
 
-        K[:, :, i] = kernel_func(
+        K[:, :, :, i] = kernel_func(
             pairwise_dists,
             nu=model.GP_layer.nu[i],
             length_scale=model.GP_layer.length_scale[i],
@@ -274,14 +296,27 @@ def predict_multiple_model(
 
     batch_count, nn_count, response_count = test_nn_targets.shape
 
-    predictions = _muygps_compute_solve(
-        K, Kcross, test_nn_targets, model.GP_layer.eps
+    predictions = torch.zeros(batch_count, response_count)
+    variances = torch.zeros(batch_count, response_count)
+    sigma_sq = torch.zeros(
+        response_count,
     )
 
-    variances = _muygps_compute_diagonal_variance(K, Kcross, model.GP_layer.eps)
-
-    sigma_sq = _analytic_sigma_sq_optim(K, test_nn_targets, model.GP_layer.eps)
-
+    for i in range(model.GP_layer.num_models):
+        predictions[:, i] = _muygps_compute_solve(
+            K[:, :, :, i],
+            Kcross[:, :, i],
+            test_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+            model.GP_layer.eps,
+        ).reshape(batch_count)
+        variances[:, i] = _muygps_compute_diagonal_variance(
+            K[:, :, :, i], Kcross[:, :, i], model.GP_layer.eps
+        )
+        sigma_sq[i] = _analytic_sigma_sq_optim(
+            K[:, :, :, i],
+            test_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+            model.GP_layer.eps,
+        )
     return predictions, variances, sigma_sq
 
 

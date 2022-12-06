@@ -37,8 +37,6 @@ def _lool_fn(
     variances: torch.Tensor,
     sigma_sq: torch.Tensor,
 ) -> float:
-    scaled_variances = torch.outer(variances, sigma_sq)
     return torch.sum(
-        torch.divide((predictions - targets) ** 2, scaled_variances)
-        + torch.log(scaled_variances)
-    )
+        (predictions - targets) ** 2 / (sigma_sq * variances)
+    ) + torch.sum(torch.log(sigma_sq * variances))
