@@ -12,13 +12,13 @@ def _matern_05_fn(dists: torch.Tensor, length_scale: float) -> torch.Tensor:
 
 def _matern_15_fn(dists: torch.Tensor, length_scale: float) -> torch.Tensor:
     dists = dists / length_scale
-    K = dists * torch.sqrt(torch.tensor(3))
+    K = dists * torch.sqrt(torch.Tensor(3))
     return (1.0 + K) * torch.exp(-K)
 
 
 def _matern_25_fn(dists: torch.Tensor, length_scale: float) -> torch.Tensor:
     dists = dists / length_scale
-    K = dists * torch.sqrt(torch.tensor(5))
+    K = dists * torch.sqrt(torch.Tensor(5))
     return (1.0 + K + K**2 / 3.0) * torch.exp(-K)
 
 
