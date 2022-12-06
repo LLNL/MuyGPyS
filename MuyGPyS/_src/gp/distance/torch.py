@@ -128,11 +128,11 @@ def _pairwise_diffs(points: torch.Tensor) -> torch.Tensor:
 
 
 def _F2(diffs: torch.Tensor) -> torch.Tensor:
-    return torch.sum(diffs**2, axis=-1)
+    return torch.sum(diffs**2, dim=-1)
 
 
 def _l2(diffs: torch.Tensor) -> torch.Tensor:
-    return torch.sqrt(_F2(diffs))
+    return torch.norm(diffs, dim=-1)
 
 
 def _fast_nn_update(

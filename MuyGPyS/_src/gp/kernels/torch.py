@@ -12,13 +12,13 @@ def _matern_05_fn(dists: torch.Tensor, length_scale: float) -> torch.Tensor:
 
 def _matern_15_fn(dists: torch.Tensor, length_scale: float) -> torch.Tensor:
     dists = dists / length_scale
-    K = dists * torch.sqrt(torch.Tensor(3))
+    K = dists * torch.sqrt(torch.tensor(3))
     return (1.0 + K) * torch.exp(-K)
 
 
 def _matern_25_fn(dists: torch.Tensor, length_scale: float) -> torch.Tensor:
     dists = dists / length_scale
-    K = dists * torch.sqrt(torch.Tensor(5))
+    K = dists * torch.sqrt(torch.tensor(5))
     return (1.0 + K + K**2 / 3.0) * torch.exp(-K)
 
 
@@ -31,5 +31,5 @@ def _matern_gen_fn(
     dists: torch.Tensor, nu: float, length_scale: float
 ) -> torch.Tensor:
     raise NotImplementedError(
-        f'Function "matern_gen_fn" does not support torch!'
+        f'Function "matern_gen_fn" does not support values of nu other than 1/2, 3/2, 5/2 and torch.inf!'
     )
