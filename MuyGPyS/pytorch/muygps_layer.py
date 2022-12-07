@@ -462,7 +462,8 @@ def predict_multiple_model(
 ):
     """
     Generate predictions using a PyTorch model containing at least one
-    MultivariateMuyGPs_layer in its structure.
+    MultivariateMuyGPs_layer in its structure. Meant for the case in which there
+    is more than one GP model used to model multiple outputs.
 
     Args:
         model:
