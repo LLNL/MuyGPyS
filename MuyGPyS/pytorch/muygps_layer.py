@@ -583,18 +583,35 @@ def predict_multiple_model(
 
 
 def kernel_func(
-    dist_matrix: torch.Tensor, nu: float, length_scale: float
+    dist_tensor: torch.Tensor, nu: float, length_scale: float
 ) -> torch.Tensor:
+    """
+    Generate predictions using a PyTorch model containing at least one
+    MultivariateMuyGPs_layer in its structure. Meant for the case in which there
+    is more than one GP model used to model multiple outputs.
+
+    Args:
+        dist_matrix:
+            A torch.Tensor distance tensor on which to evaluate the kernel.
+        nu:
+            The smoothness hyperparameter in the Matern kernel.
+        length_scale:
+            The lengthscale hyperparameter in the Matern kernel.
+
+    Returns:
+        A torch.Tensor containing the kernel matrix evaluated for the given
+        input values.
+    """
     if nu == 1 / 2:
-        return matern_05_fn(dist_matrix, length_scale=length_scale)
+        return matern_05_fn(dist_tensor, length_scale=length_scale)
 
     if nu == 3 / 2:
-        return matern_15_fn(dist_matrix, length_scale=length_scale)
+        return matern_15_fn(dist_tensor, length_scale=length_scale)
 
     if nu == 5 / 2:
-        return matern_25_fn(dist_matrix, length_scale=length_scale)
+        return matern_25_fn(dist_tensor, length_scale=length_scale)
 
     if nu == torch.inf:
-        return matern_inf_fn(dist_matrix, length_scale=length_scale)
+        return matern_inf_fn(dist_tensor, length_scale=length_scale)
     else:
-        return matern_gen_fn(dist_matrix, nu, length_scale=length_scale)
+        return matern_gen_fn(dist_tensor, nu, length_scale=length_scale)
