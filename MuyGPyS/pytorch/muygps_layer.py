@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-
-# TO DO: Add thorough documentation
 """
 MuyGPs PyTorch implementation
 """
@@ -20,9 +18,6 @@ from MuyGPyS.gp.kernels import (
     _matern_inf_fn as matern_inf_fn,
     _matern_gen_fn as matern_gen_fn,
 )
-
-from typing import Callable
-from MuyGPyS.neighbors import NN_Wrapper
 
 from MuyGPyS._src.gp.muygps import (
     _muygps_compute_solve,
