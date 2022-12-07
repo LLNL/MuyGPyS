@@ -57,7 +57,7 @@ class MuyGPs_layer(nn.Module):
         >>> batch_nn_indices = torch.arange(100,)
         >>> batch_targets = torch.ones(100,)
         >>> batch_nn_targets = torch.ones(100,)
-        >>> muygps_layer_object = MuyGPs_layer(kernel_eps, nu, length_scale,
+        >>> muygps_layer_object = MuyGPs_layer(kernel_eps, nu, length_scale,...
         batch_indices, batch_nn_indices, batch_targets, batch_nn_targets)
 
 
@@ -68,20 +68,20 @@ class MuyGPs_layer(nn.Module):
             data.
         nu:
             A smoothness parameter allowed to take on values 1/2, 3/2, 5/2, or
-            torch.inf.
+            :math:`\\infty`.
         length_scale:
             The length scale parameter in the Matern kernel.
         batch_indices:
-            A torch.Tensor of shape (batch_count,) containing the indices of
+            A torch.Tensor of shape `(batch_count,)` containing the indices of
             the training data to be sampled for training.
         batch_nn_indices:
-            A torch.Tensor of shape (batch_count, nn_count) containing the
+            A torch.Tensor of shape `(batch_count, nn_count)` containing the
             indices of the k nearest neighbors of the batched training samples.
         batch_targets:
-            A torch.Tensor of shape (batch_count, response_count) containing
+            A torch.Tensor of shape `(batch_count, response_count)` containing
             the responses corresponding to each batched training sample.
         batch_nn_targets:
-            A torch.Tensor of shape (batch_count, nn_count, response_count)
+            A torch.Tensor of shape `(batch_count, nn_count, response_count)`
             containing the responses corresponding to the nearest neighbors
             of each batched training sample.
 
@@ -116,10 +116,6 @@ class MuyGPs_layer(nn.Module):
     def forward(self, x):
         """
         Produce the output of a MuyGPs custom PyTorch layer.
-
-        Args:
-            x: A torch.Tensor of shape `(batch_count, feature_count)`
-            containing feature vector to be regressed by the MuyGPs_layer.
 
         Returns:
             A torch.Tensor of shape `(batch_count, response_count)` listing the
@@ -190,13 +186,13 @@ def predict_single_model(
             A custom PyTorch.nn.Module object containing at least one
             MuyGPs_layer.
         test_features:
-            A torch.Tensor of shape `(test_count, feature_count)' containing
+            A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
         train_features:
-            A torch.Tensor of shape `(train_count, feature_count)' containing
+            A torch.Tensor of shape `(train_count, feature_count)` containing
             the training features.
         train_responses:
-            A torch.Tensor of shape `(train_count, response_count)' containing
+            A torch.Tensor of shape `(train_count, response_count)` containing
             the training responses corresponding to each feature.
         nbrs_lookup:
             A NN_Wrapper nearest neighbor lookup data structure.
@@ -219,7 +215,7 @@ def predict_single_model(
         Only returned where `variance_mode == "diagonal"`.
     sigma_sq:
         A scalar used to rescale the posterior variance if a univariate
-        response or a torch.Tensor of shape (response_count,) for a
+        response or a torch.Tensor of shape `(response_count,)` for a
         multidimensional response. Only returned where apply_sigma_sq is set to
         True.
     """
@@ -288,7 +284,7 @@ def predict_single_model(
 
 class MultivariateMuyGPs_layer(nn.Module):
     """
-    MuyGPs model written as a custom PyTorch layer using nn.Module.
+    Multivariate MuyGPs model written as a custom PyTorch layer using nn.Module.
 
     Implements the MuyGPs algorithm as articulated in [muyskens2021muygps]_. See
     documentation on MuyGPs class for more detail.
@@ -318,7 +314,7 @@ class MultivariateMuyGPs_layer(nn.Module):
         >>> batch_nn_indices = torch.arange(100,)
         >>> batch_targets = torch.ones(100,)
         >>> batch_nn_targets = torch.ones(100,)
-        >>> muygps_layer_object = MuyGPs_layer(kernel_eps, nu, length_scale,
+        >>> muygps_layer_object = MuyGPs_layer(kernel_eps, nu, length_scale,...
         batch_indices, batch_nn_indices, batch_targets, batch_nn_targets)
 
 
@@ -331,21 +327,21 @@ class MultivariateMuyGPs_layer(nn.Module):
         nu:
             A torch.Tensor of shape num_models containing the smoothness
             parameter in the Matern kernel for each model. Allowed to take on
-            values 1/2, 3/2, 5/2, or torch.inf.
+            values 1/2, 3/2, 5/2, or :math:`\\infty`.
         length_scale:
             A torch.Tensor of shape num_models containing the length scale
             parameter in the Matern kernel for each model.
         batch_indices:
-            A torch.Tensor of shape (batch_count,) containing the indices of
+            A torch.Tensor of shape `(batch_count,)` containing the indices of
             the training data to be sampled for training.
         batch_nn_indices:
-            A torch.Tensor of shape (batch_count, nn_count) containing the
+            A torch.Tensor of shape `(batch_count, nn_count)` containing the
             indices of the k nearest neighbors of the batched training samples.
         batch_targets:
-            A torch.Tensor of shape (batch_count, response_count) containing
+            A torch.Tensor of shape `(batch_count, response_count)` containing
             the responses corresponding to each batched training sample.
         batch_nn_targets:
-            A torch.Tensor of shape (batch_count, nn_count, response_count)
+            A torch.Tensor of shape `(batch_count, nn_count, response_count)`
             containing the responses corresponding to the nearest neighbors
             of each batched training sample.
 
@@ -379,10 +375,6 @@ class MultivariateMuyGPs_layer(nn.Module):
     def forward(self, x):
         """
         Produce the output of a MuyGPs custom PyTorch layer.
-
-        Args:
-            x: A torch.Tensor of shape `(batch_count, feature_count)`
-            containing feature vector to be regressed by the MuyGPs_layer.
 
         Returns:
             A torch.Tensor of shape `(batch_count, response_count)` listing the
@@ -465,13 +457,13 @@ def predict_multiple_model(
             A custom PyTorch.nn.Module object containing at least one
             MuyGPs_layer.
         test_features:
-            A torch.Tensor of shape `(test_count, feature_count)' containing
+            A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
         train_features:
-            A torch.Tensor of shape `(train_count, feature_count)' containing
+            A torch.Tensor of shape `(train_count, feature_count)` containing
             the training features.
         train_responses:
-            A torch.Tensor of shape `(train_count, response_count)' containing
+            A torch.Tensor of shape `(train_count, response_count)` containing
             the training responses corresponding to each feature.
         nbrs_lookup:
             A NN_Wrapper nearest neighbor lookup data structure.
@@ -581,9 +573,8 @@ def kernel_func(
     dist_tensor: torch.Tensor, nu: float, length_scale: float
 ) -> torch.Tensor:
     """
-    Generate predictions using a PyTorch model containing at least one
-    MultivariateMuyGPs_layer in its structure. Meant for the case in which there
-    is more than one GP model used to model multiple outputs.
+    Generate kernel tensors using the Matern kernel given an input distance
+    tensor.
 
     Args:
         dist_matrix:
