@@ -31,6 +31,7 @@ If you use MuyGPyS in a research paper, please reference our article::
    MuyGPyS/gp
    MuyGPyS/optimize
    MuyGPyS/examples
+   MuyGPyS/pytorch
 
 .. toctree::
    :maxdepth: 2
