@@ -12,7 +12,7 @@ def _make_fast_regress_tensors(
     num_train, _ = train_features.shape
     batch_nn_indices_fast = torch.cat(
         (
-            torch.expand(torch.arange(0, num_train), dim=1),
+            torch.unsqueeze(torch.arange(0, num_train), dim=1),
             batch_nn_indices[:, :-1],
         ),
         dim=1,
