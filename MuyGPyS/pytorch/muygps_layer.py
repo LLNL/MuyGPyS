@@ -51,10 +51,12 @@ class MuyGPs_layer(nn.Module):
         self.batch_nn_inds = batch_nn_indices
         self.batch_targets = batch_targets
         self.batch_nn_targets = batch_nn_targets
+        self.variance_mode = "diagonal"
+        self.apply_sigma_sq = True
 
     def forward(self, x):
 
-        c_d = crosswise_distances(
+        crosswise_dists = crosswise_distances(
             x,
             x,
             self.batch_inds,
@@ -62,27 +64,37 @@ class MuyGPs_layer(nn.Module):
             metric="l2",
         )
 
-        p_d = pairwise_distances(x, self.batch_nn_inds, metric="l2")
-
-        rho = self.length_scale
+        pairwise_dists = pairwise_distances(x, self.batch_nn_inds, metric="l2")
 
         Kcross = kernel_func(
-            c_d,
+            crosswise_dists,
             nu=self.nu,
-            length_scale=rho,
+            length_scale=self.length_scale,
         )
         K = kernel_func(
-            p_d,
+            pairwise_dists,
             nu=self.nu,
-            length_scale=rho,
+            length_scale=self.length_scale,
         )
         predictions = _muygps_compute_solve(
             K, Kcross, self.batch_nn_targets, self.eps
         )
 
-        variances = _muygps_compute_diagonal_variance(K, Kcross, self.eps)
-
         sigma_sq = _analytic_sigma_sq_optim(K, self.batch_nn_targets, self.eps)
+
+        if self.variance_mode is None:
+            return predictions
+        elif self.variance_mode == "diagonal":
+            variances = _muygps_compute_diagonal_variance(K, Kcross, self.eps)
+            if self.apply_sigma_sq is True:
+                if len(sigma_sq) == 1:
+                    variances *= sigma_sq
+                else:
+                    variances = torch.outer(variances, sigma_sq)
+        else:
+            raise NotImplementedError(
+                f"Variance mode {self.variance_mode} is not implemented."
+            )
 
         return predictions, variances, sigma_sq
 
@@ -94,6 +106,8 @@ def predict_single_model(
     train_responses,
     nbrs_lookup,
     nn_count,
+    variance_mode="diagonal",
+    apply_sigma_sq=True,
 ):
 
     train_x_numpy = model.embedding(train_x).detach().numpy()
@@ -143,9 +157,23 @@ def predict_single_model(
         K, Kcross, test_nn_targets, model.GP_layer.eps
     )
 
-    variances = _muygps_compute_diagonal_variance(K, Kcross, model.GP_layer.eps)
-
     sigma_sq = _analytic_sigma_sq_optim(K, test_nn_targets, model.GP_layer.eps)
+
+    if variance_mode is None:
+        return predictions
+    elif variance_mode == "diagonal":
+        variances = _muygps_compute_diagonal_variance(
+            K, Kcross, model.GP_layer.eps
+        )
+        if apply_sigma_sq is True:
+            if len(sigma_sq) == 1:
+                variances *= sigma_sq
+            else:
+                variances = torch.outer(variances, sigma_sq)
+    else:
+        raise NotImplementedError(
+            f"Variance mode {variance_mode} is not implemented."
+        )
 
     return predictions, variances, sigma_sq
 
