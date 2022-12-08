@@ -95,15 +95,6 @@ if config.muygpys_torch_enabled is True:  # type: ignore
     )
     from MuyGPyS.optimize.objective import make_loo_crossval_fn
 
-    # from MuyGPyS._src.optimize.chassis.numpy import (
-    #     _scipy_optimize as scipy_optimize_n,
-    #     _bayes_opt_optimize as bayes_optimize_n,
-    # )
-    # from MuyGPyS._src.optimize.chassis.torch import (
-    #     _scipy_optimize as scipy_optimize_t,
-    #     _bayes_opt_optimize as bayes_optimize_t,
-    # )
-
     class DistanceTestCase(parameterized.TestCase):
         @classmethod
         def setUpClass(cls):
@@ -111,7 +102,7 @@ if config.muygpys_torch_enabled is True:  # type: ignore
             cls.train_count = 1000
             cls.test_count = 100
             cls.feature_count = 10
-            cls.response_count = 2
+            cls.response_count = 1
             cls.nn_count = 40
             cls.batch_count = 500
             cls.length_scale = 1.0
@@ -926,7 +917,7 @@ if config.muygpys_torch_enabled is True:  # type: ignore
             super(ObjectiveTest, cls).setUpClass()
 
             cls.sigma_sq_n = cls.muygps.sigma_sq()
-            cls.sigma_sq_t = torch.Tensor(cls.muygps.sigma_sq())
+            cls.sigma_sq_t = torch.Tensor(cls.muygps.sigma_sq()).float()
 
         def test_mse(self):
             self.assertTrue(
@@ -962,18 +953,11 @@ if config.muygpys_torch_enabled is True:  # type: ignore
             cat_batch_targets_n = cat_batch_targets_n["output"]
             cat_predictions_t = torch.from_numpy(cat_predictions_n)
             cat_batch_targets_t = torch.from_numpy(cat_batch_targets_n)
-            print(
-                cross_entropy_fn_n(
-                    cat_predictions_n, cat_batch_targets_n, ll_eps=1e-6
-                )
-            )
-
-            print(cross_entropy_fn_t(cat_predictions_t, cat_batch_targets_t))
             self.assertTrue(
                 np.all(
                     (
-                        np.all(cat_predictions_t == cat_predictions_n),
-                        np.all(cat_batch_targets_t == cat_batch_targets_n),
+                        np.allclose(cat_predictions_t, cat_predictions_n),
+                        np.allclose(cat_batch_targets_t, cat_batch_targets_n),
                     )
                 )
             )
@@ -1016,25 +1000,25 @@ if config.muygpys_torch_enabled is True:  # type: ignore
                 )
             )
 
-        # def test_array_mean_fn(self):
-        #     mean_fn_n = self._get_array_mean_fn_n()
-        #     mean_fn_t = self._get_array_mean_fn_t()
-        #     self.assertTrue(
-        #         np.allclose(
-        #             mean_fn_n(
-        #                 self.K_n,
-        #                 self.Kcross_n,
-        #                 self.batch_nn_targets_n,
-        #                 self.x0_n[-1],
-        #             ),
-        #             mean_fn_t(
-        #                 self.K_t,
-        #                 self.Kcross_t,
-        #                 self.batch_nn_targets_t,
-        #                 self.x0_t[-1],
-        #             ),
-        #         )
-        #     )
+        def test_array_mean_fn(self):
+            mean_fn_n = self._get_array_mean_fn_n()
+            mean_fn_t = self._get_array_mean_fn_t()
+            self.assertTrue(
+                np.allclose(
+                    mean_fn_n(
+                        self.K_n,
+                        self.Kcross_n,
+                        self.batch_nn_targets_n,
+                        self.muygps.eps(),
+                    ),
+                    mean_fn_t(
+                        self.K_t,
+                        self.Kcross_t,
+                        self.batch_nn_targets_t,
+                        self.muygps.eps(),
+                    ),
+                )
+            )
 
         def test_kwargs_var_fn(self):
             var_fn_n = self._get_kwargs_var_fn_n()
@@ -1054,23 +1038,23 @@ if config.muygpys_torch_enabled is True:  # type: ignore
                 )
             )
 
-        # def test_array_var_fn(self):
-        #     var_fn_n = self._get_array_var_fn_n()
-        #     var_fn_t = self._get_array_var_fn_t()
-        #     self.assertTrue(
-        #         np.allclose(
-        #             var_fn_n(
-        #                 self.K_n,
-        #                 self.Kcross_n,
-        #                 self.x0_n[-1],
-        #             ),
-        #             var_fn_t(
-        #                 self.K_t,
-        #                 self.Kcross_t,
-        #                 self.x0_t[-1],
-        #             ),
-        #         )
-        #     )
+        def test_array_var_fn(self):
+            var_fn_n = self._get_array_var_fn_n()
+            var_fn_t = self._get_array_var_fn_t()
+            self.assertTrue(
+                np.allclose(
+                    var_fn_n(
+                        self.K_n,
+                        self.Kcross_n,
+                        self.muygps.eps(),
+                    ),
+                    var_fn_t(
+                        self.K_t,
+                        self.Kcross_t,
+                        self.muygps.eps(),
+                    ),
+                )
+            )
 
         def test_kwargs_sigma_sq_fn(self):
             ss_fn_n = self._get_kwargs_sigma_sq_fn_n()
@@ -1090,23 +1074,23 @@ if config.muygpys_torch_enabled is True:  # type: ignore
                 )
             )
 
-        # def test_array_sigma_sq_fn(self):
-        #     ss_fn_n = self._get_array_sigma_sq_fn_n()
-        #     ss_fn_t = self._get_array_sigma_sq_fn_t()
-        #     self.assertTrue(
-        #         np.allclose(
-        #             ss_fn_n(
-        #                 self.K_n,
-        #                 self.batch_nn_targets_n,
-        #                 self.x0_n[-1],
-        #             ),
-        #             ss_fn_t(
-        #                 self.K_t,
-        #                 self.batch_nn_targets_t,
-        #                 self.x0_t[-1],
-        #             ),
-        #         )
-        #     )
+        def test_array_sigma_sq_fn(self):
+            ss_fn_n = self._get_array_sigma_sq_fn_n()
+            ss_fn_t = self._get_array_sigma_sq_fn_t()
+            self.assertTrue(
+                np.allclose(
+                    ss_fn_n(
+                        self.K_n,
+                        self.batch_nn_targets_n,
+                        self.muygps.eps(),
+                    ),
+                    ss_fn_t(
+                        self.K_t,
+                        self.batch_nn_targets_t,
+                        self.muygps.eps(),
+                    ),
+                )
+            )
 
         def test_loo_crossval(self):
             obj_fn_n = self._get_array_obj_fn_n()
@@ -1118,45 +1102,6 @@ if config.muygpys_torch_enabled is True:  # type: ignore
             self.assertTrue(
                 np.allclose(obj_fn_n(self.x0_n), obj_fn_h(self.x0_t))
             )
-
-    # class OptimTest(OptimTestCase):
-    #     @classmethod
-    #     def setUpClass(cls):
-    #         super(OptimTest, cls).setUpClass()
-    #         cls.sopt_kwargs = {"verbose": False}
-
-    #     def test_scipy_optimize(self):
-    #         obj_fn_n = self._get_array_obj_fn_n()
-    #         obj_fn_t = self._get_array_obj_fn_t()
-    #         obj_fn_h = self._get_array_obj_fn_h()
-
-    #         mopt_n = scipy_optimize_n(self.muygps, obj_fn_n, **self.sopt_kwargs)
-    #         mopt_t = scipy_optimize_t(self.muygps, obj_fn_t, **self.sopt_kwargs)
-    #         mopt_h = scipy_optimize_t(self.muygps, obj_fn_h, **self.sopt_kwargs)
-    #         self.assertTrue(np.allclose(mopt_n.kernel.nu(), mopt_t.kernel.nu()))
-    #         self.assertTrue(np.allclose(mopt_n.kernel.nu(), mopt_h.kernel.nu()))
-
-    # class BayesOptimTest(OptimTestCase):
-    #     @classmethod
-    #     def setUpClass(cls):
-    #         super(BayesOptimTest, cls).setUpClass()
-    #         cls.bopt_kwargs = {
-    #             "verbose": False,
-    #             "random_state": 1,
-    #             "init_points": 5,
-    #             "n_iter": 5,
-    #         }
-
-    #     def test_optimize(self):
-    #         obj_fn_n = self._get_kwargs_obj_fn_n()
-    #         obj_fn_t = self._get_kwargs_obj_fn_t()
-    #         obj_fn_h = self._get_kwargs_obj_fn_h()
-
-    #         mopt_n = bayes_optimize_n(self.muygps, obj_fn_n, **self.bopt_kwargs)
-    #         mopt_t = bayes_optimize_t(self.muygps, obj_fn_t, **self.bopt_kwargs)
-    #         mopt_h = bayes_optimize_t(self.muygps, obj_fn_h, **self.bopt_kwargs)
-    #         self.assertTrue(np.allclose(mopt_n.kernel.nu(), mopt_t.kernel.nu()))
-    #         self.assertTrue(np.allclose(mopt_n.kernel.nu(), mopt_h.kernel.nu()))
 
     if __name__ == "__main__":
         absltest.main()

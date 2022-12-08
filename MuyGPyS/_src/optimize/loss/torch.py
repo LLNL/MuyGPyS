@@ -8,7 +8,14 @@ def _cross_entropy_fn(
     loss = torch.nn.CrossEntropyLoss()
     one_hot_targets = torch.where(targets > 0.0, 1.0, 0.0)
     softmax_predictions = predictions.softmax(dim=1)
-    return loss(softmax_predictions, one_hot_targets)
+
+    return (
+        -torch.mean(
+            one_hot_targets * torch.log(softmax_predictions)
+            + (1 - one_hot_targets) * torch.log(1 - softmax_predictions)
+        )
+        * one_hot_targets.shape[0]
+    )
 
 
 def _mse_fn_unnormalized(
@@ -34,8 +41,8 @@ def _lool_fn(
     variances: torch.Tensor,
     sigma_sq: torch.Tensor,
 ) -> float:
-    scaled_variances = torch.outer(variances, sigma_sq)
+    scaled_variances = torch.unsqueeze(variances * sigma_sq, dim=1)
     return torch.sum(
-        torch.divide((predictions - targets) ** 2, scaled_variances)
+        torch.div((predictions - targets) ** 2, scaled_variances)
         + torch.log(scaled_variances)
     )
