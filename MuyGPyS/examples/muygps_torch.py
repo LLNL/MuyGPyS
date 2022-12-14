@@ -13,6 +13,7 @@ if config.muygpys_jax_enabled is True:
 import numpy as np
 import torch
 
+from MuyGPyS.neighbors import NN_Wrapper
 
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
@@ -21,7 +22,9 @@ from MuyGPyS._src.gp.muygps import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
 )
+from MuyGPyS._src.optimize.loss import _lool_fn as lool_fn
 from MuyGPyS.pytorch.muygps_layer import kernel_func
+from torch.optim.lr_scheduler import ExponentialLR
 
 
 def predict_single_model(
@@ -80,6 +83,8 @@ def predict_single_model(
     train_features_embedded = model.embedding(train_features).detach().numpy()
     test_features_embedded = model.embedding(test_features).detach().numpy()
 
+    test_count = test_features_embedded.shape[0]
+
     nn_indices_test, _ = nbrs_lookup._get_nns(
         test_features_embedded, nn_count=nn_count
     )
@@ -89,11 +94,7 @@ def predict_single_model(
     train_features_embedded = torch.from_numpy(train_features_embedded).float()
     test_features_embedded = torch.from_numpy(test_features_embedded).float()
 
-    test_nn_targets = torch.from_numpy(
-        train_responses[nn_indices_test, :]
-    ).float()
-
-    test_count = test_features_embedded.shape[0]
+    test_nn_targets = train_responses[nn_indices_test, :]
 
     crosswise_dists = crosswise_distances(
         test_features_embedded,
@@ -195,6 +196,8 @@ def predict_multiple_model(
     train_features_embedded = model.embedding(train_features).detach().numpy()
     test_features_embedded = model.embedding(test_features).detach().numpy()
 
+    test_count = test_features_embedded.shape[0]
+
     nn_indices_test, _ = nbrs_lookup._get_nns(
         test_features_embedded, nn_count=nn_count
     )
@@ -204,11 +207,7 @@ def predict_multiple_model(
     train_features_embedded = torch.from_numpy(train_features_embedded).float()
     test_features_embedded = torch.from_numpy(test_features_embedded).float()
 
-    test_nn_targets = torch.from_numpy(
-        train_responses[nn_indices_test, :]
-    ).float()
-
-    test_count = test_features_embedded.shape[0]
+    test_nn_targets = train_responses[nn_indices_test, :]
 
     crosswise_dists = crosswise_distances(
         test_features_embedded,
@@ -268,3 +267,81 @@ def predict_multiple_model(
             model.eps[i],
         )
     return predictions, variances, sigma_sq
+
+
+def train_deep_kernel_muygps(
+    model,
+    training_features,
+    training_responses,
+    batch_indices,
+    nbrs_lookup,
+    training_iterations=10,
+    optimizer_method=torch.optim.Adam,
+    learning_rate=1e-3,
+    scheduler_decay=0.95,
+    loss_function=lool_fn,
+    update_frequency=1,
+):
+    optimizer = optimizer_method(
+        [
+            {"params": model.parameters()},
+        ],
+        lr=learning_rate,
+    )
+    scheduler = ExponentialLR(optimizer, gamma=scheduler_decay)
+    nn_count = nbrs_lookup.nn_count
+    batch_features = training_features[batch_indices, :]
+    batch_responses = training_responses[batch_indices, :]
+
+    for i in range(training_iterations):
+        model.train()
+        optimizer.zero_grad()
+        predictions, variances, sigma_sq = model(training_features)
+
+        loss = loss_function(
+            predictions.squeeze(),
+            batch_responses.squeeze(),
+            variances.squeeze(),
+            sigma_sq.squeeze(),
+        ) / (batch_responses.shape[0] * batch_responses.shape[1])
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
+
+        if np.mod(i, update_frequency) == 0:
+            print(
+                "Iter %d/%d - Loss: %.10f"
+                % (i + 1, training_iterations, loss.item())
+            )
+            model.eval()
+            nbrs_lookup = NN_Wrapper(
+                model.embedding(training_features).detach().numpy(),
+                nn_count,
+                nn_method="hnsw",
+            )
+            batch_nn_indices, _ = nbrs_lookup._get_nns(
+                model.embedding(batch_features).detach().numpy(),
+                nn_count=nn_count,
+            )
+            batch_nn_indices = torch.from_numpy(
+                batch_nn_indices.astype(np.int64)
+            )
+            batch_nn_targets = batch_responses[batch_nn_indices, :]
+
+            model.batch_nn_indices = batch_nn_indices
+            model.batch_nn_targets = batch_nn_targets
+
+        torch.cuda.empty_cache()
+    nbrs_lookup = NN_Wrapper(
+        model.embedding(training_features).detach().numpy(),
+        nn_count,
+        nn_method="hnsw",
+    )
+    batch_nn_indices, _ = nbrs_lookup._get_nns(
+        model.embedding(batch_features).detach().numpy(), nn_count=nn_count
+    )
+    batch_nn_indices = torch.from_numpy(batch_nn_indices.astype(np.int64))
+    batch_nn_targets = training_responses[batch_nn_indices, :]
+    model.batch_nn_indices = batch_nn_indices
+    model.batch_nn_targets = batch_nn_targets
+    return nbrs_lookup, model
