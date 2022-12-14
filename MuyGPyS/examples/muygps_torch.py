@@ -29,11 +29,11 @@ from torch.optim.lr_scheduler import ExponentialLR
 
 def predict_single_model(
     model,
-    test_features,
-    train_features,
-    train_responses,
-    nbrs_lookup,
-    nn_count,
+    test_features: torch.Tensor,
+    train_features: torch.Tensor,
+    train_responses: torch.Tensor,
+    nbrs_lookup: NN_Wrapper,
+    nn_count: torch.int64,
     variance_mode="diagonal",
     apply_sigma_sq=True,
 ):
@@ -44,7 +44,7 @@ def predict_single_model(
     Args:
         model:
             A custom PyTorch.nn.Module object containing at least one
-            MuyGPs_layer.
+            embedding layer and one MuyGPs_layer layer.
         test_features:
             A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
@@ -142,12 +142,14 @@ def predict_single_model(
 
 def predict_multiple_model(
     model,
-    num_responses,
-    test_features,
-    train_features,
-    train_responses,
-    nbrs_lookup,
-    nn_count,
+    num_responses: torch.int64,
+    test_features: torch.Tensor,
+    train_features: torch.Tensor,
+    train_responses: torch.Tensor,
+    nbrs_lookup: torch.int64,
+    nn_count: torch.int64,
+    variance_mode="diagonal",
+    apply_sigma_sq=True,
 ):
     """
     Generate predictions using a PyTorch model containing at least one
@@ -157,7 +159,7 @@ def predict_multiple_model(
     Args:
         model:
             A custom PyTorch.nn.Module object containing at least one
-            MuyGPs_layer.
+            embedding layer and one MuyGPs_layer layer.
         test_features:
             A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
@@ -269,12 +271,91 @@ def predict_multiple_model(
     return predictions, variances, sigma_sq
 
 
+def predict_model(
+    model,
+    test_features: torch.Tensor,
+    train_features: torch.Tensor,
+    train_responses: torch.Tensor,
+    nbrs_lookup: NN_Wrapper,
+    nn_count: torch.int64,
+    variance_mode="diagonal",
+    apply_sigma_sq=True,
+):
+    """
+    Generate predictions using a PyTorch model containing at least one
+    MultivariateMuyGPs_layer in its structure. Meant for the case in which there
+    is more than one GP model used to model multiple outputs.
+
+    Args:
+        model:
+            A custom PyTorch.nn.Module object containing at least one
+            embedding layer and one MuyGPs_layer or MultivariateMuyGPS_layer
+            layer.
+        test_features:
+            A torch.Tensor of shape `(test_count, feature_count)` containing
+            the test features to be regressed.
+        train_features:
+            A torch.Tensor of shape `(train_count, feature_count)` containing
+            the training features.
+        train_responses:
+            A torch.Tensor of shape `(train_count, response_count)` containing
+            the training responses corresponding to each feature.
+        nbrs_lookup:
+            A NN_Wrapper nearest neighbor lookup data structure.
+        variance_mode:
+            Specifies the type of variance to return. Currently supports
+            `"diagonal"` and None. If None, report no variance term.
+        apply_sigma_sq:
+            Indicates whether to scale the posterior variance by `sigma_sq`.
+            Unused if `variance_mode is None` or if set to False`.
+
+    Returns:
+    -------
+    predictions:
+        A torch.Tensor of shape `(test_count, response_count)` whose rows are
+        the predicted response for each of the given test feature.
+    variances:
+        A torch.Tensor of shape `(batch_count,)` consisting of the diagonal
+        elements of the posterior variance, or a matrix of shape
+        `(batch_count, response_count)` for a multidimensional response.
+        Only returned where `variance_mode == "diagonal"`.
+    sigma_sq:
+        A scalar used to rescale the posterior variance if a univariate
+        response or a torch.Tensor of shape (response_count,) for a
+        multidimensional response. Only returned where apply_sigma_sq is set to
+        True.
+    """
+    if model.GP_layer.num_models is not None:
+        return predict_multiple_model(
+            model,
+            model.GP_layer.num_models,
+            test_features,
+            train_features,
+            train_responses,
+            nbrs_lookup,
+            nn_count,
+            variance_mode="diagonal",
+            apply_sigma_sq=True,
+        )
+    else:
+        return predict_single_model(
+            model,
+            test_features,
+            train_features,
+            train_responses,
+            nbrs_lookup,
+            nn_count,
+            variance_mode="diagonal",
+            apply_sigma_sq=True,
+        )
+
+
 def train_deep_kernel_muygps(
     model,
-    training_features,
-    training_responses,
-    batch_indices,
-    nbrs_lookup,
+    train_features: torch.Tensor,
+    train_responses: torch.Tensor,
+    batch_indices: torch.Tensor,
+    nbrs_lookup: NN_Wrapper,
     training_iterations=10,
     optimizer_method=torch.optim.Adam,
     learning_rate=1e-3,
@@ -282,6 +363,49 @@ def train_deep_kernel_muygps(
     loss_function=lool_fn,
     update_frequency=1,
 ):
+    """
+    Train a PyTorch model containing at least one MuyGPs_layer layer or a
+    MultivariateMuyGPs_layer layer in its structure.
+
+    Args:
+        model:
+            A custom PyTorch.nn.Module object containing at least one
+            embedding layer and one MuyGPs_layer or MultivariateMuyGPS_layer
+            layer.
+        train_features:
+            A torch.Tensor of shape `(train_count, feature_count)` containing
+            the training features.
+        train_responses:
+            A torch.Tensor of shape `(train_count, response_count)` containing
+            the training responses corresponding to each feature.
+        batch_indices:
+            A torch.Tensor of shape `(batch_count)` containing the indices of
+            the training batch.
+        nbrs_lookup:
+            A NN_Wrapper nearest neighbor lookup data structure.
+        training_iterations:
+            The number of training iterations to be used in training.
+        optimizer method:
+            An optimization method from the torch.optim class.
+        learning_rate:
+            The learning rate to be applied during training.
+        schedule_decay:
+            The exponential decay rate to be applied to the learning rate.
+        loss function:
+            The loss function to be used in training. Defaults to leave-one-out
+            likelihood.
+        update_frequency:
+            Tells the training procedure how frequently the nearest neighbor
+            structure should be updated.
+
+    Returns:
+    -------
+    nbrs_lookup:
+        A NN_Wrapper object containing the nearest neighbors of the embedded
+        training data.
+    model:
+        A trained deep kernel MuyGPs model.
+    """
     optimizer = optimizer_method(
         [
             {"params": model.parameters()},
@@ -290,13 +414,13 @@ def train_deep_kernel_muygps(
     )
     scheduler = ExponentialLR(optimizer, gamma=scheduler_decay)
     nn_count = nbrs_lookup.nn_count
-    batch_features = training_features[batch_indices, :]
-    batch_responses = training_responses[batch_indices, :]
+    batch_features = train_features[batch_indices, :]
+    batch_responses = train_responses[batch_indices, :]
 
     for i in range(training_iterations):
         model.train()
         optimizer.zero_grad()
-        predictions, variances, sigma_sq = model(training_features)
+        predictions, variances, sigma_sq = model(train_features)
 
         loss = loss_function(
             predictions.squeeze(),
@@ -315,7 +439,7 @@ def train_deep_kernel_muygps(
             )
             model.eval()
             nbrs_lookup = NN_Wrapper(
-                model.embedding(training_features).detach().numpy(),
+                model.embedding(train_features).detach().numpy(),
                 nn_count,
                 nn_method="hnsw",
             )
@@ -333,7 +457,7 @@ def train_deep_kernel_muygps(
 
         torch.cuda.empty_cache()
     nbrs_lookup = NN_Wrapper(
-        model.embedding(training_features).detach().numpy(),
+        model.embedding(train_features).detach().numpy(),
         nn_count,
         nn_method="hnsw",
     )
@@ -341,7 +465,7 @@ def train_deep_kernel_muygps(
         model.embedding(batch_features).detach().numpy(), nn_count=nn_count
     )
     batch_nn_indices = torch.from_numpy(batch_nn_indices.astype(np.int64))
-    batch_nn_targets = training_responses[batch_nn_indices, :]
+    batch_nn_targets = train_responses[batch_nn_indices, :]
     model.batch_nn_indices = batch_nn_indices
     model.batch_nn_targets = batch_nn_targets
     return nbrs_lookup, model
