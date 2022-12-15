@@ -26,6 +26,7 @@ before_script:
   - pip install --upgrade pip
   - pip install --upgrade jax[cuda11_cudnn805] -f https://storage.googleapis.com/jax-releases/jax-releases.html
   - pip install -e .[tests,mpi]
+  - pip install torch
 
 all_tests:
   stage: test
