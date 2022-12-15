@@ -59,8 +59,14 @@ class MuyGPs_layer(nn.Module):
         >>> batch_nn_indices = torch.arange(100,)
         >>> batch_targets = torch.ones(100,)
         >>> batch_nn_targets = torch.ones(100,)
-        >>> muygps_layer_object = MuyGPs_layer(kernel_eps, nu, length_scale,...
-        batch_indices, batch_nn_indices, batch_targets, batch_nn_targets)
+        >>> muygps_layer_object = MuyGPs_layer(
+        ... kernel_eps,
+        ... nu,
+        ... length_scale,
+        ... batch_indices,
+        ... batch_nn_indices,
+        ... batch_targets,
+        ... batch_nn_targets)
 
 
 
@@ -180,7 +186,7 @@ class MultivariateMuyGPs_layer(nn.Module):
     the Matern kernel for non-special values of :math:`\\nu`, e.g. 1/2, 3/2,
     5/2, and :math:`\\infty`. The MuyGPs layer allows the lengthscale parameter
     :math:`\\rho` to be trained (provided an initial value by the user) as well
-    as the homoscedastic :math:`\\varepsilon` noise parameter.
+    as the homoskedastic :math:`\\varepsilon` noise parameter.
 
     The MuyGPs layer returns the posterior mean, posterior variance, and a
     vector of :math:`\\sigma^2` indicating the scale parameter associated
@@ -192,7 +198,7 @@ class MultivariateMuyGPs_layer(nn.Module):
     a MuyGPs_layer object.
 
     Example:
-        >>> from MuyGPyS.pytorch.muygps_layer import MuyGPs_layer
+        >>> from MuyGPyS.pytorch.muygps_layer import MultivariateMuyGPs_layer
         >>> num_models = 10
         >>> kernel_eps = 1e-3 * torch.ones(10,)
         >>> nu = 1/2 * torch.ones(10,)
@@ -201,12 +207,21 @@ class MultivariateMuyGPs_layer(nn.Module):
         >>> batch_nn_indices = torch.arange(100,)
         >>> batch_targets = torch.ones(100,)
         >>> batch_nn_targets = torch.ones(100,)
-        >>> muygps_layer_object = MuyGPs_layer(kernel_eps, nu, length_scale,...
-        batch_indices, batch_nn_indices, batch_targets, batch_nn_targets)
+        >>> muygps_layer_object = MultivariateMuyGPs_layer(
+        ... num_models,
+        ... kernel_eps,
+        ... nu,
+        ... length_scale,
+        ... batch_indices,
+        ... batch_nn_indices,
+        ... batch_targets,
+        ... batch_nn_targets)
 
 
 
     Args:
+        num_models:
+            The number of MuyGPs models to be used in the layer.
         kernel_eps:
             A torch.Tensor of shape num_models containing the hyperparameter
             corresponding to the aleatoric uncertainty in the
