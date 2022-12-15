@@ -223,15 +223,15 @@ class MultivariateMuyGPs_layer(nn.Module):
         num_models:
             The number of MuyGPs models to be used in the layer.
         kernel_eps:
-            A torch.Tensor of shape num_models containing the hyperparameter
+            A torch.Tensor of shape `(num_models,)` containing the hyperparameter
             corresponding to the aleatoric uncertainty in the
             data for each model.
         nu:
-            A torch.Tensor of shape num_models containing the smoothness
+            A torch.Tensor of shape `(num_models,)` containing the smoothness
             parameter in the Matern kernel for each model. Allowed to take on
             values 1/2, 3/2, 5/2, or :math:`\\infty`.
         length_scale:
-            A torch.Tensor of shape num_models containing the length scale
+            A torch.Tensor of shape `(num_models,)` containing the length scale
             parameter in the Matern kernel for each model.
         batch_indices:
             A torch.Tensor of shape `(batch_count,)` containing the indices of
