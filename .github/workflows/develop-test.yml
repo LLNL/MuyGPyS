@@ -5,7 +5,7 @@ name: Develop test
 
 on:
   pull_request:
-    branches: [ develop ]
+    branches: [develop]
 
 jobs:
   build-numpy:
@@ -16,36 +16,36 @@ jobs:
         python-version: ["3.8", "3.9", "3.10"]
         test-group: [short, optimize, multivariate]
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install numpy dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install flake8
-        python -m pip install -e .[tests,hnswlib]
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Short Tests
-      if: matrix.test_group == 'short'
-      run: |
-        python tests/data.py
-        python tests/neighbors.py
-        python tests/kernels.py
-        python tests/gp.py
-        python tests/predict.py
-    - name: Optimize Tests
-      if: matrix.test_group == 'optimize'
-      run: python tests/optimize.py
-    - name: Multivariate Tests
-      if: matrix.test_group == 'multivariate'
-      run: python tests/multivariate.py
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install numpy dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install flake8
+          python -m pip install -e .[tests,hnswlib]
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Short Tests
+        if: matrix.test_group == 'short'
+        run: |
+          python tests/data.py
+          python tests/neighbors.py
+          python tests/kernels.py
+          python tests/gp.py
+          python tests/predict.py
+      - name: Optimize Tests
+        if: matrix.test_group == 'optimize'
+        run: python tests/optimize.py
+      - name: Multivariate Tests
+        if: matrix.test_group == 'multivariate'
+        run: python tests/multivariate.py
 
   build-jax:
     runs-on: ubuntu-latest
@@ -54,17 +54,17 @@ jobs:
       matrix:
         python-version: ["3.8", "3.9", "3.10"]
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install JAX dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install -e .[tests,hnswlib,jax_cpu]
-    - name: Test JAX correctness
-      run: python tests/jax_correctness.py
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install JAX dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .[tests,hnswlib,jax_cpu]
+      - name: Test JAX correctness
+        run: python tests/jax_correctness.py
 
   build-mpi:
     runs-on: ubuntu-latest
@@ -73,21 +73,39 @@ jobs:
       matrix:
         python-version: ["3.8", "3.9", "3.10"]
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install MPI dependencies
-      run: |
-        sudo apt-get install mpich
-        python -m pip install --upgrade pip
-        python -m pip install -e .[tests,hnswlib,mpi]
-    - name: Test MPI correctness
-      run: mpirun -n 4 python tests/mpi_correctness.py
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install MPI dependencies
+        run: |
+          sudo apt-get install mpich
+          python -m pip install --upgrade pip
+          python -m pip install -e .[tests,hnswlib,mpi]
+      - name: Test MPI correctness
+        run: mpirun -n 4 python tests/mpi_correctness.py
+
+  build-torch:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Torch dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .[tests,hnswlib,torch]
+      - name: Test Torch correctness
+        run: python tests/torch_correctness.py
 
   build-docs:
-
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -95,16 +113,16 @@ jobs:
         python-version: ["3.8"]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        sudo apt-get install pandoc
-        python -m pip install --upgrade pip
-        python -m pip install -e .[docs]
-    - name: Build docs
-      run: |
-        sphinx-build -b html docs docs/_build/html/
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          sudo apt-get install pandoc
+          python -m pip install --upgrade pip
+          python -m pip install -e .[docs]
+      - name: Build docs
+        run: |
+          sphinx-build -b html docs docs/_build/html/
