@@ -309,9 +309,9 @@ def predict_model(
         >>> nbrs_lookup = NN_Wrapper(train['input'], nn_count, nn_method="hnsw")
         >>> predictions, variances, sigma_sq = predict_model(
         ... model,
-        ... test['input'],
-        ... train['input'],
-        ... train['output'],
+        ... torch.from_numpy(test['input']),
+        ... torch.from_numpy(train['input']),
+        ... torch.from_numpy(train['output']),
         ... nbrs_lookup,
         ... nn_count)
 
@@ -357,7 +357,7 @@ def predict_model(
     """
     if model.GP_layer is None:
         raise NotImplementedError(f"MuyGPs PyTorch model requires GP_layer.")
-    if model.GP_layer.num_models is not None:
+    if hasattr(model.GP_layer, "num_models"):
         return predict_multiple_model(
             model,
             model.GP_layer.num_models,
@@ -394,6 +394,7 @@ def train_deep_kernel_muygps(
     scheduler_decay=0.95,
     loss_function=lool_fn,
     update_frequency=1,
+    verbose=False,
 ):
     """
     Train a PyTorch model containing an embedding component and
@@ -405,6 +406,8 @@ def train_deep_kernel_muygps(
         ... #(e.g., a neural net) and another component model.GP_layer.
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.neighbors import NN_Wrapper
+        >>> from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
+        >>> from MuyGPyS._src.optimize.loss import _lool_fn as lool_fn
         >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
         >>> nn_count = 10
         >>> nbrs_lookup = NN_Wrapper(train['input'], nn_count, nn_method="hnsw")
@@ -413,9 +416,9 @@ def train_deep_kernel_muygps(
         >>> batch_indices, batch_nn_indices = sample_batch(nbrs_lookup, batch_count, train_count)
         >>> nbrs_struct, model_trained = train_deep_kernel_muygps(
         ... model=model,
-        ... train_features=train['input'],
-        ... train_responses=train['output'],
-        ... batch_indices=batch_indices,
+        ... train_features=torch.from_numpy(train['input']),
+        ... train_responses=torch.from_numpy(train['output']),
+        ... batch_indices=torch.from_numpy(batch_indices),
         ... nbrs_lookup=nbrs_lookup,
         ... training_iterations=10,
         ... optimizer_method=torch.optim.Adam,
@@ -455,6 +458,9 @@ def train_deep_kernel_muygps(
             Tells the training procedure how frequently the nearest neighbor
             structure should be updated. An update frequency of n indicates that
             every n epochs the nearest neighbor structure should be updated.
+        verbose:
+            Indicates whether or not to include print statements during
+            training.
 
     Returns
     -------
@@ -493,10 +499,11 @@ def train_deep_kernel_muygps(
         scheduler.step()
 
         if np.mod(i, update_frequency) == 0:
-            print(
-                "Iter %d/%d - Loss: %.10f"
-                % (i + 1, training_iterations, loss.item())
-            )
+            if verbose == True:
+                print(
+                    "Iter %d/%d - Loss: %.10f"
+                    % (i + 1, training_iterations, loss.item())
+                )
             model.eval()
             nbrs_lookup = NN_Wrapper(
                 model.embedding(train_features).detach().numpy(),
@@ -510,7 +517,7 @@ def train_deep_kernel_muygps(
             batch_nn_indices = torch.from_numpy(
                 batch_nn_indices.astype(np.int64)
             )
-            batch_nn_targets = batch_responses[batch_nn_indices, :]
+            batch_nn_targets = train_responses[batch_nn_indices, :]
 
             model.batch_nn_indices = batch_nn_indices
             model.batch_nn_targets = batch_nn_targets

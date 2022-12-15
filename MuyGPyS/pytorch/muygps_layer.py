@@ -325,17 +325,17 @@ class MultivariateMuyGPs_layer(nn.Module):
                 self.batch_nn_targets[:, :, i].reshape(
                     batch_count, nn_count, 1
                 ),
-                self.eps,
+                self.eps[i],
             ).reshape(batch_count)
             variances[:, i] = _muygps_compute_diagonal_variance(
-                K[:, :, :, i], Kcross[:, :, i], self.eps
+                K[:, :, :, i], Kcross[:, :, i], self.eps[i]
             )
             sigma_sq[i] = _analytic_sigma_sq_optim(
                 K[:, :, :, i],
                 self.batch_nn_targets[:, :, i].reshape(
                     batch_count, nn_count, 1
                 ),
-                self.eps,
+                self.eps[i],
             )
         return predictions, variances, sigma_sq
 
