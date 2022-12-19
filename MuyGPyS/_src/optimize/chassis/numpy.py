@@ -76,6 +76,7 @@ def _bayes_opt_optimize(
             "random_state",
             "verbose",
             "bounds_transformer",
+            "allow_duplicate_points",
         }
     }
     if "verbose" not in optimizer_kwargs:
