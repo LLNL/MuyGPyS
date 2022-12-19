@@ -635,6 +635,7 @@ if config.muygpys_mpi_enabled is True:  # type: ignore
                 "random_state": 1,
                 "init_points": 5,
                 "n_iter": 5,
+                "allow_duplicate_points": True,
             }
 
         # Numpy kernel functions

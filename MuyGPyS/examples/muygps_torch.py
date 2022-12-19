@@ -49,12 +49,13 @@ def predict_single_model(
 ):
     """
     Generate predictions using a PyTorch model containing at least one
-    MuyGPs_layer in its structure.
+    `MuyGPyS.pytorch.muygps_layer.MuyGPs_layer` in its structure.
 
     Args:
         model:
             A custom PyTorch.nn.Module object containing an
-            `embedding` component and one MuyGPs_layer layer.
+            `embedding` component and one
+            `MuyGPyS.pytorch.muygps_layer.MuyGPs_layer` layer.
         test_features:
             A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
@@ -164,13 +165,15 @@ def predict_multiple_model(
 ):
     """
     Generate predictions using a PyTorch model containing a
-    MultivariateMuyGPs_layer in its structure. Meant for the case in which there
-    is more than one GP model used to model multiple outputs.
+    `MuyGPyS.pytorch.muygps_layer.MultivariateMuyGPs_layer` in its structure.
+    Meant for the case in which there is more than one GP model used to model
+    multiple outputs.
 
     Args:
         model:
             A custom PyTorch.nn.Module object containing an
-            `embedding` component and one MuyGPs_layer layer.
+            `embedding` component and one
+            `MuyGPyS.pytorch.muygps_layer.MultivariateMuyGPs_layer` layer.
         test_features:
             A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
@@ -295,8 +298,10 @@ def predict_model(
     apply_sigma_sq=True,
 ):
     """
-    Generate predictions using a PyTorch model containing a MuyGPs_layer or a
-    MultivariateMuyGPs_layer in its structure.
+    Generate predictions using a PyTorch model containing a
+    `MuyGPyS.pytorch.muygps_layer.MuyGPs_layer` layer or a
+    `MuyGPyS.pytorch.muygps_layer.MultivariateMuyGPs_layer` layer in its
+    structure.
 
     Example:
         >>> #model must be defined as a PyTorch model inheriting from
@@ -398,7 +403,9 @@ def train_deep_kernel_muygps(
 ):
     """
     Train a PyTorch model containing an embedding component and
-    a MuyGPs_layer layer or a MultivariateMuyGPs_layer layer in its structure.
+    a `MuyGPyS.pytorch.muygps_layer.MuyGPs_layer` layer or a
+    `MuyGPyS.pytorch.muygps_layer. MultivariateMuyGPs_layer` layer in its
+    structure.
 
     Example:
         >>> #model must be defined as a PyTorch model inheriting from
