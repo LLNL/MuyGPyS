@@ -51,7 +51,7 @@ JAX_CUDA11_CUDNN82_REQUIRES = [
 ]
 
 MPI_REQUIRES = [
-    "mpi4py>=3.1.3",
+    "mpi4py==3.1.3",
 ]
 
 TORCH_REQUIRES = [
