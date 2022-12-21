@@ -543,3 +543,79 @@ def train_deep_kernel_muygps(
     model.batch_nn_indices = batch_nn_indices
     model.batch_nn_targets = batch_nn_targets
     return nbrs_lookup, model
+
+
+def update_nearest_neighbors(
+    model,
+    train_features: torch.Tensor,
+    train_responses: torch.Tensor,
+    batch_indices: torch.Tensor,
+    nn_count: torch.int64,
+):
+    """
+    Update the nearest neighbors after deformation via a PyTorch model
+    containing an embedding component and a
+    `MuyGPyS.pytorch.muygps_layer.MuyGPs_layer` layer or a
+    `MuyGPyS.pytorch.muygps_layer. MultivariateMuyGPs_layer` layer in its
+    structure.
+
+    Example:
+        >>> #model must be defined as a PyTorch model inheriting from
+        ... #torch.nn.Module. Must have two components: model.embedding
+        ... #(e.g., a neural net) and another component model.GP_layer.
+        >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
+        >>> from MuyGPyS.neighbors import NN_Wrapper
+        >>> from MuyGPyS.examples.muygps_torch import update_nearest_neighbors
+        >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
+        >>> nn_count = 10
+        >>> batch_count = 100
+        >>> train_count = 10000
+        >>> batch_indices, batch_nn_indices = sample_batch(nbrs_lookup, batch_count, train_count)
+        >>> nbrs_struct, model_trained = update_nearest_neighbors(
+        ... model=model,
+        ... train_features=torch.from_numpy(train['input']),
+        ... train_responses=torch.from_numpy(train['output']),
+        ... batch_indices=torch.from_numpy(batch_indices),
+        ... nn_count=nn_count,)
+
+    Args:
+        model:
+            A custom PyTorch.nn.Module object containing at least one
+            embedding layer and one MuyGPs_layer or MultivariateMuyGPS_layer
+            layer.
+        train_features:
+            A torch.Tensor of shape `(train_count, feature_count)` containing
+            the training features.
+        train_responses:
+            A torch.Tensor of shape `(train_count, response_count)` containing
+            the training responses corresponding to each feature.
+        batch_indices:
+            A torch.Tensor of shape `(batch_count)` containing the indices of
+            the training batch.
+        nn_count:
+            A torch.int64 giving the number of nearest neighbors.
+
+    Returns
+    -------
+    nbrs_lookup:
+        A NN_Wrapper object containing the updated nearest neighbors of the
+        embedded training data.
+    model:
+        A deep kernel MuyGPs model with updated nearest neighbors.
+    """
+    if model.embedding is None:
+        raise NotImplementedError(f"MuyGPs PyTorch model requires embedding.")
+    batch_features = train_features[batch_indices, :]
+    nbrs_lookup = NN_Wrapper(
+        model.embedding(train_features).detach().numpy(),
+        nn_count,
+        nn_method="hnsw",
+    )
+    batch_nn_indices, _ = nbrs_lookup._get_nns(
+        model.embedding(batch_features).detach().numpy(), nn_count=nn_count
+    )
+    batch_nn_indices = torch.from_numpy(batch_nn_indices.astype(np.int64))
+    batch_nn_targets = train_responses[batch_nn_indices, :]
+    model.batch_nn_indices = batch_nn_indices
+    model.batch_nn_targets = batch_nn_targets
+    return nbrs_lookup, model
