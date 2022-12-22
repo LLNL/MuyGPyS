@@ -446,7 +446,7 @@ def train_deep_kernel_muygps(
             A torch.Tensor of shape `(train_count, response_count)` containing
             the training responses corresponding to each feature.
         batch_indices:
-            A torch.Tensor of shape `(batch_count)` containing the indices of
+            A torch.Tensor of shape `(batch_count,)` containing the indices of
             the training batch.
         nbrs_lookup:
             A NN_Wrapper nearest neighbor lookup data structure.
@@ -590,7 +590,7 @@ def update_nearest_neighbors(
             A torch.Tensor of shape `(train_count, response_count)` containing
             the training responses corresponding to each feature.
         batch_indices:
-            A torch.Tensor of shape `(batch_count)` containing the indices of
+            A torch.Tensor of shape `(batch_count,)` containing the indices of
             the training batch.
         nn_count:
             A torch.int64 giving the number of nearest neighbors.
