@@ -84,7 +84,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .[tests,hnswlib,mpi]
       - name: Test MPI correctness
-        run: mpirun -n 4 python tests/mpi_correctness.py
+        run: mpirun -n 4 python tests/mpi_correctness.py --mca mpi_warn_on_fork 0
 
   build-torch:
     runs-on: ubuntu-latest
