@@ -81,7 +81,7 @@ def _chunk_function_tensor(func: Callable, *args, return_count=1):
     return _chunk_tensor(tensors, return_count=return_count)
 
 
-def _consistent_unchunk_tensor(tensor) -> np.ndarray:
+def _consistent_unchunk_tensor(tensor: np.ndarray) -> np.ndarray:
     """
     If we are using an MPI implementation, allgather the tensor across all
     cores. Otherwise NOOP.
@@ -126,7 +126,4 @@ def _consistent_reduce_scalar(scalar):
 
 
 def _is_mpi_mode() -> bool:
-    return (
-        config.muygpys_mpi_enabled is True  # type: ignore
-        and config.muygpys_jax_enabled is False  # type: ignore
-    )
+    return config.state.backend == "mpi"

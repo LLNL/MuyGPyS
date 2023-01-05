@@ -7,17 +7,17 @@ from MuyGPyS import config
 
 
 def _collect_implementation(package, *funcs):
-    if config.muygpys_backend == "numpy":
+    if config.state.backend == "numpy":
         return _collect_functions(package + ".numpy", *funcs)
-    elif config.muygpys_backend == "jax":
+    elif config.state.backend == "jax":
         return _collect_functions(package + ".jax", *funcs)
-    elif config.muygpys_backend == "torch":
+    elif config.state.backend == "torch":
         return _collect_functions(package + ".torch", *funcs)
-    elif config.muygpys_backend == "mpi":
+    elif config.state.backend == "mpi":
         return _collect_functions(package + ".mpi", *funcs)
     else:
         raise ValueError(
-            f'MuyGPyS backend is in bad state "{config.muygpys_backend}"'
+            f'MuyGPyS backend is in bad state "{config.state.backend}"'
         )
 
 

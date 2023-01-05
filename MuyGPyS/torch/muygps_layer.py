@@ -10,21 +10,24 @@ MuyGPs PyTorch implementation
 import torch
 from torch import nn
 import numpy as np
-from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
+from MuyGPyS._src.gp.distance.torch import (
+    _pairwise_distances,
+    _crosswise_distances,
+)
 
 
 from MuyGPyS._src.gp.muygps.torch import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
 )
-from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
+from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
 
-from MuyGPyS.gp.kernels import (
-    _matern_05_fn as matern_05_fn,
-    _matern_15_fn as matern_15_fn,
-    _matern_25_fn as matern_25_fn,
-    _matern_inf_fn as matern_inf_fn,
-    _matern_gen_fn as matern_gen_fn,
+from MuyGPyS._src.gp.kernels.torch import (
+    _matern_05_fn,
+    _matern_15_fn,
+    _matern_25_fn,
+    _matern_inf_fn,
+    _matern_gen_fn,
 )
 
 
@@ -130,7 +133,7 @@ class MuyGPs_layer(nn.Module):
             predicted response for each of the batch elements.
         """
 
-        crosswise_dists = crosswise_distances(
+        crosswise_dists = _crosswise_distances(
             x,
             x,
             self.batch_indices,
@@ -138,7 +141,7 @@ class MuyGPs_layer(nn.Module):
             metric="l2",
         )
 
-        pairwise_dists = pairwise_distances(
+        pairwise_dists = _pairwise_distances(
             x, self.batch_nn_indices, metric="l2"
         )
 
@@ -282,7 +285,7 @@ class MultivariateMuyGPs_layer(nn.Module):
             A torch.Tensor of shape `(batch_count, response_count)` listing the
             predicted response for each of the batch elements.
         """
-        crosswise_dists = crosswise_distances(
+        crosswise_dists = _crosswise_distances(
             x,
             x,
             self.batch_indices,
@@ -290,7 +293,7 @@ class MultivariateMuyGPs_layer(nn.Module):
             metric="l2",
         )
 
-        pairwise_dists = pairwise_distances(
+        pairwise_dists = _pairwise_distances(
             x, self.batch_nn_indices, metric="l2"
         )
 
@@ -360,15 +363,15 @@ def kernel_func(
         input values.
     """
     if nu == 1 / 2:
-        return matern_05_fn(dist_tensor, length_scale=length_scale)
+        return _matern_05_fn(dist_tensor, length_scale=length_scale)
 
     if nu == 3 / 2:
-        return matern_15_fn(dist_tensor, length_scale=length_scale)
+        return _matern_15_fn(dist_tensor, length_scale=length_scale)
 
     if nu == 5 / 2:
-        return matern_25_fn(dist_tensor, length_scale=length_scale)
+        return _matern_25_fn(dist_tensor, length_scale=length_scale)
 
     if nu == torch.inf:
-        return matern_inf_fn(dist_tensor, length_scale=length_scale)
+        return _matern_inf_fn(dist_tensor, length_scale=length_scale)
     else:
-        return matern_gen_fn(dist_tensor, nu, length_scale=length_scale)
+        return _matern_gen_fn(dist_tensor, nu, length_scale=length_scale)

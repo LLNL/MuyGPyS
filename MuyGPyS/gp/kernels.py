@@ -85,7 +85,7 @@ class SigmaSq:
                 The new value of the hyperparameter.
         """
         if not isinstance(val, np.ndarray):
-            if config.muygpys_jax_enabled is True:  # type: ignore
+            if config.state.backend == "jax":
                 import jax.numpy as jnp
 
                 if not isinstance(val, jnp.DeviceArray):
@@ -95,6 +95,14 @@ class SigmaSq:
                     )
                 else:
                     val = jnp.atleast_1d(val)
+            elif config.state.backend == "torch":
+                import torch
+
+                if not isinstance(val, torch.Tensor):
+                    raise ValueError(
+                        f"Expected np.ndarray or torch.Tensor for "
+                        f"SigmaSq value update, not {val}"
+                    )
             else:
                 raise ValueError(
                     f"Expected np.ndarray for SigmaSq value update, not {val}"
