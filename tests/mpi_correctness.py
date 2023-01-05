@@ -8,7 +8,7 @@ from MuyGPyS import config
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
 
-if config.muygpys_mpi_enabled is True:  # type: ignore
+if config.state.mpi_enabled is True:
     from MuyGPyS._test.utils import (
         _make_gaussian_matrix,
         _make_gaussian_data,

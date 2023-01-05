@@ -3,16 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS import config, jax_config
+from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
-if config.muygpys_jax_enabled is True:
-    config.update("muygpys_jax_enabled", False)
-
-
-config.update("muygpys_torch_enabled", True)
-if config.muygpys_torch_enabled is True:  # type: ignore
+if config.state.torch_enabled is True:
     import torch
     import numpy as np
 

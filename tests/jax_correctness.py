@@ -7,8 +7,7 @@ from MuyGPyS import config, jax_config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
-
-if config.muygpys_jax_enabled is True:  # type: ignore
+if config.state.jax_enabled is True:
     import jax.numpy as jnp
     import numpy as np
 
