@@ -13,7 +13,7 @@ import numpy as np
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 
 
-from MuyGPyS._src.gp.muygps import (
+from MuyGPyS._src.gp.muygps.torch import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
 )

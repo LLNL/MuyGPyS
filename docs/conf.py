@@ -30,6 +30,7 @@ autodoc_mock_imports = [
     "absl-py",
     "pybind11",
     "hnswlib",
+    "torch",
 ]
 
 # -- Path setup --------------------------------------------------------------
