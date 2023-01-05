@@ -46,6 +46,7 @@ class MuyGPySState:
         self.hnswlib_enabled = False
         self.gpu_enabled = False
         self.mpi_enabled = False
+        self.backend = "numpy"
         self.already_configured_with_absl = False
 
 
@@ -72,29 +73,14 @@ def _update_jax_thread_local(val):
     config.state.jax_enabled = val
 
 
+#### JAX and GPU states
+
 enable_jax = config.define_bool_state(
     name="muygpys_jax_enabled",
     default=False,
     help="Enable use of jax implementations of math functions.",
     update_global_hook=_update_jax_global,
     update_thread_local_hook=_update_jax_thread_local,
-)
-
-
-def _update_hnswlib_global(val):
-    config.state.hnswlib_enabled = val
-
-
-def _update_hnswlib_thread_local(val):
-    config.state.hnswlib_enabled = val
-
-
-enable_hnswlib = config.define_bool_state(
-    name="muygpys_hnswlib_enabled",
-    default=False,
-    help="Enable use of hnswlib implementation of fast approximate nearest neighbors.",
-    update_global_hook=_update_hnswlib_global,
-    update_thread_local_hook=_update_hnswlib_thread_local,
 )
 
 
@@ -115,6 +101,50 @@ enable_gpu = config.define_bool_state(
 )
 
 
+try:
+    from jax import default_backend as _default_backend
+
+    config.update("muygpys_jax_enabled", True)
+    if _default_backend() in ["gpu", "tpu"]:
+        config.update("muygpys_gpu_enabled", True)
+    del _default_backend
+except Exception:
+    config.update("muygpys_jax_enabled", False)
+    config.update("muygpys_gpu_enabled", False)
+
+
+#### hnswlib states
+
+
+def _update_hnswlib_global(val):
+    config.state.hnswlib_enabled = val
+
+
+def _update_hnswlib_thread_local(val):
+    config.state.hnswlib_enabled = val
+
+
+enable_hnswlib = config.define_bool_state(
+    name="muygpys_hnswlib_enabled",
+    default=False,
+    help="Enable use of hnswlib implementation of fast approximate nearest neighbors.",
+    update_global_hook=_update_hnswlib_global,
+    update_thread_local_hook=_update_hnswlib_thread_local,
+)
+
+
+try:
+    import hnswlib as _hnswlib
+
+    config.update("muygpys_hnswlib_enabled", True)
+    del _hnswlib
+except Exception:
+    config.update("muygpys_hnswlib_enabled", False)
+
+
+#### MPI states
+
+
 def _update_mpi_global(val):
     config.state.mpi_enabled = val
 
@@ -132,25 +162,6 @@ enable_mpi = config.define_bool_state(
 )
 
 try:
-    from jax import default_backend as _default_backend
-
-    config.update("muygpys_jax_enabled", True)
-    if _default_backend() in ["gpu", "tpu"]:
-        config.update("muygpys_gpu_enabled", True)
-    del _default_backend
-except Exception:
-    config.update("muygpys_jax_enabled", False)
-    config.update("muygpys_gpu_enabled", False)
-
-try:
-    import hnswlib as _hnswlib
-
-    config.update("muygpys_hnswlib_enabled", True)
-    del _hnswlib
-except Exception:
-    config.update("muygpys_hnswlib_enabled", False)
-
-try:
     from mpi4py import MPI
     from mpi4py.util.pkl5 import Intracomm
 
@@ -163,6 +174,9 @@ try:
 except Exception as e:
     MPI = None  # type: ignore
     config.update("muygpys_mpi_enabled", False)
+
+
+#### torch states
 
 
 def _update_torch_global(val):
@@ -189,3 +203,23 @@ try:
     del _torch
 except Exception:
     config.update("muygpys_torch_enabled", False)
+
+#### Backend state
+
+
+def _update_backend_global(val):
+    config.state.backend = val
+
+
+def _update_backend_thread_local(val):
+    config.state.backend = val
+
+
+backend = config.define_enum_state(
+    name="muygpys_backend",
+    enum_values=["numpy", "jax", "torch", "mpi"],
+    default="numpy",
+    help="Specify which backend to select at import time",
+    update_global_hook=_update_backend_global,
+    update_thread_local_hook=_update_backend_thread_local,
+)

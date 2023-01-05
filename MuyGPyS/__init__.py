@@ -12,6 +12,3 @@ from MuyGPyS._src.config import (
     jax_config as jax_config,
     MPI as MPI,
 )
-
-if config.muygpys_jax_enabled is True and jax_config is not None:  # type: ignore
-    jax_config.update("jax_enable_x64", True)
