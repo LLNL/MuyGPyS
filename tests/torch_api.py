@@ -37,7 +37,7 @@ from MuyGPyS._test.utils import (
 
 from MuyGPyS import config
 
-from MuyGPyS.pytorch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
+from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
 from MuyGPyS._src.optimize.loss import _lool_fn as lool_fn
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps

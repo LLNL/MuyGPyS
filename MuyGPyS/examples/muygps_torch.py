@@ -33,7 +33,7 @@ from MuyGPyS._src.gp.muygps import (
     _muygps_compute_diagonal_variance,
 )
 from MuyGPyS._src.optimize.loss import _lool_fn as lool_fn
-from MuyGPyS.pytorch.muygps_layer import kernel_func
+from MuyGPyS.torch.muygps_layer import kernel_func
 from torch.optim.lr_scheduler import ExponentialLR
 
 
@@ -49,13 +49,13 @@ def predict_single_model(
 ):
     """
     Generate predictions using a PyTorch model containing at least one
-    `MuyGPyS.pytorch.muygps_layer.MuyGPs_layer` in its structure.
+    `MuyGPyS.torch.muygps_layer.MuyGPs_layer` in its structure.
 
     Args:
         model:
             A custom PyTorch.nn.Module object containing an
             `embedding` component and one
-            `MuyGPyS.pytorch.muygps_layer.MuyGPs_layer` layer.
+            `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer.
         test_features:
             A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
@@ -165,7 +165,7 @@ def predict_multiple_model(
 ):
     """
     Generate predictions using a PyTorch model containing a
-    `MuyGPyS.pytorch.muygps_layer.MultivariateMuyGPs_layer` in its structure.
+    `MuyGPyS.torch.muygps_layer.MultivariateMuyGPs_layer` in its structure.
     Meant for the case in which there is more than one GP model used to model
     multiple outputs.
 
@@ -173,7 +173,7 @@ def predict_multiple_model(
         model:
             A custom PyTorch.nn.Module object containing an
             `embedding` component and one
-            `MuyGPyS.pytorch.muygps_layer.MultivariateMuyGPs_layer` layer.
+            `MuyGPyS.torch.muygps_layer.MultivariateMuyGPs_layer` layer.
         test_features:
             A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
@@ -299,8 +299,8 @@ def predict_model(
 ):
     """
     Generate predictions using a PyTorch model containing a
-    `MuyGPyS.pytorch.muygps_layer.MuyGPs_layer` layer or a
-    `MuyGPyS.pytorch.muygps_layer.MultivariateMuyGPs_layer` layer in its
+    `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer or a
+    `MuyGPyS.torch.muygps_layer.MultivariateMuyGPs_layer` layer in its
     structure.
 
     Example:
@@ -403,8 +403,8 @@ def train_deep_kernel_muygps(
 ):
     """
     Train a PyTorch model containing an embedding component and
-    a `MuyGPyS.pytorch.muygps_layer.MuyGPs_layer` layer or a
-    `MuyGPyS.pytorch.muygps_layer. MultivariateMuyGPs_layer` layer in its
+    a `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer or a
+    `MuyGPyS.torch.muygps_layer. MultivariateMuyGPs_layer` layer in its
     structure.
 
     Example:
@@ -555,8 +555,8 @@ def update_nearest_neighbors(
     """
     Update the nearest neighbors after deformation via a PyTorch model
     containing an embedding component and a
-    `MuyGPyS.pytorch.muygps_layer.MuyGPs_layer` layer or a
-    `MuyGPyS.pytorch.muygps_layer. MultivariateMuyGPs_layer` layer in its
+    `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer or a
+    `MuyGPyS.torch.muygps_layer. MultivariateMuyGPs_layer` layer in its
     structure.
 
     Example:

@@ -51,7 +51,7 @@ class MuyGPs_layer(nn.Module):
     a MuyGPs_layer object.
 
     Example:
-        >>> from MuyGPyS.pytorch.muygps_layer import MuyGPs_layer
+        >>> from MuyGPyS.torch.muygps_layer import MuyGPs_layer
         >>> kernel_eps = 1e-3
         >>> nu = 1/2
         >>> length_scale = 1.0
@@ -198,7 +198,7 @@ class MultivariateMuyGPs_layer(nn.Module):
     a MuyGPs_layer object.
 
     Example:
-        >>> from MuyGPyS.pytorch.muygps_layer import MultivariateMuyGPs_layer
+        >>> from MuyGPyS.torch.muygps_layer import MultivariateMuyGPs_layer
         >>> num_models = 10
         >>> kernel_eps = 1e-3 * torch.ones(10,)
         >>> nu = 1/2 * torch.ones(10,)
