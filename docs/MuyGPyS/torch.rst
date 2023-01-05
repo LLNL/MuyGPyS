@@ -1,12 +1,12 @@
-.. _MuyGPyS-pytorch:
+.. _MuyGPyS-torch:
 
-pytorch
+torch
 ===================================
 
-`MuyGPyS.pytorch` module reference.
+`MuyGPyS.torch` module reference.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   pytorch/muygps_layer
+   torch/muygps_layer
