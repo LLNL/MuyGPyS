@@ -1012,7 +1012,7 @@ class MultivariateMuyGPS:
         to the jth response dimension, :math:`\\varepsilon_j I_k` is a diagonal
         homoscedastic noise matrix whose diagonal is the value of the
         `self.models[j].eps` hyperparameter, and :math:`Y(X_{N_i})_{:,j}` is the
-        `(batch_count,)` vector of the jth responses of the neartest neighbors
+        `(batch_count,)` vector of the jth responses of the nearest neighbors
         given by a slice of the `batch_nn_targets` argument.
 
         If `variance_mode == "diagonal"`, also return the local posterior

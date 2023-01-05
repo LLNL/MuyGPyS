@@ -9,7 +9,10 @@ from MuyGPyS import config
 def _collect_implementation(package, *funcs):
     if config.muygpys_jax_enabled is False:  # type: ignore
         if config.muygpys_mpi_enabled is False:  # type:ignore
-            return _collect_functions(package + ".numpy", *funcs)
+            if config.muygpys_torch_enabled is False:
+                return _collect_functions(package + ".numpy", *funcs)
+            else:
+                return _collect_functions(package + ".torch", *funcs)
         else:
             return _collect_functions(package + ".mpi", *funcs)
     else:

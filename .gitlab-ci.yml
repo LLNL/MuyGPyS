@@ -6,9 +6,8 @@ workflow:
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
       when: always
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
       when: always
-
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -27,6 +26,7 @@ before_script:
   - pip install --upgrade pip
   - pip install --upgrade jax[cuda11_cudnn805] -f https://storage.googleapis.com/jax-releases/jax-releases.html
   - pip install -e .[tests,mpi]
+  - pip install torch
 
 all_tests:
   stage: test
@@ -56,3 +56,6 @@ all_tests:
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/classify_api.py /p/lustre1/madstare/muygps-data/ --muygpys_jax_enabled=False
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/fast_regress_api.py /p/lustre1/madstare/muygps-data/ --muygpys_jax_enabled=False
     - echo "done with MPI tests"
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/torch_correctness.py --muygpys_torch_enabled==True --muygpys_jax_enabled=False --muygpys_mpi_enabled=False
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/torch_api.py /p/lustre1/madstare/muygps-data/ --muygpys_torch_enabled==True --muygpys_jax_enabled=False --muygpys_mpi_enabled=False
+    - echo "done with Torch tests"

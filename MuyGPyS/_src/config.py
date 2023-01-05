@@ -42,6 +42,7 @@ class MuyGPySConfig(JaxConfig):
 class MuyGPySState:
     def __init__(self):
         self.jax_enabled = False
+        self.torch_enabled = False
         self.hnswlib_enabled = False
         self.gpu_enabled = False
         self.mpi_enabled = False
@@ -162,3 +163,29 @@ try:
 except Exception as e:
     MPI = None  # type: ignore
     config.update("muygpys_mpi_enabled", False)
+
+
+def _update_torch_global(val):
+    config.state.torch_enabled = val
+
+
+def _update_torch_thread_local(val):
+    config.state.torch_enabled = val
+
+
+enable_torch = config.define_bool_state(
+    name="muygpys_torch_enabled",
+    default=False,
+    help="Enable use of torch for deep kernel learning.",
+    update_global_hook=_update_torch_global,
+    update_thread_local_hook=_update_torch_thread_local,
+)
+
+
+try:
+    import torch as _torch
+
+    config.update("muygpys_torch_enabled", True)
+    del _torch
+except Exception:
+    config.update("muygpys_torch_enabled", False)

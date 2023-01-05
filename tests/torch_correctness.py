@@ -7,9 +7,13 @@ from MuyGPyS import config, jax_config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
+if config.muygpys_jax_enabled is True:
+    config.update("muygpys_jax_enabled", False)
 
-if config.muygpys_jax_enabled is True:  # type: ignore
-    import jax.numpy as jnp
+
+config.update("muygpys_torch_enabled", True)
+if config.muygpys_torch_enabled is True:  # type: ignore
+    import torch
     import numpy as np
 
     from absl.testing import absltest
@@ -31,12 +35,12 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _make_fast_regress_tensors as make_fast_regress_tensors_n,
         _fast_nn_update as fast_nn_update_n,
     )
-    from MuyGPyS._src.gp.distance.jax import (
-        _pairwise_distances as pairwise_distances_j,
-        _crosswise_distances as crosswise_distances_j,
-        _make_train_tensors as make_train_tensors_j,
-        _make_fast_regress_tensors as make_fast_regress_tensors_j,
-        _fast_nn_update as fast_nn_update_j,
+    from MuyGPyS._src.gp.distance.torch import (
+        _pairwise_distances as pairwise_distances_t,
+        _crosswise_distances as crosswise_distances_t,
+        _make_train_tensors as make_train_tensors_t,
+        _make_fast_regress_tensors as make_fast_regress_tensors_t,
+        _fast_nn_update as fast_nn_update_t,
     )
     from MuyGPyS._src.gp.kernels.numpy import (
         _rbf_fn as rbf_fn_n,
@@ -46,13 +50,13 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _matern_inf_fn as matern_inf_fn_n,
         _matern_gen_fn as matern_gen_fn_n,
     )
-    from MuyGPyS._src.gp.kernels.jax import (
-        _rbf_fn as rbf_fn_j,
-        _matern_05_fn as matern_05_fn_j,
-        _matern_15_fn as matern_15_fn_j,
-        _matern_25_fn as matern_25_fn_j,
-        _matern_inf_fn as matern_inf_fn_j,
-        _matern_gen_fn as matern_gen_fn_j,
+    from MuyGPyS._src.gp.kernels.torch import (
+        _rbf_fn as rbf_fn_t,
+        _matern_05_fn as matern_05_fn_t,
+        _matern_15_fn as matern_15_fn_t,
+        _matern_25_fn as matern_25_fn_t,
+        _matern_inf_fn as matern_inf_fn_t,
+        _matern_gen_fn as matern_gen_fn_t,
     )
     from MuyGPyS._src.gp.muygps.numpy import (
         _muygps_compute_solve as muygps_compute_solve_n,
@@ -61,60 +65,35 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         _mmuygps_fast_regress_solve as mmuygps_fast_regress_solve_n,
         _muygps_fast_regress_precompute as muygps_fast_regress_precompute_n,
     )
-    from MuyGPyS._src.gp.muygps.jax import (
-        _muygps_compute_solve as muygps_compute_solve_j,
-        _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_j,
-        _muygps_fast_regress_solve as muygps_fast_regress_solve_j,
-        _mmuygps_fast_regress_solve as mmuygps_fast_regress_solve_j,
-        _muygps_fast_regress_precompute as muygps_fast_regress_precompute_j,
+    from MuyGPyS._src.gp.muygps.torch import (
+        _muygps_compute_solve as muygps_compute_solve_t,
+        _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_t,
+        _muygps_fast_regress_solve as muygps_fast_regress_solve_t,
+        _mmuygps_fast_regress_solve as mmuygps_fast_regress_solve_t,
+        _muygps_fast_regress_precompute as muygps_fast_regress_precompute_t,
     )
     from MuyGPyS._src.optimize.sigma_sq.numpy import (
         _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
     )
-    from MuyGPyS._src.optimize.sigma_sq.jax import (
-        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
+    from MuyGPyS._src.optimize.sigma_sq.torch import (
+        _analytic_sigma_sq_optim as analytic_sigma_sq_optim_t,
     )
     from MuyGPyS.optimize.sigma_sq import (
         make_kwargs_analytic_sigma_sq_optim,
         make_array_analytic_sigma_sq_optim,
     )
+
     from MuyGPyS._src.optimize.loss.numpy import (
         _mse_fn as mse_fn_n,
         _cross_entropy_fn as cross_entropy_fn_n,
         _lool_fn as lool_fn_n,
     )
-    from MuyGPyS._src.optimize.loss.jax import (
-        _mse_fn as mse_fn_j,
-        _cross_entropy_fn as cross_entropy_fn_j,
-        _lool_fn as lool_fn_j,
+    from MuyGPyS._src.optimize.loss.torch import (
+        _mse_fn as mse_fn_t,
+        _cross_entropy_fn as cross_entropy_fn_t,
+        _lool_fn as lool_fn_t,
     )
     from MuyGPyS.optimize.objective import make_loo_crossval_fn
-    from MuyGPyS._src.optimize.chassis.numpy import (
-        _scipy_optimize as scipy_optimize_n,
-        _bayes_opt_optimize as bayes_optimize_n,
-    )
-    from MuyGPyS._src.optimize.chassis.jax import (
-        _scipy_optimize as scipy_optimize_j,
-        _bayes_opt_optimize as bayes_optimize_j,
-    )
-
-    def allclose_gen(a: np.ndarray, b: np.ndarray) -> bool:
-        if jax_config.x64_enabled:  # type: ignore
-            return np.allclose(a, b)
-        else:
-            return np.allclose(a, b, atol=1e-7)
-
-    def allclose_var(a: np.ndarray, b: np.ndarray) -> bool:
-        if jax_config.x64_enabled:  # type: ignore
-            return np.allclose(a, b)
-        else:
-            return np.allclose(a, b, atol=1e-6)
-
-    def allclose_inv(a: np.ndarray, b: np.ndarray) -> bool:
-        if jax_config.x64_enabled:  # type: ignore
-            return np.allclose(a, b)
-        else:
-            return np.allclose(a, b, atol=1e-3)
 
     class DistanceTestCase(parameterized.TestCase):
         @classmethod
@@ -127,31 +106,31 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nn_count = 40
             cls.batch_count = 500
             cls.length_scale = 1.0
-            cls.nu = 0.55
+            cls.nu = 0.5
             cls.nu_bounds = (1e-1, 1e1)
             cls.eps = 1e-3
             cls.k_kwargs = {
                 "kern": "matern",
                 "length_scale": {"val": cls.length_scale},
-                "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+                "nu": {"val": cls.nu},
                 "eps": {"val": cls.eps},
             }
             cls.train_features_n = _make_gaussian_matrix(
                 cls.train_count, cls.feature_count
             )
-            cls.train_features_j = jnp.array(cls.train_features_n)
+            cls.train_features_t = torch.from_numpy(cls.train_features_n)
             cls.train_responses_n = _make_gaussian_matrix(
                 cls.train_count, cls.response_count
             )
-            cls.train_responses_j = jnp.array(cls.train_responses_n)
+            cls.train_responses_t = torch.from_numpy(cls.train_responses_n)
             cls.test_features_n = _make_gaussian_matrix(
                 cls.test_count, cls.feature_count
             )
-            cls.test_features_j = jnp.array(cls.test_features_n)
+            cls.test_features_t = torch.from_numpy(cls.test_features_n)
             cls.test_responses_n = _make_gaussian_matrix(
                 cls.test_count, cls.response_count
             )
-            cls.test_responses_j = jnp.array(cls.test_responses_n)
+            cls.test_responses_t = torch.from_numpy(cls.test_responses_n)
             cls.nbrs_lookup = NN_Wrapper(
                 cls.train_features_n, cls.nn_count, **_exact_nn_kwarg_options[0]
             )
@@ -159,8 +138,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
                 cls.nbrs_lookup, cls.batch_count, cls.train_count
             )
-            cls.batch_indices_j = jnp.array(cls.batch_indices_n)
-            cls.batch_nn_indices_j = jnp.array(cls.batch_nn_indices_n)
+            cls.batch_indices_t = torch.from_numpy(cls.batch_indices_n)
+            cls.batch_nn_indices_t = torch.from_numpy(cls.batch_nn_indices_n)
 
     class DistanceTest(DistanceTestCase):
         @classmethod
@@ -169,30 +148,30 @@ if config.muygpys_jax_enabled is True:  # type: ignore
 
         def test_pairwise_distances(self):
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     pairwise_distances_n(
                         self.train_features_n, self.batch_nn_indices_n
                     ),
-                    pairwise_distances_j(
-                        self.train_features_j, self.batch_nn_indices_j
+                    pairwise_distances_t(
+                        self.train_features_t, self.batch_nn_indices_t
                     ),
                 )
             )
 
         def test_crosswise_distances(self):
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     crosswise_distances_n(
                         self.train_features_n,
                         self.train_features_n,
                         self.batch_indices_n,
                         self.batch_nn_indices_n,
                     ),
-                    crosswise_distances_j(
-                        self.train_features_j,
-                        self.train_features_j,
-                        self.batch_indices_j,
-                        self.batch_nn_indices_j,
+                    crosswise_distances_t(
+                        self.train_features_t,
+                        self.train_features_t,
+                        self.batch_indices_t,
+                        self.batch_nn_indices_t,
                     ),
                 )
             )
@@ -211,23 +190,21 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.train_responses_n,
             )
             (
-                crosswise_dists_j,
-                pairwise_dists_j,
-                batch_targets_j,
-                batch_nn_targets_j,
-            ) = make_train_tensors_j(
+                crosswise_dists_t,
+                pairwise_dists_t,
+                batch_targets_t,
+                batch_nn_targets_t,
+            ) = make_train_tensors_t(
                 self.muygps.kernel.metric,
-                self.batch_indices_j,
-                self.batch_nn_indices_j,
-                self.train_features_j,
-                self.train_responses_j,
+                self.batch_indices_t,
+                self.batch_nn_indices_t,
+                self.train_features_t,
+                self.train_responses_t,
             )
-            self.assertTrue(allclose_gen(crosswise_dists_n, crosswise_dists_j))
-            self.assertTrue(allclose_gen(pairwise_dists_n, pairwise_dists_j))
-            self.assertTrue(allclose_gen(batch_targets_n, batch_targets_j))
-            self.assertTrue(
-                allclose_gen(batch_nn_targets_n, batch_nn_targets_j)
-            )
+            self.assertTrue(np.allclose(crosswise_dists_n, crosswise_dists_t))
+            self.assertTrue(np.allclose(pairwise_dists_n, pairwise_dists_t))
+            self.assertTrue(np.allclose(batch_targets_n, batch_targets_t))
+            self.assertTrue(np.allclose(batch_nn_targets_n, batch_nn_targets_t))
 
     class KernelTestCase(DistanceTestCase):
         @classmethod
@@ -246,16 +223,16 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 cls.train_responses_n,
             )
             (
-                cls.crosswise_dists_j,
-                cls.pairwise_dists_j,
-                cls.batch_targets_j,
-                cls.batch_nn_targets_j,
-            ) = make_train_tensors_j(
+                cls.crosswise_dists_t,
+                cls.pairwise_dists_t,
+                cls.batch_targets_t,
+                cls.batch_nn_targets_t,
+            ) = make_train_tensors_t(
                 cls.muygps.kernel.metric,
-                cls.batch_indices_j,
-                cls.batch_nn_indices_j,
-                cls.train_features_j,
-                cls.train_responses_j,
+                cls.batch_indices_t,
+                cls.batch_nn_indices_t,
+                cls.train_features_t,
+                cls.train_responses_t,
             )
 
     class KernelTest(KernelTestCase):
@@ -265,136 +242,108 @@ if config.muygpys_jax_enabled is True:  # type: ignore
 
         def test_crosswise_rbf(self):
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     rbf_fn_n(
                         self.crosswise_dists_n, length_scale=self.length_scale
                     ),
-                    rbf_fn_j(
-                        self.crosswise_dists_j, length_scale=self.length_scale
+                    rbf_fn_t(
+                        self.crosswise_dists_t, length_scale=self.length_scale
                     ),
                 )
             )
 
         def test_pairwise_rbf(self):
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     rbf_fn_n(
                         self.pairwise_dists_n, length_scale=self.length_scale
                     ),
-                    rbf_fn_j(
-                        self.pairwise_dists_j, length_scale=self.length_scale
+                    rbf_fn_t(
+                        self.pairwise_dists_t, length_scale=self.length_scale
                     ),
                 )
             )
 
         def test_crosswise_matern(self):
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     matern_05_fn_n(
                         self.crosswise_dists_n, length_scale=self.length_scale
                     ),
-                    matern_05_fn_j(
-                        self.crosswise_dists_j, length_scale=self.length_scale
+                    matern_05_fn_t(
+                        self.crosswise_dists_t, length_scale=self.length_scale
                     ),
                 )
             )
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     matern_15_fn_n(
                         self.crosswise_dists_n, length_scale=self.length_scale
                     ),
-                    matern_15_fn_j(
-                        self.crosswise_dists_j, length_scale=self.length_scale
+                    matern_15_fn_t(
+                        self.crosswise_dists_t, length_scale=self.length_scale
                     ),
                 )
             )
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     matern_25_fn_n(
                         self.crosswise_dists_n, length_scale=self.length_scale
                     ),
-                    matern_25_fn_j(
-                        self.crosswise_dists_j, length_scale=self.length_scale
+                    matern_25_fn_t(
+                        self.crosswise_dists_t, length_scale=self.length_scale
                     ),
                 )
             )
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     matern_inf_fn_n(
                         self.crosswise_dists_n, length_scale=self.length_scale
                     ),
-                    matern_inf_fn_j(
-                        self.crosswise_dists_j, length_scale=self.length_scale
-                    ),
-                )
-            )
-            self.assertTrue(
-                allclose_gen(
-                    matern_gen_fn_n(
-                        self.crosswise_dists_n,
-                        nu=self.nu,
-                        length_scale=self.length_scale,
-                    ),
-                    matern_gen_fn_j(
-                        self.crosswise_dists_j,
-                        nu=self.nu,
-                        length_scale=self.length_scale,
+                    matern_inf_fn_t(
+                        self.crosswise_dists_t, length_scale=self.length_scale
                     ),
                 )
             )
 
         def test_pairwise_matern(self):
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     matern_05_fn_n(
                         self.pairwise_dists_n, length_scale=self.length_scale
                     ),
-                    matern_05_fn_j(
-                        self.pairwise_dists_j, length_scale=self.length_scale
+                    matern_05_fn_t(
+                        self.pairwise_dists_t, length_scale=self.length_scale
                     ),
                 )
             )
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     matern_15_fn_n(
                         self.pairwise_dists_n, length_scale=self.length_scale
                     ),
-                    matern_15_fn_j(
-                        self.pairwise_dists_j, length_scale=self.length_scale
+                    matern_15_fn_t(
+                        self.pairwise_dists_t, length_scale=self.length_scale
                     ),
                 )
             )
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     matern_25_fn_n(
                         self.pairwise_dists_n, length_scale=self.length_scale
                     ),
-                    matern_25_fn_j(
-                        self.pairwise_dists_j, length_scale=self.length_scale
+                    matern_25_fn_t(
+                        self.pairwise_dists_t, length_scale=self.length_scale
                     ),
                 )
             )
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     matern_inf_fn_n(
                         self.pairwise_dists_n, length_scale=self.length_scale
                     ),
-                    matern_inf_fn_j(
-                        self.pairwise_dists_j, length_scale=self.length_scale
-                    ),
-                )
-            )
-            self.assertTrue(
-                allclose_gen(
-                    matern_gen_fn_n(
-                        self.pairwise_dists_n,
-                        nu=self.nu,
-                        length_scale=self.length_scale,
-                    ),
-                    matern_gen_fn_j(
-                        self.pairwise_dists_j,
-                        nu=self.nu,
-                        length_scale=self.length_scale,
+                    matern_inf_fn_t(
+                        self.pairwise_dists_t, length_scale=self.length_scale
                     ),
                 )
             )
@@ -403,14 +352,19 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         @classmethod
         def setUpClass(cls):
             super(MuyGPSTestCase, cls).setUpClass()
-            cls.K_n = matern_gen_fn_n(
-                cls.pairwise_dists_n, nu=cls.nu, length_scale=cls.length_scale
+            cls.K_n = matern_05_fn_n(
+                cls.pairwise_dists_n, length_scale=cls.length_scale
             )
-            cls.K_j = jnp.array(cls.K_n)
-            cls.Kcross_n = matern_gen_fn_n(
-                cls.crosswise_dists_n, nu=cls.nu, length_scale=cls.length_scale
+
+            cls.K_t = matern_05_fn_t(
+                cls.pairwise_dists_t, length_scale=cls.length_scale
             )
-            cls.Kcross_j = jnp.array(cls.Kcross_n)
+            cls.Kcross_n = matern_05_fn_n(
+                cls.crosswise_dists_n, length_scale=cls.length_scale
+            )
+            cls.Kcross_t = matern_05_fn_t(
+                cls.crosswise_dists_t, length_scale=cls.length_scale
+            )
 
     class MuyGPSTest(MuyGPSTestCase):
         @classmethod
@@ -419,17 +373,17 @@ if config.muygpys_jax_enabled is True:  # type: ignore
 
         def test_compute_solve(self):
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     muygps_compute_solve_n(
                         self.K_n,
                         self.Kcross_n,
                         self.batch_nn_targets_n,
                         self.muygps.eps(),
                     ),
-                    muygps_compute_solve_j(
-                        self.K_j,
-                        self.Kcross_j,
-                        self.batch_nn_targets_j,
+                    muygps_compute_solve_t(
+                        self.K_t,
+                        self.Kcross_t,
+                        self.batch_nn_targets_t,
                         self.muygps.eps(),
                     ),
                 )
@@ -437,27 +391,27 @@ if config.muygpys_jax_enabled is True:  # type: ignore
 
         def test_diagonal_variance(self):
             self.assertTrue(
-                allclose_var(
+                np.allclose(
                     muygps_compute_diagonal_variance_n(
                         self.K_n, self.Kcross_n, self.muygps.eps()
                     ),
-                    muygps_compute_diagonal_variance_j(
-                        self.K_j, self.Kcross_j, self.muygps.eps()
+                    muygps_compute_diagonal_variance_t(
+                        self.K_t, self.Kcross_t, self.muygps.eps()
                     ),
                 )
             )
 
         def test_sigma_sq_optim(self):
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     analytic_sigma_sq_optim_n(
                         self.K_n,
                         self.batch_nn_targets_n,
                         self.muygps.eps(),
                     ),
-                    analytic_sigma_sq_optim_j(
-                        self.K_j,
-                        self.batch_nn_targets_j,
+                    analytic_sigma_sq_optim_t(
+                        self.K_t,
+                        self.batch_nn_targets_t,
                         self.muygps.eps(),
                     ),
                 )
@@ -501,80 +455,85 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 np.arange(0, cls.test_count),
                 cls.closest_set_new_n,
             )
-            cls.Kcross_fast_n = cls.muygps.kernel(cls.crosswise_dists_fast_n)
 
-            cls.nn_indices_all_j, _ = cls.nbrs_lookup.get_batch_nns(
-                jnp.arange(0, cls.train_count)
+            kernel_func_n = matern_05_fn_n
+            cls.Kcross_fast_n = kernel_func_n(
+                cls.crosswise_dists_fast_n, cls.length_scale
             )
-            cls.nn_indices_all_j = jnp.array(cls.nn_indices_all_j)
 
+            cls.nn_indices_all_t, _ = cls.nbrs_lookup.get_batch_nns(
+                torch.arange(0, cls.train_count)
+            )
+            cls.nn_indices_all_t = torch.from_numpy(cls.nn_indices_all_t)
             (
-                cls.K_fast_j,
-                cls.train_nn_targets_fast_j,
-            ) = make_fast_regress_tensors_j(
+                cls.K_fast_t,
+                cls.train_nn_targets_fast_t,
+            ) = make_fast_regress_tensors_t(
                 cls.muygps.kernel.metric,
-                cls.nn_indices_all_j,
-                cls.train_features_j,
-                cls.train_responses_j,
+                cls.nn_indices_all_t,
+                cls.train_features_t,
+                cls.train_responses_t,
             )
 
-            cls.fast_regress_coeffs_j = muygps_fast_regress_precompute_j(
-                cls.K_fast_j, cls.muygps.eps(), cls.train_nn_targets_fast_j
+            cls.fast_regress_coeffs_t = muygps_fast_regress_precompute_t(
+                cls.K_fast_t, cls.muygps.eps(), cls.train_nn_targets_fast_t
             )
 
-            cls.test_neighbors_j, _ = cls.nbrs_lookup.get_nns(
-                cls.test_features_j
+            cls.test_neighbors_t, _ = cls.nbrs_lookup.get_nns(
+                cls.test_features_t
             )
-            cls.closest_neighbor_j = cls.test_neighbors_j[:, 0]
-            cls.closest_set_j = cls.nn_indices_all_j[
-                cls.closest_neighbor_j
-            ].astype(int)
+            cls.closest_neighbor_t = cls.test_neighbors_t[:, 0]
+            cls.closest_set_t = cls.nn_indices_all_t[cls.closest_neighbor_t]
 
-            cls.new_nn_indices_j = fast_nn_update_j(cls.nn_indices_all_j)
-            cls.closest_set_new_j = cls.new_nn_indices_j[cls.closest_neighbor_j]
-            cls.crosswise_dists_fast_j = crosswise_distances_j(
-                cls.test_features_j,
-                cls.train_features_j,
-                jnp.arange(0, cls.test_count),
-                cls.closest_set_new_j,
+            cls.new_nn_indices_t = fast_nn_update_t(cls.nn_indices_all_t)
+            cls.closest_set_new_t = cls.new_nn_indices_t[cls.closest_neighbor_t]
+            cls.crosswise_dists_fast_t = crosswise_distances_t(
+                cls.test_features_t,
+                cls.train_features_t,
+                torch.arange(0, cls.test_count),
+                cls.closest_set_new_t,
             )
-            cls.Kcross_fast_j = cls.muygps.kernel(cls.crosswise_dists_fast_j)
+
+            kernel_func_t = matern_05_fn_t
+            cls.Kcross_fast_t = kernel_func_t(
+                cls.crosswise_dists_fast_t, cls.length_scale
+            )
 
         def test_fast_nn_update(self):
             self.assertTrue(
-                allclose_inv(
-                    fast_nn_update_j(self.nn_indices_all_j),
+                np.allclose(
+                    fast_nn_update_t(self.nn_indices_all_t),
                     fast_nn_update_n(self.nn_indices_all_n),
                 )
             )
 
         def test_make_fast_regress_tensors(self):
-            self.assertTrue(allclose_inv(self.K_fast_n, self.K_fast_j))
+            self.assertTrue(np.allclose(self.K_fast_n, self.K_fast_t))
             self.assertTrue(
-                allclose_inv(
-                    self.train_nn_targets_fast_n, self.train_nn_targets_fast_j
+                np.allclose(
+                    self.train_nn_targets_fast_n, self.train_nn_targets_fast_t
                 )
             )
 
         def test_fast_predict(self):
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     muygps_fast_regress_solve_n(
                         self.Kcross_fast_n,
                         self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
                     ),
-                    muygps_fast_regress_solve_j(
-                        self.Kcross_fast_j,
-                        self.fast_regress_coeffs_j[self.closest_neighbor_j, :],
+                    muygps_fast_regress_solve_t(
+                        self.Kcross_fast_t,
+                        self.fast_regress_coeffs_t[self.closest_neighbor_t, :],
                     ),
                 )
             )
 
         def test_fast_predict_coeffs(self):
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     self.fast_regress_coeffs_n,
-                    self.fast_regress_coeffs_j,
+                    self.fast_regress_coeffs_t,
                 )
             )
 
@@ -589,36 +548,36 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.nn_count = 40
             cls.batch_count = 500
             cls.length_scale = 1.0
-            cls.nu = 0.55
+            cls.nu = 0.5
             cls.nu_bounds = (1e-1, 1e1)
             cls.eps = 1e-3
             cls.k_kwargs_1 = {
                 "length_scale": {"val": cls.length_scale},
-                "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+                "nu": {"val": cls.nu},
                 "eps": {"val": cls.eps},
             }
             cls.k_kwargs_2 = {
                 "length_scale": {"val": cls.length_scale},
-                "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+                "nu": {"val": cls.nu},
                 "eps": {"val": cls.eps},
             }
             cls.k_kwargs = [cls.k_kwargs_1, cls.k_kwargs_2]
             cls.train_features_n = _make_gaussian_matrix(
                 cls.train_count, cls.feature_count
             )
-            cls.train_features_j = jnp.array(cls.train_features_n)
+            cls.train_features_t = torch.from_numpy(cls.train_features_n)
             cls.train_responses_n = _make_gaussian_matrix(
                 cls.train_count, cls.response_count
             )
-            cls.train_responses_j = jnp.array(cls.train_responses_n)
+            cls.train_responses_t = torch.from_numpy(cls.train_responses_n)
             cls.test_features_n = _make_gaussian_matrix(
                 cls.test_count, cls.feature_count
             )
-            cls.test_features_j = jnp.array(cls.test_features_n)
+            cls.test_features_t = torch.from_numpy(cls.test_features_n)
             cls.test_responses_n = _make_gaussian_matrix(
                 cls.test_count, cls.response_count
             )
-            cls.test_responses_j = jnp.array(cls.test_responses_n)
+            cls.test_responses_t = torch.from_numpy(cls.test_responses_n)
             cls.nbrs_lookup = NN_Wrapper(
                 cls.train_features_n, cls.nn_count, **_exact_nn_kwarg_options[0]
             )
@@ -626,8 +585,8 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
                 cls.nbrs_lookup, cls.batch_count, cls.train_count
             )
-            cls.batch_indices_j = jnp.array(cls.batch_indices_n)
-            cls.batch_nn_indices_j = jnp.array(cls.batch_nn_indices_n)
+            cls.batch_indices_t = torch.from_numpy(cls.batch_indices_n)
+            cls.batch_nn_indices_t = torch.from_numpy(cls.batch_nn_indices_n)
             cls.nn_indices_all_n, _ = cls.nbrs_lookup.get_batch_nns(
                 np.arange(0, cls.train_count)
             )
@@ -665,77 +624,76 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             Kcross_fast_n = np.zeros(
                 (cls.test_count, cls.nn_count, cls.response_count)
             )
+            kernel_func_n = matern_05_fn_n
             for i, model in enumerate(cls.muygps.models):
-                Kcross_fast_n[:, :, i] = model.kernel(
-                    cls.crosswise_dists_fast_n
+                Kcross_fast_n[:, :, i] = kernel_func_n(
+                    cls.crosswise_dists_fast_n, cls.length_scale
                 )
             cls.Kcross_fast_n = Kcross_fast_n
 
-            cls.nn_indices_all_j, _ = cls.nbrs_lookup.get_batch_nns(
-                jnp.arange(0, cls.train_count)
+            cls.nn_indices_all_t, _ = cls.nbrs_lookup.get_batch_nns(
+                torch.arange(0, cls.train_count)
             )
-            cls.nn_indices_all_j = jnp.array(cls.nn_indices_all_j)
+            cls.nn_indices_all_t = torch.from_numpy(cls.nn_indices_all_n)
 
             (
-                cls.K_fast_j,
-                cls.train_nn_targets_fast_j,
-            ) = make_fast_regress_tensors_j(
+                cls.K_fast_t,
+                cls.train_nn_targets_fast_t,
+            ) = make_fast_regress_tensors_t(
                 cls.muygps.metric,
-                cls.nn_indices_all_j,
-                cls.train_features_j,
-                cls.train_responses_j,
+                cls.nn_indices_all_t,
+                cls.train_features_t,
+                cls.train_responses_t,
             )
 
-            cls.fast_regress_coeffs_j = muygps_fast_regress_precompute_j(
-                cls.K_fast_j, cls.eps, cls.train_nn_targets_fast_j
+            cls.fast_regress_coeffs_t = muygps_fast_regress_precompute_t(
+                cls.K_fast_t, cls.eps, cls.train_nn_targets_fast_t
             )
 
-            cls.test_neighbors_j, _ = cls.nbrs_lookup.get_nns(
-                cls.test_features_j
+            cls.test_neighbors_t, _ = cls.nbrs_lookup.get_nns(
+                cls.test_features_t
             )
-            cls.closest_neighbor_j = cls.test_neighbors_j[:, 0]
-            cls.closest_set_j = cls.nn_indices_all_j[
-                cls.closest_neighbor_j
-            ].astype(int)
+            cls.closest_neighbor_t = cls.test_neighbors_t[:, 0]
+            cls.closest_set_t = cls.nn_indices_all_t[cls.closest_neighbor_t]
 
-            cls.new_nn_indices_j = fast_nn_update_j(cls.nn_indices_all_j)
-            cls.closest_set_new_j = cls.new_nn_indices_j[cls.closest_neighbor_j]
-            cls.crosswise_dists_fast_j = crosswise_distances_j(
-                cls.test_features_j,
-                cls.train_features_j,
-                jnp.arange(0, cls.test_count),
-                cls.closest_set_new_j,
+            cls.new_nn_indices_t = fast_nn_update_t(cls.nn_indices_all_t)
+            cls.closest_set_new_t = cls.new_nn_indices_t[cls.closest_neighbor_t]
+            cls.crosswise_dists_fast_t = crosswise_distances_t(
+                cls.test_features_t,
+                cls.train_features_t,
+                torch.arange(0, cls.test_count),
+                cls.closest_set_new_t,
             )
 
-            cls.Kcross_fast_j = jnp.array(Kcross_fast_n)
+            cls.Kcross_fast_t = torch.from_numpy(Kcross_fast_n)
 
         def test_make_fast_multivariate_regress_tensors(self):
-            self.assertTrue(allclose_inv(self.K_fast_n, self.K_fast_j))
+            self.assertTrue(np.allclose(self.K_fast_n, self.K_fast_t))
             self.assertTrue(
-                allclose_inv(
-                    self.train_nn_targets_fast_n, self.train_nn_targets_fast_j
+                np.allclose(
+                    self.train_nn_targets_fast_n, self.train_nn_targets_fast_t
                 )
             )
 
         def test_fast_multivariate_predict(self):
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     mmuygps_fast_regress_solve_n(
                         self.Kcross_fast_n,
                         self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
                     ),
-                    mmuygps_fast_regress_solve_j(
-                        self.Kcross_fast_j,
-                        self.fast_regress_coeffs_j[self.closest_neighbor_j, :],
+                    mmuygps_fast_regress_solve_t(
+                        self.Kcross_fast_t,
+                        self.fast_regress_coeffs_t[self.closest_neighbor_t, :],
                     ),
                 )
             )
 
         def test_fast_multivariate_predict_coeffs(self):
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     self.fast_regress_coeffs_n,
-                    self.fast_regress_coeffs_j,
+                    self.fast_regress_coeffs_t,
                 )
             )
 
@@ -743,21 +701,21 @@ if config.muygpys_jax_enabled is True:  # type: ignore
         @classmethod
         def setUpClass(cls):
             super(OptimTestCase, cls).setUpClass()
-            cls.predictions_n, cls.variances_n = cls.muygps._regress(
-                cls.K_n,
-                cls.Kcross_n,
-                cls.batch_nn_targets_n,
+            cls.predictions_t, cls.variances_t = cls.muygps._regress(
+                cls.K_t,
+                cls.Kcross_t,
+                cls.batch_nn_targets_t,
                 cls.muygps.eps(),
                 cls.muygps.sigma_sq(),
                 variance_mode="diagonal",
                 apply_sigma_sq=False,
             )
-            cls.predictions_j = jnp.array(cls.predictions_n)
-            cls.variances_j = jnp.array(cls.variances_n)
+            cls.predictions_n = cls.predictions_t.detach().numpy()
+            cls.variances_n = cls.variances_t.detach().numpy()
             cls.x0_names, cls.x0_n, cls.bounds = cls.muygps.get_optim_params()
-            cls.x0_j = jnp.array(cls.x0_n)
+            cls.x0_t = torch.from_numpy(cls.x0_n)
             cls.x0_map_n = {n: cls.x0_n[i] for i, n in enumerate(cls.x0_names)}
-            cls.x0_map_j = {n: cls.x0_j[i] for i, n in enumerate(cls.x0_names)}
+            cls.x0_map_t = {n: cls.x0_t[i] for i, n in enumerate(cls.x0_names)}
 
         def _get_array_kernel_fn_n(self):
             return self.muygps.kernel._get_array_opt_fn(
@@ -781,24 +739,24 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.muygps.kernel.length_scale,
             )
 
-        def _get_array_kernel_fn_j(self):
+        def _get_array_kernel_fn_t(self):
             return self.muygps.kernel._get_array_opt_fn(
-                matern_05_fn_j,
-                matern_15_fn_j,
-                matern_25_fn_j,
-                matern_inf_fn_j,
-                matern_gen_fn_j,
+                matern_05_fn_t,
+                matern_15_fn_t,
+                matern_25_fn_t,
+                matern_inf_fn_t,
+                matern_gen_fn_t,
                 self.muygps.kernel.nu,
                 self.muygps.kernel.length_scale,
             )
 
-        def _get_kwargs_kernel_fn_j(self):
+        def _get_kwargs_kernel_fn_t(self):
             return self.muygps.kernel._get_kwargs_opt_fn(
-                matern_05_fn_j,
-                matern_15_fn_j,
-                matern_25_fn_j,
-                matern_inf_fn_j,
-                matern_gen_fn_j,
+                matern_05_fn_t,
+                matern_15_fn_t,
+                matern_25_fn_t,
+                matern_inf_fn_t,
+                matern_gen_fn_t,
                 self.muygps.kernel.nu,
                 self.muygps.kernel.length_scale,
             )
@@ -833,34 +791,34 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.muygps, analytic_sigma_sq_optim_n
             )
 
-        def _get_array_mean_fn_j(self):
+        def _get_array_mean_fn_t(self):
             return self.muygps._get_array_opt_mean_fn(
-                muygps_compute_solve_j, self.muygps.eps
+                muygps_compute_solve_t, self.muygps.eps
             )
 
-        def _get_kwargs_mean_fn_j(self):
+        def _get_kwargs_mean_fn_t(self):
             return self.muygps._get_kwargs_opt_mean_fn(
-                muygps_compute_solve_j, self.muygps.eps
+                muygps_compute_solve_t, self.muygps.eps
             )
 
-        def _get_array_var_fn_j(self):
+        def _get_array_var_fn_t(self):
             return self.muygps._get_array_opt_var_fn(
-                muygps_compute_diagonal_variance_j, self.muygps.eps
+                muygps_compute_diagonal_variance_t, self.muygps.eps
             )
 
-        def _get_kwargs_var_fn_j(self):
+        def _get_kwargs_var_fn_t(self):
             return self.muygps._get_kwargs_opt_var_fn(
-                muygps_compute_diagonal_variance_j, self.muygps.eps
+                muygps_compute_diagonal_variance_t, self.muygps.eps
             )
 
-        def _get_array_sigma_sq_fn_j(self):
+        def _get_array_sigma_sq_fn_t(self):
             return make_array_analytic_sigma_sq_optim(
-                self.muygps, analytic_sigma_sq_optim_j
+                self.muygps, analytic_sigma_sq_optim_t
             )
 
-        def _get_kwargs_sigma_sq_fn_j(self):
+        def _get_kwargs_sigma_sq_fn_t(self):
             return make_kwargs_analytic_sigma_sq_optim(
-                self.muygps, analytic_sigma_sq_optim_j
+                self.muygps, analytic_sigma_sq_optim_t
             )
 
         def _get_array_obj_fn_n(self):
@@ -893,64 +851,64 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                 self.batch_targets_n,
             )
 
-        def _get_array_obj_fn_j(self):
+        def _get_array_obj_fn_t(self):
             return make_loo_crossval_fn(
                 "scipy",
                 "mse",
-                mse_fn_j,
-                self._get_array_kernel_fn_j(),
-                self._get_array_mean_fn_j(),
-                self._get_array_var_fn_j(),
-                self._get_array_sigma_sq_fn_j(),
-                self.pairwise_dists_j,
-                self.crosswise_dists_j,
-                self.batch_nn_targets_j,
-                self.batch_targets_j,
+                mse_fn_t,
+                self._get_array_kernel_fn_t(),
+                self._get_array_mean_fn_t(),
+                self._get_array_var_fn_t(),
+                self._get_array_sigma_sq_fn_t(),
+                self.pairwise_dists_t,
+                self.crosswise_dists_t,
+                self.batch_nn_targets_t,
+                self.batch_targets_t,
             )
 
-        def _get_kwargs_obj_fn_j(self):
+        def _get_kwargs_obj_fn_t(self):
             return make_loo_crossval_fn(
                 "bayes",
                 "mse",
-                mse_fn_j,
-                self._get_kwargs_kernel_fn_j(),
-                self._get_kwargs_mean_fn_j(),
-                self._get_kwargs_var_fn_j(),
-                self._get_kwargs_sigma_sq_fn_j(),
-                self.pairwise_dists_j,
-                self.crosswise_dists_j,
-                self.batch_nn_targets_j,
-                self.batch_targets_j,
+                mse_fn_t,
+                self._get_kwargs_kernel_fn_t(),
+                self._get_kwargs_mean_fn_t(),
+                self._get_kwargs_var_fn_t(),
+                self._get_kwargs_sigma_sq_fn_t(),
+                self.pairwise_dists_t,
+                self.crosswise_dists_t,
+                self.batch_nn_targets_t,
+                self.batch_targets_t,
             )
 
         def _get_array_obj_fn_h(self):
             return make_loo_crossval_fn(
                 "scipy",
                 "mse",
-                mse_fn_j,
-                self._get_array_kernel_fn_j(),
+                mse_fn_t,
+                self._get_array_kernel_fn_t(),
                 self._get_array_mean_fn_n(),
                 self._get_array_var_fn_n(),
                 self._get_array_sigma_sq_fn_n(),
-                self.pairwise_dists_j,
-                self.crosswise_dists_j,
-                self.batch_nn_targets_j,
-                self.batch_targets_j,
+                self.pairwise_dists_t,
+                self.crosswise_dists_t,
+                self.batch_nn_targets_t,
+                self.batch_targets_t,
             )
 
         def _get_kwargs_obj_fn_h(self):
             return make_loo_crossval_fn(
                 "bayes",
                 "mse",
-                mse_fn_j,
-                self._get_kwargs_kernel_fn_j(),
+                mse_fn_t,
+                self._get_kwargs_kernel_fn_t(),
                 self._get_kwargs_mean_fn_n(),
                 self._get_kwargs_var_fn_n(),
                 self._get_kwargs_sigma_sq_fn_n(),
-                self.pairwise_dists_j,
-                self.crosswise_dists_j,
-                self.batch_nn_targets_j,
-                self.batch_targets_j,
+                self.pairwise_dists_t,
+                self.crosswise_dists_t,
+                self.batch_nn_targets_t,
+                self.batch_targets_t,
             )
 
     class ObjectiveTest(OptimTestCase):
@@ -959,13 +917,13 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             super(ObjectiveTest, cls).setUpClass()
 
             cls.sigma_sq_n = cls.muygps.sigma_sq()
-            cls.sigma_sq_j = jnp.array(cls.muygps.sigma_sq())
+            cls.sigma_sq_t = torch.Tensor(cls.muygps.sigma_sq()).float()
 
         def test_mse(self):
             self.assertTrue(
                 np.isclose(
                     mse_fn_n(self.predictions_n, self.batch_targets_n),
-                    mse_fn_j(self.predictions_j, self.batch_targets_j),
+                    mse_fn_t(self.predictions_t, self.batch_targets_t),
                 )
             )
 
@@ -978,11 +936,11 @@ if config.muygpys_jax_enabled is True:  # type: ignore
                         self.variances_n,
                         self.sigma_sq_n,
                     ),
-                    lool_fn_j(
-                        self.predictions_j,
-                        self.batch_targets_j,
-                        self.variances_j,
-                        self.sigma_sq_j,
+                    lool_fn_t(
+                        self.predictions_t,
+                        self.batch_targets_t,
+                        self.variances_t,
+                        self.sigma_sq_t,
                     ),
                 )
             )
@@ -993,206 +951,156 @@ if config.muygpys_jax_enabled is True:  # type: ignore
             )
             cat_predictions_n = cat_predictions_n["output"]
             cat_batch_targets_n = cat_batch_targets_n["output"]
-            cat_predictions_j = jnp.array(cat_predictions_n)
-            cat_batch_targets_j = jnp.array(cat_batch_targets_n)
+            cat_predictions_t = torch.from_numpy(cat_predictions_n)
+            cat_batch_targets_t = torch.from_numpy(cat_batch_targets_n)
             self.assertTrue(
                 np.all(
                     (
-                        np.all(cat_predictions_j == cat_predictions_n),
-                        np.all(cat_batch_targets_j == cat_batch_targets_n),
+                        np.allclose(cat_predictions_t, cat_predictions_n),
+                        np.allclose(cat_batch_targets_t, cat_batch_targets_n),
                     )
                 )
             )
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     cross_entropy_fn_n(
                         cat_predictions_n, cat_batch_targets_n, ll_eps=1e-6
                     ),
-                    cross_entropy_fn_j(
-                        cat_predictions_j, cat_batch_targets_j, ll_eps=1e-6
-                    ),
+                    cross_entropy_fn_t(cat_predictions_t, cat_batch_targets_t),
                 )
             )
 
         def test_kernel_fn(self):
             kernel_fn_n = self._get_array_kernel_fn_n()
-            kernel_fn_j = self._get_array_kernel_fn_j()
+            kernel_fn_t = self._get_array_kernel_fn_t()
             self.assertTrue(
-                allclose_gen(
+                np.allclose(
                     kernel_fn_n(self.pairwise_dists_n, self.x0_n),
-                    kernel_fn_j(self.pairwise_dists_j, self.x0_j),
+                    kernel_fn_t(self.pairwise_dists_t, self.x0_t),
                 )
             )
 
         def test_kwargs_mean_fn(self):
             mean_fn_n = self._get_kwargs_mean_fn_n()
-            mean_fn_j = self._get_kwargs_mean_fn_j()
+            mean_fn_t = self._get_kwargs_mean_fn_t()
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     mean_fn_n(
                         self.K_n,
                         self.Kcross_n,
                         self.batch_nn_targets_n,
                         **self.x0_map_n,
                     ),
-                    mean_fn_j(
-                        self.K_j,
-                        self.Kcross_j,
-                        self.batch_nn_targets_j,
-                        **self.x0_map_j,
+                    mean_fn_t(
+                        self.K_t,
+                        self.Kcross_t,
+                        self.batch_nn_targets_t,
+                        **self.x0_map_t,
                     ),
                 )
             )
 
         def test_array_mean_fn(self):
             mean_fn_n = self._get_array_mean_fn_n()
-            mean_fn_j = self._get_array_mean_fn_j()
+            mean_fn_t = self._get_array_mean_fn_t()
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     mean_fn_n(
                         self.K_n,
                         self.Kcross_n,
                         self.batch_nn_targets_n,
-                        self.x0_n[-1],
+                        self.muygps.eps(),
                     ),
-                    mean_fn_j(
-                        self.K_j,
-                        self.Kcross_j,
-                        self.batch_nn_targets_j,
-                        self.x0_j[-1],
+                    mean_fn_t(
+                        self.K_t,
+                        self.Kcross_t,
+                        self.batch_nn_targets_t,
+                        self.muygps.eps(),
                     ),
                 )
             )
 
         def test_kwargs_var_fn(self):
             var_fn_n = self._get_kwargs_var_fn_n()
-            var_fn_j = self._get_kwargs_var_fn_j()
+            var_fn_t = self._get_kwargs_var_fn_t()
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     var_fn_n(
                         self.K_n,
                         self.Kcross_n,
                         **self.x0_map_n,
                     ),
-                    var_fn_j(
-                        self.K_j,
-                        self.Kcross_j,
-                        **self.x0_map_j,
+                    var_fn_t(
+                        self.K_t,
+                        self.Kcross_t,
+                        **self.x0_map_t,
                     ),
                 )
             )
 
         def test_array_var_fn(self):
             var_fn_n = self._get_array_var_fn_n()
-            var_fn_j = self._get_array_var_fn_j()
+            var_fn_t = self._get_array_var_fn_t()
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     var_fn_n(
                         self.K_n,
                         self.Kcross_n,
-                        self.x0_n[-1],
+                        self.muygps.eps(),
                     ),
-                    var_fn_j(
-                        self.K_j,
-                        self.Kcross_j,
-                        self.x0_j[-1],
+                    var_fn_t(
+                        self.K_t,
+                        self.Kcross_t,
+                        self.muygps.eps(),
                     ),
                 )
             )
 
         def test_kwargs_sigma_sq_fn(self):
             ss_fn_n = self._get_kwargs_sigma_sq_fn_n()
-            ss_fn_j = self._get_kwargs_sigma_sq_fn_j()
+            ss_fn_t = self._get_kwargs_sigma_sq_fn_t()
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     ss_fn_n(
                         self.K_n,
                         self.batch_nn_targets_n,
                         **self.x0_map_n,
                     ),
-                    ss_fn_j(
-                        self.K_j,
-                        self.batch_nn_targets_j,
-                        **self.x0_map_j,
+                    ss_fn_t(
+                        self.K_t,
+                        self.batch_nn_targets_t,
+                        **self.x0_map_t,
                     ),
                 )
             )
 
         def test_array_sigma_sq_fn(self):
             ss_fn_n = self._get_array_sigma_sq_fn_n()
-            ss_fn_j = self._get_array_sigma_sq_fn_j()
+            ss_fn_t = self._get_array_sigma_sq_fn_t()
             self.assertTrue(
-                allclose_inv(
+                np.allclose(
                     ss_fn_n(
                         self.K_n,
                         self.batch_nn_targets_n,
-                        self.x0_n[-1],
+                        self.muygps.eps(),
                     ),
-                    ss_fn_j(
-                        self.K_j,
-                        self.batch_nn_targets_j,
-                        self.x0_j[-1],
+                    ss_fn_t(
+                        self.K_t,
+                        self.batch_nn_targets_t,
+                        self.muygps.eps(),
                     ),
                 )
             )
 
         def test_loo_crossval(self):
             obj_fn_n = self._get_array_obj_fn_n()
-            obj_fn_j = self._get_array_obj_fn_j()
+            obj_fn_t = self._get_array_obj_fn_t()
             obj_fn_h = self._get_array_obj_fn_h()
             self.assertTrue(
-                allclose_inv(obj_fn_n(self.x0_n), obj_fn_j(self.x0_j))
+                np.allclose(obj_fn_n(self.x0_n), obj_fn_t(self.x0_t))
             )
             self.assertTrue(
-                allclose_inv(obj_fn_n(self.x0_n), obj_fn_h(self.x0_j))
-            )
-
-    class OptimTest(OptimTestCase):
-        @classmethod
-        def setUpClass(cls):
-            super(OptimTest, cls).setUpClass()
-            cls.sopt_kwargs = {"verbose": False}
-
-        def test_scipy_optimize(self):
-            obj_fn_n = self._get_array_obj_fn_n()
-            obj_fn_j = self._get_array_obj_fn_j()
-            obj_fn_h = self._get_array_obj_fn_h()
-
-            mopt_n = scipy_optimize_n(self.muygps, obj_fn_n, **self.sopt_kwargs)
-            mopt_j = scipy_optimize_j(self.muygps, obj_fn_j, **self.sopt_kwargs)
-            mopt_h = scipy_optimize_j(self.muygps, obj_fn_h, **self.sopt_kwargs)
-            self.assertTrue(
-                allclose_gen(mopt_n.kernel.nu(), mopt_j.kernel.nu())
-            )
-            self.assertTrue(
-                allclose_gen(mopt_n.kernel.nu(), mopt_h.kernel.nu())
-            )
-
-    class BayesOptimTest(OptimTestCase):
-        @classmethod
-        def setUpClass(cls):
-            super(BayesOptimTest, cls).setUpClass()
-            cls.bopt_kwargs = {
-                "verbose": False,
-                "random_state": 1,
-                "init_points": 5,
-                "n_iter": 5,
-                "allow_duplicate_points": True,
-            }
-
-        def test_optimize(self):
-            obj_fn_n = self._get_kwargs_obj_fn_n()
-            obj_fn_j = self._get_kwargs_obj_fn_j()
-            obj_fn_h = self._get_kwargs_obj_fn_h()
-
-            mopt_n = bayes_optimize_n(self.muygps, obj_fn_n, **self.bopt_kwargs)
-            mopt_j = bayes_optimize_j(self.muygps, obj_fn_j, **self.bopt_kwargs)
-            mopt_h = bayes_optimize_j(self.muygps, obj_fn_h, **self.bopt_kwargs)
-            self.assertTrue(
-                allclose_inv(mopt_n.kernel.nu(), mopt_j.kernel.nu())
-            )
-            self.assertTrue(
-                allclose_inv(mopt_n.kernel.nu(), mopt_h.kernel.nu())
+                np.allclose(obj_fn_n(self.x0_n), obj_fn_h(self.x0_t))
             )
 
     if __name__ == "__main__":
