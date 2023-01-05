@@ -223,3 +223,18 @@ backend = config.define_enum_state(
     update_global_hook=_update_backend_global,
     update_thread_local_hook=_update_backend_thread_local,
 )
+
+if (
+    config.state.backend == "jax"
+    and config.state.jax_enabled == False
+    or config.state.backend == "torch"
+    and config.state.torch_enabled == False
+    or config.state.backend == "mpi"
+    and config.state.mpi_enabled == False
+):
+    be = config.state.backend
+    raise ValueError(
+        f'MuyGPyS backend is set to "{be}", but "{be}" is not enabled! '
+        f"The {be} dependencies are most likely not installed in your "
+        f"environment."
+    )
