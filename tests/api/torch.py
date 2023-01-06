@@ -4,12 +4,11 @@
 # SPDX-License-Identifier: MIT
 from MuyGPyS import config
 
-if config.muygpys_torch_enabled is False:
-    config.update("muygpys_torch_enabled", True)
+if config.state.torch_enabled is False:
+    raise ValueError(f"Bad attempt to run torch-only code with torch diabled.")
 
-
-if config.muygpys_jax_enabled is True:
-    config.update("muygpys_jax_enabled", False)
+if config.state.backend != "torch":
+    config.update("muygpys_backend", "torch")
 
 import os
 import sys

@@ -7,16 +7,18 @@ from MuyGPyS import config
 
 
 def _collect_implementation(package, *funcs):
-    if config.muygpys_jax_enabled is False:  # type: ignore
-        if config.muygpys_mpi_enabled is False:  # type:ignore
-            if config.muygpys_torch_enabled is False:
-                return _collect_functions(package + ".numpy", *funcs)
-            else:
-                return _collect_functions(package + ".torch", *funcs)
-        else:
-            return _collect_functions(package + ".mpi", *funcs)
-    else:
+    if config.state.backend == "numpy":
+        return _collect_functions(package + ".numpy", *funcs)
+    elif config.state.backend == "jax":
         return _collect_functions(package + ".jax", *funcs)
+    elif config.state.backend == "torch":
+        return _collect_functions(package + ".torch", *funcs)
+    elif config.state.backend == "mpi":
+        return _collect_functions(package + ".mpi", *funcs)
+    else:
+        raise ValueError(
+            f'MuyGPyS backend is in bad state "{config.state.backend}"'
+        )
 
 
 def _collect_functions(package, *funcs):

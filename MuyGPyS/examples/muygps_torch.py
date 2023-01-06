@@ -14,11 +14,19 @@ generating predictions at test locations given a trained model.
 """
 from MuyGPyS import config
 
-if config.muygpys_torch_enabled is False:
-    config.update("muygpys_torch_enabled", True)
+if config.state.backend != "torch":
+    import warnings
 
-if config.muygpys_jax_enabled is True:
-    config.update("muygpys_jax_enabled", False)
+    if config.state.torch_enabled == True:
+        config.update("muygpys_backend", "torch")
+        warnings.warn(
+            "Switching to torch backend in order to run torch-only code"
+        )
+    else:
+        warnings.warn(
+            f"Bad attempt to execute torch-only code with torch disabled. "
+            f"Allowing code to fail."
+        )
 
 import numpy as np
 import torch

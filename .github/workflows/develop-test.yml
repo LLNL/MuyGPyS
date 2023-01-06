@@ -5,7 +5,7 @@ name: Develop test
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [develop, feature/**]
 
 jobs:
   build-numpy:
@@ -63,8 +63,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .[tests,hnswlib,jax_cpu]
+          export MUYGPYS_BACKEND=jax
       - name: Test JAX correctness
-        run: python tests/jax_correctness.py
+        run: python tests/backend/jax_correctness.py
 
   build-mpi:
     runs-on: ubuntu-latest
@@ -83,8 +84,9 @@ jobs:
           sudo apt-get install mpich
           python -m pip install --upgrade pip
           python -m pip install -e .[tests,hnswlib,mpi]
+          export MUYGPYS_BACKEND=mpi
       - name: Test MPI correctness
-        run: mpirun -n 4 python tests/mpi_correctness.py
+        run: mpirun -n 4 python tests/backend/mpi_correctness.py
 
   build-torch:
     runs-on: ubuntu-latest
@@ -102,8 +104,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .[tests,hnswlib,torch]
+          export MUYGPYS_BACKEND=torch
       - name: Test Torch correctness
-        run: python tests/torch_correctness.py
+        run: python tests/backend/torch_correctness.py
 
   build-docs:
     runs-on: ubuntu-latest

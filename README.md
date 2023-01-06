@@ -13,43 +13,41 @@ required by similar sparse methods.
 
 ## Under-The-Hood Math Implementation Options
 
-As of release v0.6.0, `MuyGPyS` supports three distinct implementations of all
-of its underlying math functions:
+As of release v0.6.6, `MuyGPyS` supports four distinct back-end implementations
+of all of its underlying math functions:
 
 - `numpy` - basic numpy (the default)
 - [JAX](https://github.com/google/jax) - GPU acceleration
+- [PyTorch](https://github.com/pytorch/pytorch) - GPU acceleration and neural
+network integration
 - [MPI](https://github.com/mpi4py/mpi4py) - distributed memory acceleration
 
-Most users will specify the desired implementation at install-time.
+It is possible to include the dependencies of any, all, or none of these
+back-ends at install time.
 Please see the below installation instructions.
 
-Note that the current version of the code supports either JAX OR MPI, not both.
-Future versions will support both simultaneously.
+`MuyGPyS` uses the `MUYGPYS_BACKEND` environment variable to determine which
+back-end to use import time.
+It is also possible to manipulate `MuyGPyS.config` to switch between back-ends
+programmatically.
+This is not adviable unless the user knows exactly what they are doing.
 
-`MuyGPyS` detects which versions of its math functions to use at import time.
-`MuyGPyS.config` allows the user to toggle both JAX and MPI support on and off.
-Presently, JAX will take precedence if both JAX and MPI dependencies are
-installed and both are enabled.
+`MuyGPyS` will default to the `numpy` back-end.
+It is possible to switch back ends by manipulating the `MUYGPYS_BACKEND`
+environment variable in your shell, e.g.
+```
+$ export MUYGPYS_BACKEND=jax    # turn on JAX back-end
+$ export MUYGPYS_BACKEND=torch  # turn on Torch back-end
+$ export MUYGPYS_BACKEND=mpi    # turn on MPI back-end
+```
 
-### Just-In-Time Compilation with JAX?,
+### Just-In-Time Compilation with JAX
 
 `MuyGPyS` supports just-in-time compilation of the 
 underlying math functions to CPU or GPU using 
 [JAX](https://github.com/google/jax) since version v0.5.0.
 The JAX-compiled versions of the code are significantly faster especially on 
 GPUs.
-
-If for some reason you want to swap between numpy and JAX implementations (and
-have installed the JAX dependencies as below), `MuyGPyS.config` allows this.
-Note that deactivating JAX must happen prior to importing any other `MuyGPyS`
-functions.
-```
-from MuyGPyS import config
-
-config.update("muygpys_jax_enabled", False)
-
-# subsequent imports...
-```
 
 #### JAX precision
 
@@ -76,20 +74,7 @@ jax_config.update("jax_enable_x64", False)
 If confused, you can also query for whether 64 bit types are enabled via
 the `jax_config.x64_enabled` boolean.
 
-### MPI support
-
-The current version of `MuyGPyS` requires that the user manually enable MPI
-before importing any other `MuyGPyS` functions.
-If the user has installed the JAX dependencies, the user will also need to
-disable JAX support.
-```
-from MuyGPyS import config
-
-config.update("muygpys_mpi_enabled", True)
-config.update("muygpys_jax_enabled", False)  # if JAX is installed
-
-# subsequent imports...
-```
+### Distributed memory support with MPI
 
 The MPI version of `MuyGPyS` performs all tensor manipulation in distributed
 memory.
@@ -110,6 +95,7 @@ Future versions will support a distributed memory approximate KNN solution.
 The user can run a script `myscript.py` with MPI using, e.g. `mpirun` (or `srun`
 if using slurm) via
 ```
+$ export MUYGPYS_BACKEND=mpi
 $ # mpirun version
 $ mpirun -n 4 python myscript.py
 $ # srun version
@@ -130,6 +116,8 @@ support fast approximate nearest neighbors indexing
 - `jax_cpu` - install [JAX](https://github.com/google/jax) dependencies to 
 support just-in-time compilation of math functions on CPU (see below to install
 on GPU CUDA architectures)
+- `torch` - install [PyTorch](https://github.com/pytorch/pytorch) dependencies
+to employ GPU acceleration and the use of the `MuyGPyS.torch` submodule
 - `mpi` - install [MPI](https://github.com/mpi4py/mpi4py) dependencies to
 support distributed memory parallel computation. Requires that the user has
 installed a version of MPI such as
@@ -148,13 +136,13 @@ $ # MPI installation. Functions will operate in distributed memory.
 $ pip install --upgrade muygpys[mpi]
 $ # The same, but includes hnswlib.
 $ pip install --upgrade muygpys[mpi,hnswlib]
+$ # pytorch installation. MuyGPyS.torch will be usable.
+$ pip install --upgrade muygpys[torch]
 ```
 
-It is possible to install both MPI and JAX dependencies, but at present only one
-can be enabled at a time.
-If both dependencies are found and the user does not manually specify which
-version to use with the `config` object, `MuyGPyS` will default to use JAX.
 ### Pip: GPU (CUDA)
+
+#### JAX GPU Instructions
 
 [JAX](https://github.com/google/jax) also supports just-in-time compilation to
 CUDA, making the compiled math functions within `MuyGPyS` runnable on NVidia 
@@ -191,6 +179,10 @@ $ # alternately,
 $ pip install muygpys[jax_cuda] -f https://storage.googleapis.com/jax-releases/jax_releases.html
 ```
 
+#### PyTorch GPU Instructions
+
+MuyGPyS does not presently support installing CUDA PyTorch as an extras flag.
+Please [install PyTorch separately](https://pytorch.org/get-started/locally/).
 
 ### From Source
 
@@ -235,7 +227,8 @@ on GPU CUDA architectures)
 CUDA >= 11.1 and CuDNN >= 8.2 (pip only)
 - `jax_cuda11_cudnn805` - install JAX dependencies with NVidia GPU support with 
 CUDA >= 11.1 and CuDNN >= 8.0.5 (pip only)
-- `jax_cuda` (shorthand for `jax_cuda11_cudnn805`, pip only)
+- `jax_cuda` - (shorthand for `jax_cuda11_cudnn805`, pip only)
+- `torch` - install [PyTorch](https://github.com/pytorch/pytorch)
 - `mpi` - install [MPI](https://github.com/mpi4py/mpi4py) dependency to support
 parallel computation
 - `tests` - install dependencies necessary to run [tests](tests/)
