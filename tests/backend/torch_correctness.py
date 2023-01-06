@@ -695,14 +695,11 @@ class OptimTestCase(MuyGPSTestCase):
     @classmethod
     def setUpClass(cls):
         super(OptimTestCase, cls).setUpClass()
-        cls.predictions_t, cls.variances_t = cls.muygps._regress(
-            cls.K_t,
-            cls.Kcross_t,
-            cls.batch_nn_targets_t,
-            cls.muygps.eps(),
-            cls.muygps.sigma_sq(),
-            variance_mode="diagonal",
-            apply_sigma_sq=False,
+        cls.predictions_t = muygps_compute_solve_t(
+            cls.K_t, cls.Kcross_t, cls.batch_nn_targets_t, cls.muygps.eps()
+        )
+        cls.variances_t = muygps_compute_diagonal_variance_t(
+            cls.K_t, cls.Kcross_t, cls.muygps.eps()
         )
         cls.predictions_n = cls.predictions_t.detach().numpy()
         cls.variances_n = cls.variances_t.detach().numpy()
