@@ -13,11 +13,10 @@ def _muygps_compute_solve(
     K: jnp.ndarray,
     Kcross: jnp.ndarray,
     batch_nn_targets: jnp.ndarray,
-    eps: float,
 ) -> jnp.ndarray:
     batch_count, nn_count, response_count = batch_nn_targets.shape
     responses = Kcross.reshape(batch_count, 1, nn_count) @ jnp.linalg.solve(
-        K + eps * jnp.eye(nn_count), batch_nn_targets
+        K, batch_nn_targets
     )
     return responses.reshape(batch_count, response_count)
 

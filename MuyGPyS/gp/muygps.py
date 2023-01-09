@@ -18,6 +18,7 @@ from MuyGPyS.gp.kernels import (
     Hyperparameter,
     SigmaSq,
 )
+from MuyGPyS.gp.noise import HomoscedasticNoise
 
 from MuyGPyS import config
 
@@ -37,6 +38,7 @@ from MuyGPyS._src.gp.muygps import (
     _muygps_fast_regress_precompute,
     _mmuygps_fast_regress_solve,
 )
+from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 
@@ -115,7 +117,9 @@ class MuyGPS:
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
-        self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
+        self.eps = _init_hyperparameter(
+            1e-14, "fixed", HomoscedasticNoise, **eps
+        )
         self.sigma_sq = SigmaSq()
 
     def set_eps(self, **eps) -> None:
@@ -202,7 +206,9 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` listing the
             predicted response for each of the batch elements.
         """
-        return _muygps_compute_solve(K, Kcross, batch_nn_targets, eps)
+        return _muygps_compute_solve(
+            _homoscedastic_perturb(K, eps), Kcross, batch_nn_targets
+        )
 
     @staticmethod
     def _compute_diagonal_variance(
@@ -401,9 +407,9 @@ class MuyGPS:
 
     def regress(
         self,
-        K: np.array,
-        Kcross: np.array,
-        batch_nn_targets: np.array,
+        K: np.ndarray,
+        Kcross: np.ndarray,
+        batch_nn_targets: np.ndarray,
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
@@ -497,9 +503,9 @@ class MuyGPS:
 
     @staticmethod
     def _regress(
-        K: np.array,
-        Kcross: np.array,
-        batch_nn_targets: np.array,
+        K: np.ndarray,
+        Kcross: np.ndarray,
+        batch_nn_targets: np.ndarray,
         eps: float,
         sigma_sq: np.ndarray,
         variance_mode: Optional[str] = None,
@@ -684,21 +690,29 @@ class MuyGPS:
             are expected to occur in a certain order matching how they are set
             in `~MuyGPyS.gp.muygps.MuyGPS.get_optim_params()`.
         """
-        return self._get_array_opt_mean_fn(_muygps_compute_solve, self.eps)
+        if isinstance(self.eps, HomoscedasticNoise):
+            return self._get_array_opt_mean_fn(
+                _muygps_compute_solve, _homoscedastic_perturb, self.eps
+            )
+        else:
+            raise TypeError(
+                f"Noise parameter type {type(self.eps)} is not supported for "
+                f"optimization!"
+            )
 
     @staticmethod
     def _get_array_opt_mean_fn(
-        solve_fn: Callable, eps: Hyperparameter
+        solve_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
     ) -> Callable:
         if not eps.fixed():
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
-                return solve_fn(K, Kcross, batch_nn_targets, x0[-1])
+                return solve_fn(perturb_fn(K, x0[-1]), Kcross, batch_nn_targets)
 
         else:
 
             def caller_fn(K, Kcross, batch_nn_targets, x0):
-                return solve_fn(K, Kcross, batch_nn_targets, eps())
+                return solve_fn(perturb_fn(K, eps()), Kcross, batch_nn_targets)
 
         return caller_fn
 
@@ -717,21 +731,31 @@ class MuyGPS:
             expects keyword arguments corresponding to current hyperparameter
             values for unfixed parameters.
         """
-        return self._get_kwargs_opt_mean_fn(_muygps_compute_solve, self.eps)
+        if isinstance(self.eps, HomoscedasticNoise):
+            return self._get_kwargs_opt_mean_fn(
+                _muygps_compute_solve, _homoscedastic_perturb, self.eps
+            )
+        else:
+            raise TypeError(
+                f"Noise parameter type {type(self.eps)} is not supported for "
+                f"optimization!"
+            )
 
     @staticmethod
     def _get_kwargs_opt_mean_fn(
-        solve_fn: Callable, eps: Hyperparameter
+        solve_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
     ) -> Callable:
         if not eps.fixed():
 
             def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
-                return solve_fn(K, Kcross, batch_nn_targets, kwargs["eps"])
+                return solve_fn(
+                    perturb_fn(K, kwargs["eps"]), Kcross, batch_nn_targets
+                )
 
         else:
 
             def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
-                return solve_fn(K, Kcross, batch_nn_targets, eps())
+                return solve_fn(perturb_fn(K, eps()), Kcross, batch_nn_targets)
 
         return caller_fn
 
@@ -753,13 +777,19 @@ class MuyGPS:
         )
 
     def get_array_opt_var_fn(self) -> Callable:
-        return self._get_array_opt_var_fn(
-            _muygps_compute_diagonal_variance, self.eps
-        )
+        if isinstance(self.eps, HomoscedasticNoise):
+            return self._get_array_opt_var_fn(
+                _muygps_compute_diagonal_variance, self.eps
+            )
+        else:
+            raise TypeError(
+                f"Noise parameter type {type(self.eps)} is not supported for "
+                f"optimization!"
+            )
 
     @staticmethod
     def _get_array_opt_var_fn(
-        var_fn: Callable, eps: Hyperparameter
+        var_fn: Callable, eps: HomoscedasticNoise
     ) -> Callable:
         if not eps.fixed():
 
@@ -774,13 +804,19 @@ class MuyGPS:
         return caller_fn
 
     def get_kwargs_opt_var_fn(self) -> Callable:
-        return self._get_kwargs_opt_var_fn(
-            _muygps_compute_diagonal_variance, self.eps
-        )
+        if isinstance(self.eps, HomoscedasticNoise):
+            return self._get_kwargs_opt_var_fn(
+                _muygps_compute_diagonal_variance, self.eps
+            )
+        else:
+            raise TypeError(
+                f"Noise parameter type {type(self.eps)} is not supported for "
+                f"optimization!"
+            )
 
     @staticmethod
     def _get_kwargs_opt_var_fn(
-        var_fn: Callable, eps: Hyperparameter
+        var_fn: Callable, eps: HomoscedasticNoise
     ) -> Callable:
         if not eps.fixed():
 

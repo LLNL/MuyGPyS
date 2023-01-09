@@ -10,11 +10,10 @@ def _muygps_compute_solve(
     K: torch.Tensor,
     Kcross: torch.Tensor,
     batch_nn_targets: torch.Tensor,
-    eps: float,
 ) -> torch.Tensor:
     batch_count, nn_count, response_count = batch_nn_targets.shape
     responses = Kcross.reshape(batch_count, 1, nn_count) @ torch.linalg.solve(
-        K + eps * torch.eye(nn_count), batch_nn_targets
+        K, batch_nn_targets
     )
     return responses.reshape(batch_count, response_count)
 

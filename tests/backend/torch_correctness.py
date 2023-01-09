@@ -69,6 +69,12 @@ from MuyGPyS._src.gp.muygps.torch import (
     _mmuygps_fast_regress_solve as mmuygps_fast_regress_solve_t,
     _muygps_fast_regress_precompute as muygps_fast_regress_precompute_t,
 )
+from MuyGPyS._src.gp.noise.numpy import (
+    _homoscedastic_perturb as homoscedastic_perturb_n,
+)
+from MuyGPyS._src.gp.noise.torch import (
+    _homoscedastic_perturb as homoscedastic_perturb_t,
+)
 from MuyGPyS._src.optimize.sigma_sq.numpy import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
 )
@@ -353,10 +359,17 @@ class MuyGPSTestCase(KernelTestCase):
         cls.K_n = matern_05_fn_n(
             cls.pairwise_dists_n, length_scale=cls.length_scale
         )
+        cls.homoscedastic_K_n = homoscedastic_perturb_n(
+            cls.K_n, cls.muygps.eps()
+        )
 
         cls.K_t = matern_05_fn_t(
             cls.pairwise_dists_t, length_scale=cls.length_scale
         )
+        cls.homoscedastic_K_t = homoscedastic_perturb_t(
+            cls.K_t, cls.muygps.eps()
+        )
+
         cls.Kcross_n = matern_05_fn_n(
             cls.crosswise_dists_n, length_scale=cls.length_scale
         )
@@ -370,20 +383,23 @@ class MuyGPSTest(MuyGPSTestCase):
     def setUpClass(cls):
         super(MuyGPSTest, cls).setUpClass()
 
+    def test_homoscedastic_noise(self):
+        self.assertTrue(
+            np.allclose(self.homoscedastic_K_n, self.homoscedastic_K_t)
+        )
+
     def test_compute_solve(self):
         self.assertTrue(
             np.allclose(
                 muygps_compute_solve_n(
-                    self.K_n,
+                    self.homoscedastic_K_n,
                     self.Kcross_n,
                     self.batch_nn_targets_n,
-                    self.muygps.eps(),
                 ),
                 muygps_compute_solve_t(
-                    self.K_t,
+                    self.homoscedastic_K_t,
                     self.Kcross_t,
                     self.batch_nn_targets_t,
-                    self.muygps.eps(),
                 ),
             )
         )
@@ -696,7 +712,7 @@ class OptimTestCase(MuyGPSTestCase):
     def setUpClass(cls):
         super(OptimTestCase, cls).setUpClass()
         cls.predictions_t = muygps_compute_solve_t(
-            cls.K_t, cls.Kcross_t, cls.batch_nn_targets_t, cls.muygps.eps()
+            cls.homoscedastic_K_t, cls.Kcross_t, cls.batch_nn_targets_t
         )
         cls.variances_t = muygps_compute_diagonal_variance_t(
             cls.K_t, cls.Kcross_t, cls.muygps.eps()
@@ -754,12 +770,12 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_array_mean_fn_n(self):
         return self.muygps._get_array_opt_mean_fn(
-            muygps_compute_solve_n, self.muygps.eps
+            muygps_compute_solve_n, homoscedastic_perturb_n, self.muygps.eps
         )
 
     def _get_kwargs_mean_fn_n(self):
         return self.muygps._get_kwargs_opt_mean_fn(
-            muygps_compute_solve_n, self.muygps.eps
+            muygps_compute_solve_n, homoscedastic_perturb_n, self.muygps.eps
         )
 
     def _get_array_var_fn_n(self):
@@ -784,12 +800,12 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_array_mean_fn_t(self):
         return self.muygps._get_array_opt_mean_fn(
-            muygps_compute_solve_t, self.muygps.eps
+            muygps_compute_solve_t, homoscedastic_perturb_t, self.muygps.eps
         )
 
     def _get_kwargs_mean_fn_t(self):
         return self.muygps._get_kwargs_opt_mean_fn(
-            muygps_compute_solve_t, self.muygps.eps
+            muygps_compute_solve_t, homoscedastic_perturb_t, self.muygps.eps
         )
 
     def _get_array_var_fn_t(self):

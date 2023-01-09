@@ -44,7 +44,7 @@ Example:
 
 import numpy as np
 
-from typing import cast, Callable, Dict, List, Optional, Tuple, Union
+from typing import cast, Callable, Dict, List, Optional, Tuple, Type, Union
 
 from MuyGPyS import config
 
@@ -404,6 +404,7 @@ class Hyperparameter:
 def _init_hyperparameter(
     val_def: Union[str, float],
     bounds_def: Union[str, Tuple[float, float]],
+    type: Type = Hyperparameter,
     **kwargs,
 ) -> Hyperparameter:
     """
@@ -421,7 +422,7 @@ def _init_hyperparameter(
     """
     val = kwargs.get("val", val_def)
     bounds = kwargs.get("bounds", bounds_def)
-    return Hyperparameter(val, bounds)
+    return type(val, bounds)
 
 
 class KernelFn:
