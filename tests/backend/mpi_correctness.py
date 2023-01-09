@@ -590,6 +590,7 @@ class MuyGPSTestCase(KernelTestCase):
                 cls.muygps.eps(),
             )
         else:
+            cls.batch_homoscedastic_covariance_gen = None
             cls.batch_prediction = None
             cls.batch_variance = None
 
