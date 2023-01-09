@@ -33,14 +33,17 @@ import torch
 
 from MuyGPyS.neighbors import NN_Wrapper
 
-from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
-from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
+from MuyGPyS._src.gp.distance.torch import (
+    _pairwise_distances,
+    _crosswise_distances,
+)
+from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
 
-from MuyGPyS._src.gp.muygps import (
+from MuyGPyS._src.gp.muygps.torch import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
 )
-from MuyGPyS._src.optimize.loss import _lool_fn as lool_fn
+from MuyGPyS._src.optimize.loss.torch import _lool_fn as lool_fn
 from MuyGPyS.torch.muygps_layer import kernel_func
 from torch.optim.lr_scheduler import ExponentialLR
 
@@ -116,7 +119,7 @@ def predict_single_model(
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
-    crosswise_dists = crosswise_distances(
+    crosswise_dists = _crosswise_distances(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
@@ -124,7 +127,7 @@ def predict_single_model(
         metric="l2",
     )
 
-    pairwise_dists = pairwise_distances(
+    pairwise_dists = _pairwise_distances(
         train_features_embedded, nn_indices_test, metric="l2"
     )
 
@@ -235,7 +238,7 @@ def predict_multiple_model(
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
-    crosswise_dists = crosswise_distances(
+    crosswise_dists = _crosswise_distances(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
@@ -243,7 +246,7 @@ def predict_multiple_model(
         metric="l2",
     )
 
-    pairwise_dists = pairwise_distances(
+    pairwise_dists = _pairwise_distances(
         train_features_embedded, nn_indices_test, metric="l2"
     )
 
