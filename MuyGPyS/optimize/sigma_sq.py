@@ -17,7 +17,9 @@ from copy import deepcopy
 from typing import Callable, Optional, Union
 
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
+from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS.optimize.utils import (
     _switch_on_opt_method,
     _switch_on_sigma_method,
@@ -132,37 +134,38 @@ def make_analytic_sigma_sq_optim(opt_method: str, muygps: MuyGPS) -> Callable:
         make_array_analytic_sigma_sq_optim,
         muygps,
         _analytic_sigma_sq_optim,
+        _homoscedastic_perturb,
     )
 
 
 def make_kwargs_analytic_sigma_sq_optim(
-    muygps: MuyGPS, sigma_fn: Callable
+    muygps: MuyGPS, sigma_fn: Callable, perturb_fn: Callable
 ) -> Callable:
     if not muygps.eps.fixed():
 
         def ss_opt_fn(K, nn_targets, **kwargs):
-            return sigma_fn(K, nn_targets, kwargs["eps"])
+            return sigma_fn(perturb_fn(K, kwargs["eps"]), nn_targets)
 
     else:
 
         def ss_opt_fn(K, nn_targets, **kwargs):
-            return sigma_fn(K, nn_targets, muygps.eps())
+            return sigma_fn(perturb_fn(K, muygps.eps()), nn_targets)
 
     return ss_opt_fn
 
 
 def make_array_analytic_sigma_sq_optim(
-    muygps: MuyGPS, sigma_fn: Callable
+    muygps: MuyGPS, sigma_fn: Callable, perturb_fn: Callable
 ) -> Callable:
     if not muygps.eps.fixed():
 
         def ss_opt_fn(K, nn_targets, x0):
-            return sigma_fn(K, nn_targets, x0[-1])
+            return sigma_fn(perturb_fn(K, x0[-1]), nn_targets)
 
     else:
 
         def ss_opt_fn(K, nn_targets, x0):
-            return sigma_fn(K, nn_targets, muygps.eps())
+            return sigma_fn(perturb_fn(K, muygps.eps()), nn_targets)
 
     return ss_opt_fn
 
@@ -201,10 +204,20 @@ def muygps_analytic_sigma_sq_optim(
     Returns:
         A new MuyGPs model whose sigma_sq parameter has been optimized.
     """
-    K = muygps.kernel(pairwise_dists)
     ret = deepcopy(muygps)
-    ret.sigma_sq._set(_analytic_sigma_sq_optim(K, nn_targets, ret.eps()))
-    return ret
+    if isinstance(muygps.eps, HomoscedasticNoise):
+        K = muygps.kernel(pairwise_dists)
+        ret.sigma_sq._set(
+            _analytic_sigma_sq_optim(
+                _homoscedastic_perturb(K, muygps.eps()), nn_targets
+            )
+        )
+        return ret
+    else:
+        raise TypeError(
+            f"Noise parameter type {type(muygps.eps)} is not supported for "
+            f"optimization!"
+        )
 
 
 def mmuygps_analytic_sigma_sq_optim(
@@ -252,12 +265,17 @@ def mmuygps_analytic_sigma_sq_optim(
     K = np.zeros((batch_count, nn_count, nn_count))
     sigma_sqs = np.zeros((response_count,))
     for i, model in enumerate(ret.models):
-        K = model.kernel(pairwise_dists)
-        sigma_sqs[i] = _analytic_sigma_sq_optim(
-            K,
-            nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
-            model.eps(),
-        )
-        model.sigma_sq._set(np.atleast_1d(sigma_sqs[i]))
+        if isinstance(model.eps, HomoscedasticNoise):
+            K = model.kernel(pairwise_dists)
+            sigma_sqs[i] = _analytic_sigma_sq_optim(
+                _homoscedastic_perturb(K, model.eps()),
+                nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+            )
+            model.sigma_sq._set(np.atleast_1d(sigma_sqs[i]))
+        else:
+            raise TypeError(
+                f"Noise parameter type {type(model.eps)} is not supported for "
+                f"optimization!"
+            )
     ret.sigma_sq._set(sigma_sqs)
     return ret

@@ -420,14 +420,10 @@ class MuyGPSTest(MuyGPSTestCase):
         self.assertTrue(
             np.allclose(
                 analytic_sigma_sq_optim_n(
-                    self.K_n,
-                    self.batch_nn_targets_n,
-                    self.muygps.eps(),
+                    self.homoscedastic_K_n, self.batch_nn_targets_n
                 ),
                 analytic_sigma_sq_optim_t(
-                    self.K_t,
-                    self.batch_nn_targets_t,
-                    self.muygps.eps(),
+                    self.homoscedastic_K_t, self.batch_nn_targets_t
                 ),
             )
         )
@@ -813,12 +809,12 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_array_sigma_sq_fn_n(self):
         return make_array_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_n
+            self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
         )
 
     def _get_kwargs_sigma_sq_fn_n(self):
         return make_kwargs_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_n
+            self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
         )
 
     def _get_array_mean_fn_t(self):
@@ -847,12 +843,12 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_array_sigma_sq_fn_t(self):
         return make_array_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_t
+            self.muygps, analytic_sigma_sq_optim_t, homoscedastic_perturb_t
         )
 
     def _get_kwargs_sigma_sq_fn_t(self):
         return make_kwargs_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_t
+            self.muygps, analytic_sigma_sq_optim_t, homoscedastic_perturb_t
         )
 
     def _get_array_obj_fn_n(self):

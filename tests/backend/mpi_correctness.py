@@ -628,16 +628,14 @@ class MuyGPSTest(MuyGPSTestCase):
 
     def test_sigma_sq_optim(self):
         parallel_sigma_sq = analytic_sigma_sq_optim_m(
-            self.batch_covariance_gen_chunk,
+            self.batch_homoscedastic_covariance_gen_chunk,
             self.batch_nn_targets_chunk,
-            self.muygps.eps(),
         )
 
         if rank == 0:
             serial_sigma_sq = analytic_sigma_sq_optim_n(
-                self.batch_covariance_gen,
+                self.batch_homoscedastic_covariance_gen,
                 self.batch_nn_targets,
-                self.muygps.eps(),
             )
             self.assertAlmostEqual(serial_sigma_sq[0], parallel_sigma_sq[0])
 
@@ -730,12 +728,12 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_array_sigma_sq_fn_n(self):
         return make_array_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_n
+            self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
         )
 
     def _get_kwargs_sigma_sq_fn_n(self):
         return make_kwargs_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_n
+            self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
         )
 
     # MPI predict functions
@@ -765,12 +763,12 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_array_sigma_sq_fn_m(self):
         return make_array_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_m
+            self.muygps, analytic_sigma_sq_optim_m, homoscedastic_perturb_m
         )
 
     def _get_kwargs_sigma_sq_fn_m(self):
         return make_kwargs_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_m
+            self.muygps, analytic_sigma_sq_optim_m, homoscedastic_perturb_m
         )
 
     # Numpy objective functions
