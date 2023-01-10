@@ -241,7 +241,7 @@ class GPInitTest(parameterized.TestCase):
         self.assertLessEqual(param(), bounds[1])
 
 
-class GPMathTest(parameterized.TestCase):
+class GPTensorShapesTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 100, f, 10, nn_kwargs, k_kwargs)
@@ -307,6 +307,8 @@ class GPMathTest(parameterized.TestCase):
                 np.all(np.logical_or(eigvals >= 0.0, np.isclose(eigvals, 0.0)))
             )
 
+
+class GPSolveTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
@@ -386,6 +388,8 @@ class GPMathTest(parameterized.TestCase):
                 ),
             )
 
+
+class GPDiagonalVariance(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
