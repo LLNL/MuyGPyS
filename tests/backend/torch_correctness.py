@@ -408,10 +408,10 @@ class MuyGPSTest(MuyGPSTestCase):
         self.assertTrue(
             np.allclose(
                 muygps_compute_diagonal_variance_n(
-                    self.K_n, self.Kcross_n, self.muygps.eps()
+                    self.homoscedastic_K_n, self.Kcross_n
                 ),
                 muygps_compute_diagonal_variance_t(
-                    self.K_t, self.Kcross_t, self.muygps.eps()
+                    self.homoscedastic_K_t, self.Kcross_t
                 ),
             )
         )
@@ -715,7 +715,7 @@ class OptimTestCase(MuyGPSTestCase):
             cls.homoscedastic_K_t, cls.Kcross_t, cls.batch_nn_targets_t
         )
         cls.variances_t = muygps_compute_diagonal_variance_t(
-            cls.K_t, cls.Kcross_t, cls.muygps.eps()
+            cls.homoscedastic_K_t, cls.Kcross_t
         )
         cls.predictions_n = cls.predictions_t.detach().numpy()
         cls.variances_n = cls.variances_t.detach().numpy()
@@ -780,12 +780,16 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_array_var_fn_n(self):
         return self.muygps._get_array_opt_var_fn(
-            muygps_compute_diagonal_variance_n, self.muygps.eps
+            muygps_compute_diagonal_variance_n,
+            homoscedastic_perturb_n,
+            self.muygps.eps,
         )
 
     def _get_kwargs_var_fn_n(self):
         return self.muygps._get_kwargs_opt_var_fn(
-            muygps_compute_diagonal_variance_n, self.muygps.eps
+            muygps_compute_diagonal_variance_n,
+            homoscedastic_perturb_n,
+            self.muygps.eps,
         )
 
     def _get_array_sigma_sq_fn_n(self):
@@ -810,12 +814,16 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_array_var_fn_t(self):
         return self.muygps._get_array_opt_var_fn(
-            muygps_compute_diagonal_variance_t, self.muygps.eps
+            muygps_compute_diagonal_variance_t,
+            homoscedastic_perturb_t,
+            self.muygps.eps,
         )
 
     def _get_kwargs_var_fn_t(self):
         return self.muygps._get_kwargs_opt_var_fn(
-            muygps_compute_diagonal_variance_t, self.muygps.eps
+            muygps_compute_diagonal_variance_t,
+            homoscedastic_perturb_t,
+            self.muygps.eps,
         )
 
     def _get_array_sigma_sq_fn_t(self):

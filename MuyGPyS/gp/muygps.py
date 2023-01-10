@@ -238,7 +238,9 @@ class MuyGPS:
             A vector of shape `(batch_count)` listing the diagonal variances for
             each of the batch elements.
         """
-        return _muygps_compute_diagonal_variance(K, Kcross, eps)
+        return _muygps_compute_diagonal_variance(
+            _homoscedastic_perturb(K, eps), Kcross
+        )
 
     def regress_from_indices(
         self,
@@ -779,7 +781,9 @@ class MuyGPS:
     def get_array_opt_var_fn(self) -> Callable:
         if isinstance(self.eps, HomoscedasticNoise):
             return self._get_array_opt_var_fn(
-                _muygps_compute_diagonal_variance, self.eps
+                _muygps_compute_diagonal_variance,
+                _homoscedastic_perturb,
+                self.eps,
             )
         else:
             raise TypeError(
@@ -789,24 +793,26 @@ class MuyGPS:
 
     @staticmethod
     def _get_array_opt_var_fn(
-        var_fn: Callable, eps: HomoscedasticNoise
+        var_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
     ) -> Callable:
         if not eps.fixed():
 
             def caller_fn(K, Kcross, x0):
-                return var_fn(K, Kcross, x0[-1])
+                return var_fn(perturb_fn(K, x0[-1]), Kcross)
 
         else:
 
             def caller_fn(K, Kcross, x0):
-                return var_fn(K, Kcross, eps())
+                return var_fn(perturb_fn(K, eps()), Kcross)
 
         return caller_fn
 
     def get_kwargs_opt_var_fn(self) -> Callable:
         if isinstance(self.eps, HomoscedasticNoise):
             return self._get_kwargs_opt_var_fn(
-                _muygps_compute_diagonal_variance, self.eps
+                _muygps_compute_diagonal_variance,
+                _homoscedastic_perturb,
+                self.eps,
             )
         else:
             raise TypeError(
@@ -816,17 +822,17 @@ class MuyGPS:
 
     @staticmethod
     def _get_kwargs_opt_var_fn(
-        var_fn: Callable, eps: HomoscedasticNoise
+        var_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
     ) -> Callable:
         if not eps.fixed():
 
             def caller_fn(K, Kcross, **kwargs):
-                return var_fn(K, Kcross, kwargs["eps"])
+                return var_fn(perturb_fn(K, kwargs["eps"]), Kcross)
 
         else:
 
             def caller_fn(K, Kcross, **kwargs):
-                return var_fn(K, Kcross, eps())
+                return var_fn(perturb_fn(K, eps()), Kcross)
 
         return caller_fn
 

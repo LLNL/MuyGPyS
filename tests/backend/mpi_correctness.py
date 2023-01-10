@@ -585,9 +585,8 @@ class MuyGPSTestCase(KernelTestCase):
                 cls.batch_nn_targets,
             )
             cls.batch_variance = muygps_compute_diagonal_variance_n(
-                cls.batch_covariance_gen,
+                cls.batch_homoscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
-                cls.muygps.eps(),
             )
         else:
             cls.batch_homoscedastic_covariance_gen = None
@@ -603,9 +602,8 @@ class MuyGPSTestCase(KernelTestCase):
             cls.batch_nn_targets_chunk,
         )
         cls.batch_variance_chunk = muygps_compute_diagonal_variance_m(
-            cls.batch_covariance_gen_chunk,
+            cls.batch_homoscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
-            cls.muygps.eps(),
         )
 
 
@@ -718,12 +716,16 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_array_var_fn_n(self):
         return self.muygps._get_array_opt_var_fn(
-            muygps_compute_diagonal_variance_n, self.muygps.eps
+            muygps_compute_diagonal_variance_n,
+            homoscedastic_perturb_n,
+            self.muygps.eps,
         )
 
     def _get_kwargs_var_fn_n(self):
         return self.muygps._get_kwargs_opt_var_fn(
-            muygps_compute_diagonal_variance_n, self.muygps.eps
+            muygps_compute_diagonal_variance_n,
+            homoscedastic_perturb_n,
+            self.muygps.eps,
         )
 
     def _get_array_sigma_sq_fn_n(self):
@@ -749,12 +751,16 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_array_var_fn_m(self):
         return self.muygps._get_array_opt_var_fn(
-            muygps_compute_diagonal_variance_m, self.muygps.eps
+            muygps_compute_diagonal_variance_m,
+            homoscedastic_perturb_n,
+            self.muygps.eps,
         )
 
     def _get_kwargs_var_fn_m(self):
         return self.muygps._get_kwargs_opt_var_fn(
-            muygps_compute_diagonal_variance_m, self.muygps.eps
+            muygps_compute_diagonal_variance_m,
+            homoscedastic_perturb_n,
+            self.muygps.eps,
         )
 
     def _get_array_sigma_sq_fn_m(self):

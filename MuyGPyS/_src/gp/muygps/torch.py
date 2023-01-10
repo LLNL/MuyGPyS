@@ -21,14 +21,12 @@ def _muygps_compute_solve(
 def _muygps_compute_diagonal_variance(
     K: torch.Tensor,
     Kcross: torch.Tensor,
-    eps: float,
 ) -> torch.Tensor:
     batch_count, nn_count = Kcross.shape
     return 1 - torch.sum(
         Kcross
         * torch.linalg.solve(
-            K + eps * torch.eye(nn_count),
-            Kcross.reshape(batch_count, nn_count, 1),
+            K, Kcross.reshape(batch_count, nn_count, 1)
         ).reshape(batch_count, nn_count),
         dim=1,
     )
