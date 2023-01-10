@@ -52,6 +52,12 @@ from MuyGPyS._src.gp.muygps.mpi import (
     _muygps_compute_solve as muygps_compute_solve_m,
     _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_m,
 )
+from MuyGPyS._src.gp.noise.numpy import (
+    _homoscedastic_perturb as homoscedastic_perturb_n,
+)
+from MuyGPyS._src.gp.noise.mpi import (
+    _homoscedastic_perturb as homoscedastic_perturb_m,
+)
 from MuyGPyS._src.optimize.sigma_sq.numpy import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
 )
@@ -570,31 +576,34 @@ class MuyGPSTestCase(KernelTestCase):
     def setUpClass(cls):
         super(MuyGPSTestCase, cls).setUpClass()
         if rank == 0:
+            cls.batch_homoscedastic_covariance_gen = homoscedastic_perturb_n(
+                cls.batch_covariance_gen, cls.muygps.eps()
+            )
             cls.batch_prediction = muygps_compute_solve_n(
-                cls.batch_covariance_gen,
+                cls.batch_homoscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
                 cls.batch_nn_targets,
-                cls.muygps.eps(),
             )
             cls.batch_variance = muygps_compute_diagonal_variance_n(
-                cls.batch_covariance_gen,
+                cls.batch_homoscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
-                cls.muygps.eps(),
             )
         else:
+            cls.batch_homoscedastic_covariance_gen = None
             cls.batch_prediction = None
             cls.batch_variance = None
 
+        cls.batch_homoscedastic_covariance_gen_chunk = homoscedastic_perturb_m(
+            cls.batch_covariance_gen_chunk, cls.muygps.eps()
+        )
         cls.batch_prediction_chunk = muygps_compute_solve_m(
-            cls.batch_covariance_gen_chunk,
+            cls.batch_homoscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
             cls.batch_nn_targets_chunk,
-            cls.muygps.eps(),
         )
         cls.batch_variance_chunk = muygps_compute_diagonal_variance_m(
-            cls.batch_covariance_gen_chunk,
+            cls.batch_homoscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
-            cls.muygps.eps(),
         )
 
 
@@ -602,6 +611,12 @@ class MuyGPSTest(MuyGPSTestCase):
     @classmethod
     def setUpClass(cls):
         super(MuyGPSTest, cls).setUpClass()
+
+    def test_homoscedastic_perturb(self):
+        self._compare_tensors(
+            self.batch_homoscedastic_covariance_gen,
+            self.batch_homoscedastic_covariance_gen_chunk,
+        )
 
     def test_batch_compute_solve(self):
         self._compare_tensors(
@@ -613,16 +628,14 @@ class MuyGPSTest(MuyGPSTestCase):
 
     def test_sigma_sq_optim(self):
         parallel_sigma_sq = analytic_sigma_sq_optim_m(
-            self.batch_covariance_gen_chunk,
+            self.batch_homoscedastic_covariance_gen_chunk,
             self.batch_nn_targets_chunk,
-            self.muygps.eps(),
         )
 
         if rank == 0:
             serial_sigma_sq = analytic_sigma_sq_optim_n(
-                self.batch_covariance_gen,
+                self.batch_homoscedastic_covariance_gen,
                 self.batch_nn_targets,
-                self.muygps.eps(),
             )
             self.assertAlmostEqual(serial_sigma_sq[0], parallel_sigma_sq[0])
 
@@ -691,63 +704,71 @@ class OptimTestCase(MuyGPSTestCase):
     # Numpy predict functions
     def _get_array_mean_fn_n(self):
         return self.muygps._get_array_opt_mean_fn(
-            muygps_compute_solve_n, self.muygps.eps
+            muygps_compute_solve_n, homoscedastic_perturb_n, self.muygps.eps
         )
 
     def _get_kwargs_mean_fn_n(self):
         return self.muygps._get_kwargs_opt_mean_fn(
-            muygps_compute_solve_n, self.muygps.eps
+            muygps_compute_solve_n, homoscedastic_perturb_n, self.muygps.eps
         )
 
     def _get_array_var_fn_n(self):
         return self.muygps._get_array_opt_var_fn(
-            muygps_compute_diagonal_variance_n, self.muygps.eps
+            muygps_compute_diagonal_variance_n,
+            homoscedastic_perturb_n,
+            self.muygps.eps,
         )
 
     def _get_kwargs_var_fn_n(self):
         return self.muygps._get_kwargs_opt_var_fn(
-            muygps_compute_diagonal_variance_n, self.muygps.eps
+            muygps_compute_diagonal_variance_n,
+            homoscedastic_perturb_n,
+            self.muygps.eps,
         )
 
     def _get_array_sigma_sq_fn_n(self):
         return make_array_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_n
+            self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
         )
 
     def _get_kwargs_sigma_sq_fn_n(self):
         return make_kwargs_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_n
+            self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
         )
 
     # MPI predict functions
     def _get_array_mean_fn_m(self):
         return self.muygps._get_array_opt_mean_fn(
-            muygps_compute_solve_m, self.muygps.eps
+            muygps_compute_solve_m, homoscedastic_perturb_m, self.muygps.eps
         )
 
     def _get_kwargs_mean_fn_m(self):
         return self.muygps._get_kwargs_opt_mean_fn(
-            muygps_compute_solve_m, self.muygps.eps
+            muygps_compute_solve_m, homoscedastic_perturb_m, self.muygps.eps
         )
 
     def _get_array_var_fn_m(self):
         return self.muygps._get_array_opt_var_fn(
-            muygps_compute_diagonal_variance_m, self.muygps.eps
+            muygps_compute_diagonal_variance_m,
+            homoscedastic_perturb_n,
+            self.muygps.eps,
         )
 
     def _get_kwargs_var_fn_m(self):
         return self.muygps._get_kwargs_opt_var_fn(
-            muygps_compute_diagonal_variance_m, self.muygps.eps
+            muygps_compute_diagonal_variance_m,
+            homoscedastic_perturb_n,
+            self.muygps.eps,
         )
 
     def _get_array_sigma_sq_fn_m(self):
         return make_array_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_m
+            self.muygps, analytic_sigma_sq_optim_m, homoscedastic_perturb_m
         )
 
     def _get_kwargs_sigma_sq_fn_m(self):
         return make_kwargs_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_m
+            self.muygps, analytic_sigma_sq_optim_m, homoscedastic_perturb_m
         )
 
     # Numpy objective functions

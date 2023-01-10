@@ -20,10 +20,9 @@ world = config.mpi_state.comm_world
 def _analytic_sigma_sq_optim(
     K: np.ndarray,
     nn_targets: np.ndarray,
-    eps: float,
 ) -> np.ndarray:
     local_batch_count, nn_count, _ = nn_targets.shape
-    local_sum = _analytic_sigma_sq_optim_unnormalized(K, nn_targets, eps)
+    local_sum = _analytic_sigma_sq_optim_unnormalized(K, nn_targets)
     global_sum = world.allreduce(local_sum, op=MPI.SUM)
     global_batch_count = world.allreduce(local_batch_count, op=MPI.SUM)
     return global_sum / (nn_count * global_batch_count)

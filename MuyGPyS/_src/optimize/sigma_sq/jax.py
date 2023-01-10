@@ -12,15 +12,9 @@ from jax import jit
 def _analytic_sigma_sq_optim_unnormalized(
     K: jnp.ndarray,
     nn_targets: jnp.ndarray,
-    eps: float,
 ) -> jnp.ndarray:
-    _, nn_count, _ = nn_targets.shape
     return jnp.sum(
-        jnp.einsum(
-            "ijk,ijk->ik",
-            nn_targets,
-            jnp.linalg.solve(K + eps * jnp.eye(nn_count), nn_targets),
-        ),
+        jnp.einsum("ijk,ijk->ik", nn_targets, jnp.linalg.solve(K, nn_targets)),
         axis=0,
     )
 
@@ -29,9 +23,8 @@ def _analytic_sigma_sq_optim_unnormalized(
 def _analytic_sigma_sq_optim(
     K: jnp.ndarray,
     nn_targets: jnp.ndarray,
-    eps: float,
 ) -> jnp.ndarray:
     batch_count, nn_count, _ = nn_targets.shape
-    return _analytic_sigma_sq_optim_unnormalized(K, nn_targets, eps) / (
+    return _analytic_sigma_sq_optim_unnormalized(K, nn_targets) / (
         batch_count * nn_count
     )

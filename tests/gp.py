@@ -241,7 +241,7 @@ class GPInitTest(parameterized.TestCase):
         self.assertLessEqual(param(), bounds[1])
 
 
-class GPMathTest(parameterized.TestCase):
+class GPTensorShapesTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 100, f, 10, nn_kwargs, k_kwargs)
@@ -307,6 +307,8 @@ class GPMathTest(parameterized.TestCase):
                 np.all(np.logical_or(eigvals >= 0.0, np.isclose(eigvals, 0.0)))
             )
 
+
+class GPSolveTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
@@ -386,6 +388,8 @@ class GPMathTest(parameterized.TestCase):
                 ),
             )
 
+
+class GPDiagonalVariance(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
@@ -516,6 +520,12 @@ class MakeClassifierTest(parameterized.TestCase):
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             return_distances=return_distances,
+            opt_method="bayes",
+            opt_kwargs={
+                "allow_duplicate_points": True,
+                "init_points": 2,
+                "n_iter": 2,
+            },
             verbose=False,
         )
 
@@ -603,6 +613,12 @@ class MakeRegressorTest(parameterized.TestCase):
             batch_count=batch_count,
             loss_method=loss_method,
             sigma_method=sigma_method,
+            opt_method="bayes",
+            opt_kwargs={
+                "allow_duplicate_points": True,
+                "init_points": 2,
+                "n_iter": 2,
+            },
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             return_distances=return_distances,
@@ -702,6 +718,12 @@ class MakeFastRegressorTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_method=loss_method,
+            opt_method="bayes",
+            opt_kwargs={
+                "allow_duplicate_points": True,
+                "init_points": 2,
+                "n_iter": 2,
+            },
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
         )
