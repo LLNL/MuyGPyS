@@ -57,6 +57,4 @@ def _muygps_fast_regress_precompute(
     K: jnp.ndarray,
     train_nn_targets_fast: jnp.ndarray,
 ) -> jnp.ndarray:
-    _, nn_count, _ = K.shape
-    coeffs_tensor = jnp.linalg.solve(K, train_nn_targets_fast)
-    return coeffs_tensor
+    return jnp.linalg.solve(K, train_nn_targets_fast)

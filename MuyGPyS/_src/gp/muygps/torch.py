@@ -50,6 +50,4 @@ def _muygps_fast_regress_precompute(
     K: torch.Tensor,
     train_nn_targets_fast: torch.Tensor,
 ) -> torch.Tensor:
-    _, nn_count, _ = K.shape
-    coeffs_tensor = torch.linalg.solve(K, train_nn_targets_fast)
-    return coeffs_tensor
+    return torch.linalg.solve(K, train_nn_targets_fast)
