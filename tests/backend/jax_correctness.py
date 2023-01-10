@@ -501,8 +501,11 @@ class FastPredictTestCase(MuyGPSTestCase):
             cls.train_responses_n,
         )
 
+        cls.homoscedastic_K_fast_n = homoscedastic_perturb_n(
+            cls.K_fast_n, cls.muygps.eps()
+        )
         cls.fast_regress_coeffs_n = muygps_fast_regress_precompute_n(
-            cls.K_fast_n, cls.muygps.eps(), cls.train_nn_targets_fast_n
+            cls.homoscedastic_K_fast_n, cls.train_nn_targets_fast_n
         )
 
         cls.test_neighbors_n, _ = cls.nbrs_lookup.get_nns(cls.test_features_n)
@@ -540,8 +543,12 @@ class FastPredictTestCase(MuyGPSTestCase):
             cls.train_responses_j,
         )
 
+        cls.homoscedastic_K_fast_j = homoscedastic_perturb_j(
+            cls.K_fast_j, cls.muygps.eps()
+        )
+
         cls.fast_regress_coeffs_j = muygps_fast_regress_precompute_j(
-            cls.K_fast_j, cls.muygps.eps(), cls.train_nn_targets_fast_j
+            cls.homoscedastic_K_fast_j, cls.train_nn_targets_fast_j
         )
 
         cls.test_neighbors_j, _ = cls.nbrs_lookup.get_nns(cls.test_features_j)
@@ -566,17 +573,24 @@ class FastPredictTestCase(MuyGPSTestCase):
 
     def test_fast_nn_update(self):
         self.assertTrue(
-            allclose_inv(
+            allclose_gen(
                 fast_nn_update_j(self.nn_indices_all_j),
                 fast_nn_update_n(self.nn_indices_all_n),
             )
         )
 
     def test_make_fast_regress_tensors(self):
-        self.assertTrue(allclose_inv(self.K_fast_n, self.K_fast_j))
+        self.assertTrue(allclose_gen(self.K_fast_n, self.K_fast_j))
+        self.assertTrue(
+            allclose_gen(
+                self.train_nn_targets_fast_n, self.train_nn_targets_fast_j
+            )
+        )
+
+    def test_homoscedastic_kernel_tensors(self):
         self.assertTrue(
             allclose_inv(
-                self.train_nn_targets_fast_n, self.train_nn_targets_fast_j
+                self.homoscedastic_K_fast_n, self.homoscedastic_K_fast_j
             )
         )
 
@@ -667,8 +681,11 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
             cls.train_responses_n,
         )
 
+        cls.homoscedastic_K_fast_n = homoscedastic_perturb_n(
+            cls.K_fast_n, cls.eps
+        )
         cls.fast_regress_coeffs_n = muygps_fast_regress_precompute_n(
-            cls.K_fast_n, cls.eps, cls.train_nn_targets_fast_n
+            cls.homoscedastic_K_fast_n, cls.train_nn_targets_fast_n
         )
 
         cls.test_neighbors_n, _ = cls.nbrs_lookup.get_nns(cls.test_features_n)
@@ -707,8 +724,11 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
             cls.train_responses_j,
         )
 
+        cls.homoscedastic_K_fast_j = homoscedastic_perturb_j(
+            cls.K_fast_j, cls.eps
+        )
         cls.fast_regress_coeffs_j = muygps_fast_regress_precompute_j(
-            cls.K_fast_j, cls.eps, cls.train_nn_targets_fast_j
+            cls.homoscedastic_K_fast_j, cls.train_nn_targets_fast_j
         )
 
         cls.test_neighbors_j, _ = cls.nbrs_lookup.get_nns(cls.test_features_j)

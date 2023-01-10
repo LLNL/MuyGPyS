@@ -405,7 +405,9 @@ class MuyGPS:
         train_nn_targets_fast: np.ndarray,
     ) -> np.ndarray:
 
-        return _muygps_fast_regress_precompute(K, eps, train_nn_targets_fast)
+        return _muygps_fast_regress_precompute(
+            _homoscedastic_perturb(K, eps), train_nn_targets_fast
+        )
 
     def regress(
         self,
@@ -1212,7 +1214,8 @@ class MultivariateMuyGPS:
         for i, model in enumerate(models):
             K = model.kernel(pairwise_dists_fast)
             coeffs_tensor[:, :, i] = _muygps_fast_regress_precompute(
-                K, model.eps(), train_nn_targets_fast[:, :, i]
+                _homoscedastic_perturb(K, model.eps()),
+                train_nn_targets_fast[:, :, i],
             )
 
         return coeffs_tensor

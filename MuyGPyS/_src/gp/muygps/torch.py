@@ -48,11 +48,8 @@ def _mmuygps_fast_regress_solve(
 
 def _muygps_fast_regress_precompute(
     K: torch.Tensor,
-    eps: float,
     train_nn_targets_fast: torch.Tensor,
 ) -> torch.Tensor:
     _, nn_count, _ = K.shape
-    coeffs_tensor = torch.linalg.solve(
-        K + eps * torch.eye(nn_count), train_nn_targets_fast
-    )
+    coeffs_tensor = torch.linalg.solve(K, train_nn_targets_fast)
     return coeffs_tensor
