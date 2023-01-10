@@ -43,6 +43,7 @@ from MuyGPyS._src.gp.muygps.torch import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
 )
+from MuyGPyS._src.gp.noise.torch import _homoscedastic_perturb
 from MuyGPyS._src.optimize.loss.torch import _lool_fn as lool_fn
 from MuyGPyS.torch.muygps_layer import kernel_func
 from torch.optim.lr_scheduler import ExponentialLR
@@ -142,14 +143,20 @@ def predict_single_model(
         length_scale=model.length_scale,
     )
 
-    predictions = _muygps_compute_solve(K, Kcross, test_nn_targets, model.eps)
+    predictions = _muygps_compute_solve(
+        _homoscedastic_perturb(K, model.eps), Kcross, test_nn_targets
+    )
 
-    sigma_sq = _analytic_sigma_sq_optim(K, test_nn_targets, model.eps)
+    sigma_sq = _analytic_sigma_sq_optim(
+        _homoscedastic_perturb(K, model.eps), test_nn_targets
+    )
 
     if variance_mode is None:
         return predictions
     elif variance_mode == "diagonal":
-        variances = _muygps_compute_diagonal_variance(K, Kcross, model.eps)
+        variances = _muygps_compute_diagonal_variance(
+            _homoscedastic_perturb(K, model.eps), Kcross
+        )
         if apply_sigma_sq is True:
             if len(sigma_sq) == 1:
                 variances *= sigma_sq
@@ -282,18 +289,17 @@ def predict_multiple_model(
 
     for i in range(model.num_models):
         predictions[:, i] = _muygps_compute_solve(
-            K[:, :, :, i],
+            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]),
             Kcross[:, :, i],
             test_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
-            model.eps[i],
         ).reshape(batch_count)
         variances[:, i] = _muygps_compute_diagonal_variance(
-            K[:, :, :, i], Kcross[:, :, i], model.eps[i]
+            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]),
+            Kcross[:, :, i],
         )
         sigma_sq[i] = _analytic_sigma_sq_optim(
-            K[:, :, :, i],
+            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]),
             test_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
-            model.eps[i],
         )
     return predictions, variances, sigma_sq
 
