@@ -22,6 +22,8 @@ from MuyGPyS._src.gp.muygps.torch import (
 )
 from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
 
+from MuyGPyS._src.gp.noise.torch import _homoscedastic_perturb
+
 from MuyGPyS._src.gp.kernels.torch import (
     _matern_05_fn,
     _matern_15_fn,
@@ -156,15 +158,19 @@ class MuyGPs_layer(nn.Module):
             length_scale=self.length_scale,
         )
         predictions = _muygps_compute_solve(
-            K, Kcross, self.batch_nn_targets, self.eps
+            _homoscedastic_perturb(K, self.eps), Kcross, self.batch_nn_targets
         )
 
-        sigma_sq = _analytic_sigma_sq_optim(K, self.batch_nn_targets, self.eps)
+        sigma_sq = _analytic_sigma_sq_optim(
+            _homoscedastic_perturb(K, self.eps), self.batch_nn_targets
+        )
 
         if self.variance_mode is None:
             return predictions
         elif self.variance_mode == "diagonal":
-            variances = _muygps_compute_diagonal_variance(K, Kcross, self.eps)
+            variances = _muygps_compute_diagonal_variance(
+                _homoscedastic_perturb(K, self.eps), Kcross
+            )
             if self.apply_sigma_sq is True:
                 if len(sigma_sq) == 1:
                     variances *= sigma_sq
@@ -323,22 +329,21 @@ class MultivariateMuyGPs_layer(nn.Module):
 
         for i in range(self.num_models):
             predictions[:, i] = _muygps_compute_solve(
-                K[:, :, :, i],
+                _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
                 Kcross[:, :, i],
                 self.batch_nn_targets[:, :, i].reshape(
                     batch_count, nn_count, 1
                 ),
-                self.eps[i],
             ).reshape(batch_count)
             variances[:, i] = _muygps_compute_diagonal_variance(
-                K[:, :, :, i], Kcross[:, :, i], self.eps[i]
+                _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
+                Kcross[:, :, i],
             )
             sigma_sq[i] = _analytic_sigma_sq_optim(
-                K[:, :, :, i],
+                _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
                 self.batch_nn_targets[:, :, i].reshape(
                     batch_count, nn_count, 1
                 ),
-                self.eps[i],
             )
         return predictions, variances, sigma_sq
 
