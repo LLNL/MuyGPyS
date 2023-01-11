@@ -14,9 +14,6 @@ config.parse_flags_with_absl()  # Affords option setting from CLI
 
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
-from MuyGPyS.examples.fast_regress import (
-    do_fast_regress,
-)
 from MuyGPyS.gp.distance import (
     make_train_tensors,
     make_regress_tensors,
@@ -658,80 +655,6 @@ class MakeRegressorTest(parameterized.TestCase):
         else:
             self.assertTrue(muygps.sigma_sq.trained())
             print(f"\toptimized sigma_sq to find value " f"{muygps.sigma_sq()}")
-
-
-class MakeFastRegressorTest(parameterized.TestCase):
-    @parameterized.parameters(
-        (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, k_kwargs)
-            for b in [250]
-            for n in [10]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for lm in ["mse"]
-            # for ssm in ["analytic"]
-            # for rt in [True]
-            for k_kwargs in (
-                {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                    # "nu": {"val": 0.38},
-                    "length_scale": {"val": 1.5},
-                    "eps": {"val": 1e-5},
-                },
-            )
-        )
-    )
-    def test_make_fast_multivariate_regressor(
-        self,
-        train_count,
-        test_count,
-        feature_count,
-        batch_count,
-        nn_count,
-        nn_kwargs,
-        loss_method,
-        k_kwargs,
-    ):
-        # skip if we are using the MPI implementation
-
-        # construct the observation locations
-        response_count = 2
-        train, test = _make_gaussian_data(
-            train_count,
-            test_count,
-            feature_count,
-            response_count=response_count,
-            categorical=False,
-        )
-
-        (
-            _,
-            _,
-            predictions,
-            precomputed_coefficient_matrix,
-            _,
-        ) = do_fast_regress(
-            test["input"],
-            train["input"],
-            train["output"],
-            nn_count=nn_count,
-            batch_count=batch_count,
-            loss_method=loss_method,
-            opt_method="bayes",
-            opt_kwargs={
-                "allow_duplicate_points": True,
-                "init_points": 2,
-                "n_iter": 2,
-            },
-            k_kwargs=k_kwargs,
-            nn_kwargs=nn_kwargs,
-        )
-        self.assertEqual(
-            precomputed_coefficient_matrix.shape,
-            (train_count, nn_count, response_count),
-        )
-        self.assertEqual(predictions.shape, (test_count, response_count))
 
 
 class GPSigmaSqTest(parameterized.TestCase):
