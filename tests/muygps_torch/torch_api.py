@@ -2,18 +2,19 @@
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
+import torch
+from torch import nn
 from MuyGPyS import config
 
 if config.state.torch_enabled is False:
-    raise ValueError(f"Bad attempt to run torch-only code with torch diabled.")
+    raise ValueError(f"Bad attempt to run torch-only code with torch disabled.")
 
 if config.state.backend != "torch":
     config.update("muygpys_backend", "torch")
 
+
 import os
 import sys
-import torch
-from torch import nn
 import numpy as np
 
 import pickle as pkl
@@ -42,7 +43,7 @@ from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
 from MuyGPyS.examples.muygps_torch import predict_model
 
-hardpath = "../data/"
+hardpath = "../../data/"
 
 stargal_dir = "star-gal/"
 

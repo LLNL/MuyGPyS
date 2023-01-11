@@ -276,6 +276,7 @@ class MultivariateMuyGPs_layer(nn.Module):
         super().__init__()
         self.num_models = num_models
         self.length_scale = nn.Parameter(torch.Tensor(length_scales))
+        # self.length_scale = length_scales
         self.eps = kernel_eps
         self.nu = nu_vals
         self.batch_indices = batch_indices
