@@ -40,6 +40,7 @@ jobs:
           python tests/kernels.py
           python tests/gp.py
           python tests/predict.py
+          python tests/precompute/fast_regressor.py
       - name: Optimize Tests
         if: matrix.test_group == 'optimize'
         run: python tests/optimize.py
