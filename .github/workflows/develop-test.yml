@@ -106,7 +106,9 @@ jobs:
           python -m pip install -e .[tests,hnswlib,torch]
           export MUYGPYS_BACKEND=torch
       - name: Test Torch correctness
-        run: python tests/backend/torch_correctness.py
+        run: |
+          python tests/backend/torch_correctness.py
+          python tests/muygps_torch/muygps_torch.py
 
   build-docs:
     runs-on: ubuntu-latest

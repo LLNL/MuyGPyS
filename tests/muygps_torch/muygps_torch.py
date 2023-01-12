@@ -261,6 +261,9 @@ class RegressTest(parameterized.TestCase):
             )
             / test_responses.shape[0]
         )
+        self.assertEqual(predictions.shape, test_responses.shape)
+        self.assertEqual(variances.shape, (test_count, response_count))
+        self.assertEqual(sigma_sq.shape, torch.Size([num_test_responses]))
         self.assertLessEqual(mse_actual, target_mse)
 
 
@@ -378,6 +381,9 @@ class MultivariateRegressTest(parameterized.TestCase):
             )
             / test_responses.shape[0]
         )
+        self.assertEqual(predictions.shape, test_responses.shape)
+        self.assertEqual(variances.shape, (test_count, response_count))
+        self.assertEqual(sigma_sq.shape, torch.Size([num_test_responses]))
         self.assertLessEqual(mse_actual, target_mse)
 
 
