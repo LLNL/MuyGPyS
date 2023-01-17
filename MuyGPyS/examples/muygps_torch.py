@@ -45,8 +45,15 @@ from MuyGPyS._src.gp.muygps.torch import (
 )
 from MuyGPyS._src.gp.noise.torch import _homoscedastic_perturb
 from MuyGPyS._src.optimize.loss.torch import _lool_fn as lool_fn
+
+
 from MuyGPyS.torch.muygps_layer import kernel_func
 from torch.optim.lr_scheduler import ExponentialLR
+
+mse_loss = torch.nn.MSELoss()
+l1_loss = torch.nn.L1Loss()
+bce_loss = torch.nn.BCELoss()
+ce_loss = torch.nn.CrossEntropyLoss()
 
 
 def predict_single_model(
@@ -414,7 +421,7 @@ def train_deep_kernel_muygps(
     optimizer_method=torch.optim.Adam,
     learning_rate=1e-3,
     scheduler_decay=0.95,
-    loss_function=lool_fn,
+    loss_function="lool",
     update_frequency=1,
     verbose=False,
 ):
@@ -476,8 +483,10 @@ def train_deep_kernel_muygps(
         schedule_decay:
             The exponential decay rate to be applied to the learning rate.
         loss function:
-            The loss function to be used in training. Defaults to leave-one-out
-            likelihood.
+            The loss function to be used in training. Defaults to "lool" for
+            leave-one-out likelihood. Other options are "mse" for
+            mean-squared error, "ce" for cross entropy loss, "bce" for binary
+            cross entropy loss, and "l1" for L1 loss.
         update_frequency:
             Tells the training procedure how frequently the nearest neighbor
             structure should be updated. An update frequency of n indicates that
@@ -507,17 +516,29 @@ def train_deep_kernel_muygps(
     batch_features = train_features[batch_indices, :]
     batch_responses = train_responses[batch_indices, :]
 
+    if loss_function == "mse":
+        loss_func = mse_loss
+    if loss_function == "bce":
+        loss_func = bce_loss
+    if loss_function == "ce":
+        loss_func = ce_loss
+    if loss_function == "lool":
+        loss_func = lool_fn
+
     for i in range(training_iterations):
         model.train()
         optimizer.zero_grad()
         predictions, variances, sigma_sq = model(train_features)
 
-        loss = loss_function(
-            predictions.squeeze(),
-            batch_responses.squeeze(),
-            variances.squeeze(),
-            sigma_sq.squeeze(),
-        ) / (batch_responses.shape[0] * batch_responses.shape[1])
+        if loss_function == "lool":
+            loss = loss_func(
+                predictions.squeeze(),
+                batch_responses.squeeze(),
+                variances.squeeze(),
+                sigma_sq.squeeze(),
+            )
+        else:
+            loss = loss_func(predictions, batch_responses)
         loss.backward()
         optimizer.step()
         scheduler.step()
