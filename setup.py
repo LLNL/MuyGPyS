@@ -64,7 +64,7 @@ TORCH_REQUIRES = [
 setup(
     extras_require={
         "dev": DEV_REQUIRES + TEST_REQUIRES + DOCS_REQUIRES,
-        "docs": DOCS_REQUIRES,
+        "docs": DOCS_REQUIRES + HNSWLIB_REQUIRES,
         "tests": TEST_REQUIRES,
         "hnswlib": HNSWLIB_REQUIRES,
         "jax_cpu": JAX_CPU_REQUIRES + JAX_REQUIRES,
