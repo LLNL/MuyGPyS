@@ -27,6 +27,7 @@ DOCS_REQUIRES = [
     "pandocfilters==1.5.0",
     "ipython==7.30.1",
     "ipykernel==6.6.0",
+    "torch>=1.13.0",
 ]
 
 HNSWLIB_REQUIRES = [
