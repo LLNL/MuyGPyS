@@ -234,7 +234,7 @@ class RegressTest(parameterized.TestCase):
             optimizer_method=torch.optim.Adam,
             learning_rate=1e-3,
             scheduler_decay=0.95,
-            loss_function=lool_fn,
+            loss_function="lool",
             update_frequency=1,
         )
 
@@ -354,7 +354,7 @@ class MultivariateRegressTest(parameterized.TestCase):
             optimizer_method=torch.optim.Adam,
             learning_rate=1e-3,
             scheduler_decay=0.95,
-            loss_function=lool_fn,
+            loss_function="lool",
             update_frequency=1,
         )
 
