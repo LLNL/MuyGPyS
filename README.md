@@ -149,7 +149,7 @@ class MuyGPsTorch(nn.Module):
         return predictions,variances,sigma_sq
 ```
 
-Most users will want to use the MuyGPyS.torch.muygps_layer module to construct 
+Most users will want to use the `MuyGPyS.torch.muygps_layer` module to construct 
 a custom MuyGPs model. The model can then be calibrated using a standard 
 PyTorch training loop. An example of the approach based on the low-level API 
 is provided in `docs/examples/torch_tutorial.ipynb`.
@@ -323,7 +323,7 @@ See also the
 [regression api tutorial](docs/examples/regress_api_tutorial.ipynb)
 describing how to coalesce the same simple workflow into a one-line call.
 A deep kernel model implemented using the torch features in the library 
-can be found in the [torch tutorial](docs/examples/torch_tutorial.ipynb) 
+can be found in the [torch tutorial](docs/examples/torch_tutorial.ipynb).
 
 
 ## Testing
