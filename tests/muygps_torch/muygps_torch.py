@@ -187,7 +187,7 @@ class RegressTest(parameterized.TestCase):
         train_responses = train["output"]
         test_features = test["input"]
 
-        nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="hnsw")
+        nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="exact")
         train_count, num_test_responses = train_responses.shape
 
         batch_indices, batch_nn_indices = sample_batch(
@@ -306,7 +306,7 @@ class MultivariateRegressTest(parameterized.TestCase):
         train_responses = train["output"]
         test_features = test["input"]
 
-        nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="hnsw")
+        nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="exact")
         train_count, num_test_responses = train_responses.shape
 
         batch_indices, batch_nn_indices = sample_batch(

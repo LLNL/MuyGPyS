@@ -115,11 +115,40 @@ The `MuyGPyS` framework is implemented as a custom PyTorch layer. In the
 high-level API found in examples/muygps_torch, a PyTorch MuyGPs model is assumed 
 to have two components: a model.embedding which deforms the original feature 
 data, and a model.GP_layer which does Gaussian Process regression on the 
-deformed feature space. 
+deformed feature space. A code example is provided below.
+
+```
+class MuyGPsTorch(nn.Module):
+
+    def __init__(self,num_models,kernel_eps,nu,length_scale,batch_indices,batch_nn_indices,batch_targets,batch_nn_targets):
+        super().__init__()
+        self.embedding = nn.Sequential(
+        nn.Linear(28**2,400),
+        nn.ReLU(1),
+        nn.Linear(400,100),
+         nn.ReLU(1),
+        )
+        self.eps = kernel_eps
+        self.nu = nu
+        self.length_scale = length_scale
+        self.batch_indices = batch_indices
+        self.num_models = num_models
+        self.batch_nn_indices = batch_nn_indices
+        self.batch_targets = batch_targets
+        self.batch_nn_targets = batch_nn_targets
+        self.GP_layer = MuyGPs_layer(kernel_eps,nu,length_scale,batch_indices,batch_nn_indices,batch_targets,batch_nn_targets)
+   
+    def forward(self,x): 
+        predictions = self.embedding(x)
+        predictions,variances,sigma_sq = self.GP_layer(predictions)
+        return predictions,variances,sigma_sq
+```
 
 In order to use the MuyGPyS torch backend, run the command 
 MuyGPyS.config.update("muygpys_backend","torch") at the beginning of your 
-notebook or script. 
+notebook or script.
+
+
 
 ## Installation
 
