@@ -104,30 +104,30 @@ $ srun -N 1 --tasks-per-node 4 -p pbatch python myscript.py
 
 ### PyTorch Integration
 
-The torch version of `MuyGPyS` allows for construction and training of complex
+The `torch` version of `MuyGPyS` allows for construction and training of complex
 kernels, e.g., convolutional neural network kernels. All low-level math is done
-on torch.Tensor objects. Due to PyTorch's lack of support for the Bessel 
+on `torch.Tensor` objects. Due to `PyTorch`'s lack of support for the Bessel 
 function of the second kind, we only support special cases of the Matern kernel,
 in particular when the smoothness parameter is $\nu = 1/2, 3/2,$ or $5/2$. The
 RBF kernel is supported as the Matern kernel with $\nu = \infty$. 
 
-The `MuyGPyS` framework is implemented as a custom PyTorch layer. In the 
-high-level API found in `examples/muygps_torch`, a PyTorch MuyGPs `model` is assumed 
-to have two components: a `model.embedding` which deforms the original feature 
-data, and a `model.GP_layer` which does Gaussian Process regression on the 
-deformed feature space. A code example is provided below.
+The `MuyGPyS` framework is implemented as a custom `PyTorch` layer. In the 
+high-level API found in `examples/muygps_torch`, a `PyTorch` MuyGPs `model` is 
+assumed to have two components: a `model.embedding` which deforms the original 
+feature data, and a `model.GP_layer` which does Gaussian Process regression on 
+the deformed feature space. A code example is provided below.
 
 ```
 class MuyGPsTorch(nn.Module):
 
     def __init__(self,num_models,kernel_eps,nu,length_scale,batch_indices,batch_nn_indices,batch_targets,batch_nn_targets):
         super().__init__()
-        #Simple feedforward neural network as the embedding function
+        #Simple feed-forward neural network as the embedding function
         self.embedding = nn.Sequential(
-        nn.Linear(28**2,400),
-        nn.ReLU(1),
-        nn.Linear(400,100),
-         nn.ReLU(1),
+        nn.Linear(num_features,num_out),
+        nn.ReLU(),
+        nn.Linear(num_out,num_embedded_features),
+        nn.ReLU(),
         )
         #Set noise, smoothness, and length scale parameters
         self.eps = kernel_eps
