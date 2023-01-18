@@ -126,7 +126,7 @@ class MuyGPsTorch(nn.Module):
         self.embedding = nn.Sequential(
         nn.Linear(num_features,num_out),
         nn.ReLU(),
-        nn.Linear(num_out,num_embedded_features),
+        nn.Linear(num_out,num_deformed_features),
         nn.ReLU(),
         )
         #Set noise, smoothness, and length scale parameters
@@ -148,6 +148,11 @@ class MuyGPsTorch(nn.Module):
         predictions,variances,sigma_sq = self.GP_layer(predictions)
         return predictions,variances,sigma_sq
 ```
+
+Most users will want to use the MuyGPyS.torch.muygps_layer module to construct 
+a custom MuyGPs model. The model can then be calibrated using a standard 
+PyTorch training loop. An example of the approach based on the low-level API 
+is provided in `docs/examples/torch_tutorial.ipynb`.
 
 In order to use the `MuyGPyS` torch backend, run the following command at the 
 beginning of your notebook or script.
