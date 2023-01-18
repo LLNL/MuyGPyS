@@ -108,8 +108,8 @@ The torch version of `MuyGPyS` allows for construction and training of complex
 kernels, e.g., convolutional neural network kernels. All low-level math is done
 on torch.Tensor objects. Due to PyTorch's lack of support for the Bessel 
 function of the second kind, we only support special cases of the Matern kernel,
-in particular when the smoothness parameter is 
-:math:`\\nu = 1/2, 3/2, 5/2, \\infty`. 
+in particular when the smoothness parameter is $\nu = 1/2, 3/2,$ or $5/2$. The
+RBF kernel is supported at the Matern kernel with $\nu = \infty$. 
 
 The `MuyGPyS` framework is implemented as a custom PyTorch layer. In the 
 high-level API found in examples/muygps_torch, a PyTorch MuyGPs model is assumed 
