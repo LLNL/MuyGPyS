@@ -1,9 +1,7 @@
-# Copyright 2021-2022 Lawrence Livermore National Security, LLC and other
+# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
-import torch
-from torch import nn
 from MuyGPyS import config
 
 if config.state.torch_enabled is False:
@@ -12,7 +10,15 @@ if config.state.torch_enabled is False:
 if config.state.backend != "torch":
     config.update("muygpys_backend", "torch")
 
+import warnings
 
+warnings.warn(
+    f"Attempting to run torch-only code in {config.state.backend} mode. "
+    f"Force-switching MuyGPyS into the torch backend."
+)
+
+import torch
+from torch import nn
 import os
 import sys
 import numpy as np

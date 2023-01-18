@@ -117,48 +117,26 @@ assumed to have two components: a `model.embedding` which deforms the original
 feature data, and a `model.GP_layer` which does Gaussian Process regression on 
 the deformed feature space. A code example is provided below.
 
-```
-class MuyGPsTorch(nn.Module):
-
-    def __init__(self,num_models,kernel_eps,nu,length_scale,batch_indices,batch_nn_indices,batch_targets,batch_nn_targets):
-        super().__init__()
-        #Simple feed-forward neural network as the embedding function
-        self.embedding = nn.Sequential(
-        nn.Linear(num_features,num_out),
-        nn.ReLU(),
-        nn.Linear(num_out,num_deformed_features),
-        nn.ReLU(),
-        )
-        #Set noise, smoothness, and length scale parameters
-        self.eps = kernel_eps
-        self.nu = nu
-        self.length_scale = length_scale
-        #Provide information about the sampling batch and number of separate models to learn
-        self.batch_indices = batch_indices
-        self.num_models = num_models
-        self.batch_nn_indices = batch_nn_indices
-        self.batch_targets = batch_targets
-        self.batch_nn_targets = batch_nn_targets
-        #The MuyGPs layer which regresses on the deformed feature space
-        self.GP_layer = MuyGPs_layer(kernel_eps,nu,length_scale,batch_indices,batch_nn_indices,batch_targets,batch_nn_targets)
-   
-    def forward(self,x): 
-        #Forward operator returns mean predictions and variances for UQ
-        predictions = self.embedding(x)
-        predictions,variances,sigma_sq = self.GP_layer(predictions)
-        return predictions,variances,sigma_sq
-```
-
 Most users will want to use the `MuyGPyS.torch.muygps_layer` module to construct 
 a custom MuyGPs model. The model can then be calibrated using a standard 
 PyTorch training loop. An example of the approach based on the low-level API 
 is provided in `docs/examples/torch_tutorial.ipynb`.
 
-In order to use the `MuyGPyS` torch backend, run the following command at the 
-beginning of your notebook or script.
+In order to use the `MuyGPyS` torch backend, run the following command in your 
+shell environment.
 
 ```
+$ export MUYGPYS_BACKEND=torch
+```
+
+If setting environment variables is impractical, one can also use the following
+workflow. 
+
+```
+from MuyGPyS import config
 MuyGPyS.config.update("muygpys_backend","torch")
+
+...subsequent imports from MuyGPyS
 ```
 
 

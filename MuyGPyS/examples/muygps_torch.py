@@ -13,6 +13,7 @@ API for training deep kernel MuyGPs models for regression.
 generating predictions at test locations given a trained model. 
 """
 from MuyGPyS import config
+from typing import Dict, List, Optional, Tuple, Union
 
 if config.state.backend != "torch":
     import warnings
@@ -424,6 +425,7 @@ def train_deep_kernel_muygps(
     loss_function="lool",
     update_frequency=1,
     verbose=False,
+    nn_kwargs: Dict = dict(),
 ):
     """
     Train a PyTorch model containing an embedding component and
@@ -494,6 +496,10 @@ def train_deep_kernel_muygps(
         verbose:
             Indicates whether or not to include print statements during
             training.
+        nn_kwargs:
+            Parameters for the nearest neighbors wrapper. See
+            :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
+            their parameters.
 
     Returns
     -------
@@ -516,14 +522,18 @@ def train_deep_kernel_muygps(
     batch_features = train_features[batch_indices, :]
     batch_responses = train_responses[batch_indices, :]
 
+    loss_function = loss_function.lower()
+
     if loss_function == "mse":
         loss_func = mse_loss
-    if loss_function == "bce":
+    elif loss_function == "bce":
         loss_func = bce_loss
-    if loss_function == "ce":
+    elif loss_function == "ce":
         loss_func = ce_loss
-    if loss_function == "lool":
+    elif loss_function == "lool":
         loss_func = lool_fn
+    else:
+        raise ValueError(f"loss function {loss_function} is not supported")
 
     for i in range(training_iterations):
         model.train()
@@ -553,7 +563,7 @@ def train_deep_kernel_muygps(
             nbrs_lookup = NN_Wrapper(
                 model.embedding(train_features).detach().numpy(),
                 nn_count,
-                nn_method="exact",
+                **nn_kwargs,
             )
             batch_nn_indices, _ = nbrs_lookup._get_nns(
                 model.embedding(batch_features).detach().numpy(),
@@ -571,7 +581,7 @@ def train_deep_kernel_muygps(
     nbrs_lookup = NN_Wrapper(
         model.embedding(train_features).detach().numpy(),
         nn_count,
-        nn_method="exact",
+        **nn_kwargs,
     )
     batch_nn_indices, _ = nbrs_lookup._get_nns(
         model.embedding(batch_features).detach().numpy(), nn_count=nn_count
@@ -589,6 +599,7 @@ def update_nearest_neighbors(
     train_responses: torch.Tensor,
     batch_indices: torch.Tensor,
     nn_count: torch.int64,
+    nn_kwargs: Dict = dict(),
 ):
     """
     Update the nearest neighbors after deformation via a PyTorch model
@@ -632,6 +643,10 @@ def update_nearest_neighbors(
             the training batch.
         nn_count:
             A torch.int64 giving the number of nearest neighbors.
+        nn_kwargs:
+            Parameters for the nearest neighbors wrapper. See
+            :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
+            their parameters.
 
     Returns
     -------
@@ -647,7 +662,7 @@ def update_nearest_neighbors(
     nbrs_lookup = NN_Wrapper(
         model.embedding(train_features).detach().numpy(),
         nn_count,
-        nn_method="exact",
+        **nn_kwargs,
     )
     batch_nn_indices, _ = nbrs_lookup._get_nns(
         model.embedding(batch_features).detach().numpy(), nn_count=nn_count

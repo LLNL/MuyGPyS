@@ -5,13 +5,17 @@
 import torch
 from MuyGPyS import config
 
-
+if config.state.torch_enabled is False:
+    raise ValueError(f"Bad attempt to run torch-only code with torch disabled.")
 if config.state.backend != "torch":
     config.update("muygpys_backend", "torch")
 
-if config.state.torch_enabled is False:
-    raise ValueError(f"Bad attempt to run torch-only code with torch disabled.")
+import warnings
 
+warnings.warn(
+    f"Attempting to run torch-only code in {config.state.backend} mode. "
+    f"Force-switching MuyGPyS into the torch backend."
+)
 
 import os
 import sys
@@ -45,12 +49,6 @@ from MuyGPyS._test.utils import (
 )
 
 from MuyGPyS import config
-from MuyGPyS._test.gp import (
-    benchmark_sample,
-    benchmark_sample_full,
-    BenchmarkGP,
-)
-
 from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
 from MuyGPyS._src.optimize.loss import _lool_fn as lool_fn
 from MuyGPyS.optimize.batch import sample_batch
@@ -58,94 +56,7 @@ from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
 from MuyGPyS.examples.muygps_torch import predict_model
 from MuyGPyS.neighbors import NN_Wrapper
 
-
-class SVDKMuyGPs(nn.Module):
-    def __init__(
-        self,
-        kernel_eps,
-        nu,
-        length_scale,
-        batch_indices,
-        batch_nn_indices,
-        batch_targets,
-        batch_nn_targets,
-    ):
-        super().__init__()
-        self.embedding = nn.Sequential(
-            nn.Linear(40, 30),
-            nn.Dropout(0.5),
-            nn.PReLU(1),
-            nn.Linear(30, 10),
-            nn.Dropout(0.5),
-            nn.PReLU(1),
-        )
-        self.eps = kernel_eps
-        self.nu = nu
-        self.length_scale = length_scale
-        self.batch_indices = batch_indices
-        self.batch_nn_indices = batch_nn_indices
-        self.batch_targets = batch_targets
-        self.batch_nn_targets = batch_nn_targets
-        self.GP_layer = MuyGPs_layer(
-            self.eps,
-            self.nu,
-            self.length_scale,
-            self.batch_indices,
-            self.batch_nn_indices,
-            self.batch_targets,
-            self.batch_nn_targets,
-        )
-
-    def forward(self, x):
-        predictions = self.embedding(x)
-        predictions, variances, sigma_sq = self.GP_layer(predictions)
-        return predictions, variances, sigma_sq
-
-
-class SVDKMultivariateMuyGPs(nn.Module):
-    def __init__(
-        self,
-        num_models,
-        kernel_eps,
-        nu,
-        length_scale,
-        batch_indices,
-        batch_nn_indices,
-        batch_targets,
-        batch_nn_targets,
-    ):
-        super().__init__()
-        self.embedding = nn.Sequential(
-            nn.Linear(40, 30),
-            nn.Dropout(0.5),
-            nn.PReLU(1),
-            nn.Linear(30, 10),
-            nn.Dropout(0.5),
-            nn.PReLU(1),
-        )
-        self.eps = kernel_eps
-        self.nu = nu
-        self.length_scale = length_scale
-        self.batch_indices = batch_indices
-        self.num_models = num_models
-        self.batch_nn_indices = batch_nn_indices
-        self.batch_targets = batch_targets
-        self.batch_nn_targets = batch_nn_targets
-        self.GP_layer = MultivariateMuyGPs_layer(
-            self.num_models,
-            self.eps,
-            self.nu,
-            self.length_scale,
-            self.batch_indices,
-            self.batch_nn_indices,
-            self.batch_targets,
-            self.batch_nn_targets,
-        )
-
-    def forward(self, x):
-        predictions = self.embedding(x)
-        predictions, variances, sigma_sq = self.GP_layer(predictions)
-        return predictions, variances, sigma_sq
+from MuyGPyS._test.torch_utils import SVDKMuyGPs, SVDKMultivariateMuyGPs
 
 
 class RegressTest(parameterized.TestCase):
