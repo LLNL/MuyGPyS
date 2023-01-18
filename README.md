@@ -30,7 +30,7 @@ Please see the below installation instructions.
 back-end to use import time.
 It is also possible to manipulate `MuyGPyS.config` to switch between back-ends
 programmatically.
-This is not adviable unless the user knows exactly what they are doing.
+This is not advisable unless the user knows exactly what they are doing.
 
 `MuyGPyS` will default to the `numpy` back-end.
 It is possible to switch back ends by manipulating the `MUYGPYS_BACKEND`
@@ -102,12 +102,31 @@ $ # srun version
 $ srun -N 1 --tasks-per-node 4 -p pbatch python myscript.py
 ```
 
+### PyTorch Integration
+
+The torch version of `MuyGPyS` allows for construction and training of complex
+kernels, e.g., convolutional neural network kernels. All low-level math is done
+on torch.Tensor objects. Due to PyTorch's lack of support for the Bessel 
+function of the second kind, we only support special cases of the Matern kernel,
+in particular when the smoothness parameter is 
+:math:`\\nu = 1/2, 3/2, 5/2, \\infty`. 
+
+The `MuyGPyS` framework is implemented as a custom PyTorch layer. In the 
+high-level API found in examples/muygps_torch, a PyTorch MuyGPs model is assumed 
+to have two components: a model.embedding which deforms the original feature 
+data, and a model.GP_layer which does Gaussian Process regression on the 
+deformed feature space. 
+
+In order to use the MuyGPyS torch backend, run the command 
+MuyGPyS.config.update("muygpys_backend","torch") at the beginning of your 
+notebook or script. 
+
 ## Installation
 
 ### Pip: CPU
 
 The index `muygpys` is maintained on PyPI and can be installed using `pip`.
-`muygps` supports many optional extras flags, which will install additional
+`muygpys` supports many optional extras flags, which will install additional
 dependencies if specified. 
 If installing CPU-only with pip, you might want to consider the following flags:  
 These extras include:
@@ -262,6 +281,8 @@ for a low-level introduction to the use of `MuyGPyS`.
 See also the 
 [regression api tutorial](docs/examples/regress_api_tutorial.ipynb)
 describing how to coalesce the same simple workflow into a one-line call.
+A deep kernel model implemented using the torch features in the library 
+can be found in the [torch tutorial](docs/examples/torch_tutorial.ipynb) 
 
 
 ## Testing
@@ -305,7 +326,8 @@ $ srun -N 1 --tasks-per-node 4 -p pdebug python tests/kernels.py --muygpys_jax_e
 ## Authors
 
 * Benjamin W. Priest (priest2 at llnl dot gov)
-* Amanada L. Muyskens (muyskens1 at llnl dot gov)
+* Amanda L. Muyskens (muyskens1 at llnl dot gov)
+* Alec M. Dunton (dunton1 at llnl dot gov)
 
 ## Papers
 
