@@ -553,7 +553,7 @@ def train_deep_kernel_muygps(
             nbrs_lookup = NN_Wrapper(
                 model.embedding(train_features).detach().numpy(),
                 nn_count,
-                nn_method="hnsw",
+                nn_method="exact",
             )
             batch_nn_indices, _ = nbrs_lookup._get_nns(
                 model.embedding(batch_features).detach().numpy(),
@@ -647,7 +647,7 @@ def update_nearest_neighbors(
     nbrs_lookup = NN_Wrapper(
         model.embedding(train_features).detach().numpy(),
         nn_count,
-        nn_method="hnsw",
+        nn_method="exact",
     )
     batch_nn_indices, _ = nbrs_lookup._get_nns(
         model.embedding(batch_features).detach().numpy(), nn_count=nn_count
