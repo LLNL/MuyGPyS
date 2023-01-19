@@ -58,7 +58,6 @@ MPI_REQUIRES = [
 
 TORCH_REQUIRES = [
     "torch>=1.13.0",
-    "torchvision>=0.14.1",
 ]
 
 setup(
