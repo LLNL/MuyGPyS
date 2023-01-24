@@ -8,14 +8,13 @@ if config.state.torch_enabled is False:
     raise ValueError(f"Bad attempt to run torch-only code with torch disabled.")
 
 if config.state.backend != "torch":
+    import warnings
+
+    warnings.warn(
+        f"Attempting to run torch-only code in {config.state.backend} mode. "
+        f"Force-switching MuyGPyS into the torch backend."
+    )
     config.update("muygpys_backend", "torch")
-
-import warnings
-
-warnings.warn(
-    f"Attempting to run torch-only code in {config.state.backend} mode. "
-    f"Force-switching MuyGPyS into the torch backend."
-)
 
 import torch
 from torch import nn
