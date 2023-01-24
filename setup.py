@@ -27,6 +27,7 @@ DOCS_REQUIRES = [
     "pandocfilters==1.5.0",
     "ipython==7.30.1",
     "ipykernel==6.6.0",
+    "torchvision>=0.14.1",
 ]
 
 HNSWLIB_REQUIRES = [
@@ -57,6 +58,8 @@ MPI_REQUIRES = [
 TORCH_REQUIRES = [
     "torch>=1.13.0",
 ]
+
+DOCS_REQUIRES += TORCH_REQUIRES
 
 setup(
     extras_require={

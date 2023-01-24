@@ -1,19 +1,25 @@
-# Copyright 2021-2022 Lawrence Livermore National Security, LLC and other
+# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
 from MuyGPyS import config
 
 if config.state.torch_enabled is False:
-    raise ValueError(f"Bad attempt to run torch-only code with torch diabled.")
+    raise ValueError(f"Bad attempt to run torch-only code with torch disabled.")
 
 if config.state.backend != "torch":
+    import warnings
+
+    warnings.warn(
+        f"Attempting to run torch-only code in {config.state.backend} mode. "
+        f"Force-switching MuyGPyS into the torch backend."
+    )
     config.update("muygpys_backend", "torch")
 
-import os
-import sys
 import torch
 from torch import nn
+import os
+import sys
 import numpy as np
 
 import pickle as pkl
@@ -42,7 +48,7 @@ from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
 from MuyGPyS.examples.muygps_torch import predict_model
 
-hardpath = "../data/"
+hardpath = "../../data/"
 
 stargal_dir = "star-gal/"
 
