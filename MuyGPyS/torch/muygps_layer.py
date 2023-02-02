@@ -40,6 +40,9 @@ class MuyGPs_layer(nn.Module):
     Implements the MuyGPs algorithm as articulated in [muyskens2021muygps]_. See
     documentation on MuyGPs class for more detail.
 
+    The MuyGPs_layer class only supports the Matern kernel currently. More
+    kernels will be added to the torch module of MuyGPs in future releases.
+
     PyTorch does not currently support the Bessel function required to compute
     the Matern kernel for non-special values of :math:`\\nu`, e.g. 1/2, 3/2,
     5/2, and :math:`\\infty`. The MuyGPs layer allows the lengthscale parameter
@@ -190,6 +193,10 @@ class MultivariateMuyGPs_layer(nn.Module):
 
     Implements the MuyGPs algorithm as articulated in [muyskens2021muygps]_. See
     documentation on MuyGPs class for more detail.
+
+    The MultivariateMuyGPs_layer class only supports the Matern kernel
+    currently. More kernels will be added to the torch module of MuyGPs in
+    future releases.
 
     PyTorch does not currently support the Bessel function required to compute
     the Matern kernel for non-special values of :math:`\\nu`, e.g. 1/2, 3/2,
@@ -354,7 +361,8 @@ def kernel_func(
 ) -> torch.Tensor:
     """
     Generate kernel tensors using the Matern kernel given an input distance
-    tensor.
+    tensor. Currently only supports the Matern kernel, but more kernels will
+    be added in future releases.
 
     Args:
         dist_matrix:

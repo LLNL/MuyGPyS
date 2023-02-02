@@ -69,7 +69,9 @@ def predict_single_model(
 ):
     """
     Generate predictions using a PyTorch model containing at least one
-    `MuyGPyS.torch.muygps_layer.MuyGPs_layer` in its structure.
+    `MuyGPyS.torch.muygps_layer.MuyGPs_layer` in its structure. Note that
+    the custom PyTorch MuyGPs_layer objects only support the Matern kernel.
+    Support for more kernels will be added in future releases.
 
     Args:
         model:
@@ -193,7 +195,9 @@ def predict_multiple_model(
     Generate predictions using a PyTorch model containing a
     `MuyGPyS.torch.muygps_layer.MultivariateMuyGPs_layer` in its structure.
     Meant for the case in which there is more than one GP model used to model
-    multiple outputs.
+    multiple outputs. Note that the custom PyTorch MultivariateMuyGPs_layer
+    objects only support the Matern kernel. Support for more kernels will be
+    added in future releases.
 
     Args:
         model:
@@ -326,7 +330,9 @@ def predict_model(
     Generate predictions using a PyTorch model containing a
     `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer or a
     `MuyGPyS.torch.muygps_layer.MultivariateMuyGPs_layer` layer in its
-    structure.
+    structure. Note that the custom PyTorch layers for MuyGPs
+    objects only support the Matern kernel. Support for more kernels will be
+    added in future releases.
 
     Example:
         >>> #model must be defined as a PyTorch model inheriting from
@@ -431,7 +437,9 @@ def train_deep_kernel_muygps(
     Train a PyTorch model containing an embedding component and
     a `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer or a
     `MuyGPyS.torch.muygps_layer. MultivariateMuyGPs_layer` layer in its
-    structure.
+    structure. Note that the custom PyTorch layers for MuyGPs models only
+    support the Matern kernel. Support for more kernels will be added in
+    future releases.
 
     Example:
         >>> #model must be defined as a PyTorch model inheriting from
