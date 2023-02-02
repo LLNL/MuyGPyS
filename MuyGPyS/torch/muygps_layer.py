@@ -361,7 +361,8 @@ def kernel_func(
 ) -> torch.Tensor:
     """
     Generate kernel tensors using the Matern kernel given an input distance
-    tensor.
+    tensor. Currently only supports the Matern kernel, but more kernels will
+    be added in future releases.
 
     Args:
         dist_matrix:
