@@ -1,14 +1,36 @@
 [![Develop test](https://github.com/LLNL/MuyGPyS/actions/workflows/develop-test.yml/badge.svg)](https://github.com/LLNL/MuyGPyS/actions/workflows/develop-test.yml)
 [![Documentation Status](https://readthedocs.org/projects/muygpys/badge/?version=stable)](https://muygpys.readthedocs.io/en/stable/?badge=stable)
-# Fast implementation of the MuyGPs Gaussian process hyperparameter estimation algorithm
+# Fast implementation of the MuyGPs scalable Gaussian process algorithm
 
 
-MuyGPs is a GP estimation method that affords fast hyperparameter optimization 
-by way of performing leave-one-out cross-validation.
+MuyGPs is a scalable approximate Gaussian process (GP) model that affords fast
+prediction and hyperparameter optimization while retaining high-quality
+predictions and uncertainty quantifiction.
 MuyGPs achieves best-in-class speed and scalability by limiting inference to the information contained in k nearest neighborhoods for prediction locations for 
 both hyperparameter optimization and tuning.
-This feature affords the optimization of hyperparameters by way of leave-one-out cross-validation, as opposed to the more expensive loglikelihood evaluations 
-required by similar sparse methods. 
+This feature affords leave-one-out cross-validation optimizating a regularized
+loss function to optimize hyperparameters, as opposed to the more expensive
+likelihood evaluations required by similar sparse methods. 
+
+
+## Tutorials and Examples 
+
+Automatically-generated documentation can be found at 
+[readthedocs.io](https://muygpys.readthedocs.io/en/stable/?).
+
+Our documentation includes several jupyter notebook tutorials at 
+`docs/examples`.
+These tutorials are also include in the 
+[online documentation](https://muygpys.readthedocs.io/en/stable/).
+
+See in particular the 
+[univariate regression tutorial](docs/examples/univariate_regression_tutorial.ipynb)
+for a step-by-step introduction to the use of `MuyGPyS`.
+See also the 
+[regression api tutorial](docs/examples/regress_api_tutorial.ipynb)
+describing how to coalesce the same simple workflow into a one-line call.
+A deep kernel model inserting a MuyGPs layer into a PyTorch neural network can
+be found in the [torch tutorial](docs/examples/torch_tutorial.ipynb).
 
 
 ## Under-The-Hood Math Implementation Options
@@ -276,33 +298,12 @@ packaging (includes all of the dependencies in `tests` and `docs`)
 
 ## Building Docs
 
-Automatically-generated documentation can be found at 
-[readthedocs.io](https://muygpys.readthedocs.io/en/stable/?).
-
 In order to build the docs locally, first `pip` install from source using either 
 the `docs` or `dev` options and then execute:
 ```
 $ sphinx-build -b html docs docs/_build/html
 ```
 Finally, open the file `docs/_build/html/index.html` in your browser of choice.
-
-
-## Tutorials and Examples 
-
-Our documentation includes several jupyter notebook tutorials at 
-`docs/examples`.
-These tutorials are also include in the 
-[online documentation](https://muygpys.readthedocs.io/en/stable/).
-
-See in particular the 
-[univariate regression tutorial](docs/examples/univariate_regression_tutorial.ipynb)
-for a low-level introduction to the use of `MuyGPyS`.
-See also the 
-[regression api tutorial](docs/examples/regress_api_tutorial.ipynb)
-describing how to coalesce the same simple workflow into a one-line call.
-A deep kernel model implemented using the torch features in the library 
-can be found in the [torch tutorial](docs/examples/torch_tutorial.ipynb).
-
 
 ## Testing
 
