@@ -73,10 +73,10 @@ class GPInitTest(parameterized.TestCase):
         self.assertEqual(eps["val"], muygps.eps())
         self.assertTrue(muygps.eps.fixed())
         if gp_type == MuyGPS:
-            self.assertFalse(muygps.sigma_sq.trained())
+            self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(np.array([1.0]), muygps.sigma_sq())
         elif gp_type == BenchmarkGP:
-            self.assertFalse(muygps.sigma_sq.trained())
+            self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(np.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
@@ -140,10 +140,10 @@ class GPInitTest(parameterized.TestCase):
             self.assertFalse(muygps.eps.fixed())
             self.assertEqual(eps["bounds"], muygps.eps.get_bounds())
         if gp_type == MuyGPS:
-            self.assertFalse(muygps.sigma_sq.trained())
+            self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(1.0, muygps.sigma_sq())
         elif gp_type == BenchmarkGP:
-            self.assertFalse(muygps.sigma_sq.trained())
+            self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(np.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
@@ -650,10 +650,10 @@ class MakeRegressorTest(parameterized.TestCase):
                     muygps.kernel.hyperparameters[key](),
                 )
         if sigma_method is None:
-            self.assertFalse(muygps.sigma_sq.trained())
+            self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(np.array([1.0]), muygps.sigma_sq())
         else:
-            self.assertTrue(muygps.sigma_sq.trained())
+            self.assertTrue(muygps.sigma_sq.trained)
             print(f"\toptimized sigma_sq to find value " f"{muygps.sigma_sq()}")
 
 

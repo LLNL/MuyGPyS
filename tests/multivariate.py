@@ -89,7 +89,7 @@ class InitTest(parameterized.TestCase):
                 self.assertTrue(muygps.kernel.hyperparameters[param].fixed())
             self.assertEqual(this_kwargs["eps"]["val"], muygps.eps())
             self.assertTrue(muygps.eps.fixed())
-            self.assertFalse(muygps.sigma_sq.trained())
+            self.assertFalse(muygps.sigma_sq.trained)
 
 
 class SigmaSqTest(parameterized.TestCase):
@@ -542,7 +542,7 @@ class RegressTest(parameterized.TestCase):
         )
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
 
-        self.assertFalse(mmuygps.sigma_sq.trained())
+        self.assertFalse(mmuygps.sigma_sq.trained)
 
         predictions, _ = regress_any(
             mmuygps,
@@ -783,9 +783,9 @@ class MakeRegressorTest(parameterized.TestCase):
                         muygps.kernel.hyperparameters[key](),
                     )
             if sigma_method is None:
-                self.assertFalse(muygps.sigma_sq.trained())
+                self.assertFalse(muygps.sigma_sq.trained)
             else:
-                self.assertTrue(muygps.sigma_sq.trained())
+                self.assertTrue(muygps.sigma_sq.trained)
                 print(
                     f"\toptimized sigma_sq to find value "
                     f"{muygps.sigma_sq()}"

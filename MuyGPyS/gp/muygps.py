@@ -40,6 +40,7 @@ from MuyGPyS._src.gp.muygps import (
 )
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
+from MuyGPyS._src.math import _zeros
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
@@ -289,7 +290,7 @@ class MuyGPS:
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
                 Unused if `variance_mode is None` or
-                `sigma_sq.trained() is False`.
+                `sigma_sq.trained is False`.
             return_distances:
                 If `True`, returns a `(test_count, nn_count)` matrix containing
                 the crosswise distances between the test elements and their
@@ -482,7 +483,7 @@ class MuyGPS:
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
                 Unused if `variance_mode is None` or
-                `sigma_sq.trained() is False`.
+                `sigma_sq.trained is False`.
 
         Returns
         -------
@@ -502,7 +503,7 @@ class MuyGPS:
             self.eps(),
             self.sigma_sq(),
             variance_mode=variance_mode,
-            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained()),
+            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained),
         )
 
     @staticmethod
@@ -954,7 +955,7 @@ class MultivariateMuyGPS:
             apply_sigma_sq:
                 Indicates whether to scale the posterior variance by `sigma_sq`.
                 Unused if `variance_mode is None` or
-                `sigma_sq.trained() is False`.
+                `sigma_sq.trained is False`.
             return_distances:
                 If `True`, returns a `(test_count, nn_count)` matrix containing
                 the crosswise distances between the test elements and their
@@ -1110,7 +1111,7 @@ class MultivariateMuyGPS:
             batch_nn_targets,
             self.sigma_sq,
             variance_mode=variance_mode,
-            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained()),
+            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained),
         )
 
     @staticmethod
@@ -1124,11 +1125,11 @@ class MultivariateMuyGPS:
         apply_sigma_sq: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         batch_count, nn_count, response_count = batch_nn_targets.shape
-        responses = np.zeros((batch_count, response_count))
+        responses = _zeros((batch_count, response_count))
         if variance_mode is None:
             pass
         elif variance_mode == "diagonal":
-            diagonal_variance = np.zeros((batch_count, response_count))
+            diagonal_variance = _zeros((batch_count, response_count))
         else:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
@@ -1210,7 +1211,7 @@ class MultivariateMuyGPS:
         train_nn_targets_fast: np.ndarray,
     ) -> np.ndarray:
         train_count, nn_count, response_count = train_nn_targets_fast.shape
-        coeffs_tensor = np.zeros((train_count, nn_count, response_count))
+        coeffs_tensor = _zeros((train_count, nn_count, response_count))
         for i, model in enumerate(models):
             K = model.kernel(pairwise_dists_fast)
             coeffs_tensor[:, :, i] = _muygps_fast_regress_precompute(
@@ -1338,7 +1339,7 @@ class MultivariateMuyGPS:
         crosswise_dists: np.ndarray,
         coeffs_tensor: np.ndarray,
     ) -> np.ndarray:
-        Kcross = np.zeros(coeffs_tensor.shape)
+        Kcross = _zeros(coeffs_tensor.shape)
         for i, model in enumerate(models):
             Kcross[:, :, i] = model.kernel(crosswise_dists)
         return _mmuygps_fast_regress_solve(Kcross, coeffs_tensor)

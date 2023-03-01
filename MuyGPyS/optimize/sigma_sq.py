@@ -14,7 +14,7 @@ methods in the future.
 import numpy as np
 
 from copy import deepcopy
-from typing import Callable, Optional, Union
+from typing import Callable, Optional
 
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -24,6 +24,7 @@ from MuyGPyS.optimize.utils import (
     _switch_on_opt_method,
     _switch_on_sigma_method,
 )
+from MuyGPyS._src.math import _zeros
 
 
 def muygps_sigma_sq_optim(
@@ -262,8 +263,8 @@ def mmuygps_analytic_sigma_sq_optim(
             f"of models ({len(ret.models)})."
         )
 
-    K = np.zeros((batch_count, nn_count, nn_count))
-    sigma_sqs = np.zeros((response_count,))
+    K = _zeros((batch_count, nn_count, nn_count))
+    sigma_sqs = _zeros((response_count,))
     for i, model in enumerate(ret.models):
         if isinstance(model.eps, HomoscedasticNoise):
             K = model.kernel(pairwise_dists)

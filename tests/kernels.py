@@ -121,7 +121,7 @@ class BackendConfigUser:
 class SigmaSqTest(parameterized.TestCase):
     def _do_untrained(self, val):
         param = SigmaSq()
-        self.assertFalse(param.trained())
+        self.assertFalse(param.trained)
         self.assertEqual(np.array([1.0]), param())
         param._set(val)
         self.assertEqual(val, param())

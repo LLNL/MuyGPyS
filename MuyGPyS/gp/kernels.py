@@ -73,7 +73,7 @@ class SigmaSq:
     """
 
     def __init__(self):
-        self.val = np.array([1.0])
+        self.val = np.ones(1)
         self._trained = False
 
     def _set(self, val: np.ndarray) -> None:
@@ -121,6 +121,7 @@ class SigmaSq:
         """
         return self.val
 
+    @property
     def trained(self) -> bool:
         """
         Report whether the value has been set.
@@ -129,6 +130,16 @@ class SigmaSq:
             `True` if trained, `False` otherwise.
         """
         return self._trained
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        """
+        Report the shape of the SigmaSq value.
+
+        Returns:
+            The shape of the SigmaSq value.
+        """
+        return self.val.shape
 
 
 class Hyperparameter:
@@ -456,12 +467,16 @@ class KernelFn:
             self.hyperparameters[name]._set(**kwargs[name])
 
     def __call__(self, dists: np.ndarray) -> np.ndarray:
-        pass
+        raise NotImplementedError(
+            f"__call__ is not implemented for base KernelFn"
+        )
 
     def get_optim_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
-        pass
+        raise NotImplementedError(
+            f"get_optim_params is not implemented for base KernelFn"
+        )
 
     def get_opt_fn(self, opt_method) -> Callable:
         return _switch_on_opt_method(
@@ -469,10 +484,14 @@ class KernelFn:
         )
 
     def get_array_opt_fn(self) -> Callable:
-        pass
+        raise NotImplementedError(
+            f"get_array_opt_fn is not implemented for base KernelFn"
+        )
 
     def get_kwargs_opt_fn(self) -> Callable:
-        pass
+        raise NotImplementedError(
+            f"get_kwargs_opt_fn is not implemented for base KernelFn"
+        )
 
     def __str__(self) -> str:
         """

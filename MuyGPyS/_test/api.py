@@ -393,7 +393,7 @@ class RegressionAPITest(parameterized.TestCase):
             else:
                 self.assertEqual(variance.shape, (test_count,))
         if sigma_method is None:
-            self.assertFalse(regressor.sigma_sq.trained())
+            self.assertFalse(regressor.sigma_sq.trained)
         elif sigma_method.lower() == "analytic":
             self.assertEqual(regressor.sigma_sq().shape, (response_count,))
             self.assertEqual(regressor.sigma_sq().dtype, float)

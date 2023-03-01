@@ -35,6 +35,7 @@ from MuyGPyS.examples.classify import (
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import get_balanced_batch
+from MuyGPyS._src.math import _zeros
 from MuyGPyS._src.mpi_utils import (
     _is_mpi_mode,
     _consistent_chunk_tensor,
@@ -389,8 +390,8 @@ def classify_two_class_uq(
 
     nn_labels = train_labels[test_nn_indices, :]
 
-    means = np.zeros((nn_labels.shape[0], 2))
-    variances = np.zeros(nn_labels.shape[0])
+    means = _zeros((nn_labels.shape[0], 2))
+    variances = _zeros(nn_labels.shape[0])
     nonconstant_mask = np.max(nn_labels[:, :, 0], axis=-1) != np.min(
         nn_labels[:, :, 0], axis=-1
     )
@@ -490,8 +491,8 @@ def train_two_class_interval(
 
     # NOTE[bwp]: might want to make this range configurable by the user as well.
     cutv = np.linspace(0.01, 20, 1999)
-    _alpha = np.zeros((len(cutv)))
-    _beta = np.zeros((len(cutv)))
+    _alpha = _zeros((len(cutv)))
+    _beta = _zeros((len(cutv)))
     for i in range(len(cutv)):
         _alpha[i] = 1 - np.mean(
             np.logical_and(

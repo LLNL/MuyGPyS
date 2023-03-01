@@ -245,7 +245,7 @@ class BenchmarkGP:
             )
             Kstar = self.kernel(test_pairwise_distances)
             variance = Kstar - Kcross @ np.linalg.solve(K, Kcross.T)
-            if apply_sigma_sq is True and self.sigma_sq.trained() is True:
+            if apply_sigma_sq is True and self.sigma_sq.trained is True:
                 variance *= self.sigma_sq()[0]
             if variance_mode == "diagonal":
                 return responses, np.diagonal(variance)
