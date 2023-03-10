@@ -12,7 +12,7 @@ config.parse_flags_with_absl()  # Affords option setting from CLI
 
 if config.state.torch_enabled is False:
     raise ValueError(f"Bad attempt to run torch-only code with torch disabled.")
-if config.state.ftype is "64":
+if config.state.ftype == "64":
     raise ValueError(
         f"torch optimization is currently only supported for 32 bits"
     )
