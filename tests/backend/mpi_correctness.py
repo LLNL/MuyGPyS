@@ -13,7 +13,7 @@ config.parse_flags_with_absl()  # Affords option setting from CLI
 if config.state.mpi_enabled is False:
     raise ValueError(f"Bad attempt to run mpi-only code with mpi diabled.")
 
-if config.state.backed != "mpi":
+if config.state.backend != "mpi":
     raise ValueError(f"MPI correctness test must be run in MPI mode.")
 
 import MuyGPyS._src.math.numpy as np
