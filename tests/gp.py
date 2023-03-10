@@ -11,6 +11,7 @@ from MuyGPyS import config
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.examples.regress import make_regressor
@@ -18,8 +19,6 @@ from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp.distance import (
     make_train_tensors,
     make_regress_tensors,
-    pairwise_distances,
-    crosswise_distances,
 )
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
@@ -28,9 +27,7 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _consistent_assert,
     _check_ndarray,
-    _exact_nn_kwarg_options,
     _get_sigma_sq_series,
-    _make_gaussian_matrix,
     _make_gaussian_dict,
     _make_gaussian_data,
     _precision_assert,
@@ -511,8 +508,8 @@ class GPSolveTest(GPTestCase):
             _consistent_assert(
                 _precision_assert,
                 self.assertSequenceAlmostEqual,
-                mm.np_array(responses[i, :]),
-                mm.np_array(manual_responses),
+                np.array(responses[i, :]),
+                np.array(manual_responses),
             )
 
 
@@ -624,8 +621,8 @@ class GPDiagonalVariance(GPTestCase):
             _precision_assert(
                 _consistent_assert,
                 self.assertAlmostEqual,
-                mm.np_array(diagonal_variance[i]),
-                mm.np_array(manual_diagonal_variance),
+                np.array(diagonal_variance[i]),
+                np.array(manual_diagonal_variance),
             )
             self.assertGreater(diagonal_variance[i], 0.0)
 
@@ -903,8 +900,8 @@ class GPSigmaSqTest(GPTestCase):
                 self.assertEqual(sigmas.shape, (data_count,))
                 _precision_assert(
                     self.assertAlmostEqual,
-                    mm.np_array(muygps.sigma_sq()[i]),
-                    mm.np_mean(mm.np_array(sigmas)),
+                    np.array(muygps.sigma_sq()[i]),
+                    np.mean(np.array(sigmas)),
                     low_bound=0,
                     high_bound=5,
                 )
@@ -918,8 +915,8 @@ class GPSigmaSqTest(GPTestCase):
             _check_ndarray(self.assertEqual, sigmas, mm.ftype)
             _precision_assert(
                 self.assertAlmostEqual,
-                mm.np_array(muygps.sigma_sq()[0]),
-                mm.np_mean(mm.np_array(sigmas)),
+                np.array(muygps.sigma_sq()[0]),
+                np.mean(np.array(sigmas)),
                 low_bound=0,
                 high_bound=5,
             )

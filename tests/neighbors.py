@@ -11,6 +11,7 @@ from MuyGPyS import config
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _check_ndarray,
@@ -34,7 +35,7 @@ class NeighborsTest(parameterized.TestCase):
         data = _make_gaussian_matrix(data_count, feature_count)
         nbrs_lookup = NN_Wrapper(data, nn_count, **nn_kwargs)
         indices = mm.iarray(
-            mm.np_random.choice(data_count, batch_count, replace=False)
+            np.random.choice(data_count, batch_count, replace=False)
         )
         _check_ndarray(self.assertEqual, indices, mm.itype)
         nn_indices, nn_dists = nbrs_lookup.get_batch_nns(indices)

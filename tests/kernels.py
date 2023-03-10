@@ -14,6 +14,7 @@ from MuyGPyS import config
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor, _warn0
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
@@ -83,11 +84,9 @@ class DistancesTest(parameterized.TestCase):
         points = train[nn_indices]
         self.assertEqual(points.shape, (test_count, nn_count, feature_count))
         dists = mm.array(
-            mm.np_array(
+            np.array(
                 [
-                    mm.np_linalg.norm(
-                        mat[:, None, :] - mat[None, :, :], axis=-1
-                    )
+                    np.linalg.norm(mat[:, None, :] - mat[None, :, :], axis=-1)
                     ** 2
                     for mat in points
                 ]
@@ -352,13 +351,13 @@ class RBFTest(KernelTest):
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         sk_rbf = sk_RBF(length_scale=rbf.length_scale())
-        sk_kern = mm.array(mm.np_array([sk_rbf(mat) for mat in points]))
+        sk_kern = mm.array(np.array([sk_rbf(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
         Kcross = rbf(nn_dists)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
         sk_Kcross = mm.array(
-            mm.np_array([sk_rbf(vec, mat) for vec, mat in zip(test, points)])
+            np.array([sk_rbf(vec, mat) for vec, mat in zip(test, points)])
         ).reshape(test_count, nn_count)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
         self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
@@ -492,13 +491,13 @@ class MaternTest(KernelTest):
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=mtn.length_scale())
-        sk_kern = mm.array(mm.np_array([sk_mtn(mat) for mat in points]))
+        sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
         Kcross = mtn(nn_dists)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
         sk_Kcross = mm.array(
-            mm.np_array(
+            np.array(
                 [sk_mtn(vec, mat) for vec, mat in zip(test, points)]
             ).reshape(test_count, nn_count)
         )

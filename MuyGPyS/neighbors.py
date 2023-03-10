@@ -22,6 +22,7 @@ from typing import Tuple
 
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
 
 if config.state.hnswlib_enabled is True:
@@ -248,7 +249,7 @@ class NN_Wrapper:
             # F2 values as distances in order to avoid the square root
             # computations.
             nn_indices, nn_dists = self.nbrs.knn_query(samples, k=nn_count)
-            nn_indices = nn_indices.astype(mm.np_itype)
+            nn_indices = nn_indices.astype(np.itype)
         else:
             raise NotImplementedError(
                 f"Nearest Neighbor algorithm {self.nn_method} is not implemented."

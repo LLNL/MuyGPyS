@@ -18,6 +18,7 @@ items from each class as is possible.
 from typing import Tuple
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS.neighbors import NN_Wrapper
 
 
@@ -101,8 +102,8 @@ def full_filtered_batch(
     # filter out indices whose neighors all belong to one class
     # What if the index is mislabeled? Currently assuming that constant nn
     # labels -> correctly classified.
-    nonconstant_mask = mm.np_max(mm.np_iarray(nn_labels), axis=1) != mm.np_min(
-        mm.np_iarray(nn_labels),
+    nonconstant_mask = np.max(np.iarray(nn_labels), axis=1) != np.min(
+        np.iarray(nn_labels),
         axis=1,
     )
 
@@ -147,27 +148,27 @@ def sample_balanced_batch(
     # filter out indices whose neighors all belong to one class
     # What if the index is mislabeled? Currently assuming that constant nn
     # labels -> correctly classified.
-    nonconstant_mask = mm.np_max(mm.np_iarray(nn_labels), axis=1) != mm.np_min(
-        mm.np_iarray(nn_labels),
+    nonconstant_mask = np.max(np.iarray(nn_labels), axis=1) != np.min(
+        np.iarray(nn_labels),
         axis=1,
     )
-    classes = mm.np_unique(labels)
+    classes = np.unique(labels)
     class_count = len(classes)
     each_batch_count = int(batch_count / class_count)
 
     nonconstant_indices = [
-        mm.np_where(mm.np_logical_and(nonconstant_mask, labels == i))[0]
+        np.where(np.logical_and(nonconstant_mask, labels == i))[0]
         for i in classes
     ]
 
-    batch_counts = mm.np_iarray(
-        [mm.np_min((len(arr), each_batch_count)) for arr in nonconstant_indices]
+    batch_counts = np.iarray(
+        [np.min((len(arr), each_batch_count)) for arr in nonconstant_indices]
     )
 
     nonconstant_balanced_indices = mm.iarray(
-        mm.np_concatenate(
+        np.concatenate(
             [
-                mm.np_random.choice(
+                np.random.choice(
                     nonconstant_indices[i], batch_counts[i], replace=False
                 )
                 for i in range(class_count)
@@ -219,7 +220,7 @@ def sample_batch(
     """
     if train_count > batch_count:
         batch_indices = mm.iarray(
-            mm.np_random.choice(train_count, batch_count, replace=False)
+            np.random.choice(train_count, batch_count, replace=False)
         )
     else:
         batch_indices = mm.arange(train_count, dtype=mm.itype)

@@ -11,6 +11,7 @@ from MuyGPyS import config
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.mpi_utils import (
     _consistent_unchunk_tensor,
     _consistent_chunk_tensor,
@@ -167,8 +168,8 @@ class SigmaSqTest(parameterized.TestCase):
             _check_ndarray(self.assertEqual, muygps.sigma_sq(), mm.ftype)
             self.assertEqual(sigmas.shape, (data_count,))
             self.assertAlmostEqual(
-                mm.np_array(muygps.sigma_sq()[0]),
-                mm.np_mean(mm.np_array(sigmas)),
+                np.array(muygps.sigma_sq()[0]),
+                np.mean(np.array(sigmas)),
                 5,
             )
 
@@ -245,7 +246,7 @@ class OptimTest(parameterized.TestCase):
         # construct the observation locations
         sim_train = dict()
         sim_test = dict()
-        x = mm.np_linspace(-10.0, 10.0, data_count).reshape(data_count, 1)
+        x = np.linspace(-10.0, 10.0, data_count).reshape(data_count, 1)
         sim_train["input"] = x[::2, :]
         sim_test["input"] = x[1::2, :]
         train_count = sim_train["input"].shape[0]
@@ -277,14 +278,14 @@ class OptimTest(parameterized.TestCase):
         gps = [BenchmarkGP(kern=kern, **a) for a in gp_args]
         cholKs = [
             benchmark_prepare_cholK(
-                gp, mm.np_vstack((sim_test["input"], sim_train["input"]))
+                gp, np.vstack((sim_test["input"], sim_train["input"]))
             )
             for gp in gps
         ]
         for _ in range(its):
             # Simulate the response
-            sim_test["output"] = mm.np_zeros((test_count, response_count))
-            sim_train["output"] = mm.np_zeros((train_count, response_count))
+            sim_test["output"] = np.zeros((test_count, response_count))
+            sim_train["output"] = np.zeros((train_count, response_count))
             for i, cholK in enumerate(cholKs):
                 y = benchmark_sample_from_cholK(cholK)
                 sim_test["output"][:, i] = y[:test_count, 0]
@@ -295,7 +296,7 @@ class OptimTest(parameterized.TestCase):
             print(sim_train["output"])
             batch_targets = sim_train["output"][batch_indices, :]
             batch_nn_targets = sim_train["output"][
-                mm.np_iarray(batch_nn_indices), :
+                np.iarray(batch_nn_indices), :
             ]
 
             for i, muygps in enumerate(mmuygps.models):
@@ -396,7 +397,7 @@ class OptimFromIndicesTest(parameterized.TestCase):
         # construct the observation locations
         sim_train = dict()
         sim_test = dict()
-        x = mm.np_linspace(-10.0, 10.0, data_count).reshape(data_count, 1)
+        x = np.linspace(-10.0, 10.0, data_count).reshape(data_count, 1)
         sim_train["input"] = x[::2, :]
         sim_test["input"] = x[1::2, :]
         train_count = sim_train["input"].shape[0]
@@ -420,14 +421,14 @@ class OptimFromIndicesTest(parameterized.TestCase):
         gps = [BenchmarkGP(kern=kern, **a) for a in gp_args]
         cholKs = [
             benchmark_prepare_cholK(
-                gp, mm.np_vstack((sim_test["input"], sim_train["input"]))
+                gp, np.vstack((sim_test["input"], sim_train["input"]))
             )
             for gp in gps
         ]
         for _ in range(its):
             # Simulate the response
-            sim_test["output"] = mm.np_zeros((test_count, response_count))
-            sim_train["output"] = mm.np_zeros((train_count, response_count))
+            sim_test["output"] = np.zeros((test_count, response_count))
+            sim_train["output"] = np.zeros((train_count, response_count))
             for i, cholK in enumerate(cholKs):
                 y = benchmark_sample_from_cholK(cholK)
                 # sim_test["output"] = mm.assign(

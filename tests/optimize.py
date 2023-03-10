@@ -14,16 +14,15 @@ if config.state.backend == "torch":
     raise ValueError(f"optimize.py does not support torch backend at this time")
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor, _warn0
 from MuyGPyS._test.gp import (
     benchmark_pairwise_distances,
-    benchmark_sample,
     benchmark_sample_full,
     BenchmarkGP,
     get_analytic_sigma_sq,
 )
 from MuyGPyS._test.utils import (
-    _advanced_opt_method_and_kwarg_options,
     _basic_opt_method_and_kwarg_options,
     _basic_nn_kwarg_options,
     _check_ndarray,
@@ -74,7 +73,7 @@ class BatchTest(parameterized.TestCase):
         indices, nn_indices = sample_batch(nbrs_lookup, batch_count, data_count)
         _check_ndarray(self.assertEqual, indices, mm.itype)
         _check_ndarray(self.assertEqual, indices, mm.itype)
-        target_count = mm.np_min((data_count, batch_count))
+        target_count = np.min((data_count, batch_count))
         self.assertEqual(indices.shape, (target_count,))
         self.assertEqual(nn_indices.shape, (target_count, nn_count))
 
@@ -172,12 +171,12 @@ class BatchTest(parameterized.TestCase):
         _check_ndarray(self.assertEqual, indices, mm.itype)
         _check_ndarray(self.assertEqual, nn_indices, mm.itype)
 
-        hist, _ = mm.np_array(
-            mm.np_histogram(data["labels"][indices], bins=response_count),
+        hist, _ = np.array(
+            np.histogram(data["labels"][indices], bins=response_count),
             dtype=object,
         )
         self.assertSequenceAlmostEqual(
-            hist, (batch_count / response_count) * mm.np_ones((response_count))
+            hist, (batch_count / response_count) * np.ones((response_count))
         )
 
     @parameterized.parameters(
@@ -209,17 +208,17 @@ class BatchTest(parameterized.TestCase):
         _check_ndarray(self.assertEqual, indices, mm.itype)
         _check_ndarray(self.assertEqual, nn_indices, mm.itype)
 
-        target_count = mm.np_min((data_count, batch_count))
-        hist, _ = mm.np_array(
-            mm.np_histogram(data["labels"][indices], bins=response_count),
+        target_count = np.min((data_count, batch_count))
+        hist, _ = np.array(
+            np.histogram(data["labels"][indices], bins=response_count),
             dtype=object,
         )
         self.assertGreaterEqual(
-            mm.np_mean(hist) + 0.1 * (target_count / response_count),
+            np.mean(hist) + 0.1 * (target_count / response_count),
             target_count / response_count,
         )
         self.assertGreaterEqual(
-            mm.np_min(hist) + 0.45 * (target_count / response_count),
+            np.min(hist) + 0.45 * (target_count / response_count),
             target_count / response_count,
         )
 
@@ -233,7 +232,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.sigma_sqs = [1.0, 0.002353, 19.32]
         cls.sigma_tol = 5e-2
         cls.sim_train = dict()
-        cls.x = mm.np_linspace(-10.0, 10.0, cls.data_count).reshape(
+        cls.x = np.linspace(-10.0, 10.0, cls.data_count).reshape(
             cls.data_count, 1
         )
         cls.train_features = cls.x[::2, :]
@@ -307,34 +306,28 @@ class BenchmarkTest(BenchmarkTestCase):
         super(BenchmarkTest, cls).setUpClass()
 
     def test_types(self):
-        self._check_ndarray(
-            self.train_features, mm.np_ftype, ctype=mm.np_ndarray
-        )
-        self._check_ndarray(
-            self.test_features, mm.np_ftype, ctype=mm.np_ndarray
-        )
-        self._check_ndarray(
-            self.train_features, mm.np_ftype, ctype=mm.np_ndarray
-        )
+        self._check_ndarray(self.train_features, np.ftype, ctype=np.ndarray)
+        self._check_ndarray(self.test_features, np.ftype, ctype=np.ndarray)
+        self._check_ndarray(self.train_features, np.ftype, ctype=np.ndarray)
         for i, _ in enumerate(self.k_kwargs):
             for j, _ in enumerate(self.sigma_sqs):
                 for k in range(self.its):
                     self._check_ndarray(
                         self.ys[i][j][k],
-                        mm.np_ftype,
-                        ctype=mm.np_ndarray,
+                        np.ftype,
+                        ctype=np.ndarray,
                         shape=(self.data_count, 1),
                     )
                     self._check_ndarray(
                         self.test_targets_list[i][j][k],
-                        mm.np_ftype,
-                        ctype=mm.np_ndarray,
+                        np.ftype,
+                        ctype=np.ndarray,
                         shape=(self.test_count, 1),
                     )
                     self._check_ndarray(
                         self.train_targets_list[i][j][k],
-                        mm.np_ftype,
-                        ctype=mm.np_ndarray,
+                        np.ftype,
+                        ctype=np.ndarray,
                         shape=(self.train_count, 1),
                     )
 
@@ -352,7 +345,7 @@ class BenchmarkSigmaSqTest(BenchmarkTestCase):
                 pairwise_dists = benchmark_pairwise_distances(
                     self.x, metric=model.kernel.metric
                 )
-                K = model.kernel(pairwise_dists) + model.eps() * mm.np_eye(
+                K = model.kernel(pairwise_dists) + model.eps() * np.eye(
                     self.data_count
                 )
                 for k in range(self.its):

@@ -7,6 +7,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._test.utils import (
     _balanced_subsample,
     _check_ndarray,
@@ -20,15 +21,13 @@ from MuyGPyS._test.utils import (
 class NormalizeTest(parameterized.TestCase):
     @parameterized.parameters(((1000, f) for f in [1000, 100, 2]))
     def test_normalize(self, data_count, feature_count):
-        data = mm.array(mm.np_random.randn(data_count, feature_count))
+        data = mm.array(np.random.randn(data_count, feature_count))
         normalized_data = _normalize(data)
         _check_ndarray(self.assertEqual, normalized_data, mm.ftype)
         _precision_assert(
             self.assertSequenceAlmostEqual,
-            mm.np_array(mm.linalg.norm(normalized_data, axis=1)),
-            mm.np_array(
-                mm.sqrt(mm.array(feature_count)) * mm.ones((data_count,))
-            ),
+            np.array(mm.linalg.norm(normalized_data, axis=1)),
+            np.array(mm.sqrt(mm.array(feature_count)) * mm.ones((data_count,))),
         )
 
 
@@ -70,7 +69,7 @@ class SampleTest(parameterized.TestCase):
         _check_ndarray(self.assertEqual, data["output"], mm.ftype)
         labels = mm.argmax(sub_data["output"], axis=1)
 
-        hist, _ = mm.np_histogram(labels, bins=response_count)
+        hist, _ = np.histogram(labels, bins=response_count)
         self.assertSequenceAlmostEqual(
             hist, (sample_count / response_count) * mm.ones((response_count))
         )

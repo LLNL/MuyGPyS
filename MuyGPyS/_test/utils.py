@@ -6,6 +6,7 @@
 from typing import Callable, Dict, Generator, Optional, Tuple, Type, Union
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
@@ -89,7 +90,7 @@ def _make_gaussian_matrix(
     Returns:
         An i.i.d. Gaussian matrix of shape `(data_count, feature_count)`.
     """
-    return mm.array(mm.np_random.randn(data_count, feature_count))
+    return mm.array(np.random.randn(data_count, feature_count))
 
 
 def _make_gaussian_dict(
@@ -204,7 +205,7 @@ def _subsample(
     """
     count = data["input"].shape[0]
     samples = mm.array(
-        mm.np_random.choice(count, sample_count, replace=False), dtype=mm.itype
+        np.random.choice(count, sample_count, replace=False), dtype=mm.itype
     )
     return {
         "input": data["input"][samples, :],
@@ -246,16 +247,14 @@ def _balanced_subsample(
     class_count = len(classes)
     each_sample_count = int(sample_count / class_count)
 
-    class_indices = [mm.np_where(labels == i)[0] for i in classes]
+    class_indices = [np.where(labels == i)[0] for i in classes]
     sample_sizes = [
-        mm.np_min((len(arr), each_sample_count)) for arr in class_indices
+        np.min((len(arr), each_sample_count)) for arr in class_indices
     ]
 
-    balanced_samples = mm.np_concatenate(
+    balanced_samples = np.concatenate(
         [
-            mm.np_random.choice(
-                class_indices[i], sample_sizes[i], replace=False
-            )
+            np.random.choice(class_indices[i], sample_sizes[i], replace=False)
             for i in range(class_count)
         ]
     )
@@ -306,7 +305,7 @@ def _get_sigma_sq_series(
     """
     batch_count, nn_count, _ = nn_targets_column.shape
 
-    sigmas = mm.np_zeros((batch_count,))
+    sigmas = np.zeros((batch_count,))
     for i, el in enumerate(_get_sigma_sq(K, nn_targets_column, eps)):
         sigmas[i] = el
     return mm.array(sigmas / nn_count)

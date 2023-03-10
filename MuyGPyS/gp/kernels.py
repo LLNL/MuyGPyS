@@ -48,6 +48,8 @@ from typing import cast, Callable, Dict, List, Optional, Tuple, Type, Union
 
 from MuyGPyS import config
 
+import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.gp.kernels import (
     _rbf_fn,
     _matern_05_fn,
@@ -57,9 +59,8 @@ from MuyGPyS._src.gp.kernels import (
     _matern_gen_fn,
 )
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
-from MuyGPyS.optimize.utils import _switch_on_opt_method
 from MuyGPyS._src.util import _fullname
-import MuyGPyS._src.math as mm
+from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
 class SigmaSq:
@@ -267,18 +268,16 @@ class Hyperparameter:
                     )
             if val == "sample":
                 val = float(
-                    mm.np_random.uniform(
-                        low=self._bounds[0], high=self._bounds[1]
-                    )
+                    np.random.uniform(low=self._bounds[0], high=self._bounds[1])
                 )
                 if _is_mpi_mode() is True:
                     val = config.mpi_state.comm_world.bcast(val, root=0)
             elif val == "log_sample":
                 val = float(
-                    mm.np_exp(
-                        mm.np_random.uniform(
-                            low=mm.np_log(self._bounds[0]),
-                            high=mm.np_log(self._bounds[1]),
+                    np.exp(
+                        np.random.uniform(
+                            low=np.log(self._bounds[0]),
+                            high=np.log(self._bounds[1]),
                         )
                     )
                 )
@@ -294,14 +293,14 @@ class Hyperparameter:
             )
         val = float(val)
         if self.fixed() is False:
-            any_below = mm.np_any(
-                mm.np_choose(
+            any_below = np.any(
+                np.choose(
                     cast(float, val) < cast(float, self._bounds[0]) - 1e-5,
                     [False, True],
                 )
             )
-            any_above = mm.np_any(
-                mm.np_choose(
+            any_above = np.any(
+                np.choose(
                     cast(float, val) > cast(float, self._bounds[1]) + 1e-5,
                     [False, True],
                 )
