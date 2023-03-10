@@ -25,19 +25,14 @@ documentation for details.
 """
 
 
-import numpy as np
-import warnings
-
 from typing import Optional
 
-from MuyGPyS import config
-
+import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.distance import _make_train_tensors
 from MuyGPyS._src.optimize.chassis import (
     _scipy_optimize,
     _bayes_opt_optimize,
 )
-
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 from MuyGPyS.optimize.objective import make_obj_fn
@@ -47,10 +42,10 @@ from MuyGPyS.optimize.sigma_sq import make_sigma_sq_optim
 
 def optimize_from_indices(
     muygps: MuyGPS,
-    batch_indices: np.ndarray,
-    batch_nn_indices: np.ndarray,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
+    batch_indices: mm.ndarray,
+    batch_nn_indices: mm.ndarray,
+    train_features: mm.ndarray,
+    train_targets: mm.ndarray,
     loss_method: str = "mse",
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
@@ -161,10 +156,10 @@ def optimize_from_indices(
 
 def optimize_from_tensors(
     muygps: MuyGPS,
-    batch_targets: np.ndarray,
-    batch_nn_targets: np.ndarray,
-    crosswise_dists: np.ndarray,
-    pairwise_dists: np.ndarray,
+    batch_targets: mm.ndarray,
+    batch_nn_targets: mm.ndarray,
+    crosswise_dists: mm.ndarray,
+    pairwise_dists: mm.ndarray,
     loss_method: str = "mse",
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",

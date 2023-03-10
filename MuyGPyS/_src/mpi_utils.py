@@ -3,11 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS import config
-
+import warnings
 from typing import Callable
 
-import numpy as np
+import MuyGPyS._src.math.numpy as np
+from MuyGPyS import config
 
 world = config.mpi_state.comm_world
 if world is not None:
@@ -16,6 +16,20 @@ if world is not None:
 else:
     rank = 0
     size = 1
+
+
+def _rank0() -> bool:
+    return True if rank == 0 else False
+
+
+def _print0(*args, **kwargs):
+    if _rank0() is True:
+        print(*args)
+
+
+def _warn0(*args, **kwargs):
+    if _rank0() is True:
+        warnings.warn(*args, **kwargs)
 
 
 def _get_chunk_sizes(count: int, size: int):

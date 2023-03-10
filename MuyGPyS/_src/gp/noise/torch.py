@@ -3,9 +3,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-import torch
+import MuyGPyS._src.math.torch as torch
 
 
-def _homoscedastic_perturb(K: torch.Tensor, eps: float) -> torch.Tensor:
+def _homoscedastic_perturb(K: torch.ndarray, eps: float) -> torch.ndarray:
     _, nn_count, _ = K.shape
     return K + eps * torch.eye(nn_count)

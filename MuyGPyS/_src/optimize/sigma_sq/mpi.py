@@ -3,14 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 
+from mpi4py import MPI
+
+import MuyGPyS._src.math.numpy as np
+from MuyGPyS import config
 from MuyGPyS._src.optimize.sigma_sq.numpy import (
     _analytic_sigma_sq_optim_unnormalized,
 )
-from MuyGPyS import config
-
-from mpi4py import MPI
-
-import numpy as np
 
 world = config.mpi_state.comm_world
 # rank = config.mpi_state.comm_world.Get_rank()

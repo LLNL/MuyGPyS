@@ -33,7 +33,7 @@ A deep kernel model inserting a MuyGPs layer into a PyTorch neural network can
 be found in the [torch tutorial](docs/examples/torch_tutorial.ipynb).
 
 
-## Under-The-Hood Math Implementation Options
+## Back-end Math Implementation Options
 
 As of release v0.6.6, `MuyGPyS` supports four distinct back-end implementations
 of all of its underlying math functions:
@@ -68,33 +68,8 @@ $ export MUYGPYS_BACKEND=mpi    # turn on MPI back-end
 `MuyGPyS` supports just-in-time compilation of the 
 underlying math functions to CPU or GPU using 
 [JAX](https://github.com/google/jax) since version v0.5.0.
-The JAX-compiled versions of the code are significantly faster especially on 
-GPUs.
-
-#### JAX precision
-
-JAX uses 32 bit types by default, whereas numpy tends to promote everything to
-64 bits.
-For highly stable operations like matrix multiplication, this difference in
-precision tends to result in a roughly `1e-8` disagreement between 64 bit and 32
-bit implementations.
-However, `MuyGPyS` depends upon matrix-vector solves, which can result in
-disagreements up to `1e-2`.
-In order to ensure that the numpy and JAX implementations agree, `MuyGPyS`
-forces JAX to use 64 bit types by default.
-
-However, the 64 bit operations are slightly slower than their 32 bit
-counterparts.
-It is possible for a user to switch to 32 bit types and functions in their JAX
-compiled code by directly manipulating JAX's configuration:
-```
-from MuyGPyS import jax_config
-# equivalent to `from jax import config as jax_config`
-
-jax_config.update("jax_enable_x64", False)
-```
-If confused, you can also query for whether 64 bit types are enabled via
-the `jax_config.x64_enabled` boolean.
+The JAX-compiled versions of the code are significantly faster than numpy,
+especially on GPUs.
 
 ### Distributed memory support with MPI
 
@@ -161,6 +136,34 @@ MuyGPyS.config.update("muygpys_backend","torch")
 ...subsequent imports from MuyGPyS
 ```
 
+## Precision
+
+JAX and torch use 32 bit types by default, whereas numpy tends to promote
+everything to 64 bits.
+For highly stable operations like matrix multiplication, this difference in
+precision tends to result in a roughly `1e-8` disagreement between 64 bit and 32
+bit implementations.
+However, `MuyGPyS` depends upon matrix-vector solves, which can result in
+disagreements up to `1e-2`.
+Hence, `MuyGPyS` forces all back end implementations to use 64 bit types by
+default.
+
+However, the 64 bit operations are slightly slower than their 32 bit
+counterparts.
+`MuyGPyS` accordingly supports 32 bit types, but this feature is experimental
+and might have sharp edges.
+For example, `MuyGPyS` might throw errors or otherwise behave strangely if the
+user passes arrays of 64 bit types while in 32 bit mode.
+Be sure to set your data types appropriately.
+
+A user can have `MuyGPyS`use 32 bit types by setting the `MUYGPYS_FTYPE`
+environment variable to `"32"`, e.g.
+```
+$ export MUYGPYS_FTYPE=32  # use 32 bit types in MuyGPyS functions
+```
+It is also possible to manipulate `MuyGPyS.config` to switch between types
+programmatically.
+This is not advisable unless the user knows exactly what they are doing.
 
 ## Installation
 

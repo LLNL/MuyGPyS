@@ -3,12 +3,14 @@
 #
 # SPDX-License-Identifier: MIT
 
+from typing import Callable, Dict, Generator, Optional, Tuple, Type, Union
+
+import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
-from typing import Dict, Generator, Tuple, Union
-
-import numpy as np
+from MuyGPyS import config
 
 if config.muygpys_hnswlib_enabled is True:  # type: ignore
     _basic_nn_kwarg_options = [
@@ -29,17 +31,33 @@ _exact_nn_kwarg_options = ({"nn_method": "exact", "algorithm": "ball_tree"},)
 
 _basic_opt_method_and_kwarg_options = [
     ["scipy", dict()],
-    ["bayesian", {"random_state": 1, "init_points": 3, "n_iter": 10}],
+    [
+        "bayesian",
+        {
+            "random_state": 1,
+            "init_points": 3,
+            "n_iter": 10,
+            "allow_duplicate_points": True,
+        },
+    ],
 ]
 
 _advanced_opt_method_and_kwarg_options = [
     ["scipy", dict()],
-    ["bayesian", {"random_state": 1, "init_points": 5, "n_iter": 20}],
+    [
+        "bayesian",
+        {
+            "random_state": 1,
+            "init_points": 5,
+            "n_iter": 20,
+            "allow_duplicate_points": True,
+        },
+    ],
 ]
 
 
 def _sq_rel_err(
-    tru: Union[float, np.ndarray], est: Union[float, np.ndarray]
+    tru: Union[float, mm.ndarray], est: Union[float, mm.ndarray]
 ) -> float:
     """
     Compute the relative squared error between two arguments.
@@ -59,7 +77,7 @@ def _sq_rel_err(
 def _make_gaussian_matrix(
     data_count: int,
     feature_count: int,
-) -> np.ndarray:
+) -> mm.ndarray:
     """
     Create a matrix of i.i.d. Gaussian datapoints.
 
@@ -72,7 +90,7 @@ def _make_gaussian_matrix(
     Returns:
         An i.i.d. Gaussian matrix of shape `(data_count, feature_count)`.
     """
-    return np.random.randn(data_count, feature_count)
+    return mm.array(np.random.randn(data_count, feature_count))
 
 
 def _make_gaussian_dict(
@@ -80,7 +98,7 @@ def _make_gaussian_dict(
     feature_count: int,
     response_count: int,
     categorical: bool = False,
-) -> Dict[str, np.ndarray]:
+) -> Dict[str, mm.ndarray]:
     """
     Create a data dict including "input", "output", and "labels" keys mapping to
     i.i.d. Gaussian matrices.
@@ -103,9 +121,9 @@ def _make_gaussian_dict(
     """
     locations = _make_gaussian_matrix(data_count, feature_count)
     observations = _make_gaussian_matrix(data_count, response_count)
-    labels = np.argmax(observations, axis=1)
+    labels = mm.argmax(observations, axis=1)
     if categorical is True:
-        observations = np.eye(response_count)[labels] - (1 / response_count)
+        observations = mm.eye(response_count)[labels] - (1 / response_count)
     return {
         "input": locations,
         "output": observations,
@@ -119,7 +137,7 @@ def _make_gaussian_data(
     feature_count: int,
     response_count: int,
     categorical: bool = False,
-) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+) -> Tuple[Dict[str, mm.ndarray], Dict[str, mm.ndarray]]:
     """
     Create train and test dicts including `"input"`, `"output"`, and `"labels"`
     keys mapping to i.i.d. Gaussian matrices.
@@ -163,9 +181,9 @@ def _make_gaussian_data(
 
 
 def _subsample(
-    data: Dict[str, np.ndarray],
+    data: Dict[str, mm.ndarray],
     sample_count: int,
-) -> Dict[str, np.ndarray]:
+) -> Dict[str, mm.ndarray]:
     """
     Randomly sample row indices without replacement from data dict.
 
@@ -186,7 +204,9 @@ def _subsample(
         indices.
     """
     count = data["input"].shape[0]
-    samples = np.random.choice(count, sample_count, replace=False)
+    samples = mm.array(
+        np.random.choice(count, sample_count, replace=False), dtype=mm.itype
+    )
     return {
         "input": data["input"][samples, :],
         "output": data["output"][samples, :],
@@ -194,9 +214,9 @@ def _subsample(
 
 
 def _balanced_subsample(
-    data: Dict[str, np.ndarray],
+    data: Dict[str, mm.ndarray],
     sample_count: int,
-) -> Dict[str, np.ndarray]:
+) -> Dict[str, mm.ndarray]:
     """
     Randomly sample row indices without replacement from data dict, ensuring
     that classes receive as close to equal representation as possible.
@@ -222,15 +242,16 @@ def _balanced_subsample(
         indices, who have as close to parity in class representation as
         possible.
     """
-    labels = np.argmax(data["output"], axis=1)
-    classes = np.unique(labels)
+    labels = mm.argmax(data["output"], axis=1)
+    classes = mm.unique(labels)
     class_count = len(classes)
     each_sample_count = int(sample_count / class_count)
 
-    class_indices = np.array([np.where(labels == i)[0] for i in classes])
-    sample_sizes = np.array(
-        [np.min((len(arr), each_sample_count)) for arr in class_indices]
-    )
+    class_indices = [np.where(labels == i)[0] for i in classes]
+    sample_sizes = [
+        np.min((len(arr), each_sample_count)) for arr in class_indices
+    ]
+
     balanced_samples = np.concatenate(
         [
             np.random.choice(class_indices[i], sample_sizes[i], replace=False)
@@ -238,12 +259,12 @@ def _balanced_subsample(
         ]
     )
     return {
-        "input": data["input"][balanced_samples, :],
-        "output": data["output"][balanced_samples, :],
+        "input": mm.array(data["input"][balanced_samples, :]),
+        "output": mm.array(data["output"][balanced_samples, :]),
     }
 
 
-def _normalize(X: np.ndarray) -> np.ndarray:
+def _normalize(X: mm.ndarray) -> mm.ndarray:
     """
     Normalizes data matrix to have row l2-norms of 1
 
@@ -254,15 +275,14 @@ def _normalize(X: np.ndarray) -> np.ndarray:
     Returns:
         A row-normalized matrix of shape `(data-count, feature_count)`.
     """
-    # return X * np.sqrt(1 / np.sum(X ** 2, axis=1))[:, None]
-    return X * np.sqrt(X.shape[1] / np.sum(X**2, axis=1))[:, None]
+    return X * mm.sqrt(X.shape[1] / mm.sum(X**2, axis=1))[:, None]
 
 
 def _get_sigma_sq_series(
-    K: np.ndarray,
-    nn_targets_column: np.ndarray,
+    K: mm.ndarray,
+    nn_targets_column: mm.ndarray,
     eps: float,
-) -> np.ndarray:
+) -> mm.ndarray:
     """
     Return the series of sigma^2 scale parameters for each neighborhood
     solve.
@@ -288,12 +308,12 @@ def _get_sigma_sq_series(
     sigmas = np.zeros((batch_count,))
     for i, el in enumerate(_get_sigma_sq(K, nn_targets_column, eps)):
         sigmas[i] = el
-    return sigmas / nn_count
+    return mm.array(sigmas / nn_count)
 
 
 def _get_sigma_sq(
-    K: np.ndarray,
-    nn_targets_column: np.ndarray,
+    K: mm.ndarray,
+    nn_targets_column: mm.ndarray,
     eps: float,
 ) -> Generator[float, None, None]:
     """
@@ -325,7 +345,27 @@ def _get_sigma_sq(
     batch_count, nn_count, _ = nn_targets_column.shape
     for j in range(batch_count):
         Y_0 = nn_targets_column[j, :, 0]
-        yield Y_0 @ np.linalg.solve(K[j, :, :] + eps * np.eye(nn_count), Y_0)
+        yield Y_0 @ mm.linalg.solve(K[j, :, :] + eps * mm.eye(nn_count), Y_0)
+
+
+def _check_ndarray(
+    assert_fn: Callable,
+    array: mm.ndarray,
+    dtype: Type,
+    ctype: Type = mm.ndarray,
+    shape: Optional[Tuple[int, ...]] = None,
+):
+    assert_fn(type(array), ctype)
+    assert_fn(array.dtype, dtype)
+    if shape is not None:
+        assert_fn(array.shape, shape)
+
+
+def _precision_assert(assert_fn, *args, low_bound=4, high_bound=7):
+    if config.state.ftype == "32":
+        return assert_fn(*args, low_bound)
+    else:
+        return assert_fn(*args, high_bound)
 
 
 def _consistent_assert(assert_fn, *args):

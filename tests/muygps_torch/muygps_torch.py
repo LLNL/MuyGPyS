@@ -2,11 +2,20 @@
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
-import torch
+
+from absl.testing import absltest
+from absl.testing import parameterized
+
 from MuyGPyS import config
+
+config.parse_flags_with_absl()  # Affords option setting from CLI
 
 if config.state.torch_enabled is False:
     raise ValueError(f"Bad attempt to run torch-only code with torch disabled.")
+if config.state.ftype == "64":
+    raise ValueError(
+        f"torch optimization is currently only supported for 32 bits"
+    )
 if config.state.backend != "torch":
     import warnings
 
@@ -16,40 +25,10 @@ if config.state.backend != "torch":
     )
     config.update("muygpys_backend", "torch")
 
-import os
-import sys
-import torch
-from torch import nn
-import numpy as np
-
-from absl.testing import absltest
-from absl.testing import parameterized
-
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
-from MuyGPyS.gp.distance import (
-    make_train_tensors,
-    make_regress_tensors,
-    pairwise_distances,
-    crosswise_distances,
-)
-from MuyGPyS.gp.muygps import MuyGPS
-
-from MuyGPyS._test.utils import (
-    _make_gaussian_dict,
-    _make_gaussian_data,
-    _make_gaussian_matrix,
-    _basic_nn_kwarg_options,
-    _basic_opt_method_and_kwarg_options,
-    _balanced_subsample,
-    _basic_nn_kwarg_options,
-    _basic_opt_method_and_kwarg_options,
-)
-
+import MuyGPyS._src.math.numpy as np
+import MuyGPyS._src.math.torch as torch
+from MuyGPyS._test.utils import _check_ndarray, _make_gaussian_data
 from MuyGPyS import config
-from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
-from MuyGPyS._src.optimize.loss import _lool_fn as lool_fn
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
 from MuyGPyS.examples.muygps_torch import predict_model
@@ -96,6 +75,11 @@ class RegressTest(parameterized.TestCase):
         train_features = train["input"]
         train_responses = train["output"]
         test_features = test["input"]
+        test_responses = test["output"]
+        _check_ndarray(self.assertEqual, train_features, torch.ftype)
+        _check_ndarray(self.assertEqual, train_responses, torch.ftype)
+        _check_ndarray(self.assertEqual, test_features, torch.ftype)
+        _check_ndarray(self.assertEqual, test_responses, torch.ftype)
 
         nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="exact")
         train_count, num_test_responses = train_responses.shape
@@ -103,23 +87,13 @@ class RegressTest(parameterized.TestCase):
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup, batch_count, train_count
         )
-
-        batch_indices, batch_nn_indices = batch_indices.astype(
-            np.int64
-        ), batch_nn_indices.astype(np.int64)
-        batch_indices, batch_nn_indices = torch.from_numpy(
-            batch_indices
-        ), torch.from_numpy(batch_nn_indices)
+        _check_ndarray(self.assertEqual, batch_indices, torch.itype)
+        _check_ndarray(self.assertEqual, batch_nn_indices, torch.itype)
 
         batch_targets = train_responses[batch_indices, :]
         batch_nn_targets = train_responses[batch_nn_indices, :]
-
-        batch_targets = torch.from_numpy(
-            train_responses[batch_indices, :]
-        ).float()
-        batch_nn_targets = torch.from_numpy(
-            train_responses[batch_nn_indices, :]
-        ).float()
+        _check_ndarray(self.assertEqual, batch_targets, torch.ftype)
+        _check_ndarray(self.assertEqual, batch_nn_targets, torch.ftype)
 
         model = SVDKMuyGPs(
             kernel_eps=1e-6,
@@ -130,9 +104,6 @@ class RegressTest(parameterized.TestCase):
             batch_targets=batch_targets,
             batch_nn_targets=batch_nn_targets,
         )
-
-        train_features = torch.from_numpy(train_features).float()
-        train_responses = torch.from_numpy(train_responses).float()
 
         nbrs_struct, model_trained = train_deep_kernel_muygps(
             model=model,
@@ -148,7 +119,6 @@ class RegressTest(parameterized.TestCase):
             update_frequency=1,
         )
 
-        test_features = torch.from_numpy(test_features).float()
         model_trained.eval()
 
         predictions, variances, sigma_sq = predict_model(
@@ -160,20 +130,34 @@ class RegressTest(parameterized.TestCase):
             nn_count=nn_count,
         )
 
-        test_responses = test["output"]
+        _check_ndarray(
+            self.assertEqual,
+            predictions,
+            torch.ftype,
+            shape=test_responses.shape,
+        )
+        _check_ndarray(
+            self.assertEqual,
+            variances,
+            torch.ftype,
+            shape=(test_count, response_count),
+        )
+        _check_ndarray(
+            self.assertEqual,
+            sigma_sq,
+            torch.ftype,
+            shape=(num_test_responses,),
+        )
         mse_actual = (
             np.sum(
                 (
                     predictions.squeeze().detach().numpy()
-                    - test_responses.squeeze()
+                    - test_responses.squeeze().detach().numpy()
                 )
                 ** 2
             )
             / test_responses.shape[0]
         )
-        self.assertEqual(predictions.shape, test_responses.shape)
-        self.assertEqual(variances.shape, (test_count, response_count))
-        self.assertEqual(sigma_sq.shape, torch.Size([num_test_responses]))
         self.assertLessEqual(mse_actual, target_mse)
 
 
@@ -215,6 +199,11 @@ class MultivariateRegressTest(parameterized.TestCase):
         train_features = train["input"]
         train_responses = train["output"]
         test_features = test["input"]
+        test_responses = test["output"]
+        _check_ndarray(self.assertEqual, train_features, torch.ftype)
+        _check_ndarray(self.assertEqual, train_responses, torch.ftype)
+        _check_ndarray(self.assertEqual, test_features, torch.ftype)
+        _check_ndarray(self.assertEqual, test_responses, torch.ftype)
 
         nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="exact")
         train_count, num_test_responses = train_responses.shape
@@ -222,23 +211,13 @@ class MultivariateRegressTest(parameterized.TestCase):
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup, batch_count, train_count
         )
-
-        batch_indices, batch_nn_indices = batch_indices.astype(
-            np.int64
-        ), batch_nn_indices.astype(np.int64)
-        batch_indices, batch_nn_indices = torch.from_numpy(
-            batch_indices
-        ), torch.from_numpy(batch_nn_indices)
+        _check_ndarray(self.assertEqual, batch_indices, torch.itype)
+        _check_ndarray(self.assertEqual, batch_nn_indices, torch.itype)
 
         batch_targets = train_responses[batch_indices, :]
         batch_nn_targets = train_responses[batch_nn_indices, :]
-
-        batch_targets = torch.from_numpy(
-            train_responses[batch_indices, :]
-        ).float()
-        batch_nn_targets = torch.from_numpy(
-            train_responses[batch_nn_indices, :]
-        ).float()
+        _check_ndarray(self.assertEqual, batch_targets, torch.ftype)
+        _check_ndarray(self.assertEqual, batch_nn_targets, torch.ftype)
 
         model = SVDKMultivariateMuyGPs(
             num_models=num_test_responses,
@@ -250,9 +229,6 @@ class MultivariateRegressTest(parameterized.TestCase):
             batch_targets=batch_targets,
             batch_nn_targets=batch_nn_targets,
         )
-
-        train_features = torch.from_numpy(train_features).float()
-        train_responses = torch.from_numpy(train_responses).float()
 
         nbrs_struct, model_trained = train_deep_kernel_muygps(
             model=model,
@@ -268,7 +244,6 @@ class MultivariateRegressTest(parameterized.TestCase):
             update_frequency=1,
         )
 
-        test_features = torch.from_numpy(test_features).float()
         model_trained.eval()
 
         predictions, variances, sigma_sq = predict_model(
@@ -280,20 +255,34 @@ class MultivariateRegressTest(parameterized.TestCase):
             nn_count=nn_count,
         )
 
-        test_responses = test["output"]
+        _check_ndarray(
+            self.assertEqual,
+            predictions,
+            torch.ftype,
+            shape=test_responses.shape,
+        )
+        _check_ndarray(
+            self.assertEqual,
+            variances,
+            torch.ftype,
+            shape=(test_count, response_count),
+        )
+        _check_ndarray(
+            self.assertEqual,
+            sigma_sq,
+            torch.ftype,
+            shape=(num_test_responses,),
+        )
         mse_actual = (
             np.sum(
                 (
                     predictions.squeeze().detach().numpy()
-                    - test_responses.squeeze()
+                    - test_responses.squeeze().detach().numpy()
                 )
                 ** 2
             )
             / test_responses.shape[0]
         )
-        self.assertEqual(predictions.shape, test_responses.shape)
-        self.assertEqual(variances.shape, (test_count, response_count))
-        self.assertEqual(sigma_sq.shape, torch.Size([num_test_responses]))
         self.assertLessEqual(mse_actual, target_mse)
 
 

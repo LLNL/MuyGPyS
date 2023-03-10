@@ -1,14 +1,19 @@
-import torch
+# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
+# MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: MIT
 
 from typing import Tuple
+
+import MuyGPyS._src.math.torch as torch
 
 
 def _make_fast_regress_tensors(
     metric: str,
-    batch_nn_indices: torch.Tensor,
-    train_features: torch.Tensor,
-    train_targets: torch.Tensor,
-) -> Tuple[torch.Tensor, torch.Tensor]:
+    batch_nn_indices: torch.ndarray,
+    train_features: torch.ndarray,
+    train_targets: torch.ndarray,
+) -> Tuple[torch.ndarray, torch.ndarray]:
     num_train, _ = train_features.shape
     batch_nn_indices_fast = torch.cat(
         (
@@ -28,12 +33,12 @@ def _make_fast_regress_tensors(
 
 def _make_regress_tensors(
     metric: str,
-    batch_indices: torch.Tensor,
-    batch_nn_indices: torch.Tensor,
-    test_features: torch.Tensor,
-    train_features: torch.Tensor,
-    train_targets: torch.Tensor,
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    batch_indices: torch.ndarray,
+    batch_nn_indices: torch.ndarray,
+    test_features: torch.ndarray,
+    train_features: torch.ndarray,
+    train_targets: torch.ndarray,
+) -> Tuple[torch.ndarray, torch.ndarray, torch.ndarray]:
     if test_features is None:
         test_features = train_features
     crosswise_dists = _crosswise_distances(
@@ -52,11 +57,11 @@ def _make_regress_tensors(
 
 def _make_train_tensors(
     metric: str,
-    batch_indices: torch.Tensor,
-    batch_nn_indices: torch.Tensor,
-    train_features: torch.Tensor,
-    train_targets: torch.Tensor,
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    batch_indices: torch.ndarray,
+    batch_nn_indices: torch.ndarray,
+    train_features: torch.ndarray,
+    train_targets: torch.ndarray,
+) -> Tuple[torch.ndarray, torch.ndarray, torch.ndarray, torch.ndarray]:
     crosswise_dists, pairwise_dists, batch_nn_targets = _make_regress_tensors(
         metric,
         batch_indices,
@@ -70,12 +75,12 @@ def _make_train_tensors(
 
 
 def _crosswise_distances(
-    data: torch.Tensor,
-    nn_data: torch.Tensor,
-    data_indices: torch.Tensor,
-    nn_indices: torch.Tensor,
+    data: torch.ndarray,
+    nn_data: torch.ndarray,
+    data_indices: torch.ndarray,
+    nn_indices: torch.ndarray,
     metric: str = "l2",
-) -> torch.Tensor:
+) -> torch.ndarray:
     locations = data[data_indices]
     points = nn_data[nn_indices]
     if metric == "l2":
@@ -93,10 +98,10 @@ def _crosswise_distances(
 
 
 def _pairwise_distances(
-    data: torch.Tensor,
-    nn_indices: torch.Tensor,
+    data: torch.ndarray,
+    nn_indices: torch.ndarray,
     metric: str = "l2",
-) -> torch.Tensor:
+) -> torch.ndarray:
     points = data[nn_indices]
     if metric == "l2":
         diffs = _pairwise_diffs(points)
@@ -113,12 +118,12 @@ def _pairwise_distances(
 
 
 def _crosswise_diffs(
-    locations: torch.Tensor, points: torch.Tensor
-) -> torch.Tensor:
+    locations: torch.ndarray, points: torch.ndarray
+) -> torch.ndarray:
     return locations[:, None, :] - points
 
 
-def _pairwise_diffs(points: torch.Tensor) -> torch.Tensor:
+def _pairwise_diffs(points: torch.ndarray) -> torch.ndarray:
     if len(points.shape) == 3:
         return points[:, :, None, :] - points[:, None, :, :]
     elif len(points.shape) == 2:
@@ -127,17 +132,17 @@ def _pairwise_diffs(points: torch.Tensor) -> torch.Tensor:
         raise ValueError(f"points shape {points.shape} is not supported.")
 
 
-def _F2(diffs: torch.Tensor) -> torch.Tensor:
-    return torch.sum(diffs**2, dim=-1)
+def _F2(diffs: torch.ndarray) -> torch.ndarray:
+    return torch.sum(diffs**2, axis=-1)
 
 
-def _l2(diffs: torch.Tensor) -> torch.Tensor:
+def _l2(diffs: torch.ndarray) -> torch.ndarray:
     return torch.norm(diffs, dim=-1)
 
 
 def _fast_nn_update(
-    nn_indices: torch.Tensor,
-) -> torch.Tensor:
+    nn_indices: torch.ndarray,
+) -> torch.ndarray:
     train_count, _ = nn_indices.shape
     new_nn_indices = torch.cat(
         (

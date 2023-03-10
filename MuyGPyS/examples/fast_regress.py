@@ -18,28 +18,25 @@ It calls the maker APIs above and
 :func:`~MuyGPyS.examples.fast_regress.fast_regress_any`.
 """
 
-import numpy as np
-
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
-from MuyGPyS.gp.distance import fast_nn_update
-
-from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.neighbors import NN_Wrapper
-
+import MuyGPyS._src.math as mm
 from MuyGPyS.examples.regress import (
     _decide_and_make_regressor,
     _unpack,
 )
+from MuyGPyS.gp.distance import fast_nn_update
+from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.neighbors import NN_Wrapper
 
 
 def make_fast_regressor(
     muygps: MuyGPS,
     nbrs_lookup: NN_Wrapper,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
+    train_features: mm.ndarray,
+    train_targets: mm.ndarray,
+) -> Tuple[mm.ndarray, mm.ndarray]:
 
     """
     Convenience function for creating precomputed coefficient matrix and neighbor lookup data
@@ -70,7 +67,7 @@ def make_fast_regressor(
 
     num_training_samples, _ = train_features.shape
     nn_indices, _ = nbrs_lookup.get_batch_nns(
-        np.arange(0, num_training_samples)
+        mm.arange(0, num_training_samples)
     )
     nn_indices = nn_indices.astype(int)
 
@@ -83,9 +80,9 @@ def make_fast_regressor(
 def make_fast_multivariate_regressor(
     muygps: MMuyGPS,
     nbrs_lookup: NN_Wrapper,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
+    train_features: mm.ndarray,
+    train_targets: mm.ndarray,
+) -> Tuple[mm.ndarray, mm.ndarray]:
 
     """
     Convenience function for creating precomputed coefficient matrix and neighbor lookup data
@@ -115,7 +112,7 @@ def make_fast_multivariate_regressor(
     """
     num_training_samples, _ = train_features.shape
     nn_indices, _ = nbrs_lookup.get_batch_nns(
-        np.arange(0, num_training_samples)
+        mm.arange(0, num_training_samples)
     )
     nn_indices = nn_indices.astype(int)
 
@@ -128,9 +125,9 @@ def make_fast_multivariate_regressor(
 def _decide_and_make_fast_regressor(
     muygps: Union[MuyGPS, MMuyGPS],
     nbrs_lookup: NN_Wrapper,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
+    train_features: mm.ndarray,
+    train_targets: mm.ndarray,
+) -> Tuple[mm.ndarray, mm.ndarray]:
     if isinstance(muygps, MuyGPS):
         precomputed_coefficients_matrix, nn_indices = make_fast_regressor(
             muygps,
@@ -152,9 +149,9 @@ def _decide_and_make_fast_regressor(
 
 
 def do_fast_regress(
-    test_features: np.ndarray,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
+    test_features: mm.ndarray,
+    train_features: mm.ndarray,
+    train_targets: mm.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
     loss_method: str = "lool",
@@ -166,7 +163,7 @@ def do_fast_regress(
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
     verbose: bool = False,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict]:
+) -> Tuple[mm.ndarray, mm.ndarray, mm.ndarray, mm.ndarray, Dict]:
     """
     Convenience function initializing a model and performing regression.
 
@@ -320,11 +317,11 @@ def do_fast_regress(
 
 def fast_regress_any(
     muygps: Union[MuyGPS, MMuyGPS],
-    test_features: np.ndarray,
-    train_features: np.ndarray,
+    test_features: mm.ndarray,
+    train_features: mm.ndarray,
     nbrs_lookup: NN_Wrapper,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray, Dict]:
+    train_targets: mm.ndarray,
+) -> Tuple[mm.ndarray, mm.ndarray, Dict]:
 
     """
     Convenience function performing regression using a pre-trained model.
@@ -384,7 +381,7 @@ def fast_regress_any(
     num_test_samples, _ = test_features.shape
 
     predictions = muygps.fast_regress_from_indices(
-        np.arange(0, num_test_samples),
+        mm.arange(0, num_test_samples),
         closest_set_new,
         test_features,
         train_features,

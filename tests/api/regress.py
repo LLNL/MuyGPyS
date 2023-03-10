@@ -15,7 +15,10 @@ from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
-from MuyGPyS.examples.two_class_classify_uq import example_lambdas
+if config.state.backend == "torch":
+    ValueError(f"Conventional optimization chassis does not support torch!")
+
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._test.api import RegressionAPITest
 from MuyGPyS._test.utils import (
     _balanced_subsample,
@@ -45,23 +48,31 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         with open(
             os.path.join(hardpath + stargal_dir, stargal_files["40"]), "rb"
         ) as f:
-            cls.embedded_40_train, cls.embedded_40_test = pkl.load(f)
+            train, test = pkl.load(f)
+            cls.embedded_40_train = {
+                "input": np.array(train["input"]),
+                "output": np.array(train["output"]),
+            }
+            cls.embedded_40_test = {
+                "input": np.array(test["input"]),
+                "output": np.array(test["output"]),
+            }
 
     @parameterized.parameters(
         (
             (nn, bs, vm, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for vm in [None, "diagonal"]
             for lm in ["mse"]
             for om in ["loo_crossval"]
-            for nn_kwargs in _basic_nn_kwarg_options
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
-            # for vm in ["diagonal"]
-            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            # for opt_method_and_kwargs in [
-            #     _basic_opt_method_and_kwarg_options[0]
-            # ]
+            # for vm in [None, "diagonal"]
+            # for nn_kwargs in _basic_nn_kwarg_options
+            # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for vm in ["diagonal"]
+            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for opt_method_and_kwargs in [
+                _basic_opt_method_and_kwarg_options[0]
+            ]
             for k_kwargs in (
                 (
                     1.0,

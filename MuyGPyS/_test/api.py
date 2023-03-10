@@ -3,28 +3,32 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS.neighbors import NN_Wrapper
-import numpy as np
-
 from typing import cast, Callable, Dict, List, Optional, Tuple, Union
 
 from absl.testing import parameterized
 
-from MuyGPyS.examples.classify import do_classify
-from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq
-from MuyGPyS.examples.regress import do_regress
-from MuyGPyS.examples.fast_regress import do_fast_regress
-from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.optimize.loss import mse_fn
-
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.mpi_utils import (
     _consistent_chunk_tensor,
     _consistent_unchunk_tensor,
     _consistent_reduce_scalar,
 )
+from MuyGPyS._test.utils import _check_ndarray, _precision_assert
+from MuyGPyS.examples.classify import do_classify
+from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq
+from MuyGPyS.examples.regress import do_regress
+from MuyGPyS.examples.fast_regress import do_fast_regress
+from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.loss import mse_fn
 
 
-class ClassifyAPITest(parameterized.TestCase):
+class APITestCase(parameterized.TestCase):
+    def _check_ndarray(self, *args, **kwargs):
+        return _check_ndarray(self.assertEqual, args, kwargs)
+
+
+class ClassifyAPITest(APITestCase):
     def _do_classify_test_chassis(
         self,
         train: Dict[str, np.ndarray],
@@ -393,10 +397,10 @@ class RegressionAPITest(parameterized.TestCase):
             else:
                 self.assertEqual(variance.shape, (test_count,))
         if sigma_method is None:
-            self.assertFalse(regressor.sigma_sq.trained())
+            self.assertFalse(regressor.sigma_sq.trained)
         elif sigma_method.lower() == "analytic":
-            self.assertEqual(regressor.sigma_sq().shape, (response_count,))
-            self.assertEqual(regressor.sigma_sq().dtype, float)
+            self.assertEqual(regressor.sigma_sq.shape, (response_count,))
+            _check_ndarray(self.assertEqual, regressor.sigma_sq(), np.ftype)
         else:
             raise ValueError(f"Unsupported sigma method {sigma_method}")
 

@@ -29,17 +29,18 @@ import numpy as np
 from time import perf_counter
 from typing import Callable, Dict, List, Tuple, Union
 
+
+from MuyGPyS._src.mpi_utils import (
+    _consistent_chunk_tensor,
+    _consistent_reduce_scalar,
+    _is_mpi_mode,
+)
 from MuyGPyS.examples.classify import (
     make_classifier,
 )
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import get_balanced_batch
-from MuyGPyS._src.mpi_utils import (
-    _is_mpi_mode,
-    _consistent_chunk_tensor,
-    _consistent_reduce_scalar,
-)
 
 
 example_lambdas = [

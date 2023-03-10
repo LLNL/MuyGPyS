@@ -85,9 +85,10 @@ jobs:
           sudo apt-get install mpich
           python -m pip install --upgrade pip
           python -m pip install -e .[tests,hnswlib,mpi]
-          export MUYGPYS_BACKEND=mpi
       - name: Test MPI correctness
-        run: mpirun -n 4 python tests/backend/mpi_correctness.py
+        run: |
+          export MUYGPYS_BACKEND=mpi
+          mpirun -n 4 python tests/backend/mpi_correctness.py
 
   build-torch:
     runs-on: ubuntu-latest
@@ -105,9 +106,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .[tests,hnswlib,torch]
-          export MUYGPYS_BACKEND=torch
       - name: Test Torch correctness
         run: |
+          export MUYGPYS_BACKEND=torch
+          export MUYGPYS_FTYPE=32
           python tests/backend/torch_correctness.py
           python tests/muygps_torch/muygps_torch.py
 

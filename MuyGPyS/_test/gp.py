@@ -3,12 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from typing import Dict, Optional, Tuple, Union
 
 from sklearn.metrics import pairwise_distances as skl_pairwise_distances
 
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
@@ -133,7 +132,7 @@ class BenchmarkGP:
         """
         self.eps._set(**eps)
 
-    def _set_sigma_sq(self, val: float) -> None:
+    def _set_sigma_sq(self, val) -> None:
         """
         Reset :math:`\\varepsilon` value or bounds.
 
@@ -145,7 +144,7 @@ class BenchmarkGP:
             val:
                 A scalar value for `sigma_sq`.
         """
-        self.sigma_sq._set(np.array([val]))
+        self.sigma_sq._set(val)
 
     def fixed(self) -> bool:
         """
@@ -245,7 +244,7 @@ class BenchmarkGP:
             )
             Kstar = self.kernel(test_pairwise_distances)
             variance = Kstar - Kcross @ np.linalg.solve(K, Kcross.T)
-            if apply_sigma_sq is True and self.sigma_sq.trained() is True:
+            if apply_sigma_sq is True and self.sigma_sq.trained is True:
                 variance *= self.sigma_sq()[0]
             if variance_mode == "diagonal":
                 return responses, np.diagonal(variance)
@@ -326,11 +325,11 @@ def benchmark_sample(
 
 def benchmark_sample_from_cholK(cholK: np.ndarray) -> np.ndarray:
     data_count, _ = cholK.shape
-    return (cholK @ np.random.normal(0, 1, size=(data_count,))).reshape(
-        data_count, 1
-    )
+    return (
+        cholK @ np.array(np.random.normal(0, 1, size=(data_count,)))
+    ).reshape(data_count, 1)
 
 
 def get_analytic_sigma_sq(K, y):
     assert y.shape[0] == K.shape[0]
-    return (1 / y.shape[0]) * y @ np.linalg.solve(K, y)
+    return (1 / y.shape[0]) * y.T @ np.linalg.solve(K, y)

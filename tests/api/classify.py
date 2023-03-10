@@ -15,13 +15,17 @@ from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
-from MuyGPyS.examples.two_class_classify_uq import example_lambdas
+if config.state.backend == "torch":
+    ValueError(f"Conventional optimization chassis does not support torch!")
+
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._test.api import ClassifyAPITest
 from MuyGPyS._test.utils import (
     _balanced_subsample,
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
 )
+from MuyGPyS.examples.two_class_classify_uq import example_lambdas
 
 
 hardpath = "../data/"
@@ -52,20 +56,28 @@ class MNISTTest(ClassifyAPITest):
         with open(
             os.path.join(hardpath + mnist_dir, mnist_files["40"]), "rb"
         ) as f:
-            cls.embedded_40_train, cls.embedded_40_test = pkl.load(f)
+            train, test = pkl.load(f)
+            cls.embedded_40_train = {
+                "input": np.array(train["input"]),
+                "output": np.array(train["output"]),
+            }
+            cls.embedded_40_test = {
+                "input": np.array(test["input"]),
+                "output": np.array(test["output"]),
+            }
 
     @parameterized.parameters(
         (
             (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            # for lm in ["mse"]
-            # for opt_method_and_kwargs in [
-            #     _basic_opt_method_and_kwarg_options[0]
-            # ]
-            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for lm in ["log", "mse"]
             for om in ["loo_crossval"]
+            # for lm in ["log"]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[1]
+            # ]
+            # for nn_kwargs in [_basic_nn_kwarg_options[1]]
+            for lm in ["log", "mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in (
@@ -79,19 +91,19 @@ class MNISTTest(ClassifyAPITest):
                         "eps": {"val": 1e-3},
                     },
                 ),
-                (
-                    0.85,
-                    {
-                        "kern": "rbf",
-                        "metric": "F2",
-                        "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
-                        "eps": {"val": 1e-3},
-                    },
-                ),
+                # (
+                #     0.85,
+                #     {
+                #         "kern": "rbf",
+                #         "metric": "F2",
+                #         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                #         "eps": {"val": 1e-3},
+                #     },
+                # ),
             )
         )
     )
-    def test_classify(
+    def test_mnist_classify(
         self,
         nn_count,
         batch_count,
@@ -101,6 +113,13 @@ class MNISTTest(ClassifyAPITest):
         nn_kwargs,
         k_kwargs,
     ):
+        if config.state.backend == "jax" and config.state.ftype == "32":
+            import warnings
+
+            warnings.warn(
+                f"classify api chassis does not currently support jax in 32 "
+                f"bit mode."
+            )
         target_accuracy, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 5000)

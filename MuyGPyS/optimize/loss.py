@@ -10,12 +10,9 @@ MuyGPyS includes predefined loss functions and convenience functions for
 indicating them to optimization.
 """
 
-import numpy as np
-
 from typing import Callable
 
-from MuyGPyS import config
-
+import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.loss import (
     _mse_fn,
     _cross_entropy_fn,
@@ -51,8 +48,8 @@ def get_loss_func(loss_method: str) -> Callable:
 
 
 def cross_entropy_fn(
-    predictions: np.ndarray,
-    targets: np.ndarray,
+    predictions: mm.ndarray,
+    targets: mm.ndarray,
 ) -> float:
     """
     Cross entropy function.
@@ -77,8 +74,8 @@ def cross_entropy_fn(
 
 
 def mse_fn(
-    predictions: np.ndarray,
-    targets: np.ndarray,
+    predictions: mm.ndarray,
+    targets: mm.ndarray,
 ) -> float:
     """
     Mean squared error function.
@@ -99,10 +96,10 @@ def mse_fn(
 
 
 def lool_fn(
-    predictions: np.ndarray,
-    targets: np.ndarray,
-    variances: np.ndarray,
-    sigma_sq: np.ndarray,
+    predictions: mm.ndarray,
+    targets: mm.ndarray,
+    variances: mm.ndarray,
+    sigma_sq: mm.ndarray,
 ) -> float:
     """
     Leave-one-out likelihood function.

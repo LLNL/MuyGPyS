@@ -47,7 +47,11 @@ class MuyGPySState:
         self.gpu_enabled = False
         self.mpi_enabled = False
         self.backend = "numpy"
+        self.ftype = "64"
         self.already_configured_with_absl = False
+
+    def low_precision(self):
+        return True if self.ftype == "32" else False
 
 
 class MPIState:
@@ -169,8 +173,7 @@ try:
     # https://mpi4py.readthedocs.io/en/3.1.4/mpi4py.util.pkl5.html
     config.mpi_state.set_comm(Intracomm(MPI.COMM_WORLD))
 
-    if config.mpi_state.comm_world.Get_size() > 1:
-        config.update("muygpys_mpi_enabled", True)
+    config.update("muygpys_mpi_enabled", True)
 except Exception as e:
     MPI = None  # type: ignore
     config.update("muygpys_mpi_enabled", False)
@@ -238,3 +241,24 @@ if (
         f"The {be} dependencies are most likely not installed in your "
         f"environment."
     )
+
+
+def _update_ftype_global(val):
+    config.state.ftype = val
+
+
+def _update_ftype_thread_local(val):
+    config.state.ftype = val
+
+
+ftype = config.define_enum_state(
+    name="muygpys_ftype",
+    enum_values=["32", "64"],
+    default="64",
+    help="Specify the float precision to be used",
+    update_global_hook=_update_ftype_global,
+    update_thread_local_hook=_update_ftype_thread_local,
+)
+
+if config.state.jax_enabled is True and config.state.ftype == "64":
+    jax_config.update("jax_enable_x64", True)

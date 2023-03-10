@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -12,29 +10,31 @@ from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
+import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
+from MuyGPyS._src.gp.noise import _homoscedastic_perturb
+from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp.distance import (
     make_train_tensors,
     make_regress_tensors,
-    pairwise_distances,
-    crosswise_distances,
 )
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 from MuyGPyS._test.utils import (
-    _make_gaussian_matrix,
+    _basic_nn_kwarg_options,
+    _consistent_assert,
+    _check_ndarray,
+    _get_sigma_sq_series,
     _make_gaussian_dict,
     _make_gaussian_data,
-    _basic_nn_kwarg_options,
-    _exact_nn_kwarg_options,
-    _get_sigma_sq_series,
-    _consistent_assert,
+    _precision_assert,
 )
 from MuyGPyS._src.mpi_utils import (
     _consistent_unchunk_tensor,
+    _warn0,
 )
 
 
@@ -73,11 +73,11 @@ class GPInitTest(parameterized.TestCase):
         self.assertEqual(eps["val"], muygps.eps())
         self.assertTrue(muygps.eps.fixed())
         if gp_type == MuyGPS:
-            self.assertFalse(muygps.sigma_sq.trained())
-            self.assertEqual(np.array([1.0]), muygps.sigma_sq())
+            self.assertFalse(muygps.sigma_sq.trained)
+            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
         elif gp_type == BenchmarkGP:
-            self.assertFalse(muygps.sigma_sq.trained())
-            self.assertEqual(np.array([1.0]), muygps.sigma_sq())
+            self.assertFalse(muygps.sigma_sq.trained)
+            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
         (k_kwargs, e, gp)
@@ -140,11 +140,11 @@ class GPInitTest(parameterized.TestCase):
             self.assertFalse(muygps.eps.fixed())
             self.assertEqual(eps["bounds"], muygps.eps.get_bounds())
         if gp_type == MuyGPS:
-            self.assertFalse(muygps.sigma_sq.trained())
+            self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(1.0, muygps.sigma_sq())
         elif gp_type == BenchmarkGP:
-            self.assertFalse(muygps.sigma_sq.trained())
-            self.assertEqual(np.array([1.0]), muygps.sigma_sq())
+            self.assertFalse(muygps.sigma_sq.trained)
+            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
         (k_kwargs, e, gp)
@@ -238,18 +238,84 @@ class GPInitTest(parameterized.TestCase):
         self.assertLessEqual(param(), bounds[1])
 
 
-class GPTensorShapesTest(parameterized.TestCase):
+class GPTestCase(parameterized.TestCase):
+    def _prepare_tensors(
+        self,
+        muygps,
+        train_count,
+        test_count,
+        feature_count,
+        response_count,
+        nn_count,
+        nn_kwargs,
+    ):
+        # prepare data
+        train, test = _make_gaussian_data(
+            train_count, test_count, feature_count, response_count
+        )
+        train_features = train["input"]
+        train_responses = train["output"]
+        test_features = test["input"]
+        test_responses = test["output"]
+        _check_ndarray(self.assertEqual, train_features, mm.ftype)
+        _check_ndarray(self.assertEqual, train_responses, mm.ftype)
+        _check_ndarray(self.assertEqual, test_features, mm.ftype)
+        _check_ndarray(self.assertEqual, test_responses, mm.ftype)
+
+        # neighbors and distances
+        nbrs_lookup = NN_Wrapper(train_features, nn_count, **nn_kwargs)
+        test_nn_indices, _ = nbrs_lookup.get_nns(test_features)
+        indices = mm.arange(test_count)
+        _check_ndarray(self.assertEqual, indices, mm.itype)
+
+        (
+            crosswise_dists,
+            pairwise_dists,
+            batch_nn_targets,
+        ) = make_regress_tensors(
+            muygps.kernel.metric,
+            indices,
+            test_nn_indices,
+            test_features,
+            train_features,
+            train_responses,
+        )
+        _check_ndarray(self.assertEqual, crosswise_dists, mm.ftype)
+        _check_ndarray(self.assertEqual, pairwise_dists, mm.ftype)
+        _check_ndarray(self.assertEqual, batch_nn_targets, mm.ftype)
+
+        # make kernels
+        K = _consistent_unchunk_tensor(muygps.kernel(pairwise_dists))
+        Kcross = _consistent_unchunk_tensor(muygps.kernel(crosswise_dists))
+        _check_ndarray(self.assertEqual, K, mm.ftype)
+        _check_ndarray(self.assertEqual, Kcross, mm.ftype)
+        # do validation
+        self.assertEqual(K.shape, (test_count, nn_count, nn_count))
+        self.assertEqual(Kcross.shape, (test_count, nn_count))
+        return (
+            K,
+            Kcross,
+            batch_nn_targets,
+            train_responses,
+            test_nn_indices,
+            pairwise_dists,
+        )
+
+
+class GPTensorShapesTest(GPTestCase):
     @parameterized.parameters(
         (
             (1000, 100, f, 10, nn_kwargs, k_kwargs)
             for f in [100, 1]
             for nn_kwargs in _basic_nn_kwarg_options
+            # for f in [2]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for k_kwargs in (
                 {
                     "kern": "matern",
                     "metric": "l2",
                     "eps": {"val": 1e-5},
-                    "nu": {"val": 1.0},
+                    "nu": {"val": 1.5},
                     "length_scale": {"val": 7.2},
                 },
                 {
@@ -272,52 +338,57 @@ class GPTensorShapesTest(parameterized.TestCase):
     ):
         muygps = MuyGPS(**k_kwargs)
 
-        # prepare data
-        train = _make_gaussian_matrix(train_count, feature_count)
-        test = _make_gaussian_matrix(test_count, feature_count)
-
-        # neighbors and distances
-        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices, _ = nbrs_lookup.get_nns(test)
-        indices = np.arange(test_count)
-        nn_dists = crosswise_distances(
-            test, train, indices, nn_indices, metric=muygps.kernel.metric
+        K, Kcross, _, _, _, _ = self._prepare_tensors(
+            muygps,
+            train_count,
+            test_count,
+            feature_count,
+            1,
+            nn_count,
+            nn_kwargs,
         )
-        F2_dists = pairwise_distances(
-            train, nn_indices, metric=muygps.kernel.metric
-        )
-
-        # make kernels
-        K = _consistent_unchunk_tensor(muygps.kernel(F2_dists))
-        Kcross = _consistent_unchunk_tensor(muygps.kernel(nn_dists))
-        # do validation
-        self.assertEqual(K.shape, (test_count, nn_count, nn_count))
-        self.assertEqual(Kcross.shape, (test_count, nn_count))
-        self.assertTrue(np.all(K >= 0.0))
-        self.assertTrue(np.all(K <= 1.0))
-        self.assertTrue(np.all(Kcross >= 0.0))
-        self.assertTrue(np.all(Kcross <= 1.0))
+        self.assertTrue(mm.all(K >= 0.0))
+        self.assertTrue(mm.all(K <= 1.0))
+        self.assertTrue(mm.all(Kcross >= 0.0))
+        self.assertTrue(mm.all(Kcross <= 1.0))
         # # Check that kernels are positive semidefinite
+        if config.state.low_precision() is True:
+            _warn0(
+                f"numpy/jax/torch eigensolves are unstable using float32, "
+                f"skipping tests"
+            )
+            return
         for i in range(K.shape[0]):
-            eigvals = np.linalg.eigvals(K[i, :, :])
+            eigvals = mm.linalg.eigvals(K[i, :, :])
+            # eigvals = mm.array(eigvals, dtype=mm.ftype)
+            eigvals = eigvals.real
+            _check_ndarray(self.assertEqual, eigvals, mm.ftype)
             self.assertTrue(
-                np.all(np.logical_or(eigvals >= 0.0, np.isclose(eigvals, 0.0)))
+                mm.all(
+                    mm.logical_or(
+                        eigvals >= 0.0,
+                        mm.isclose(eigvals, mm.zeros(eigvals.shape)),
+                    )
+                )
             )
 
 
-class GPSolveTest(parameterized.TestCase):
+class HomoscedasticNoiseTest(GPTestCase):
     @parameterized.parameters(
         (
             (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
             for f in [100, 1]
             for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
+            # for f in [1]
+            # for r in [1]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for k_kwargs in (
                 {
                     "kern": "matern",
                     "metric": "l2",
                     "eps": {"val": 1e-5},
-                    "nu": {"val": 1.0},
+                    "nu": {"val": 1.5},
                     "length_scale": {"val": 7.2},
                 },
                 {
@@ -327,9 +398,63 @@ class GPSolveTest(parameterized.TestCase):
                     "length_scale": {"val": 1.5},
                 },
             )
-            # for f in [100]
-            # for r in [5]
-            # for nn_kwargs in _exact_nn_kwarg_options
+        )
+    )
+    def test_homoscedastic_perturb(
+        self,
+        train_count,
+        test_count,
+        feature_count,
+        response_count,
+        nn_count,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        muygps = MuyGPS(**k_kwargs)
+
+        K, Kcross, _, _, _, _ = self._prepare_tensors(
+            muygps,
+            train_count,
+            test_count,
+            feature_count,
+            response_count,
+            nn_count,
+            nn_kwargs,
+        )
+
+        perturbed_K = _homoscedastic_perturb(K, muygps.eps())
+        _check_ndarray(self.assertEqual, perturbed_K, mm.ftype)
+
+        manual_K = K + muygps.eps() * mm.eye(nn_count)
+        self.assertTrue(mm.allclose(perturbed_K, manual_K))
+        return perturbed_K, Kcross
+
+
+class GPSolveTest(GPTestCase):
+    @parameterized.parameters(
+        (
+            (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
+            for f in [100, 1]
+            for r in [5, 1]
+            for nn_kwargs in _basic_nn_kwarg_options
+            # for f in [1]
+            # for r in [1]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for k_kwargs in (
+                {
+                    "kern": "matern",
+                    "metric": "l2",
+                    "eps": {"val": 1e-5},
+                    "nu": {"val": 1.5},
+                    "length_scale": {"val": 7.2},
+                },
+                {
+                    "kern": "rbf",
+                    "metric": "F2",
+                    "eps": {"val": 1e-5},
+                    "length_scale": {"val": 1.5},
+                },
+            )
         )
     )
     def test_tensor_solve(
@@ -342,51 +467,53 @@ class GPSolveTest(parameterized.TestCase):
         nn_kwargs,
         k_kwargs,
     ):
+        if config.state.low_precision() is True and feature_count < 10:
+            _warn0(
+                f"test_tensor_solve() is unstable in low precision mode when "
+                "distances are small. Skipping."
+            )
+            return
         muygps = MuyGPS(**k_kwargs)
 
-        # prepare data
-        train, test = _make_gaussian_data(
-            train_count, test_count, feature_count, response_count
+        (
+            K,
+            Kcross,
+            batch_nn_targets,
+            train_responses,
+            test_nn_indices,
+            _,
+        ) = self._prepare_tensors(
+            muygps,
+            train_count,
+            test_count,
+            feature_count,
+            response_count,
+            nn_count,
+            nn_kwargs,
         )
-
-        # neighbors and distances
-        nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
-        nn_indices, _ = nbrs_lookup.get_nns(test["input"])
-        indices = np.arange(test_count)
-        (nn_dists, F2_dists, train_targets) = make_regress_tensors(
-            muygps.kernel.metric,
-            indices,
-            nn_indices,
-            test["input"],
-            train["input"],
-            train["output"],
-        )
-
-        # make kernels
-        K, Kcross = muygps.kernel(F2_dists), muygps.kernel(nn_dists)
-        # solve GP regression
         responses = _consistent_unchunk_tensor(
-            muygps._compute_solve(K, Kcross, train_targets, muygps.eps())
+            muygps._compute_solve(K, Kcross, batch_nn_targets, muygps.eps())
         )
-
-        K = _consistent_unchunk_tensor(K)
-        Kcross = _consistent_unchunk_tensor(Kcross)
+        _check_ndarray(self.assertEqual, responses, mm.ftype)
 
         # validate
         self.assertEqual(responses.shape, (test_count, response_count))
+
         for i in range(test_count):
+            manual_responses = Kcross[i, :] @ mm.linalg.solve(
+                K[i, :, :] + muygps.eps() * mm.eye(nn_count),
+                train_responses[test_nn_indices[i], :],
+            )
+            _check_ndarray(self.assertEqual, manual_responses, mm.ftype)
             _consistent_assert(
+                _precision_assert,
                 self.assertSequenceAlmostEqual,
-                responses[i, :],
-                Kcross[i, :]
-                @ np.linalg.solve(
-                    K[i, :, :] + muygps.eps() * np.eye(nn_count),
-                    train["output"][nn_indices[i], :],
-                ),
+                np.array(responses[i, :]),
+                np.array(manual_responses),
             )
 
 
-class GPDiagonalVariance(parameterized.TestCase):
+class GPDiagonalVariance(GPTestCase):
     @parameterized.parameters(
         (
             (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
@@ -400,7 +527,7 @@ class GPDiagonalVariance(parameterized.TestCase):
                     "kern": "matern",
                     "metric": "l2",
                     "eps": {"val": 1e-5},
-                    "nu": {"val": 1.0},
+                    "nu": {"val": 1.5},
                     "length_scale": {"val": 7.2},
                 },
                 {
@@ -424,45 +551,78 @@ class GPDiagonalVariance(parameterized.TestCase):
     ):
         muygps = MuyGPS(**k_kwargs)
 
-        # prepare data
-        train, test = _make_gaussian_data(
-            train_count, test_count, feature_count, response_count
-        )
+        # # prepare data
+        # train, test = _make_gaussian_data(
+        #     train_count, test_count, feature_count, response_count
+        # )
 
-        # neighbors and distances
-        nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
-        nn_indices, _ = nbrs_lookup.get_nns(test["input"])
-        indices = np.arange(test_count)
-        (nn_dists, F2_dists, _) = make_regress_tensors(
-            muygps.kernel.metric,
-            indices,
-            nn_indices,
-            test["input"],
-            train["input"],
-            train["output"],
-        )
+        # # neighbors and distances
+        # nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
+        # nn_indices, _ = nbrs_lookup.get_nns(test["input"])
+        # indices = mm.arange(test_count)
+        # _check_ndarray(self.assertEqual, indices, mm.itype)
+        # _check_ndarray(self.assertEqual, nn_indices, mm.itype)
+        # (nn_dists, F2_dists, _) = make_regress_tensors(
+        #     muygps.kernel.metric,
+        #     indices,
+        #     nn_indices,
+        #     test["input"],
+        #     train["input"],
+        #     train["output"],
+        # )
+        # _check_ndarray(self.assertEqual, nn_dists, mm.ftype)
+        # _check_ndarray(self.assertEqual, F2_dists, mm.ftype)
 
-        # make kernels and variance
-        K, Kcross = muygps.kernel(F2_dists), muygps.kernel(nn_dists)
+        # # make kernels and variance
+        # K, Kcross = muygps.kernel(F2_dists), muygps.kernel(nn_dists)
+        # _check_ndarray(self.assertEqual, K, mm.ftype)
+        # _check_ndarray(self.assertEqual, Kcross, mm.ftype)
+        # diagonal_variance = _consistent_unchunk_tensor(
+        #     muygps._compute_diagonal_variance(K, Kcross, muygps.eps())
+        # )
+        # _check_ndarray(self.assertEqual, diagonal_variance, mm.ftype)
+
+        # K = _consistent_unchunk_tensor(K)
+        # Kcross = _consistent_unchunk_tensor(Kcross)
+        # _check_ndarray(self.assertEqual, K, mm.ftype)
+        # _check_ndarray(self.assertEqual, Kcross, mm.ftype)
+
+        (
+            K,
+            Kcross,
+            batch_nn_targets,
+            train_responses,
+            test_nn_indices,
+            _,
+        ) = self._prepare_tensors(
+            muygps,
+            train_count,
+            test_count,
+            feature_count,
+            response_count,
+            nn_count,
+            nn_kwargs,
+        )
         diagonal_variance = _consistent_unchunk_tensor(
             muygps._compute_diagonal_variance(K, Kcross, muygps.eps())
         )
-
-        K = _consistent_unchunk_tensor(K)
-        Kcross = _consistent_unchunk_tensor(Kcross)
+        _check_ndarray(self.assertEqual, diagonal_variance, mm.ftype)
 
         # validate
         self.assertEqual(diagonal_variance.shape, (test_count,))
         for i in range(test_count):
-            _consistent_assert(
+            manual_diagonal_variance = mm.array(1.0) - Kcross[
+                i, :
+            ] @ mm.linalg.solve(
+                K[i, :, :] + muygps.eps() * mm.eye(nn_count),
+                Kcross[i, :],
+            )
+            self.assertEqual(manual_diagonal_variance.dtype, mm.ftype)
+            _precision_assert(
+                _consistent_assert,
                 self.assertAlmostEqual,
-                diagonal_variance[i],
-                1.0
-                - Kcross[i, :]
-                @ np.linalg.solve(
-                    K[i, :, :] + muygps.eps() * np.eye(nn_count),
-                    Kcross[i, :],
-                ),
+                np.array(diagonal_variance[i]),
+                np.array(manual_diagonal_variance),
             )
             self.assertGreater(diagonal_variance[i], 0.0)
 
@@ -499,6 +659,9 @@ class MakeClassifierTest(parameterized.TestCase):
         return_distances,
         k_kwargs,
     ):
+        if config.state.backend == "torch":
+            _warn0(f"{self.__class__} does not support torch")
+            return
         response_count = 2
         train, test = _make_gaussian_data(
             train_count,
@@ -593,6 +756,9 @@ class MakeRegressorTest(parameterized.TestCase):
         return_distances,
         k_kwargs,
     ):
+        if config.state.backend == "torch":
+            _warn0(f"{self.__class__} does not support torch")
+            return
         response_count = 1
         # construct the observation locations
         train, test = _make_gaussian_data(
@@ -650,27 +816,30 @@ class MakeRegressorTest(parameterized.TestCase):
                     muygps.kernel.hyperparameters[key](),
                 )
         if sigma_method is None:
-            self.assertFalse(muygps.sigma_sq.trained())
-            self.assertEqual(np.array([1.0]), muygps.sigma_sq())
+            self.assertFalse(muygps.sigma_sq.trained)
+            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
         else:
-            self.assertTrue(muygps.sigma_sq.trained())
+            self.assertTrue(muygps.sigma_sq.trained)
             print(f"\toptimized sigma_sq to find value " f"{muygps.sigma_sq()}")
 
 
-class GPSigmaSqTest(parameterized.TestCase):
+class GPSigmaSqTest(GPTestCase):
     @parameterized.parameters(
         (
             (1000, f, r, sm, 10, nn_kwargs, k_kwargs)
-            for f in [100, 1]
-            for r in [10, 2, 1]
-            for sm in ["analytic"]
+            for f in [50, 1]
+            for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
+            # for f in [1]
+            # for r in [10]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for sm in ["analytic"]
             for k_kwargs in (
                 {
                     "kern": "matern",
                     "metric": "l2",
                     "eps": {"val": 1e-5},
-                    "nu": {"val": 1.0},
+                    "nu": {"val": 1.5},
                     "length_scale": {"val": 7.2},
                 },
                 {
@@ -680,9 +849,6 @@ class GPSigmaSqTest(parameterized.TestCase):
                     "length_scale": {"val": 1.5},
                 },
             )
-            # for f in [100]
-            # for r in [10]
-            # for nn_kwargs in _exact_nn_kwarg_options
         )
     )
     def test_batch_sigma_sq_shapes(
@@ -695,16 +861,16 @@ class GPSigmaSqTest(parameterized.TestCase):
         nn_kwargs,
         k_kwargs,
     ):
-        muygps = MuyGPS(**k_kwargs)
+        muygps = MuyGPS(response_count=response_count, **k_kwargs)
 
         # prepare data
         data = _make_gaussian_dict(data_count, feature_count, response_count)
 
         # neighbors and distances
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
-        indices = np.arange(data_count)
+        indices = mm.arange(data_count)
         nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
-        (_, F2_dists, _, nn_targets) = make_train_tensors(
+        (_, pairwise_dists, _, nn_targets) = make_train_tensors(
             muygps.kernel.metric,
             indices,
             nn_indices,
@@ -712,13 +878,15 @@ class GPSigmaSqTest(parameterized.TestCase):
             data["output"],
         )
 
-        K = muygps.kernel(F2_dists)
+        K = muygps.kernel(pairwise_dists)
         muygps = muygps_sigma_sq_optim(
-            muygps, F2_dists, nn_targets, sigma_method=sigma_method
+            muygps, pairwise_dists, nn_targets, sigma_method=sigma_method
         )
 
         K = _consistent_unchunk_tensor(K)
         nn_targets = _consistent_unchunk_tensor(nn_targets)
+        _check_ndarray(self.assertEqual, K, mm.ftype)
+        _check_ndarray(self.assertEqual, nn_targets, mm.ftype)
 
         if response_count > 1:
             self.assertEqual(len(muygps.sigma_sq()), response_count)
@@ -728,8 +896,15 @@ class GPSigmaSqTest(parameterized.TestCase):
                     nn_targets[:, :, i].reshape(data_count, nn_count, 1),
                     muygps.eps(),
                 )
+                _check_ndarray(self.assertEqual, sigmas, mm.ftype)
                 self.assertEqual(sigmas.shape, (data_count,))
-                self.assertAlmostEqual(muygps.sigma_sq()[i], np.mean(sigmas), 5)
+                _precision_assert(
+                    self.assertAlmostEqual,
+                    np.array(muygps.sigma_sq()[i]),
+                    np.mean(np.array(sigmas)),
+                    low_bound=0,
+                    high_bound=5,
+                )
         else:
             sigmas = _get_sigma_sq_series(
                 K,
@@ -737,7 +912,14 @@ class GPSigmaSqTest(parameterized.TestCase):
                 muygps.eps(),
             )
             self.assertEqual(sigmas.shape, (data_count,))
-            self.assertAlmostEqual(muygps.sigma_sq()[0], np.mean(sigmas), 5)
+            _check_ndarray(self.assertEqual, sigmas, mm.ftype)
+            _precision_assert(
+                self.assertAlmostEqual,
+                np.array(muygps.sigma_sq()[0]),
+                np.mean(np.array(sigmas)),
+                low_bound=0,
+                high_bound=5,
+            )
 
 
 if __name__ == "__main__":

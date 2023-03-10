@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
+import MuyGPyS._src.math.numpy as np
 
 
 def _muygps_compute_solve(

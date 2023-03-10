@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: MIT
 
+from absl.testing import absltest
+from absl.testing import parameterized
+
 from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
@@ -10,14 +13,18 @@ config.parse_flags_with_absl()  # Affords option setting from CLI
 if config.state.mpi_enabled is False:
     raise ValueError(f"Bad attempt to run mpi-only code with mpi diabled.")
 
+if config.state.backend != "mpi":
+    raise ValueError(
+        f"MPI correctness test must be run in MPI mode, not "
+        f"{config.state.backend}."
+    )
+
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_data,
     _exact_nn_kwarg_options,
 )
-from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS._src.gp.distance.numpy import (
     _make_regress_tensors as make_regress_tensors_n,
     _make_train_tensors as make_train_tensors_n,
@@ -88,12 +95,9 @@ from MuyGPyS._src.optimize.chassis.mpi import (
     _scipy_optimize as scipy_optimize_m,
     _bayes_opt_optimize as bayes_optimize_m,
 )
-
-from absl.testing import absltest
-from absl.testing import parameterized
-from mpi4py import MPI
-
-import numpy as np
+from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.batch import sample_batch
 
 world = config.mpi_state.comm_world
 rank = world.Get_rank()

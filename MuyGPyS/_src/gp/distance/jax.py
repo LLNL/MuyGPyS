@@ -3,13 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-import jax.numpy as jnp
-
+from functools import partial
 from typing import Tuple
 
-from functools import partial
 from jax import jit
+
+import MuyGPyS._src.math.jax as jnp
 
 # from sklearn.metrics.pairwise import cosine_similarity
 @partial(jit, static_argnums=(0,))
@@ -18,7 +17,7 @@ def _make_fast_regress_tensors(
     batch_nn_indices: jnp.ndarray,
     train_features: jnp.ndarray,
     train_targets: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
     num_train, _ = train_features.shape
     batch_nn_indices_fast = jnp.concatenate(
         (

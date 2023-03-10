@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-from copy import deepcopy
 from typing import Callable
 
 from MuyGPyS.gp.muygps import MuyGPS

@@ -3,9 +3,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-import jax.numpy as jnp
-
 from jax import jit
+
+import MuyGPyS._src.math.jax as jnp
 
 
 @jit
