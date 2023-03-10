@@ -74,12 +74,9 @@ as the distance and target tensors are usually needed together.
 """
 
 
-import numpy as np
-
 from typing import Optional, Tuple
 
-from MuyGPyS import config
-
+import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.distance import (
     _make_fast_regress_tensors,
     _make_regress_tensors,
@@ -91,17 +88,17 @@ from MuyGPyS._src.gp.distance import (
 
 
 def fast_nn_update(
-    batch_nn_indices: np.ndarray,
-) -> np.ndarray:
+    batch_nn_indices: mm.ndarray,
+) -> mm.ndarray:
     return _fast_nn_update(batch_nn_indices)
 
 
 def make_fast_regress_tensors(
     metric: str,
-    batch_nn_indices: np.ndarray,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
+    batch_nn_indices: mm.ndarray,
+    train_features: mm.ndarray,
+    train_targets: mm.ndarray,
+) -> Tuple[mm.ndarray, mm.ndarray]:
     """
     Create the distance and target tensors for fast regression.
 
@@ -145,12 +142,12 @@ def make_fast_regress_tensors(
 
 def make_regress_tensors(
     metric: str,
-    batch_indices: np.ndarray,
-    batch_nn_indices: np.ndarray,
-    test_features: Optional[np.ndarray],
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    batch_indices: mm.ndarray,
+    batch_nn_indices: mm.ndarray,
+    test_features: Optional[mm.ndarray],
+    train_features: mm.ndarray,
+    train_targets: mm.ndarray,
+) -> Tuple[mm.ndarray, mm.ndarray, mm.ndarray]:
     """
     Create the distance and target tensors for regression.
 
@@ -202,11 +199,11 @@ def make_regress_tensors(
 
 def make_train_tensors(
     metric: str,
-    batch_indices: np.ndarray,
-    batch_nn_indices: np.ndarray,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    batch_indices: mm.ndarray,
+    batch_nn_indices: mm.ndarray,
+    train_features: mm.ndarray,
+    train_targets: mm.ndarray,
+) -> Tuple[mm.ndarray, mm.ndarray, mm.ndarray, mm.ndarray]:
     """
     Create the distance and target tensors needed for training.
 
@@ -253,12 +250,12 @@ def make_train_tensors(
 
 
 def crosswise_distances(
-    data: np.ndarray,
-    nn_data: np.ndarray,
-    data_indices: np.ndarray,
-    nn_indices: np.ndarray,
+    data: mm.ndarray,
+    nn_data: mm.ndarray,
+    data_indices: mm.ndarray,
+    nn_indices: mm.ndarray,
     metric: str = "l2",
-) -> np.ndarray:
+) -> mm.ndarray:
     """
     Compute a matrix of distances between data and their nearest neighbors.
 
@@ -300,10 +297,10 @@ def crosswise_distances(
 
 
 def pairwise_distances(
-    data: np.ndarray,
-    nn_indices: np.ndarray,
+    data: mm.ndarray,
+    nn_indices: mm.ndarray,
     metric: str = "l2",
-) -> np.ndarray:
+) -> mm.ndarray:
     """
     Compute a tensor of pairwise distances among sets of nearest neighbors.
 

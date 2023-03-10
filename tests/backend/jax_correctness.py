@@ -9,22 +9,29 @@ config.parse_flags_with_absl()  # Affords option setting from CLI
 
 if config.state.jax_enabled is False:
     raise ValueError(f"Bad attempt to run jax-only code with jax diabled.")
+if config.state.backend == "mpi":
+    raise ValueError(f"Bad attempt to run non-MPI code in MPI mode.")
+elif config.state.backend != "numpy":
+    import warnings
 
-import jax.numpy as jnp
-import numpy as np
+    warnings.warn(
+        f"Backend correctness codes assume numpy mode, not "
+        f"{config.state.backend}. "
+        f"Force-switching MuyGPyS into numpy backend."
+    )
+    config.update("muygpys_backend", "numpy")
 
 from absl.testing import absltest
 from absl.testing import parameterized
 
+import MuyGPyS._src.math.jax as jnp
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._test.utils import (
+    _check_ndarray,
+    _exact_nn_kwarg_options,
     _make_gaussian_matrix,
     _make_gaussian_data,
-    _exact_nn_kwarg_options,
 )
-from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS._src.gp.distance.numpy import (
     _pairwise_distances as pairwise_distances_n,
     _crosswise_distances as crosswise_distances_n,
@@ -75,15 +82,13 @@ from MuyGPyS._src.gp.noise.numpy import (
 from MuyGPyS._src.gp.noise.jax import (
     _homoscedastic_perturb as homoscedastic_perturb_j,
 )
-from MuyGPyS._src.optimize.sigma_sq.numpy import (
-    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
+from MuyGPyS._src.optimize.chassis.numpy import (
+    _scipy_optimize as scipy_optimize_n,
+    _bayes_opt_optimize as bayes_optimize_n,
 )
-from MuyGPyS._src.optimize.sigma_sq.jax import (
-    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
-)
-from MuyGPyS.optimize.sigma_sq import (
-    make_kwargs_analytic_sigma_sq_optim,
-    make_array_analytic_sigma_sq_optim,
+from MuyGPyS._src.optimize.chassis.jax import (
+    _scipy_optimize as scipy_optimize_j,
+    _bayes_opt_optimize as bayes_optimize_j,
 )
 from MuyGPyS._src.optimize.loss.numpy import (
     _mse_fn as mse_fn_n,
@@ -95,14 +100,20 @@ from MuyGPyS._src.optimize.loss.jax import (
     _cross_entropy_fn as cross_entropy_fn_j,
     _lool_fn as lool_fn_j,
 )
-from MuyGPyS.optimize.objective import make_loo_crossval_fn
-from MuyGPyS._src.optimize.chassis.numpy import (
-    _scipy_optimize as scipy_optimize_n,
-    _bayes_opt_optimize as bayes_optimize_n,
+from MuyGPyS._src.optimize.sigma_sq.numpy import (
+    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
 )
-from MuyGPyS._src.optimize.chassis.jax import (
-    _scipy_optimize as scipy_optimize_j,
-    _bayes_opt_optimize as bayes_optimize_j,
+from MuyGPyS._src.optimize.sigma_sq.jax import (
+    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
+)
+from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.batch import sample_batch
+from MuyGPyS.optimize.objective import make_loo_crossval_fn
+from MuyGPyS.optimize.sigma_sq import (
+    make_kwargs_analytic_sigma_sq_optim,
+    make_array_analytic_sigma_sq_optim,
 )
 
 
@@ -170,14 +181,31 @@ class DistanceTestCase(parameterized.TestCase):
         cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
             cls.nbrs_lookup, cls.batch_count, cls.train_count
         )
-        cls.batch_indices_j = jnp.array(cls.batch_indices_n)
-        cls.batch_nn_indices_j = jnp.array(cls.batch_nn_indices_n)
+        cls.batch_indices_j = jnp.iarray(cls.batch_indices_n)
+        cls.batch_nn_indices_j = jnp.iarray(cls.batch_nn_indices_n)
+
+    def _check_ndarray(self, *args, **kwargs):
+        return _check_ndarray(self.assertEqual, *args, **kwargs)
 
 
 class DistanceTest(DistanceTestCase):
     @classmethod
     def setUpClass(cls):
         super(DistanceTest, cls).setUpClass()
+
+    def test_types(self):
+        self._check_ndarray(self.batch_indices_n, np.itype, ctype=np.ndarray)
+        self._check_ndarray(self.batch_nn_indices_n, np.itype, ctype=np.ndarray)
+        self._check_ndarray(self.train_features_n, np.ftype, ctype=np.ndarray)
+        self._check_ndarray(self.train_responses_n, np.ftype, ctype=np.ndarray)
+        self._check_ndarray(self.batch_indices_j, jnp.itype, ctype=jnp.ndarray)
+        self._check_ndarray(
+            self.batch_nn_indices_j, jnp.itype, ctype=jnp.ndarray
+        )
+        self._check_ndarray(self.train_features_j, jnp.ftype, ctype=jnp.ndarray)
+        self._check_ndarray(
+            self.train_responses_j, jnp.ftype, ctype=jnp.ndarray
+        )
 
     def test_pairwise_distances(self):
         self.assertTrue(
@@ -269,11 +297,66 @@ class KernelTestCase(DistanceTestCase):
             cls.train_responses_j,
         )
 
+    def _check_ndarray(self, *args, **kwargs):
+        return _check_ndarray(self.assertEqual, *args, **kwargs)
+
 
 class KernelTest(KernelTestCase):
     @classmethod
     def setUpClass(cls):
         super(KernelTest, cls).setUpClass()
+
+    def _test_types(
+        self,
+        crosswise_dists,
+        pairwise_dists,
+        batch_targets,
+        batch_nn_targets,
+        ftype,
+        ctype,
+    ):
+        self._check_ndarray(
+            crosswise_dists,
+            ftype,
+            ctype=ctype,
+            shape=(self.batch_count, self.nn_count),
+        )
+        self._check_ndarray(
+            pairwise_dists,
+            ftype,
+            ctype=ctype,
+            shape=(self.batch_count, self.nn_count, self.nn_count),
+        )
+        self._check_ndarray(
+            batch_targets,
+            ftype,
+            ctype=ctype,
+            shape=(self.batch_count, self.response_count),
+        )
+        self._check_ndarray(
+            batch_nn_targets,
+            ftype,
+            ctype=ctype,
+            shape=(self.batch_count, self.nn_count, self.response_count),
+        )
+
+    def test_types(self):
+        self._test_types(
+            self.crosswise_dists_j,
+            self.pairwise_dists_j,
+            self.batch_targets_j,
+            self.batch_nn_targets_j,
+            jnp.ftype,
+            jnp.ndarray,
+        )
+        self._test_types(
+            self.crosswise_dists_n,
+            self.pairwise_dists_n,
+            self.batch_targets_n,
+            self.batch_nn_targets_n,
+            np.ftype,
+            np.ndarray,
+        )
 
     def test_crosswise_rbf(self):
         self.assertTrue(
@@ -479,14 +562,13 @@ class MuyGPSTest(MuyGPSTestCase):
         )
 
 
-class FastPredictTestCase(MuyGPSTestCase):
+class FastPredictTest(MuyGPSTestCase):
     @classmethod
     def setUpClass(cls):
-        super(FastPredictTestCase, cls).setUpClass()
+        super(FastPredictTest, cls).setUpClass()
         cls.nn_indices_all_n, _ = cls.nbrs_lookup.get_batch_nns(
             np.arange(0, cls.train_count)
         )
-        cls.nn_indices_all_n = np.array(cls.nn_indices_all_n)
         (
             cls.K_fast_n,
             cls.train_nn_targets_fast_n,
@@ -525,9 +607,9 @@ class FastPredictTestCase(MuyGPSTestCase):
         )
 
         cls.nn_indices_all_j, _ = cls.nbrs_lookup.get_batch_nns(
-            jnp.arange(0, cls.train_count)
+            np.arange(0, cls.train_count)
         )
-        cls.nn_indices_all_j = jnp.array(cls.nn_indices_all_j)
+        cls.nn_indices_all_j = jnp.iarray(cls.nn_indices_all_j)
 
         (
             cls.K_fast_j,
@@ -558,7 +640,7 @@ class FastPredictTestCase(MuyGPSTestCase):
         cls.crosswise_dists_fast_j = crosswise_distances_j(
             cls.test_features_j,
             cls.train_features_j,
-            jnp.arange(0, cls.test_count),
+            np.arange(0, cls.test_count),
             cls.closest_set_new_j,
         )
         cls.Kcross_fast_j = matern_gen_fn_j(
@@ -613,10 +695,10 @@ class FastPredictTestCase(MuyGPSTestCase):
         )
 
 
-class FastMultivariatePredictTestCase(MuyGPSTestCase):
+class FastMultivariatePredictTest(MuyGPSTestCase):
     @classmethod
     def setUpClass(cls):
-        super(FastMultivariatePredictTestCase, cls).setUpClass()
+        super(FastMultivariatePredictTest, cls).setUpClass()
         cls.train_count = 1000
         cls.test_count = 100
         cls.feature_count = 10
@@ -661,12 +743,11 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
             cls.nbrs_lookup, cls.batch_count, cls.train_count
         )
-        cls.batch_indices_j = jnp.array(cls.batch_indices_n)
-        cls.batch_nn_indices_j = jnp.array(cls.batch_nn_indices_n)
+        cls.batch_indices_j = jnp.iarray(cls.batch_indices_n)
+        cls.batch_nn_indices_j = jnp.iarray(cls.batch_nn_indices_n)
         cls.nn_indices_all_n, _ = cls.nbrs_lookup.get_batch_nns(
             np.arange(0, cls.train_count)
         )
-        cls.nn_indices_all_n = np.array(cls.nn_indices_all_n)
         (
             cls.K_fast_n,
             cls.train_nn_targets_fast_n,
@@ -706,9 +787,9 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         cls.Kcross_fast_n = Kcross_fast_n
 
         cls.nn_indices_all_j, _ = cls.nbrs_lookup.get_batch_nns(
-            jnp.arange(0, cls.train_count)
+            np.arange(0, cls.train_count)
         )
-        cls.nn_indices_all_j = jnp.array(cls.nn_indices_all_j)
+        cls.nn_indices_all_j = jnp.iarray(cls.nn_indices_all_j)
 
         (
             cls.K_fast_j,
@@ -738,7 +819,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         cls.crosswise_dists_fast_j = crosswise_distances_j(
             cls.test_features_j,
             cls.train_features_j,
-            jnp.arange(0, cls.test_count),
+            np.arange(0, cls.test_count),
             cls.closest_set_new_j,
         )
 
@@ -1217,6 +1298,11 @@ class BayesOptimTest(OptimTestCase):
         }
 
     def test_optimize(self):
+        if config.state.ftype == "32":
+            import warnings
+
+            warnings.warn(f"Bayesopt does not support JAX in 32bit mode.")
+            return
         obj_fn_n = self._get_kwargs_obj_fn_n()
         obj_fn_j = self._get_kwargs_obj_fn_j()
         obj_fn_h = self._get_kwargs_obj_fn_h()

@@ -15,7 +15,9 @@ from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
-from MuyGPyS.examples.two_class_classify_uq import example_lambdas
+if config.state.backend in ["mpi", "torch"]:
+    raise ValueError(f"This test only supports numpy and jax backends!")
+
 from MuyGPyS._test.api import FastRegressionAPITest
 from MuyGPyS._test.utils import (
     _balanced_subsample,

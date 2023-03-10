@@ -4,6 +4,9 @@
 # SPDX-License-Identifier: MIT
 
 
+from typing import Tuple
+
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.mpi_utils import (
     _chunk_function_tensor,
 )
@@ -13,10 +16,6 @@ from MuyGPyS._src.gp.distance.numpy import (
     _make_train_tensors as _make_train_tensors_n,
     _make_regress_tensors as _make_regress_tensors_n,
 )
-
-from typing import Tuple
-
-import numpy as np
 
 
 def _make_fast_regress_tensors(

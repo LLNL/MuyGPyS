@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -15,15 +13,17 @@ from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
-from MuyGPyS.neighbors import NN_Wrapper
+import MuyGPyS._src.math as mm
+from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor, _warn0
 from MuyGPyS._test.utils import (
-    _make_gaussian_matrix,
     _basic_nn_kwarg_options,
+    _check_ndarray,
     _consistent_assert,
+    _make_gaussian_matrix,
 )
-from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor
 from MuyGPyS.gp.distance import pairwise_distances
 from MuyGPyS.gp.kernels import Hyperparameter, SigmaSq, RBF, Matern
+from MuyGPyS.neighbors import NN_Wrapper
 
 
 class DistancesTest(parameterized.TestCase):
@@ -59,6 +59,7 @@ class DistancesTest(parameterized.TestCase):
         dists = _consistent_unchunk_tensor(
             pairwise_distances(train, nn_indices, metric=metric)
         )
+        _check_ndarray(self.assertEqual, dists, mm.ftype)
         self.assertEqual(dists.shape, (test_count, nn_count, nn_count))
 
     @parameterized.parameters(
@@ -81,16 +82,21 @@ class DistancesTest(parameterized.TestCase):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         points = train[nn_indices]
         self.assertEqual(points.shape, (test_count, nn_count, feature_count))
-        dists = np.array(
-            [
-                np.linalg.norm(mat[:, None, :] - mat[None, :, :], axis=-1) ** 2
-                for mat in points
-            ]
+        dists = mm.array(
+            mm.np_array(
+                [
+                    mm.np_linalg.norm(
+                        mat[:, None, :] - mat[None, :, :], axis=-1
+                    )
+                    ** 2
+                    for mat in points
+                ]
+            )
         )
         self.assertEqual(dists.shape, (test_count, nn_count, nn_count))
         ll_dists = points[:, :, None, :] - points[:, None, :, :]
         ll_dists = ll_dists**2
-        ll_dists = np.sum(ll_dists, axis=-1)
+        ll_dists = mm.sum(ll_dists, axis=-1)
         self.assertEqual(ll_dists.shape, (test_count, nn_count, nn_count))
         l2_dists = _consistent_unchunk_tensor(
             pairwise_distances(train, nn_indices, metric="l2")
@@ -100,9 +106,13 @@ class DistancesTest(parameterized.TestCase):
             pairwise_distances(train, nn_indices, metric="F2")
         )
         self.assertEqual(l2_dists.shape, (test_count, nn_count, nn_count))
-        _consistent_assert(self.assertTrue, np.allclose(dists, F2_dists))
-        _consistent_assert(self.assertTrue, np.allclose(dists, l2_dists**2))
-        _consistent_assert(self.assertTrue, np.allclose(dists, ll_dists))
+        _check_ndarray(self.assertEqual, dists, mm.ftype)
+        _check_ndarray(self.assertEqual, F2_dists, mm.ftype)
+        _check_ndarray(self.assertEqual, l2_dists, mm.ftype)
+        _check_ndarray(self.assertEqual, ll_dists, mm.ftype)
+        _consistent_assert(self.assertTrue, mm.allclose(dists, F2_dists))
+        _consistent_assert(self.assertTrue, mm.allclose(dists, l2_dists**2))
+        _consistent_assert(self.assertTrue, mm.allclose(dists, ll_dists))
 
 
 class BackendConfigUser:
@@ -122,59 +132,18 @@ class SigmaSqTest(parameterized.TestCase):
     def _do_untrained(self, val):
         param = SigmaSq()
         self.assertFalse(param.trained)
-        self.assertEqual(np.array([1.0]), param())
+        self.assertEqual(mm.array([1.0]), param())
         param._set(val)
         self.assertEqual(val, param())
+        self.assertEqual(mm.ndarray, type(param()))
 
-    @parameterized.parameters(v for v in [5.0, [5.0]])
+    @parameterized.parameters(v for v in [5.0])
     def test_untrained_good(self, val):
-        self._do_untrained(np.array(val))
+        self._do_untrained(mm.atleast_1d(mm.array(val)))
 
     def test_untrained_bad(self):
-        with self.assertRaisesRegex(ValueError, "Expected np.ndarray"):
+        with self.assertRaisesRegex(ValueError, "for SigmaSq value update"):
             self._do_untrained([5.0])
-
-    def _jax_chassis(self, backend, func):
-        # This is broken and needs repair
-        try:
-            import jax.numpy as jnp
-
-            with BackendConfigUser(backend):
-                func()
-        except Exception as e:
-            # JAX not installed; skip
-            print("skipping due to error:", e)
-            pass
-
-    def _jax_disabled(self):
-        import jax.numpy as jnp
-
-        with self.assertRaisesRegex(ValueError, "Expected np.ndarray for"):
-            self._do_untrained(jnp.array([5.0]))
-
-    def test_untrained_jax_disabled(self):
-        self._jax_chassis("numpy", self._jax_disabled)
-
-    def _jax_good(self, val):
-        import jax.numpy as jnp
-
-        self._do_untrained(jnp.array(val))
-
-    @parameterized.parameters(v for v in [5.0, [5.0]])
-    def test_untrained_jax_good(self, val):
-        def jax_good():
-            self._jax_good(val)
-
-        self._jax_chassis("jax", jax_good)
-
-    def _jax_bad(self):
-        import jax.numpy as jnp
-
-        with self.assertRaises(ValueError):
-            self._do_untrained([5.0])
-
-    def test_untrained_jax_bad(self):
-        self._jax_chassis("jax", self._jax_bad)
 
 
 class HyperparameterTest(parameterized.TestCase):
@@ -251,8 +220,8 @@ class HyperparameterTest(parameterized.TestCase):
         (
             kwargs
             for kwargs in (
-                {"val": np.array([1e-2, 1e1]), "bounds": "fixed"},
-                {"val": np.array([1e3]), "bounds": (1e-1, 1e2)},
+                {"val": mm.array([1e-2, 1e1]), "bounds": "fixed"},
+                {"val": mm.array([1e3]), "bounds": (1e-1, 1e2)},
             )
         )
     )
@@ -348,12 +317,6 @@ class RBFTest(KernelTest):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
-            # for f in [100]
-            # for nn in [5]
-            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            # for k_kwargs in [
-            #     {"length_scale": {"val": 10.0, "bounds": (1e-5, 1e1)}}
-            # ]
             for f in [100, 10, 2, 1]
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
@@ -361,6 +324,12 @@ class RBFTest(KernelTest):
                 {"length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)}},
                 {"length_scale": {"val": 2.0, "bounds": (1e-4, 1e3)}},
             ]
+            # for f in [100]
+            # for nn in [5]
+            # for nn_kwargs in [_basic_nn_kwarg_options[1]]
+            # for k_kwargs in [
+            #     {"length_scale": {"val": 10.0, "bounds": (1e-5, 1e1)}}
+            # ]
         )
     )
     def test_rbf(
@@ -383,16 +352,18 @@ class RBFTest(KernelTest):
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         sk_rbf = sk_RBF(length_scale=rbf.length_scale())
-        sk_kern = np.array([sk_rbf(mat) for mat in points])
+        sk_kern = mm.array(mm.np_array([sk_rbf(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
-        _consistent_assert(self.assertTrue, np.allclose(kern, sk_kern))
+        _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
         Kcross = rbf(nn_dists)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        sk_Kcross = np.array(
-            [sk_rbf(vec, mat) for vec, mat in zip(test, points)]
+        sk_Kcross = mm.array(
+            mm.np_array([sk_rbf(vec, mat) for vec, mat in zip(test, points)])
         ).reshape(test_count, nn_count)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        self.assertTrue(np.allclose(Kcross, sk_Kcross))
+        self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
+        _check_ndarray(self.assertEqual, Kcross, mm.ftype)
+        self.assertTrue(mm.allclose(Kcross, sk_Kcross))
 
 
 class ParamTest(KernelTest):
@@ -474,15 +445,16 @@ class MaternTest(KernelTest):
                     "length_scale": {"val": 1.0, "bounds": "fixed"},
                 },
                 {
-                    "nu": {"val": np.inf, "bounds": "fixed"},
+                    "nu": {"val": mm.inf, "bounds": "fixed"},
                     "length_scale": {"val": 1.0, "bounds": "fixed"},
                 },
             ]
             # for f in [100]
             # for nn in [5]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             # for k_kwargs in [
             #     {
-            #         "nu": {"val": 0.42, "bounds": (1e-4, 5e1)},
+            #         "nu": {"val": 0.42, "bounds": "fixed"},
             #         "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
             #     }
             # ]
@@ -497,11 +469,22 @@ class MaternTest(KernelTest):
         nn_kwargs,
         k_kwargs,
     ):
+        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
+            0.5,
+            1.5,
+            2.5,
+            mm.inf,
+        ]:
+            bad_nu = k_kwargs["nu"]["val"]
+            _warn0(
+                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+            )
+            return
         train = _make_gaussian_matrix(train_count, feature_count)
         test = _make_gaussian_matrix(test_count, feature_count)
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
-        nn_dists = np.sqrt(nn_dists)
+        nn_dists = mm.sqrt(nn_dists)
         l2_dists = pairwise_distances(train, nn_indices, metric="l2")
         mtn = Matern(**k_kwargs)
         self._check_params_chassis(mtn, **k_kwargs)
@@ -509,16 +492,20 @@ class MaternTest(KernelTest):
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=mtn.length_scale())
-        sk_kern = np.array([sk_mtn(mat) for mat in points])
+        sk_kern = mm.array(mm.np_array([sk_mtn(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
-        _consistent_assert(self.assertTrue, np.allclose(kern, sk_kern))
+        _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
         Kcross = mtn(nn_dists)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        sk_Kcross = np.array(
-            [sk_mtn(vec, mat) for vec, mat in zip(test, points)]
-        ).reshape(test_count, nn_count)
+        sk_Kcross = mm.array(
+            mm.np_array(
+                [sk_mtn(vec, mat) for vec, mat in zip(test, points)]
+            ).reshape(test_count, nn_count)
+        )
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        self.assertTrue, np.allclose(Kcross, sk_Kcross)
+        self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
+        _check_ndarray(self.assertEqual, Kcross, mm.ftype)
+        self.assertTrue(mm.allclose(Kcross, sk_Kcross))
 
 
 if __name__ == "__main__":

@@ -17,11 +17,11 @@ Currently supported implementations include exact KNN using
 ("hnsw").
 """
 
-import numpy as np
-
 from sklearn.neighbors import NearestNeighbors
 from typing import Tuple
 
+
+import MuyGPyS._src.math as mm
 from MuyGPyS import config
 
 if config.state.hnswlib_enabled is True:
@@ -71,7 +71,7 @@ class NN_Wrapper:
 
     def __init__(
         self,
-        train: np.ndarray,
+        train: mm.ndarray,
         nn_count: int,
         nn_method: str = "exact",
         **kwargs,
@@ -125,8 +125,8 @@ class NN_Wrapper:
 
     def get_nns(
         self,
-        test: np.ndarray,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        test: mm.ndarray,
+    ) -> Tuple[mm.ndarray, mm.ndarray]:
         """
         Get the nearest neighbors for each row of `test` dataset.
 
@@ -165,8 +165,8 @@ class NN_Wrapper:
 
     def get_batch_nns(
         self,
-        batch_indices: np.ndarray,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        batch_indices: mm.ndarray,
+    ) -> Tuple[mm.ndarray, mm.ndarray]:
         """
         Get the non-self nearest neighbors for indices into the training data.
 
@@ -209,9 +209,9 @@ class NN_Wrapper:
 
     def _get_nns(
         self,
-        samples: np.ndarray,
+        samples: mm.ndarray,
         nn_count: int,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[mm.ndarray, mm.ndarray]:
         """
         Get the nearest neighbors for each row of `samples` dataset.
 
@@ -248,9 +248,10 @@ class NN_Wrapper:
             # F2 values as distances in order to avoid the square root
             # computations.
             nn_indices, nn_dists = self.nbrs.knn_query(samples, k=nn_count)
+            nn_indices = nn_indices.astype(mm.np_itype)
         else:
             raise NotImplementedError(
                 f"Nearest Neighbor algorithm {self.nn_method} is not implemented."
             )
 
-        return nn_indices, nn_dists
+        return mm.iarray(nn_indices), mm.array(nn_dists)

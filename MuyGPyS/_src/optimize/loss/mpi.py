@@ -3,16 +3,15 @@
 #
 # SPDX-License-Identifier: MIT
 
+from mpi4py import MPI
+
+import MuyGPyS._src.math.numpy as np
+from MuyGPyS import config
 from MuyGPyS._src.optimize.loss.numpy import (
     _mse_fn_unnormalized,
     _cross_entropy_fn as _cross_entropy_fn_n,
     _lool_fn as _lool_fn_n,
 )
-from MuyGPyS import config
-
-from mpi4py import MPI
-
-import numpy as np
 
 world = config.mpi_state.comm_world
 

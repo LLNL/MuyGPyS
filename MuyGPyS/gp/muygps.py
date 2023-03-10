@@ -7,27 +7,13 @@
 MuyGPs implementation
 """
 
-import numpy as np
-
 from typing import Callable, Dict, List, Optional, Tuple, Union
-from MuyGPyS.gp.distance import crosswise_distances
 
-from MuyGPyS.gp.kernels import (
-    _get_kernel,
-    _init_hyperparameter,
-    Hyperparameter,
-    SigmaSq,
-)
-from MuyGPyS.gp.noise import HomoscedasticNoise
-
-from MuyGPyS import config
-
+import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.distance import (
     _make_regress_tensors,
     _make_fast_regress_tensors,
 )
-
-
 from MuyGPyS._src.gp.distance.numpy import (
     _make_regress_tensors as _make_regress_tensors_n,
 )
@@ -40,7 +26,14 @@ from MuyGPyS._src.gp.muygps import (
 )
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
-from MuyGPyS._src.math import _zeros
+from MuyGPyS.gp.distance import crosswise_distances
+from MuyGPyS.gp.kernels import (
+    _get_kernel,
+    _init_hyperparameter,
+    Hyperparameter,
+    SigmaSq,
+)
+from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
@@ -114,6 +107,7 @@ class MuyGPS:
         self,
         kern: str = "matern",
         eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
+        response_count: int = 1,
         **kwargs,
     ):
         self.kern = kern.lower()
@@ -121,7 +115,7 @@ class MuyGPS:
         self.eps = _init_hyperparameter(
             1e-14, "fixed", HomoscedasticNoise, **eps
         )
-        self.sigma_sq = SigmaSq()
+        self.sigma_sq = SigmaSq(response_count)
 
     def set_eps(self, **eps) -> None:
         """
@@ -154,7 +148,7 @@ class MuyGPS:
 
     def get_optim_params(
         self,
-    ) -> Tuple[List[str], np.ndarray, np.ndarray]:
+    ) -> Tuple[List[str], mm.ndarray, mm.ndarray]:
         """
         Return lists of unfixed hyperparameter names, values, and bounds.
 
@@ -172,15 +166,15 @@ class MuyGPS:
             names.append("eps")
             params.append(self.eps())
             bounds.append(self.eps.get_bounds())
-        return names, np.array(params), np.array(bounds)
+        return names, mm.array(params), mm.array(bounds)
 
     @staticmethod
     def _compute_solve(
-        K: np.ndarray,
-        Kcross: np.ndarray,
-        batch_nn_targets: np.ndarray,
+        K: mm.ndarray,
+        Kcross: mm.ndarray,
+        batch_nn_targets: mm.ndarray,
         eps: float,
-    ) -> np.ndarray:
+    ) -> mm.ndarray:
         """
         Simultaneously solve all of the GP inference systems of linear
         equations.
@@ -213,10 +207,10 @@ class MuyGPS:
 
     @staticmethod
     def _compute_diagonal_variance(
-        K: np.ndarray,
-        Kcross: np.ndarray,
+        K: mm.ndarray,
+        Kcross: mm.ndarray,
         eps: float,
-    ) -> np.ndarray:
+    ) -> mm.ndarray:
         """
         Simultaneously solve all of the GP inference systems of linear
         equations.
@@ -245,20 +239,20 @@ class MuyGPS:
 
     def regress_from_indices(
         self,
-        indices: np.ndarray,
-        nn_indices: np.ndarray,
-        test: np.ndarray,
-        train: np.ndarray,
-        targets: np.ndarray,
+        indices: mm.ndarray,
+        nn_indices: mm.ndarray,
+        test: mm.ndarray,
+        train: mm.ndarray,
+        targets: mm.ndarray,
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
         return_distances: bool = False,
         indices_by_rank: bool = False,
     ) -> Union[
-        np.ndarray,
-        Tuple[np.ndarray, np.ndarray],
-        Tuple[np.ndarray, np.ndarray, np.ndarray],
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+        mm.ndarray,
+        Tuple[mm.ndarray, mm.ndarray],
+        Tuple[mm.ndarray, mm.ndarray, mm.ndarray],
+        Tuple[mm.ndarray, mm.ndarray, mm.ndarray, mm.ndarray],
     ]:
         """
         Performs simultaneous regression on a list of observations.
@@ -349,11 +343,11 @@ class MuyGPS:
 
     def build_fast_regress_coeffs(
         self,
-        train: np.ndarray,
-        nn_indices: np.ndarray,
-        targets: np.ndarray,
+        train: mm.ndarray,
+        nn_indices: mm.ndarray,
+        targets: mm.ndarray,
         indices_by_rank: bool = False,
-    ) -> np.ndarray:
+    ) -> mm.ndarray:
         """
         Produces coefficient matrix for fast regression given in Equation
         (8) of [dunton2022fast]_. To form each row of this matrix, we compute
@@ -401,10 +395,10 @@ class MuyGPS:
 
     @staticmethod
     def _build_fast_regress_coeffs(
-        K: np.ndarray,
+        K: mm.ndarray,
         eps: float,
-        train_nn_targets_fast: np.ndarray,
-    ) -> np.ndarray:
+        train_nn_targets_fast: mm.ndarray,
+    ) -> mm.ndarray:
 
         return _muygps_fast_regress_precompute(
             _homoscedastic_perturb(K, eps), train_nn_targets_fast
@@ -412,12 +406,12 @@ class MuyGPS:
 
     def regress(
         self,
-        K: np.ndarray,
-        Kcross: np.ndarray,
-        batch_nn_targets: np.ndarray,
+        K: mm.ndarray,
+        Kcross: mm.ndarray,
+        batch_nn_targets: mm.ndarray,
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> Union[mm.ndarray, Tuple[mm.ndarray, mm.ndarray]]:
         """
         Performs simultaneous regression on provided covariance,
         cross-covariance, and target.
@@ -508,14 +502,14 @@ class MuyGPS:
 
     @staticmethod
     def _regress(
-        K: np.ndarray,
-        Kcross: np.ndarray,
-        batch_nn_targets: np.ndarray,
+        K: mm.ndarray,
+        Kcross: mm.ndarray,
+        batch_nn_targets: mm.ndarray,
         eps: float,
-        sigma_sq: np.ndarray,
+        sigma_sq: mm.ndarray,
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> Union[mm.ndarray, Tuple[mm.ndarray, mm.ndarray]]:
         responses = MuyGPS._compute_solve(K, Kcross, batch_nn_targets, eps)
         if variance_mode is None:
             return responses
@@ -527,7 +521,7 @@ class MuyGPS:
                 if len(sigma_sq) == 1:
                     diagonal_variance *= sigma_sq
                 else:
-                    diagonal_variance = np.array(
+                    diagonal_variance = mm.array(
                         [ss * diagonal_variance for ss in sigma_sq]
                     ).T
             return responses, diagonal_variance
@@ -538,13 +532,13 @@ class MuyGPS:
 
     def fast_regress_from_indices(
         self,
-        indices: np.ndarray,
-        nn_indices: np.ndarray,
-        test_features: np.ndarray,
-        train_features: np.ndarray,
-        closest_index: np.ndarray,
-        coeffs_tensor: np.ndarray,
-    ) -> np.ndarray:
+        indices: mm.ndarray,
+        nn_indices: mm.ndarray,
+        test_features: mm.ndarray,
+        train_features: mm.ndarray,
+        closest_index: mm.ndarray,
+        coeffs_tensor: mm.ndarray,
+    ) -> mm.ndarray:
         """
         Performs fast regression using provided
         cross-covariance, the index of the training point closest to the
@@ -607,9 +601,9 @@ class MuyGPS:
 
     def fast_regress(
         self,
-        Kcross: np.ndarray,
-        coeffs_tensor: np.ndarray,
-    ) -> np.ndarray:
+        Kcross: mm.ndarray,
+        coeffs_tensor: mm.ndarray,
+    ) -> mm.ndarray:
         """
         Performs fast regression using provided
         cross-covariance and precomputed coefficient matrix.
@@ -655,9 +649,9 @@ class MuyGPS:
 
     @staticmethod
     def _fast_regress(
-        Kcross: np.ndarray,
-        coeffs_tensor: np.ndarray,
-    ) -> np.ndarray:
+        Kcross: mm.ndarray,
+        coeffs_tensor: mm.ndarray,
+    ) -> mm.ndarray:
         responses = _muygps_fast_regress_solve(Kcross, coeffs_tensor)
         return responses
 
@@ -896,7 +890,7 @@ class MultivariateMuyGPS:
         self.kern = kern.lower()
         self.models = [MuyGPS(kern, **args) for args in model_args]
         self.metric = self.models[0].kernel.metric  # this is brittle
-        self.sigma_sq = SigmaSq()
+        self.sigma_sq = SigmaSq(len(self.models))
 
     def fixed(self) -> bool:
         """
@@ -907,24 +901,24 @@ class MultivariateMuyGPS:
             Returns `True` if all parameters in all models are fixed, and
             `False` otherwise.
         """
-        return bool(np.all([model.fixed() for model in self.models]))
+        return bool(all([model.fixed() for model in self.models]))
 
     def regress_from_indices(
         self,
-        indices: np.ndarray,
-        nn_indices: np.ndarray,
-        test: np.ndarray,
-        train: np.ndarray,
-        targets: np.ndarray,
+        indices: mm.ndarray,
+        nn_indices: mm.ndarray,
+        test: mm.ndarray,
+        train: mm.ndarray,
+        targets: mm.ndarray,
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
         return_distances: bool = False,
         indices_by_rank: bool = False,
     ) -> Union[
-        np.ndarray,
-        Tuple[np.ndarray, np.ndarray],
-        Tuple[np.ndarray, np.ndarray, np.ndarray],
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+        mm.ndarray,
+        Tuple[mm.ndarray, mm.ndarray],
+        Tuple[mm.ndarray, mm.ndarray, mm.ndarray],
+        Tuple[mm.ndarray, mm.ndarray, mm.ndarray, mm.ndarray],
     ]:
         """
         Performs simultaneous regression on a list of observations.
@@ -1016,12 +1010,12 @@ class MultivariateMuyGPS:
 
     def regress(
         self,
-        pairwise_dists: np.ndarray,
-        crosswise_dists: np.ndarray,
-        batch_nn_targets: np.ndarray,
+        pairwise_dists: mm.ndarray,
+        crosswise_dists: mm.ndarray,
+        batch_nn_targets: mm.ndarray,
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> Union[mm.ndarray, Tuple[mm.ndarray, mm.ndarray]]:
         """
         Performs simultaneous regression on provided distance tensors and
         the target matrix.
@@ -1117,19 +1111,19 @@ class MultivariateMuyGPS:
     @staticmethod
     def _regress(
         models: List[MuyGPS],
-        pairwise_dists: np.ndarray,
-        crosswise_dists: np.ndarray,
-        batch_nn_targets: np.ndarray,
+        pairwise_dists: mm.ndarray,
+        crosswise_dists: mm.ndarray,
+        batch_nn_targets: mm.ndarray,
         sigma_sq: SigmaSq,
         variance_mode: Optional[str] = None,
         apply_sigma_sq: bool = True,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> Union[mm.ndarray, Tuple[mm.ndarray, mm.ndarray]]:
         batch_count, nn_count, response_count = batch_nn_targets.shape
-        responses = _zeros((batch_count, response_count))
+        responses = mm.zeros((batch_count, response_count))
         if variance_mode is None:
             pass
         elif variance_mode == "diagonal":
-            diagonal_variance = _zeros((batch_count, response_count))
+            diagonal_variance = mm.zeros((batch_count, response_count))
         else:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
@@ -1137,29 +1131,46 @@ class MultivariateMuyGPS:
         for i, model in enumerate(models):
             K = model.kernel(pairwise_dists)
             Kcross = model.kernel(crosswise_dists)
-            responses[:, i] = model._compute_solve(
-                K,
-                Kcross,
-                batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
-                model.eps(),
-            ).reshape(batch_count)
+            responses = mm.assign(
+                responses,
+                model._compute_solve(
+                    K,
+                    Kcross,
+                    batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+                    model.eps(),
+                ).reshape(batch_count),
+                slice(None),
+                i,
+            )
             if variance_mode == "diagonal":
-                diagonal_variance[:, i] = model._compute_diagonal_variance(
-                    K, Kcross, model.eps()
-                ).reshape(batch_count)
-                if apply_sigma_sq:
-                    diagonal_variance[:, i] *= sigma_sq()[i]
+                ss = sigma_sq()[i] if apply_sigma_sq else 1.0
+                diagonal_variance = mm.assign(
+                    diagonal_variance,
+                    model._compute_diagonal_variance(
+                        K, Kcross, model.eps()
+                    ).reshape(batch_count)
+                    * ss,
+                    slice(None),
+                    i,
+                )
+                # if apply_sigma_sq:
+                #     diagonal_variance = mm.assign(
+                #         diagonal_variance,
+                #         diagonal_variance[:, i] * sigma_sq()[i],
+                #         slice(None),
+                #         i,
+                #     )
         if variance_mode == "diagonal":
             return responses, diagonal_variance
         return responses
 
     def build_fast_regress_coeffs(
         self,
-        train: np.ndarray,
-        nn_indices: np.ndarray,
-        targets: np.ndarray,
+        train: mm.ndarray,
+        nn_indices: mm.ndarray,
+        targets: mm.ndarray,
         indices_by_rank: bool = False,
-    ) -> np.ndarray:
+    ) -> mm.ndarray:
         """
         Produces coefficient tensor for fast regression given in Equation
         (8) of [dunton2022fast]_. To form the tensor, we compute
@@ -1207,29 +1218,35 @@ class MultivariateMuyGPS:
     @staticmethod
     def _build_fast_regress_coeffs(
         models: List[MuyGPS],
-        pairwise_dists_fast: np.ndarray,
-        train_nn_targets_fast: np.ndarray,
-    ) -> np.ndarray:
+        pairwise_dists_fast: mm.ndarray,
+        train_nn_targets_fast: mm.ndarray,
+    ) -> mm.ndarray:
         train_count, nn_count, response_count = train_nn_targets_fast.shape
-        coeffs_tensor = _zeros((train_count, nn_count, response_count))
+        coeffs_tensor = mm.zeros((train_count, nn_count, response_count))
         for i, model in enumerate(models):
             K = model.kernel(pairwise_dists_fast)
-            coeffs_tensor[:, :, i] = _muygps_fast_regress_precompute(
-                _homoscedastic_perturb(K, model.eps()),
-                train_nn_targets_fast[:, :, i],
+            mm.assign(
+                coeffs_tensor,
+                _muygps_fast_regress_precompute(
+                    _homoscedastic_perturb(K, model.eps()),
+                    train_nn_targets_fast[:, :, i],
+                ),
+                slice(None),
+                slice(None),
+                i,
             )
 
         return coeffs_tensor
 
     def fast_regress_from_indices(
         self,
-        indices: np.ndarray,
-        nn_indices: np.ndarray,
-        test_features: np.ndarray,
-        train_features: np.ndarray,
-        closest_index: np.ndarray,
-        coeffs_tensor: np.ndarray,
-    ) -> np.ndarray:
+        indices: mm.ndarray,
+        nn_indices: mm.ndarray,
+        test_features: mm.ndarray,
+        train_features: mm.ndarray,
+        closest_index: mm.ndarray,
+        coeffs_tensor: mm.ndarray,
+    ) -> mm.ndarray:
         """
         Performs fast multivariate regression using provided
         vectors and matrices used in constructed the crosswise distances matrix,
@@ -1293,9 +1310,9 @@ class MultivariateMuyGPS:
 
     def fast_regress(
         self,
-        crosswise_dists: np.ndarray,
-        coeffs_tensor: np.ndarray,
-    ) -> np.ndarray:
+        crosswise_dists: mm.ndarray,
+        coeffs_tensor: mm.ndarray,
+    ) -> mm.ndarray:
         """
         Performs fast regression using provided
         crosswise distances and precomputed coefficient matrix.
@@ -1336,10 +1353,16 @@ class MultivariateMuyGPS:
     @staticmethod
     def _fast_regress(
         models: List[MuyGPS],
-        crosswise_dists: np.ndarray,
-        coeffs_tensor: np.ndarray,
-    ) -> np.ndarray:
-        Kcross = _zeros(coeffs_tensor.shape)
+        crosswise_dists: mm.ndarray,
+        coeffs_tensor: mm.ndarray,
+    ) -> mm.ndarray:
+        Kcross = mm.zeros(coeffs_tensor.shape)
         for i, model in enumerate(models):
-            Kcross[:, :, i] = model.kernel(crosswise_dists)
+            mm.assign(
+                Kcross,
+                model.kernel(crosswise_dists),
+                slice(None),
+                slice(None),
+                i,
+            )
         return _mmuygps_fast_regress_solve(Kcross, coeffs_tensor)

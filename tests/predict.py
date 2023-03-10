@@ -10,6 +10,9 @@ from absl.testing import parameterized
 
 from MuyGPyS import config
 
+if config.state.backend == "torch":
+    raise ValueError(f"conventional optimization does not support torch.")
+
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
 from MuyGPyS.examples.classify import classify_any

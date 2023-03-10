@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -12,11 +10,13 @@ from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
-from MuyGPyS.neighbors import NN_Wrapper
+import MuyGPyS._src.math as mm
 from MuyGPyS._test.utils import (
-    _make_gaussian_matrix,
     _basic_nn_kwarg_options,
+    _check_ndarray,
+    _make_gaussian_matrix,
 )
+from MuyGPyS.neighbors import NN_Wrapper
 
 
 class NeighborsTest(parameterized.TestCase):
@@ -33,8 +33,13 @@ class NeighborsTest(parameterized.TestCase):
     ):
         data = _make_gaussian_matrix(data_count, feature_count)
         nbrs_lookup = NN_Wrapper(data, nn_count, **nn_kwargs)
-        indices = np.random.choice(data_count, batch_count, replace=False)
+        indices = mm.iarray(
+            mm.np_random.choice(data_count, batch_count, replace=False)
+        )
+        _check_ndarray(self.assertEqual, indices, mm.itype)
         nn_indices, nn_dists = nbrs_lookup.get_batch_nns(indices)
+        _check_ndarray(self.assertEqual, nn_indices, mm.itype)
+        _check_ndarray(self.assertEqual, nn_dists, mm.ftype)
         self.assertEqual(nn_indices.shape, (batch_count, nn_count))
         self.assertEqual(nn_dists.shape, (batch_count, nn_count))
 
@@ -58,6 +63,8 @@ class NeighborsTest(parameterized.TestCase):
         test = _make_gaussian_matrix(test_count, feature_count)
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+        _check_ndarray(self.assertEqual, nn_indices, mm.itype)
+        _check_ndarray(self.assertEqual, nn_dists, mm.ftype)
         self.assertEqual(nn_indices.shape, (test_count, nn_count))
         self.assertEqual(nn_dists.shape, (test_count, nn_count))
 

@@ -21,5 +21,12 @@ def _collect_implementation(package, *funcs):
         )
 
 
+def _fullname(klass):
+    module = klass.__module__
+    if module == "builtins":
+        return klass.__qualname__
+    return module + "." + klass.__qualname__
+
+
 def _collect_functions(package, *funcs):
     return tuple([getattr(__import__(package, fromlist=[f]), f) for f in funcs])

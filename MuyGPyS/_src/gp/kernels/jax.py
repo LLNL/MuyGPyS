@@ -3,12 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-import jax.numpy as jnp
-
 from jax import jit
+from jax.scipy.special import gammaln
 from tensorflow_probability.substrates import jax as tfp
 
-from jax.scipy.special import gammaln
+import MuyGPyS._src.math.jax as jnp
 
 
 @jit

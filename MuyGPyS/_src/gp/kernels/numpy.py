@@ -3,9 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
 
 from scipy.special import gamma, kv
+
+import MuyGPyS._src.math.numpy as np
 
 
 def _rbf_fn(squared_dists: np.ndarray, length_scale: float) -> np.ndarray:

@@ -11,11 +11,10 @@ Currently only supports an analytic approximation, but will support other
 methods in the future.
 """
 
-import numpy as np
-
 from copy import deepcopy
 from typing import Callable, Optional
 
+import MuyGPyS._src.math as mm
 from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
@@ -24,13 +23,12 @@ from MuyGPyS.optimize.utils import (
     _switch_on_opt_method,
     _switch_on_sigma_method,
 )
-from MuyGPyS._src.math import _zeros
 
 
 def muygps_sigma_sq_optim(
     muygps: MuyGPS,
-    pairwise_dists: np.ndarray,
-    nn_targets: np.ndarray,
+    pairwise_dists: mm.ndarray,
+    nn_targets: mm.ndarray,
     sigma_method: Optional[str] = "analytic",
 ) -> MuyGPS:
     """
@@ -69,8 +67,8 @@ def muygps_sigma_sq_optim(
 
 def mmuygps_sigma_sq_optim(
     mmuygps: MMuyGPS,
-    pairwise_dists: np.ndarray,
-    nn_targets: np.ndarray,
+    pairwise_dists: mm.ndarray,
+    nn_targets: mm.ndarray,
     sigma_method: Optional[str] = "analytic",
 ) -> MMuyGPS:
     """
@@ -172,7 +170,7 @@ def make_array_analytic_sigma_sq_optim(
 
 
 def muygps_analytic_sigma_sq_optim(
-    muygps: MuyGPS, pairwise_dists: np.ndarray, nn_targets: np.ndarray
+    muygps: MuyGPS, pairwise_dists: mm.ndarray, nn_targets: mm.ndarray
 ) -> MuyGPS:
     """
     Optimize the value of the :math:`\\sigma^2` scale parameter for each
@@ -222,7 +220,7 @@ def muygps_analytic_sigma_sq_optim(
 
 
 def mmuygps_analytic_sigma_sq_optim(
-    mmuygps: MMuyGPS, pairwise_dists: np.ndarray, nn_targets: np.ndarray
+    mmuygps: MMuyGPS, pairwise_dists: mm.ndarray, nn_targets: mm.ndarray
 ) -> MMuyGPS:
     """
     Optimize the value of the :math:`\\sigma^2` scale parameter for each
@@ -263,16 +261,17 @@ def mmuygps_analytic_sigma_sq_optim(
             f"of models ({len(ret.models)})."
         )
 
-    K = _zeros((batch_count, nn_count, nn_count))
-    sigma_sqs = _zeros((response_count,))
+    K = mm.zeros((batch_count, nn_count, nn_count))
+    sigma_sqs = mm.zeros((response_count,))
     for i, model in enumerate(ret.models):
         if isinstance(model.eps, HomoscedasticNoise):
             K = model.kernel(pairwise_dists)
-            sigma_sqs[i] = _analytic_sigma_sq_optim(
+            new_sigma_val = _analytic_sigma_sq_optim(
                 _homoscedastic_perturb(K, model.eps()),
                 nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
-            )
-            model.sigma_sq._set(np.atleast_1d(sigma_sqs[i]))
+            )[0]
+            sigma_sqs = mm.assign(sigma_sqs, new_sigma_val, i)
+            model.sigma_sq._set(mm.atleast_1d(sigma_sqs[i]))
         else:
             raise TypeError(
                 f"Noise parameter type {type(model.eps)} is not supported for "

@@ -42,8 +42,8 @@ Example:
     >>> Kcross = kern(crosswise_dists)
 """
 
-import numpy as np
-
+from collections.abc import Sequence
+from numbers import Number
 from typing import cast, Callable, Dict, List, Optional, Tuple, Type, Union
 
 from MuyGPyS import config
@@ -58,6 +58,8 @@ from MuyGPyS._src.gp.kernels import (
 )
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 from MuyGPyS.optimize.utils import _switch_on_opt_method
+from MuyGPyS._src.util import _fullname
+import MuyGPyS._src.math as mm
 
 
 class SigmaSq:
@@ -70,13 +72,17 @@ class SigmaSq:
     the predicted posterior variance. Trained values assume a number of
     dimensions equal to the number of response dimensions, and correspond to
     scalar scaling parameters along the corresponding dimensions.
+
+    Args:
+        response_count:
+            The integer number of response dimensions.
     """
 
-    def __init__(self):
-        self.val = np.ones(1)
+    def __init__(self, response_count: int = 1):
+        self.val = mm.ones(response_count)
         self._trained = False
 
-    def _set(self, val: np.ndarray) -> None:
+    def _set(self, val: mm.ndarray) -> None:
         """
         Value setter.
 
@@ -84,35 +90,22 @@ class SigmaSq:
             val:
                 The new value of the hyperparameter.
         """
-        if not isinstance(val, np.ndarray):
-            if config.state.backend == "jax":
-                import jax.numpy as jnp
-
-                if not isinstance(val, jnp.DeviceArray):
-                    raise ValueError(
-                        f"Expected np.ndarray or jax.numpy.DeviceArray for "
-                        f"SigmaSq value update, not {val}"
-                    )
-                else:
-                    val = jnp.atleast_1d(val)
-            elif config.state.backend == "torch":
-                import torch
-
-                if not isinstance(val, torch.Tensor):
-                    raise ValueError(
-                        f"Expected np.ndarray or torch.Tensor for "
-                        f"SigmaSq value update, not {val}"
-                    )
-            else:
-                raise ValueError(
-                    f"Expected np.ndarray for SigmaSq value update, not {val}"
-                )
-        else:
-            val = np.atleast_1d(val)
+        if not isinstance(val, mm.ndarray):
+            raise ValueError(
+                f"Expected {_fullname(mm.ndarray)} for SigmaSq value update, "
+                f"not {_fullname(val.__class__)}"
+            )
+        if self.val.shape != val.shape:
+            raise ValueError(
+                f"Bad attempt to assign SigmaSq of shape {self.val.shape} a "
+                f"value of shape {val.shape}"
+            )
+        if val.dtype != mm.ftype:
+            val = mm.farray(val)
         self.val = val
         self._trained = True
 
-    def __call__(self) -> np.ndarray:
+    def __call__(self) -> mm.ndarray:
         """
         Value accessor.
 
@@ -266,62 +259,64 @@ class Hyperparameter:
                 A `val` outside of the range specified by `bounds` will
                 produce an error.
         """
-        if not isinstance(val, str):
-            if not np.isscalar(val):
-                raise ValueError(
-                    f"Nonscalar hyperparameter value {val} is not allowed."
-                )
-            val = np.squeeze(val).astype(float)
-        else:
-            if val != "sample" and val != "log_sample":
-                raise ValueError(
-                    f"Unsupported string hyperparameter value {val}."
-                )
-        if self.fixed() is True:
-            if isinstance(val, str):
-                raise ValueError(
-                    f"Fixed bounds do not support string value ({val}) prompts."
-                )
-        else:
+        if isinstance(val, str):
+            if self.fixed() is True:
+                if isinstance(val, str):
+                    raise ValueError(
+                        f"Fixed bounds do not support string value ({val}) prompts."
+                    )
             if val == "sample":
-                val = np.random.uniform(
-                    low=self._bounds[0], high=self._bounds[1]
+                val = float(
+                    mm.np_random.uniform(
+                        low=self._bounds[0], high=self._bounds[1]
+                    )
                 )
                 if _is_mpi_mode() is True:
                     val = config.mpi_state.comm_world.bcast(val, root=0)
             elif val == "log_sample":
-                val = np.exp(
-                    np.random.uniform(
-                        low=np.log(self._bounds[0]),
-                        high=np.log(self._bounds[1]),
+                val = float(
+                    mm.np_exp(
+                        mm.np_random.uniform(
+                            low=mm.np_log(self._bounds[0]),
+                            high=mm.np_log(self._bounds[1]),
+                        )
                     )
                 )
                 if _is_mpi_mode() is True:
                     val = config.mpi_state.comm_world.bcast(val, root=0)
             else:
-                any_below = np.any(
-                    np.choose(
-                        cast(float, val) < cast(float, self._bounds[0]) - 1e-5,
-                        [False, True],
-                    )
+                raise ValueError(
+                    f"Unsupported string hyperparameter value {val}."
                 )
-                any_above = np.any(
-                    np.choose(
-                        cast(float, val) > cast(float, self._bounds[1]) + 1e-5,
-                        [False, True],
-                    )
+        if isinstance(val, Sequence) or hasattr(val, "__len__"):
+            raise ValueError(
+                f"Nonscalar hyperparameter value {val} is not allowed."
+            )
+        val = float(val)
+        if self.fixed() is False:
+            any_below = mm.np_any(
+                mm.np_choose(
+                    cast(float, val) < cast(float, self._bounds[0]) - 1e-5,
+                    [False, True],
                 )
-                if any_below == True:
-                    raise ValueError(
-                        f"Hyperparameter value {val} is lesser than the "
-                        f"optimization lower bound {self._bounds[0]}"
-                    )
-                if any_above == True:
-                    raise ValueError(
-                        f"Hyperparameter value {val} is greater than the "
-                        f"optimization upper bound {self._bounds[1]}"
-                    )
-        self._val = cast(float, val)
+            )
+            any_above = mm.np_any(
+                mm.np_choose(
+                    cast(float, val) > cast(float, self._bounds[1]) + 1e-5,
+                    [False, True],
+                )
+            )
+            if any_below == True:
+                raise ValueError(
+                    f"Hyperparameter value {val} is lesser than the "
+                    f"optimization lower bound {self._bounds[0]}"
+                )
+            if any_above == True:
+                raise ValueError(
+                    f"Hyperparameter value {val} is greater than the "
+                    f"optimization upper bound {self._bounds[1]}"
+                )
+        self._val = val
 
     def _set_bounds(
         self,
@@ -348,9 +343,13 @@ class Hyperparameter:
                 A lower bound that is not less than an upper bound will produce
                 an error.
         """
-        if bounds != "fixed":
-            if isinstance(bounds, str) is True:
+        if isinstance(bounds, str) is True:
+            if bounds == "fixed":
+                self._bounds = (0.0, 0.0)  # default value
+                self._fixed = True
+            else:
                 raise ValueError(f"Unknown bound option {bounds}.")
+        else:
             if hasattr(bounds, "__iter__") is not True:
                 raise ValueError(
                     f"Unknown bound optiom {bounds} of a non-iterable type "
@@ -361,27 +360,24 @@ class Hyperparameter:
                     f"Provided hyperparameter optimization bounds have "
                     f"unsupported length {len(bounds)}."
                 )
-            if np.issubdtype(type(bounds[0]), np.number) is not True:
+            if isinstance(bounds[0], Number) is not True:
                 raise ValueError(
                     f"Nonscalar {bounds[0]} of type {type(bounds[0])} is not a "
                     f"supported hyperparameter bound type."
                 )
-            if np.issubdtype(type(bounds[1]), np.number) is not True:
+            if isinstance(bounds[1], Number) is not True:
                 raise ValueError(
                     f"Nonscalar {bounds[1]} of type {type(bounds[1])} is not a "
                     f"supported hyperparameter bound type."
                 )
-            if float(bounds[0]) > float(bounds[1]):
+            bounds = (float(bounds[0]), float(bounds[1]))
+            if bounds[0] > bounds[1]:
                 raise ValueError(
                     f"Lower bound {bounds[0]} is not lesser than upper bound "
                     f"{bounds[1]}."
                 )
-            bounds = (float(bounds[0]), float(bounds[1]))
             self._bounds = bounds
             self._fixed = False
-        else:
-            self._bounds = (0.0, 0.0)  # default value
-            self._fixed = True
 
     def __call__(self) -> float:
         """
@@ -390,7 +386,7 @@ class Hyperparameter:
         Returns:
             The current value of the hyperparameter.
         """
-        return np.float64(self._val)
+        return self._val
 
     def get_bounds(self) -> Tuple[float, float]:
         """
@@ -466,7 +462,7 @@ class KernelFn:
         for name in kwargs:
             self.hyperparameters[name]._set(**kwargs[name])
 
-    def __call__(self, dists: np.ndarray) -> np.ndarray:
+    def __call__(self, dists: mm.ndarray) -> mm.ndarray:
         raise NotImplementedError(
             f"__call__ is not implemented for base KernelFn"
         )
@@ -543,7 +539,7 @@ class RBF(KernelFn):
         self.hyperparameters["length_scale"] = self.length_scale
         self.metric = metric
 
-    def __call__(self, squared_dists: np.ndarray) -> np.ndarray:
+    def __call__(self, squared_dists: mm.ndarray) -> mm.ndarray:
         """
         Compute RBF kernel(s) from a distance matrix or tensor.
 
@@ -562,7 +558,7 @@ class RBF(KernelFn):
         return self._fn(squared_dists, length_scale=self.length_scale())
 
     @staticmethod
-    def _fn(squared_dists: np.ndarray, length_scale: float) -> np.ndarray:
+    def _fn(squared_dists: mm.ndarray, length_scale: float) -> mm.ndarray:
         return _rbf_fn(squared_dists, length_scale)
 
     def get_optim_params(
@@ -733,14 +729,14 @@ class Matern(KernelFn):
         return self._fn(dists, nu=self.nu(), length_scale=self.length_scale())
 
     @staticmethod
-    def _fn(dists: np.ndarray, nu: float, length_scale: float) -> np.ndarray:
+    def _fn(dists: mm.ndarray, nu: float, length_scale: float) -> mm.ndarray:
         if nu == 0.5:
             return _matern_05_fn(dists, length_scale)
         elif nu == 1.5:
             return _matern_15_fn(dists, length_scale)
         elif nu == 2.5:
             return _matern_25_fn(dists, length_scale)
-        elif nu == np.inf:
+        elif nu == mm.inf:
             return _matern_inf_fn(dists, length_scale)
         else:
             return _matern_gen_fn(dists, nu, length_scale)
@@ -837,7 +833,7 @@ class Matern(KernelFn):
                 def caller_fn(dists, x0):
                     return m_25_fn(dists, length_scale=x0[0])
 
-            elif nu() == np.inf:
+            elif nu() == mm.inf:
 
                 def caller_fn(dists, x0):
                     return m_inf_fn(dists, length_scale=x0[0])
@@ -864,7 +860,7 @@ class Matern(KernelFn):
                 def caller_fn(dists, x0):
                     return m_25_fn(dists, length_scale=length_scale())
 
-            elif nu() == np.inf:
+            elif nu() == mm.inf:
 
                 def caller_fn(dists, x0):
                     return m_inf_fn(dists, length_scale=length_scale())
@@ -942,7 +938,7 @@ class Matern(KernelFn):
                 def caller_fn(dists, **kwargs):
                     return m_25_fn(dists, length_scale=kwargs["length_scale"])
 
-            elif nu() == np.inf:
+            elif nu() == mm.inf:
 
                 def caller_fn(dists, **kwargs):
                     return m_inf_fn(dists, length_scale=kwargs["length_scale"])
@@ -971,7 +967,7 @@ class Matern(KernelFn):
                 def caller_fn(dists, **kwargs):
                     return m_25_fn(dists, length_scale=length_scale())
 
-            elif nu() == np.inf:
+            elif nu() == mm.inf:
 
                 def caller_fn(dists, **kwargs):
                     return m_inf_fn(dists, length_scale=length_scale())

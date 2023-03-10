@@ -3,4 +3,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS._src.math.numpy import _ones, _zeros
+from MuyGPyS._src.math.numpy import *

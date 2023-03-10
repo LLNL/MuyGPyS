@@ -3,11 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-import jax.numpy as jnp
-
 from jax import jit
-
 from jax.nn import softmax
+
+import MuyGPyS._src.math.jax as jnp
 
 
 @jit
@@ -25,7 +24,7 @@ def _cross_entropy_fn(
 @jit
 def _log_loss(
     y_true: jnp.ndarray, y_pred: jnp.ndarray, eps: float = 1e-15
-) -> float:
+) -> jnp.ndarray:
     """
     Lifted whole-cloth from [0].
 
@@ -47,7 +46,7 @@ def _log_loss(
 def _mse_fn_unnormalized(
     predictions: jnp.ndarray,
     targets: jnp.ndarray,
-) -> float:
+) -> jnp.ndarray:
     return jnp.sum((predictions - targets) ** 2)
 
 
@@ -68,7 +67,7 @@ def _lool_fn(
     targets: jnp.ndarray,
     variances: jnp.ndarray,
     sigma_sq: jnp.ndarray,
-) -> float:
+) -> jnp.ndarray:
     scaled_variances = jnp.outer(variances, sigma_sq)
     return jnp.sum(
         jnp.divide((predictions - targets) ** 2, scaled_variances)

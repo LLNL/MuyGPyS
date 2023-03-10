@@ -3,12 +3,85 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
+from numpy import (
+    all,
+    allclose,
+    any,
+    argmax,
+    argmin,
+    atleast_1d,
+    concatenate,
+    copy,
+    corrcoef,
+    cov,
+    count_nonzero,
+    choose,
+    divide,
+    einsum,
+    exp,
+    expand_dims,
+    finfo,
+    float32,
+    float64,
+    histogram,
+    inf,
+    int32,
+    int64,
+    isclose,
+    isnan,
+    linalg,
+    log,
+    logical_and,
+    logical_or,
+    max,
+    mean,
+    min,
+    ndarray,
+    number,
+    outer,
+    random,
+    sqrt,
+    sum,
+    unique,
+    where,
+    vstack,
+)
+from numpy import (
+    arange as _arange,
+    array as _array,
+    diagonal as _diagonal,
+    eye as _eye,
+    full as _full,
+    linspace as _linspace,
+    ones as _ones,
+    zeros as _zeros,
+)
+
+# from numpy import *
+from numpy.linalg import cholesky
+
+from MuyGPyS._src.math.meta import (
+    fix_function_type,
+    fix_function_types,
+    set_type,
+)
 
 
-def _ones(*args, **kwargs) -> np.ndarray:
-    return np.ones(*args, **kwargs)
+def assign(x: ndarray, y: ndarray, *slices) -> ndarray:
+    ret = copy(x)
+    ret[slices] = y
+    return ret
 
 
-def _zeros(*args, **kwargs) -> np.ndarray:
-    return np.zeros(*args, **kwargs)
+ftype = set_type(float64, float32)
+# itype = set_type(int64, int32)
+itype = int64
+
+iarray = fix_function_type(itype, _array)
+farray = fix_function_type(ftype, _array)
+array = farray
+
+arange = fix_function_type(itype, _arange)
+diagonal, eye, full, linspace, ones, zeros = fix_function_types(
+    ftype, _diagonal, _eye, _full, _linspace, _ones, _zeros
+)

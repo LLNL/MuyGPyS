@@ -9,22 +9,23 @@ config.parse_flags_with_absl()  # Affords option setting from CLI
 
 if config.state.torch_enabled is False:
     raise ValueError(f"Bad attempt to run torch-only code with torch diabled.")
+if config.state.backend == "mpi":
+    raise ValueError(f"Bad attempt to run non-MPI code in MPI mode.")
+elif config.state.backend != "numpy":
+    import warnings
 
-import torch
-import numpy as np
+    warnings.warn(
+        f"Backend correctness codes assume numpy mode, not "
+        f"{config.state.backend}. "
+        f"Force-switching MuyGPyS into numpy backend."
+    )
+    config.update("muygpys_backend", "numpy")
 
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS._test.utils import (
-    _make_gaussian_matrix,
-    _make_gaussian_data,
-    _exact_nn_kwarg_options,
-)
-from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.batch import sample_batch
+import MuyGPyS._src.math.numpy as np
+import MuyGPyS._src.math.torch as torch
 from MuyGPyS._src.gp.distance.numpy import (
     _pairwise_distances as pairwise_distances_n,
     _crosswise_distances as crosswise_distances_n,
@@ -75,17 +76,6 @@ from MuyGPyS._src.gp.noise.numpy import (
 from MuyGPyS._src.gp.noise.torch import (
     _homoscedastic_perturb as homoscedastic_perturb_t,
 )
-from MuyGPyS._src.optimize.sigma_sq.numpy import (
-    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
-)
-from MuyGPyS._src.optimize.sigma_sq.torch import (
-    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_t,
-)
-from MuyGPyS.optimize.sigma_sq import (
-    make_kwargs_analytic_sigma_sq_optim,
-    make_array_analytic_sigma_sq_optim,
-)
-
 from MuyGPyS._src.optimize.loss.numpy import (
     _mse_fn as mse_fn_n,
     _cross_entropy_fn as cross_entropy_fn_n,
@@ -96,7 +86,26 @@ from MuyGPyS._src.optimize.loss.torch import (
     _cross_entropy_fn as cross_entropy_fn_t,
     _lool_fn as lool_fn_t,
 )
+from MuyGPyS._src.optimize.sigma_sq.numpy import (
+    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
+)
+from MuyGPyS._src.optimize.sigma_sq.torch import (
+    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_t,
+)
+from MuyGPyS._test.utils import (
+    _make_gaussian_matrix,
+    _make_gaussian_data,
+    _exact_nn_kwarg_options,
+)
+from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
+from MuyGPyS.optimize.sigma_sq import (
+    make_kwargs_analytic_sigma_sq_optim,
+    make_array_analytic_sigma_sq_optim,
+)
 
 
 class DistanceTestCase(parameterized.TestCase):
@@ -436,7 +445,6 @@ class FastPredictTestCase(MuyGPSTestCase):
         cls.nn_indices_all_n, _ = cls.nbrs_lookup.get_batch_nns(
             np.arange(0, cls.train_count)
         )
-        cls.nn_indices_all_n = np.array(cls.nn_indices_all_n)
         (
             cls.K_fast_n,
             cls.train_nn_targets_fast_n,
@@ -612,7 +620,6 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         cls.nn_indices_all_n, _ = cls.nbrs_lookup.get_batch_nns(
             np.arange(0, cls.train_count)
         )
-        cls.nn_indices_all_n = np.array(cls.nn_indices_all_n)
         (
             cls.K_fast_n,
             cls.train_nn_targets_fast_n,
@@ -948,7 +955,7 @@ class ObjectiveTest(OptimTestCase):
         super(ObjectiveTest, cls).setUpClass()
 
         cls.sigma_sq_n = cls.muygps.sigma_sq()
-        cls.sigma_sq_t = torch.Tensor(cls.muygps.sigma_sq()).float()
+        cls.sigma_sq_t = torch.array(cls.muygps.sigma_sq()).float()
 
     def test_mse(self):
         self.assertTrue(

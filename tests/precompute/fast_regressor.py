@@ -3,14 +3,15 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
 from MuyGPyS import config
 
 config.parse_flags_with_absl()  # Affords option setting from CLI
+
+if config.state.backend in ["mpi", "torch"]:
+    raise ValueError(f"This test only supports numpy and jax!")
 
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any

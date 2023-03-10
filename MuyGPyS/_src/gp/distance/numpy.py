@@ -3,11 +3,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from typing import Tuple
 
-# from sklearn.metrics.pairwise import cosine_similarity
+import MuyGPyS._src.math.numpy as np
 
 
 def _make_fast_regress_tensors(
@@ -119,11 +117,11 @@ def _pairwise_distances(
         raise ValueError(f"Metric {metric} is not supported!")
 
 
-def _crosswise_diffs(locations: np.array, points: np.array) -> np.array:
+def _crosswise_diffs(locations: np.ndarray, points: np.ndarray) -> np.ndarray:
     return locations[:, None, :] - points
 
 
-def _pairwise_diffs(points: np.array) -> np.array:
+def _pairwise_diffs(points: np.ndarray) -> np.ndarray:
     if len(points.shape) == 3:
         return points[:, :, None, :] - points[:, None, :, :]
     elif len(points.shape) == 2:
@@ -132,11 +130,11 @@ def _pairwise_diffs(points: np.array) -> np.array:
         raise ValueError(f"points shape {points.shape} is not supported.")
 
 
-def _F2(diffs: np.array) -> np.array:
+def _F2(diffs: np.ndarray) -> np.ndarray:
     return np.sum(diffs**2, axis=-1)
 
 
-def _l2(diffs: np.array) -> np.array:
+def _l2(diffs: np.ndarray) -> np.ndarray:
     return np.sqrt(_F2(diffs))
 
 

@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
+import MuyGPyS._src.math.numpy as np
 
 
 def _homoscedastic_perturb(K: np.ndarray, eps: float) -> np.ndarray:

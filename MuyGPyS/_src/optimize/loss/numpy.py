@@ -3,10 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from scipy.special import softmax
 from sklearn.metrics import log_loss
+
+import MuyGPyS._src.math.numpy as np
 
 
 def _cross_entropy_fn(

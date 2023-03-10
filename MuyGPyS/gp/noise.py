@@ -9,22 +9,7 @@ Noise modeling
 Defines data structures and functors that handle noise priors for MuyGPs models.
 """
 
-import numpy as np
-
-from typing import cast, Callable, Dict, List, Optional, Tuple, Union
-
-from MuyGPyS import config
-
-from MuyGPyS._src.gp.kernels import (
-    _rbf_fn,
-    _matern_05_fn,
-    _matern_15_fn,
-    _matern_25_fn,
-    _matern_inf_fn,
-    _matern_gen_fn,
-)
-from MuyGPyS._src.mpi_utils import _is_mpi_mode
-from MuyGPyS.optimize.utils import _switch_on_opt_method
+from typing import Tuple, Union
 
 from MuyGPyS.gp.kernels import Hyperparameter
 
