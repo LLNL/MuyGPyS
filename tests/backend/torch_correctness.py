@@ -11,7 +11,7 @@ if config.state.torch_enabled is False:
     raise ValueError(f"Bad attempt to run torch-only code with torch diabled.")
 if config.state.backend == "mpi":
     raise ValueError(f"Bad attempt to run non-MPI code in MPI mode.")
-elif config.state.backend != "numpy":
+if config.state.backend != "numpy":
     import warnings
 
     warnings.warn(
@@ -93,9 +93,10 @@ from MuyGPyS._src.optimize.sigma_sq.torch import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_t,
 )
 from MuyGPyS._test.utils import (
+    _precision_assert,
+    _exact_nn_kwarg_options,
     _make_gaussian_matrix,
     _make_gaussian_data,
-    _exact_nn_kwarg_options,
 )
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
@@ -106,6 +107,12 @@ from MuyGPyS.optimize.sigma_sq import (
     make_kwargs_analytic_sigma_sq_optim,
     make_array_analytic_sigma_sq_optim,
 )
+
+
+def _allclose(x, y) -> bool:
+    return np.allclose(
+        x, y, atol=1e-5 if config.state.low_precision() else 1e-8
+    )
 
 
 class DistanceTestCase(parameterized.TestCase):
@@ -399,7 +406,7 @@ class MuyGPSTest(MuyGPSTestCase):
 
     def test_compute_solve(self):
         self.assertTrue(
-            np.allclose(
+            _allclose(
                 muygps_compute_solve_n(
                     self.homoscedastic_K_n,
                     self.Kcross_n,
@@ -546,7 +553,7 @@ class FastPredictTestCase(MuyGPSTestCase):
 
     def test_fast_predict(self):
         self.assertTrue(
-            np.allclose(
+            _allclose(
                 muygps_fast_regress_solve_n(
                     self.Kcross_fast_n,
                     self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
@@ -560,7 +567,7 @@ class FastPredictTestCase(MuyGPSTestCase):
 
     def test_fast_predict_coeffs(self):
         self.assertTrue(
-            np.allclose(
+            _allclose(
                 self.fast_regress_coeffs_n,
                 self.fast_regress_coeffs_t,
             )
@@ -708,7 +715,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
 
     def test_fast_multivariate_predict(self):
         self.assertTrue(
-            np.allclose(
+            _allclose(
                 mmuygps_fast_regress_solve_n(
                     self.Kcross_fast_n,
                     self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
@@ -722,7 +729,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
 
     def test_fast_multivariate_predict_coeffs(self):
         self.assertTrue(
-            np.allclose(
+            _allclose(
                 self.fast_regress_coeffs_n,
                 self.fast_regress_coeffs_t,
             )
@@ -1022,7 +1029,7 @@ class ObjectiveTest(OptimTestCase):
         mean_fn_n = self._get_kwargs_mean_fn_n()
         mean_fn_t = self._get_kwargs_mean_fn_t()
         self.assertTrue(
-            np.allclose(
+            _allclose(
                 mean_fn_n(
                     self.K_n,
                     self.Kcross_n,
@@ -1042,7 +1049,7 @@ class ObjectiveTest(OptimTestCase):
         mean_fn_n = self._get_array_mean_fn_n()
         mean_fn_t = self._get_array_mean_fn_t()
         self.assertTrue(
-            np.allclose(
+            _allclose(
                 mean_fn_n(
                     self.K_n,
                     self.Kcross_n,
