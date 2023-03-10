@@ -14,7 +14,10 @@ if config.state.mpi_enabled is False:
     raise ValueError(f"Bad attempt to run mpi-only code with mpi diabled.")
 
 if config.state.backend != "mpi":
-    raise ValueError(f"MPI correctness test must be run in MPI mode.")
+    raise ValueError(
+        f"MPI correctness test must be run in MPI mode, not "
+        f"{config.state.backend}."
+    )
 
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS._test.utils import (

@@ -36,6 +36,7 @@ from numpy import (
     max,
     mean,
     min,
+    mod,
     ndarray,
     number,
     outer,
