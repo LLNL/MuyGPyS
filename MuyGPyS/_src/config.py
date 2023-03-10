@@ -173,8 +173,6 @@ try:
     # https://mpi4py.readthedocs.io/en/3.1.4/mpi4py.util.pkl5.html
     config.mpi_state.set_comm(Intracomm(MPI.COMM_WORLD))
 
-    if config.mpi_state.comm_world.Get_size() > 1:
-        config.update("muygpys_mpi_enabled", True)
 except Exception as e:
     MPI = None  # type: ignore
     config.update("muygpys_mpi_enabled", False)
