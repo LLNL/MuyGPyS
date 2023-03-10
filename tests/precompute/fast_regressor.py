@@ -13,31 +13,13 @@ config.parse_flags_with_absl()  # Affords option setting from CLI
 if config.state.backend in ["mpi", "torch"]:
     raise ValueError(f"This test only supports numpy and jax!")
 
-from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
-from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
-from MuyGPyS.examples.fast_regress import (
-    do_fast_regress,
-)
-from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
-from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.chassis import (
-    optimize_from_indices,
-    optimize_from_tensors,
-)
-from MuyGPyS.optimize.sigma_sq import mmuygps_sigma_sq_optim
-from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS._test.gp import (
-    benchmark_prepare_cholK,
-    benchmark_sample_from_cholK,
-    BenchmarkGP,
-)
 from MuyGPyS._test.utils import (
-    _make_gaussian_dict,
-    _make_gaussian_data,
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
-    _get_sigma_sq_series,
+    _make_gaussian_data,
+)
+from MuyGPyS.examples.fast_regress import (
+    do_fast_regress,
 )
 
 

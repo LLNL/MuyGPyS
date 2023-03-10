@@ -5,9 +5,7 @@
 
 from typing import Callable
 
-from MuyGPyS import config, jax_config
-
-from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS._src.optimize.chassis.numpy import (
     _scipy_optimize,
     _bayes_opt_optimize as _numpy_bayes_opt_optimize,

@@ -38,7 +38,7 @@ from MuyGPyS._src.mpi_utils import (
 from MuyGPyS.examples.classify import (
     make_classifier,
 )
-from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import get_balanced_batch
 

@@ -5,7 +5,7 @@
 
 """
 Convenience functions for optimizing the `sigma_sq` parameter of
-:class:`MuyGPyS.gp.muygps.MuyGPS` objects.
+:class:`~MuyGPyS.gp.muygps.MuyGPS` objects.
 
 Currently only supports an analytic approximation, but will support other
 methods in the future.
@@ -15,7 +15,7 @@ from copy import deepcopy
 from typing import Callable, Optional
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb

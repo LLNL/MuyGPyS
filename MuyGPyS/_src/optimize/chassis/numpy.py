@@ -9,7 +9,7 @@ from typing import Callable
 from bayes_opt import BayesianOptimization
 from scipy import optimize as opt
 
-from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp import MuyGPS
 
 
 def _scipy_optimize(

@@ -31,12 +31,12 @@ from MuyGPyS._test.utils import (
     _make_gaussian_dict,
     _sq_rel_err,
 )
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distance import (
     pairwise_distances,
     crosswise_distances,
     make_train_tensors,
 )
-from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import (
     sample_batch,

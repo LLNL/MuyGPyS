@@ -18,7 +18,7 @@ from MuyGPyS.examples.classify import do_classify
 from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq
 from MuyGPyS.examples.regress import do_regress
 from MuyGPyS.examples.fast_regress import do_fast_regress
-from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.loss import mse_fn
 
