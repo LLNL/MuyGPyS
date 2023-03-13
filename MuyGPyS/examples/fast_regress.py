@@ -26,8 +26,8 @@ from MuyGPyS.examples.regress import (
     _decide_and_make_regressor,
     _unpack,
 )
+from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import fast_nn_update
-from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 
 

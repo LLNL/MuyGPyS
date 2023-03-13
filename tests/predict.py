@@ -23,7 +23,7 @@ from MuyGPyS.examples.two_class_classify_uq import (
     make_masks,
     do_uq,
 )
-from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import (
     get_balanced_batch,

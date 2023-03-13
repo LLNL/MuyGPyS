@@ -95,7 +95,7 @@ from MuyGPyS._src.optimize.chassis.mpi import (
     _scipy_optimize as scipy_optimize_m,
     _bayes_opt_optimize as bayes_optimize_m,
 )
-from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 

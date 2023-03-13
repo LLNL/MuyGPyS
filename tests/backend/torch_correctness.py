@@ -93,13 +93,11 @@ from MuyGPyS._src.optimize.sigma_sq.torch import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_t,
 )
 from MuyGPyS._test.utils import (
-    _precision_assert,
     _exact_nn_kwarg_options,
     _make_gaussian_matrix,
     _make_gaussian_data,
 )
-from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_loo_crossval_fn

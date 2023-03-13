@@ -3,5 +3,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .multivariate_muygps import MultivariateMuyGPS
-from .muygps import MuyGPS
+from .homoscedastic import HomoscedasticNoise

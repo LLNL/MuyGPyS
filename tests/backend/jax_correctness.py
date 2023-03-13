@@ -106,8 +106,7 @@ from MuyGPyS._src.optimize.sigma_sq.numpy import (
 from MuyGPyS._src.optimize.sigma_sq.jax import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
 )
-from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.gp.muygps import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_loo_crossval_fn

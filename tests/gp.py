@@ -16,11 +16,11 @@ from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distance import (
     make_train_tensors,
     make_regress_tensors,
 )
-from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 from MuyGPyS._test.utils import (

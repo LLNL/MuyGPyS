@@ -20,8 +20,8 @@ import numpy as np
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
+from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import make_train_tensors
-from MuyGPyS.gp.muygps import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.chassis import optimize_from_tensors

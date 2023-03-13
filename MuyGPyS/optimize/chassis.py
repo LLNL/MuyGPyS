@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 """
-Convenience functions for optimizing :class:`MuyGPyS.gp.muygps.MuyGPS` objects
+Convenience functions for optimizing :class:`~MuyGPyS.gp.muygps.MuyGPS` objects
 
 The functions
 :func:`~MuyGPyS.optimize.chassis.optimize_from_indices` and
@@ -33,7 +33,7 @@ from MuyGPyS._src.optimize.chassis import (
     _scipy_optimize,
     _bayes_opt_optimize,
 )
-from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 from MuyGPyS.optimize.objective import make_obj_fn
 from MuyGPyS.optimize.loss import get_loss_func
@@ -62,7 +62,7 @@ def optimize_from_indices(
     See the following example, where we have already created a `batch_indices`
     vector and a `batch_nn_indices` matrix using
     :class:`MuyGPyS.neighbors.NN_Wrapper`, and initialized a
-    :class:`MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
+    :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
 
     Example:
         >>> from MuyGPyS.optimize.chassis import optimize_from_indices
@@ -178,7 +178,7 @@ def optimize_from_tensors(
     :class:`MuyGPyS.neighbors.NN_Wrapper`, a `crosswise_dists`
     matrix using :func:`MuyGPyS.gp.distance.crosswise_distances` and
     `pairwise_dists` using :func:`MuyGPyS.gp.distance.pairwise_distances`, and
-    initialized a :class:`MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
+    initialized a :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
 
     Example:
         >>> from MuyGPyS.optimize.chassis import optimize_from_tensors

@@ -5,7 +5,7 @@
 
 from typing import Callable
 
-from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp import MuyGPS
 
 
 def _scipy_optimize(
