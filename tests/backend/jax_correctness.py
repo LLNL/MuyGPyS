@@ -110,10 +110,7 @@ from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
-from MuyGPyS.optimize.sigma_sq import (
-    make_kwargs_analytic_sigma_sq_optim,
-    make_array_analytic_sigma_sq_optim,
-)
+from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
 
 
 def allclose_gen(a: np.ndarray, b: np.ndarray) -> bool:
@@ -872,8 +869,8 @@ class OptimTestCase(MuyGPSTestCase):
         cls.x0_map_n = {n: cls.x0_n[i] for i, n in enumerate(cls.x0_names)}
         cls.x0_map_j = {n: cls.x0_j[i] for i, n in enumerate(cls.x0_names)}
 
-    def _get_array_kernel_fn_n(self):
-        return self.muygps.kernel._get_array_opt_fn(
+    def _get_kernel_fn_n(self):
+        return self.muygps.kernel._get_opt_fn(
             matern_05_fn_n,
             matern_15_fn_n,
             matern_25_fn_n,
@@ -883,19 +880,8 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps.kernel.length_scale,
         )
 
-    def _get_kwargs_kernel_fn_n(self):
-        return self.muygps.kernel._get_kwargs_opt_fn(
-            matern_05_fn_n,
-            matern_15_fn_n,
-            matern_25_fn_n,
-            matern_inf_fn_n,
-            matern_gen_fn_n,
-            self.muygps.kernel.nu,
-            self.muygps.kernel.length_scale,
-        )
-
-    def _get_array_kernel_fn_j(self):
-        return self.muygps.kernel._get_array_opt_fn(
+    def _get_kernel_fn_j(self):
+        return self.muygps.kernel._get_opt_fn(
             matern_05_fn_j,
             matern_15_fn_j,
             matern_25_fn_j,
@@ -905,169 +891,76 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps.kernel.length_scale,
         )
 
-    def _get_kwargs_kernel_fn_j(self):
-        return self.muygps.kernel._get_kwargs_opt_fn(
-            matern_05_fn_j,
-            matern_15_fn_j,
-            matern_25_fn_j,
-            matern_inf_fn_j,
-            matern_gen_fn_j,
-            self.muygps.kernel.nu,
-            self.muygps.kernel.length_scale,
-        )
-
-    def _get_array_mean_fn_n(self):
-        return self.muygps._get_array_opt_mean_fn(
+    def _get_mean_fn_n(self):
+        return self.muygps._get_opt_mean_fn(
             muygps_compute_solve_n, homoscedastic_perturb_n, self.muygps.eps
         )
 
-    def _get_kwargs_mean_fn_n(self):
-        return self.muygps._get_kwargs_opt_mean_fn(
-            muygps_compute_solve_n, homoscedastic_perturb_n, self.muygps.eps
-        )
-
-    def _get_array_var_fn_n(self):
-        return self.muygps._get_array_opt_var_fn(
+    def _get_var_fn_n(self):
+        return self.muygps._get_opt_var_fn(
             muygps_compute_diagonal_variance_n,
             homoscedastic_perturb_n,
             self.muygps.eps,
         )
 
-    def _get_kwargs_var_fn_n(self):
-        return self.muygps._get_kwargs_opt_var_fn(
-            muygps_compute_diagonal_variance_n,
-            homoscedastic_perturb_n,
-            self.muygps.eps,
-        )
-
-    def _get_array_sigma_sq_fn_n(self):
-        return make_array_analytic_sigma_sq_optim(
+    def _get_sigma_sq_fn_n(self):
+        return make_analytic_sigma_sq_optim(
             self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
         )
 
-    def _get_kwargs_sigma_sq_fn_n(self):
-        return make_kwargs_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
-        )
-
-    def _get_array_mean_fn_j(self):
-        return self.muygps._get_array_opt_mean_fn(
+    def _get_mean_fn_j(self):
+        return self.muygps._get_opt_mean_fn(
             muygps_compute_solve_j, homoscedastic_perturb_j, self.muygps.eps
         )
 
-    def _get_kwargs_mean_fn_j(self):
-        return self.muygps._get_kwargs_opt_mean_fn(
-            muygps_compute_solve_j, homoscedastic_perturb_j, self.muygps.eps
-        )
-
-    def _get_array_var_fn_j(self):
-        return self.muygps._get_array_opt_var_fn(
-            muygps_compute_diagonal_variance_j,
-            homoscedastic_perturb_n,
-            self.muygps.eps,
-        )
-
-    def _get_kwargs_var_fn_j(self):
-        return self.muygps._get_kwargs_opt_var_fn(
+    def _get_var_fn_j(self):
+        return self.muygps._get_opt_var_fn(
             muygps_compute_diagonal_variance_j,
             homoscedastic_perturb_j,
             self.muygps.eps,
         )
 
-    def _get_array_sigma_sq_fn_j(self):
-        return make_array_analytic_sigma_sq_optim(
+    def _get_sigma_sq_fn_j(self):
+        return make_analytic_sigma_sq_optim(
             self.muygps, analytic_sigma_sq_optim_j, homoscedastic_perturb_j
         )
 
-    def _get_kwargs_sigma_sq_fn_j(self):
-        return make_kwargs_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_j, homoscedastic_perturb_j
-        )
-
-    def _get_array_obj_fn_n(self):
+    def _get_obj_fn_n(self):
         return make_loo_crossval_fn(
-            "scipy",
             "mse",
             mse_fn_n,
-            self._get_array_kernel_fn_n(),
-            self._get_array_mean_fn_n(),
-            self._get_array_var_fn_n(),
-            self._get_array_sigma_sq_fn_n(),
+            self._get_kernel_fn_n(),
+            self._get_mean_fn_n(),
+            self._get_var_fn_n(),
+            self._get_sigma_sq_fn_n(),
             self.pairwise_dists_n,
             self.crosswise_dists_n,
             self.batch_nn_targets_n,
             self.batch_targets_n,
         )
 
-    def _get_kwargs_obj_fn_n(self):
+    def _get_obj_fn_j(self):
         return make_loo_crossval_fn(
-            "bayes",
-            "mse",
-            mse_fn_n,
-            self._get_kwargs_kernel_fn_n(),
-            self._get_kwargs_mean_fn_n(),
-            self._get_kwargs_var_fn_n(),
-            self._get_kwargs_sigma_sq_fn_n(),
-            self.pairwise_dists_n,
-            self.crosswise_dists_n,
-            self.batch_nn_targets_n,
-            self.batch_targets_n,
-        )
-
-    def _get_array_obj_fn_j(self):
-        return make_loo_crossval_fn(
-            "scipy",
             "mse",
             mse_fn_j,
-            self._get_array_kernel_fn_j(),
-            self._get_array_mean_fn_j(),
-            self._get_array_var_fn_j(),
-            self._get_array_sigma_sq_fn_j(),
+            self._get_kernel_fn_j(),
+            self._get_mean_fn_j(),
+            self._get_var_fn_j(),
+            self._get_sigma_sq_fn_j(),
             self.pairwise_dists_j,
             self.crosswise_dists_j,
             self.batch_nn_targets_j,
             self.batch_targets_j,
         )
 
-    def _get_kwargs_obj_fn_j(self):
+    def _get_obj_fn_h(self):
         return make_loo_crossval_fn(
-            "bayes",
             "mse",
             mse_fn_j,
-            self._get_kwargs_kernel_fn_j(),
-            self._get_kwargs_mean_fn_j(),
-            self._get_kwargs_var_fn_j(),
-            self._get_kwargs_sigma_sq_fn_j(),
-            self.pairwise_dists_j,
-            self.crosswise_dists_j,
-            self.batch_nn_targets_j,
-            self.batch_targets_j,
-        )
-
-    def _get_array_obj_fn_h(self):
-        return make_loo_crossval_fn(
-            "scipy",
-            "mse",
-            mse_fn_j,
-            self._get_array_kernel_fn_j(),
-            self._get_array_mean_fn_n(),
-            self._get_array_var_fn_n(),
-            self._get_array_sigma_sq_fn_n(),
-            self.pairwise_dists_j,
-            self.crosswise_dists_j,
-            self.batch_nn_targets_j,
-            self.batch_targets_j,
-        )
-
-    def _get_kwargs_obj_fn_h(self):
-        return make_loo_crossval_fn(
-            "bayes",
-            "mse",
-            mse_fn_j,
-            self._get_kwargs_kernel_fn_j(),
-            self._get_kwargs_mean_fn_n(),
-            self._get_kwargs_var_fn_n(),
-            self._get_kwargs_sigma_sq_fn_n(),
+            self._get_kernel_fn_j(),
+            self._get_mean_fn_n(),
+            self._get_var_fn_n(),
+            self._get_sigma_sq_fn_n(),
             self.pairwise_dists_j,
             self.crosswise_dists_j,
             self.batch_nn_targets_j,
@@ -1137,18 +1030,18 @@ class ObjectiveTest(OptimTestCase):
         )
 
     def test_kernel_fn(self):
-        kernel_fn_n = self._get_array_kernel_fn_n()
-        kernel_fn_j = self._get_array_kernel_fn_j()
+        kernel_fn_n = self._get_kernel_fn_n()
+        kernel_fn_j = self._get_kernel_fn_j()
         self.assertTrue(
             allclose_gen(
-                kernel_fn_n(self.pairwise_dists_n, self.x0_n),
-                kernel_fn_j(self.pairwise_dists_j, self.x0_j),
+                kernel_fn_n(self.pairwise_dists_n, **self.x0_map_n),
+                kernel_fn_j(self.pairwise_dists_j, **self.x0_map_j),
             )
         )
 
-    def test_kwargs_mean_fn(self):
-        mean_fn_n = self._get_kwargs_mean_fn_n()
-        mean_fn_j = self._get_kwargs_mean_fn_j()
+    def test_mean_fn(self):
+        mean_fn_n = self._get_mean_fn_n()
+        mean_fn_j = self._get_mean_fn_j()
         self.assertTrue(
             allclose_inv(
                 mean_fn_n(
@@ -1166,29 +1059,9 @@ class ObjectiveTest(OptimTestCase):
             )
         )
 
-    def test_array_mean_fn(self):
-        mean_fn_n = self._get_array_mean_fn_n()
-        mean_fn_j = self._get_array_mean_fn_j()
-        self.assertTrue(
-            allclose_inv(
-                mean_fn_n(
-                    self.K_n,
-                    self.Kcross_n,
-                    self.batch_nn_targets_n,
-                    self.x0_n[-1],
-                ),
-                mean_fn_j(
-                    self.K_j,
-                    self.Kcross_j,
-                    self.batch_nn_targets_j,
-                    self.x0_j[-1],
-                ),
-            )
-        )
-
-    def test_kwargs_var_fn(self):
-        var_fn_n = self._get_kwargs_var_fn_n()
-        var_fn_j = self._get_kwargs_var_fn_j()
+    def test_var_fn(self):
+        var_fn_n = self._get_var_fn_n()
+        var_fn_j = self._get_var_fn_j()
         self.assertTrue(
             allclose_inv(
                 var_fn_n(
@@ -1204,27 +1077,9 @@ class ObjectiveTest(OptimTestCase):
             )
         )
 
-    def test_array_var_fn(self):
-        var_fn_n = self._get_array_var_fn_n()
-        var_fn_j = self._get_array_var_fn_j()
-        self.assertTrue(
-            allclose_inv(
-                var_fn_n(
-                    self.K_n,
-                    self.Kcross_n,
-                    self.x0_n[-1],
-                ),
-                var_fn_j(
-                    self.K_j,
-                    self.Kcross_j,
-                    self.x0_j[-1],
-                ),
-            )
-        )
-
-    def test_kwargs_sigma_sq_fn(self):
-        ss_fn_n = self._get_kwargs_sigma_sq_fn_n()
-        ss_fn_j = self._get_kwargs_sigma_sq_fn_j()
+    def test_sigma_sq_fn(self):
+        ss_fn_n = self._get_sigma_sq_fn_n()
+        ss_fn_j = self._get_sigma_sq_fn_j()
         self.assertTrue(
             allclose_inv(
                 ss_fn_n(
@@ -1236,34 +1091,20 @@ class ObjectiveTest(OptimTestCase):
                     self.K_j,
                     self.batch_nn_targets_j,
                     **self.x0_map_j,
-                ),
-            )
-        )
-
-    def test_array_sigma_sq_fn(self):
-        ss_fn_n = self._get_array_sigma_sq_fn_n()
-        ss_fn_j = self._get_array_sigma_sq_fn_j()
-        self.assertTrue(
-            allclose_inv(
-                ss_fn_n(
-                    self.K_n,
-                    self.batch_nn_targets_n,
-                    self.x0_n[-1],
-                ),
-                ss_fn_j(
-                    self.K_j,
-                    self.batch_nn_targets_j,
-                    self.x0_j[-1],
                 ),
             )
         )
 
     def test_loo_crossval(self):
-        obj_fn_n = self._get_array_obj_fn_n()
-        obj_fn_j = self._get_array_obj_fn_j()
-        obj_fn_h = self._get_array_obj_fn_h()
-        self.assertTrue(allclose_inv(obj_fn_n(self.x0_n), obj_fn_j(self.x0_j)))
-        self.assertTrue(allclose_inv(obj_fn_n(self.x0_n), obj_fn_h(self.x0_j)))
+        obj_fn_n = self._get_obj_fn_n()
+        obj_fn_j = self._get_obj_fn_j()
+        obj_fn_h = self._get_obj_fn_h()
+        self.assertTrue(
+            allclose_inv(obj_fn_n(**self.x0_map_n), obj_fn_j(**self.x0_map_j))
+        )
+        self.assertTrue(
+            allclose_inv(obj_fn_n(**self.x0_map_n), obj_fn_h(**self.x0_map_j))
+        )
 
 
 class OptimTest(OptimTestCase):
@@ -1273,9 +1114,9 @@ class OptimTest(OptimTestCase):
         cls.sopt_kwargs = {"verbose": False}
 
     def test_scipy_optimize(self):
-        obj_fn_n = self._get_array_obj_fn_n()
-        obj_fn_j = self._get_array_obj_fn_j()
-        obj_fn_h = self._get_array_obj_fn_h()
+        obj_fn_n = self._get_obj_fn_n()
+        obj_fn_j = self._get_obj_fn_j()
+        obj_fn_h = self._get_obj_fn_h()
 
         mopt_n = scipy_optimize_n(self.muygps, obj_fn_n, **self.sopt_kwargs)
         mopt_j = scipy_optimize_j(self.muygps, obj_fn_j, **self.sopt_kwargs)
@@ -1302,9 +1143,9 @@ class BayesOptimTest(OptimTestCase):
 
             warnings.warn(f"Bayesopt does not support JAX in 32bit mode.")
             return
-        obj_fn_n = self._get_kwargs_obj_fn_n()
-        obj_fn_j = self._get_kwargs_obj_fn_j()
-        obj_fn_h = self._get_kwargs_obj_fn_h()
+        obj_fn_n = self._get_obj_fn_n()
+        obj_fn_j = self._get_obj_fn_j()
+        obj_fn_h = self._get_obj_fn_h()
 
         mopt_n = bayes_optimize_n(self.muygps, obj_fn_n, **self.bopt_kwargs)
         mopt_j = bayes_optimize_j(self.muygps, obj_fn_j, **self.bopt_kwargs)

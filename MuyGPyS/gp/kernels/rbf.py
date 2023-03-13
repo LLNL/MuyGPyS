@@ -129,60 +129,23 @@ class RBF(KernelFn):
             bounds.append(self.length_scale.get_bounds())
         return names, params, bounds
 
-    def get_array_opt_fn(self) -> Callable:
+    def get_opt_fn(self) -> Callable:
         """
         Return a kernel function with fixed parameters set.
 
         This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
-        `opt_method="scipy"`, and assumes that the optimization parameters will
-        be passed in an `(optim_count,)` vector.
-
-        Returns:
-            A function implementing the kernel where all fixed parameters are
-            set. The function expects a list of current hyperparameter values
-            for unfixed parameters, which are expected to occur in a certain
-            order matching how they are set in
-            :func:`~MuyGPyS.gp.kernel.RBF.get_optim_params()`.
-        """
-        return self._get_array_opt_fn(_rbf_fn, self.length_scale)
-
-    @staticmethod
-    def _get_array_opt_fn(
-        rbf_fn: Callable, length_scale: Hyperparameter
-    ) -> Callable:
-        if not length_scale.fixed():
-
-            def caller_fn(dists, x0):
-                return rbf_fn(dists, length_scale=x0[0])
-
-        else:
-
-            def caller_fn(dists, x0):
-                return rbf_fn(dists, length_scale=length_scale())
-
-        return caller_fn
-
-    def get_kwargs_opt_fn(self) -> Callable:
-        """
-        Return a kernel function with fixed parameters set.
-
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
-        `opt_method="bayesian"`, and assumes that optimization parameters will
-        be passed as keyword arguments.
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
+        that optimization parameters will be passed as keyword arguments.
 
         Returns:
             A function implementing the kernel where all fixed parameters are
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._get_kwargs_opt_fn(_rbf_fn, self.length_scale)
+        return self._get_opt_fn(_rbf_fn, self.length_scale)
 
     @staticmethod
-    def _get_kwargs_opt_fn(
-        rbf_fn: Callable, length_scale: Hyperparameter
-    ) -> Callable:
+    def _get_opt_fn(rbf_fn: Callable, length_scale: Hyperparameter) -> Callable:
         if not length_scale.fixed():
 
             def caller_fn(dists, **kwargs):
