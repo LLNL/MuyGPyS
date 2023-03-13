@@ -12,6 +12,30 @@ from scipy import optimize as opt
 from MuyGPyS.gp import MuyGPS
 
 
+def _new_muygps(mugps: MuyGPS, x0_names, bounds, opt_dict) -> MuyGPS:
+    ret = MuyGPS()
+    for i, key in enumerate(x0_names):
+        lb, ub = bounds[i]
+        val = opt_dict[key]
+        if val < lb:
+            val = lb
+        elif val > ub:
+            val = ub
+        if key == "eps":
+            ret.eps._set_val(val)
+        else:
+            ret.kernel.hyperparameters[key]._set_val(val)
+    return ret
+
+
+def _obj_fn_adapter(obj_fn, x0_names):
+    def array_obj_fn(x_array):
+        arr_dict = {h: x_array[i] for i, h in enumerate(x0_names)}
+        return -obj_fn(**arr_dict)
+
+    return array_obj_fn
+
+
 def _scipy_optimize(
     muygps: MuyGPS,
     obj_fn: Callable,
@@ -24,8 +48,11 @@ def _scipy_optimize(
         print(f"bounds: {bounds}")
         print(f"initial x0: {x0}")
 
+    # converting from kwargs representation to array representation
+    array_obj_fn = _obj_fn_adapter(obj_fn, x0_names)
+
     optres = opt.minimize(
-        obj_fn,
+        array_obj_fn,
         x0,
         method="L-BFGS-B",
         bounds=bounds,
@@ -34,23 +61,10 @@ def _scipy_optimize(
     if verbose is True:
         print(f"optimizer results: \n{optres}")
 
-    ret = deepcopy(muygps)
+    # converting back to kwargs representation
+    ret_dict = {n: optres.x[i] for i, n in enumerate(x0_names)}
 
-    # set final values
-    for i, key in enumerate(x0_names):
-        lb, ub = bounds[i]
-        if optres.x[i] < lb:
-            val = lb
-        elif optres.x[i] > ub:
-            val = ub
-        else:
-            val = optres.x[i]
-        if key == "eps":
-            ret.eps._set_val(val)
-        else:
-            ret.kernel.hyperparameters[key]._set_val(val)
-
-    return ret
+    return _new_muygps(muygps, x0_names, bounds, ret_dict)
 
 
 def _bayes_opt_optimize(
@@ -111,19 +125,4 @@ def _bayes_opt_optimize(
     optimizer.probe(x0_map, lazy=True)
     optimizer.maximize(**maximize_kwargs)
 
-    ret = deepcopy(muygps)
-
-    # set final values
-    for i, key in enumerate(x0_names):
-        lb, ub = bounds[i]
-        val = optimizer.max["params"][key]
-        if val < lb:
-            val = lb
-        elif val > ub:
-            val = ub
-        if key == "eps":
-            ret.eps._set_val(val)
-        else:
-            ret.kernel.hyperparameters[key]._set_val(val)
-
-    return ret
+    return _new_muygps(muygps, x0_names, bounds, optimizer.max["params"])

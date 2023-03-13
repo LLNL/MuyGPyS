@@ -149,6 +149,7 @@ def optimize_from_indices(
         loss_method=loss_method,
         obj_method=obj_method,
         opt_method=opt_method,
+        sigma_method=sigma_method,
         verbose=verbose,
         **kwargs,
     )
@@ -249,14 +250,13 @@ def optimize_from_tensors(
         A new MuyGPs model whose specified hyperparameters have been optimized.
     """
     loss_fn = get_loss_func(loss_method)
-    kernel_fn = muygps.kernel.get_opt_fn(opt_method)
-    mean_fn = muygps.get_opt_mean_fn(opt_method)
-    var_fn = muygps.get_opt_var_fn(opt_method)
-    sigma_sq_fn = make_sigma_sq_optim(sigma_method, opt_method, muygps)
+    kernel_fn = muygps.kernel.get_opt_fn()
+    mean_fn = muygps.get_opt_mean_fn()
+    var_fn = muygps.get_opt_var_fn()
+    sigma_sq_fn = make_sigma_sq_optim(sigma_method, muygps)
 
     obj_fn = make_obj_fn(
         obj_method,
-        opt_method,
         loss_method,
         loss_fn,
         kernel_fn,

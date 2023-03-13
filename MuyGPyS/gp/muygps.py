@@ -653,74 +653,13 @@ class MuyGPS:
         responses = _muygps_fast_regress_solve(Kcross, coeffs_tensor)
         return responses
 
-    def get_opt_mean_fn(self, opt_method) -> Callable:
+    def get_opt_mean_fn(self) -> Callable:
         """
         Return a posterior mean function for use in optimization.
 
         This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`. The
-        `opt_method` parameter determines the format of the returned function.
-
-        Returns:
-            A function implementing a posterior mean, where `eps` is either
-            fixed or takes updating values during optimization. The format of
-            the function depends upon `opt_method`.
-        """
-        return _switch_on_opt_method(
-            opt_method, self.get_kwargs_opt_mean_fn, self.get_array_opt_mean_fn
-        )
-
-    def get_array_opt_mean_fn(self) -> Callable:
-        """
-        Return a posterior mean function for use in optimization.
-
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
-        `opt_method="scipy"`, and assumes that the optimization parameters will
-        be passed in an `(optim_count,)` vector where `eps` is either the last
-        element or is not included.
-
-        Returns:
-            A function implementing posterior mean, where `eps` is either fixed
-            or takes updating values during optimization. The function expects a
-            list of current hyperparameter values for unfixed parameters, which
-            are expected to occur in a certain order matching how they are set
-            in `~MuyGPyS.gp.muygps.MuyGPS.get_optim_params()`.
-        """
-        if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_array_opt_mean_fn(
-                _muygps_compute_solve, _homoscedastic_perturb, self.eps
-            )
-        else:
-            raise TypeError(
-                f"Noise parameter type {type(self.eps)} is not supported for "
-                f"optimization!"
-            )
-
-    @staticmethod
-    def _get_array_opt_mean_fn(
-        solve_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
-    ) -> Callable:
-        if not eps.fixed():
-
-            def caller_fn(K, Kcross, batch_nn_targets, x0):
-                return solve_fn(perturb_fn(K, x0[-1]), Kcross, batch_nn_targets)
-
-        else:
-
-            def caller_fn(K, Kcross, batch_nn_targets, x0):
-                return solve_fn(perturb_fn(K, eps()), Kcross, batch_nn_targets)
-
-        return caller_fn
-
-    def get_kwargs_opt_mean_fn(self) -> Callable:
-        """
-        Return a posterior mean function for use in optimization.
-
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
-        `opt_method="bayesian"`, and assumes that either `eps` will be passed
-        via a keyword argument or not at all.
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
+        that either `eps` will be passed via a keyword argument or not at all.
 
         Returns:
             A function implementing the posterior mean, where `eps` is either
@@ -729,7 +668,7 @@ class MuyGPS:
             values for unfixed parameters.
         """
         if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_kwargs_opt_mean_fn(
+            return self._get_opt_mean_fn(
                 _muygps_compute_solve, _homoscedastic_perturb, self.eps
             )
         else:
@@ -739,7 +678,7 @@ class MuyGPS:
             )
 
     @staticmethod
-    def _get_kwargs_opt_mean_fn(
+    def _get_opt_mean_fn(
         solve_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
     ) -> Callable:
         if not eps.fixed():
@@ -756,26 +695,22 @@ class MuyGPS:
 
         return caller_fn
 
-    def get_opt_var_fn(self, opt_method) -> Callable:
+    def get_opt_var_fn(self) -> Callable:
         """
         Return a posterior variance function for use in optimization.
 
         This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`. The
-        `opt_method` parameter determines the format of the returned function.
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
+        that either `eps` will be passed via a keyword argument or not at all.
 
         Returns:
             A function implementing posterior variance, where `eps` is either
-            fixed or takes updating values during optimization. The format of
-            the function depends upon `opt_method`.
+            fixed or takes updating values during optimization. The function
+            expects keyword arguments corresponding to current hyperparameter
+            values for unfixed parameters.
         """
-        return _switch_on_opt_method(
-            opt_method, self.get_kwargs_opt_var_fn, self.get_array_opt_var_fn
-        )
-
-    def get_array_opt_var_fn(self) -> Callable:
         if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_array_opt_var_fn(
+            return self._get_opt_var_fn(
                 _muygps_compute_diagonal_variance,
                 _homoscedastic_perturb,
                 self.eps,
@@ -787,36 +722,7 @@ class MuyGPS:
             )
 
     @staticmethod
-    def _get_array_opt_var_fn(
-        var_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
-    ) -> Callable:
-        if not eps.fixed():
-
-            def caller_fn(K, Kcross, x0):
-                return var_fn(perturb_fn(K, x0[-1]), Kcross)
-
-        else:
-
-            def caller_fn(K, Kcross, x0):
-                return var_fn(perturb_fn(K, eps()), Kcross)
-
-        return caller_fn
-
-    def get_kwargs_opt_var_fn(self) -> Callable:
-        if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_kwargs_opt_var_fn(
-                _muygps_compute_diagonal_variance,
-                _homoscedastic_perturb,
-                self.eps,
-            )
-        else:
-            raise TypeError(
-                f"Noise parameter type {type(self.eps)} is not supported for "
-                f"optimization!"
-            )
-
-    @staticmethod
-    def _get_kwargs_opt_var_fn(
+    def _get_opt_var_fn(
         var_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
     ) -> Callable:
         if not eps.fixed():
@@ -830,3 +736,20 @@ class MuyGPS:
                 return var_fn(perturb_fn(K, eps()), Kcross)
 
         return caller_fn
+
+    def __eq__(self, rhs) -> bool:
+        if isinstance(rhs, self.__class__):
+            return all(
+                (
+                    self.kern == rhs.kern,
+                    all(
+                        self.kernel.hyperparameters[h]()
+                        == rhs.kernel.hyperparameters[h]()
+                        for h in self.kernel.hyperparameters
+                    ),
+                    self.eps() == rhs.eps(),
+                    self.sigma_sq() == rhs.sigma_sq(),
+                )
+            )
+        else:
+            return False

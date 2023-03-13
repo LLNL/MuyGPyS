@@ -36,17 +36,9 @@ Example:
     >>> Kcross = kern(crosswise_dists)
 """
 
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.kernels import (
-    _rbf_fn,
-    _matern_05_fn,
-    _matern_15_fn,
-    _matern_25_fn,
-    _matern_inf_fn,
-    _matern_gen_fn,
-)
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
@@ -92,19 +84,9 @@ class KernelFn:
             f"get_optim_params is not implemented for base KernelFn"
         )
 
-    def get_opt_fn(self, opt_method) -> Callable:
-        return _switch_on_opt_method(
-            opt_method, self.get_kwargs_opt_fn, self.get_array_opt_fn
-        )
-
-    def get_array_opt_fn(self) -> Callable:
+    def get_opt_fn(self) -> Callable:
         raise NotImplementedError(
-            f"get_array_opt_fn is not implemented for base KernelFn"
-        )
-
-    def get_kwargs_opt_fn(self) -> Callable:
-        raise NotImplementedError(
-            f"get_kwargs_opt_fn is not implemented for base KernelFn"
+            f"get_opt_fn is not implemented for base KernelFn"
         )
 
     def __str__(self) -> str:

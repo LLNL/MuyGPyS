@@ -14,12 +14,10 @@ from typing import Callable
 
 import MuyGPyS._src.math as mm
 
-from MuyGPyS.optimize.utils import _switch_on_opt_method, _switch_on_loss_method
+from MuyGPyS.optimize.utils import _switch_on_loss_method
 
 
-def make_obj_fn(
-    obj_method: str, opt_method: str, loss_method: str, *args
-) -> Callable:
+def make_obj_fn(obj_method: str, loss_method: str, *args) -> Callable:
     """
     Prepare an objective function as a function purely of the hyperparameters
     to be optimized.
@@ -40,13 +38,12 @@ def make_obj_fn(
         A Callable `objective_fn`, whose format depends on `opt_method`.
     """
     if obj_method == "loo_crossval":
-        return make_loo_crossval_fn(opt_method, loss_method, *args)
+        return make_loo_crossval_fn(loss_method, *args)
     else:
         raise ValueError(f"Unsupported objective method: {obj_method}")
 
 
 def make_loo_crossval_fn(
-    opt_method: str,
     loss_method: str,
     loss_fn: Callable,
     kernel_fn: Callable,
@@ -67,8 +64,6 @@ def make_loo_crossval_fn(
     depends on the `opt_method` argument.
 
     Args:
-        opt_method:
-            The name of the optimization method to be utilized.
         loss_method:
             Indicates the loss function to be used.
         kernel_fn:
@@ -103,20 +98,12 @@ def make_loo_crossval_fn(
     Returns:
         A Callable `objective_fn`, whose format depends on `opt_method`.
     """
-    kernels_fn = _switch_on_opt_method(
-        opt_method,
-        make_kwargs_kernels_fn,
-        make_array_kernels_fn,
-        kernel_fn,
-        pairwise_dists,
-        crosswise_dists,
-    )
+    kernels_fn = make_kernels_fn(kernel_fn, pairwise_dists, crosswise_dists)
     predict_and_loss_fn = _switch_on_loss_method(
         loss_method,
         make_raw_predict_and_loss_fn,
         make_raw_predict_and_loss_fn,
         make_var_predict_and_loss_fn,
-        opt_method,
         loss_fn,
         mean_fn,
         var_fn,
@@ -124,28 +111,7 @@ def make_loo_crossval_fn(
         batch_nn_targets,
         batch_targets,
     )
-    return _switch_on_opt_method(
-        opt_method,
-        make_kwargs_obj_fn,
-        make_array_obj_fn,
-        kernels_fn,
-        predict_and_loss_fn,
-    )
 
-
-def make_array_obj_fn(
-    kernels_fn: Callable, predict_and_loss_fn: Callable
-) -> Callable:
-    def obj_fn(x0):
-        K, Kcross = kernels_fn(x0)
-        return predict_and_loss_fn(K, Kcross, x0)
-
-    return obj_fn
-
-
-def make_kwargs_obj_fn(
-    kernels_fn: Callable, predict_and_loss_fn: Callable, **kwargs
-) -> Callable:
     def obj_fn(**kwargs):
         K, Kcross = kernels_fn(**kwargs)
         return predict_and_loss_fn(K, Kcross, **kwargs)
@@ -153,20 +119,7 @@ def make_kwargs_obj_fn(
     return obj_fn
 
 
-def make_array_kernels_fn(
-    kernel_fn: Callable,
-    pairwise_dists: mm.ndarray,
-    crosswise_dists: mm.ndarray,
-) -> Callable:
-    def kernels_fn(x0):
-        K = kernel_fn(pairwise_dists, x0)
-        Kcross = kernel_fn(crosswise_dists, x0)
-        return K, Kcross
-
-    return kernels_fn
-
-
-def make_kwargs_kernels_fn(
+def make_kernels_fn(
     kernel_fn: Callable,
     pairwise_dists: mm.ndarray,
     crosswise_dists: mm.ndarray,
@@ -180,49 +133,6 @@ def make_kwargs_kernels_fn(
 
 
 def make_raw_predict_and_loss_fn(
-    opt_method: str,
-    loss_fn: Callable,
-    mean_fn: Callable,
-    var_fn: Callable,
-    sigma_sq_fn: Callable,
-    batch_nn_targets: mm.ndarray,
-    batch_targets: mm.ndarray,
-) -> Callable:
-    return _switch_on_opt_method(
-        opt_method,
-        make_raw_kwargs_predict_and_loss_fn,
-        make_raw_array_predict_and_loss_fn,
-        loss_fn,
-        mean_fn,
-        var_fn,
-        sigma_sq_fn,
-        batch_nn_targets,
-        batch_targets,
-    )
-
-
-def make_raw_array_predict_and_loss_fn(
-    loss_fn: Callable,
-    mean_fn: Callable,
-    var_fn: Callable,
-    sigma_sq_fn: Callable,
-    batch_nn_targets: mm.ndarray,
-    batch_targets: mm.ndarray,
-) -> Callable:
-    def predict_and_loss_fn(K, Kcross, x0):
-        predictions = mean_fn(
-            K,
-            Kcross,
-            batch_nn_targets,
-            x0,
-        )
-
-        return loss_fn(predictions, batch_targets)
-
-    return predict_and_loss_fn
-
-
-def make_raw_kwargs_predict_and_loss_fn(
     loss_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
@@ -244,52 +154,6 @@ def make_raw_kwargs_predict_and_loss_fn(
 
 
 def make_var_predict_and_loss_fn(
-    opt_method: str,
-    loss_fn: Callable,
-    mean_fn: Callable,
-    var_fn: Callable,
-    sigma_sq_fn: Callable,
-    batch_nn_targets: mm.ndarray,
-    batch_targets: mm.ndarray,
-) -> Callable:
-    return _switch_on_opt_method(
-        opt_method,
-        make_var_kwargs_predict_and_loss_fn,
-        make_var_array_predict_and_loss_fn,
-        loss_fn,
-        mean_fn,
-        var_fn,
-        sigma_sq_fn,
-        batch_nn_targets,
-        batch_targets,
-    )
-
-
-def make_var_array_predict_and_loss_fn(
-    loss_fn: Callable,
-    mean_fn: Callable,
-    var_fn: Callable,
-    sigma_sq_fn: Callable,
-    batch_nn_targets: mm.ndarray,
-    batch_targets: mm.ndarray,
-) -> Callable:
-    def predict_and_loss_fn(K, Kcross, x0):
-        predictions = mean_fn(
-            K,
-            Kcross,
-            batch_nn_targets,
-            x0,
-        )
-
-        sigma_sq = sigma_sq_fn(K, batch_nn_targets, x0)
-
-        variances = var_fn(K, Kcross, x0)
-        return loss_fn(predictions, batch_targets, variances, sigma_sq)
-
-    return predict_and_loss_fn
-
-
-def make_var_kwargs_predict_and_loss_fn(
     loss_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,

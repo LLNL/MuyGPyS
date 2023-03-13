@@ -11,7 +11,7 @@ Currently only supports an analytic approximation, but will support other
 methods in the future.
 """
 
-from copy import deepcopy
+from copy import copy
 from typing import Callable, Optional
 
 import MuyGPyS._src.math as mm
@@ -107,64 +107,34 @@ def mmuygps_sigma_sq_optim(
 
 
 def make_sigma_sq_optim(
-    sigma_method: Optional[str], opt_method: str, muygps: MuyGPS
+    sigma_method: Optional[str], muygps: MuyGPS
 ) -> Callable:
     return _switch_on_sigma_method(
         sigma_method,
         make_analytic_sigma_sq_optim,
         make_none_sigma_sq_optim,
-        opt_method,
-        muygps,
-    )
-
-
-def make_none_sigma_sq_optim(opt_method: str, muygps: MuyGPS) -> Callable:
-    return _switch_on_opt_method(
-        opt_method,
-        lambda: lambda K, nn_targets, **kwargs: muygps.sigma_sq(),
-        lambda: lambda K, nn_targets, x0: muygps.sigma_sq(),
-    )
-
-
-def make_analytic_sigma_sq_optim(opt_method: str, muygps: MuyGPS) -> Callable:
-    return _switch_on_opt_method(
-        opt_method,
-        make_kwargs_analytic_sigma_sq_optim,
-        make_array_analytic_sigma_sq_optim,
         muygps,
         _analytic_sigma_sq_optim,
         _homoscedastic_perturb,
     )
 
 
-def make_kwargs_analytic_sigma_sq_optim(
-    muygps: MuyGPS, sigma_fn: Callable, perturb_fn: Callable
+def make_none_sigma_sq_optim(muygps: MuyGPS, *args) -> Callable:
+    return lambda: lambda K, nn_targets, **kwargs: muygps.sigma_sq()
+
+
+def make_analytic_sigma_sq_optim(
+    muygps: MuyGPS, analytic_optim_fn, perturb_fn: Callable
 ) -> Callable:
     if not muygps.eps.fixed():
 
         def ss_opt_fn(K, nn_targets, **kwargs):
-            return sigma_fn(perturb_fn(K, kwargs["eps"]), nn_targets)
+            return analytic_optim_fn(perturb_fn(K, kwargs["eps"]), nn_targets)
 
     else:
 
         def ss_opt_fn(K, nn_targets, **kwargs):
-            return sigma_fn(perturb_fn(K, muygps.eps()), nn_targets)
-
-    return ss_opt_fn
-
-
-def make_array_analytic_sigma_sq_optim(
-    muygps: MuyGPS, sigma_fn: Callable, perturb_fn: Callable
-) -> Callable:
-    if not muygps.eps.fixed():
-
-        def ss_opt_fn(K, nn_targets, x0):
-            return sigma_fn(perturb_fn(K, x0[-1]), nn_targets)
-
-    else:
-
-        def ss_opt_fn(K, nn_targets, x0):
-            return sigma_fn(perturb_fn(K, muygps.eps()), nn_targets)
+            return analytic_optim_fn(perturb_fn(K, muygps.eps()), nn_targets)
 
     return ss_opt_fn
 
@@ -203,7 +173,7 @@ def muygps_analytic_sigma_sq_optim(
     Returns:
         A new MuyGPs model whose sigma_sq parameter has been optimized.
     """
-    ret = deepcopy(muygps)
+    ret = copy(muygps)
     if isinstance(muygps.eps, HomoscedasticNoise):
         K = muygps.kernel(pairwise_dists)
         ret.sigma_sq._set(
@@ -253,7 +223,7 @@ def mmuygps_analytic_sigma_sq_optim(
     Returns:
         A new MuyGPs model whose sigma_sq parameter has been optimized.
     """
-    ret = deepcopy(mmuygps)
+    ret = copy(mmuygps)
     batch_count, nn_count, response_count = nn_targets.shape
     if response_count != len(ret.models):
         raise ValueError(

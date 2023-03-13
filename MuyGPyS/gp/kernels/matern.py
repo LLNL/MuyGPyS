@@ -169,124 +169,20 @@ class Matern(KernelFn):
             bounds.append(self.length_scale.get_bounds())
         return names, params, bounds
 
-    def get_array_opt_fn(self) -> Callable:
+    def get_opt_fn(self) -> Callable:
         """
         Return a kernel function with fixed parameters set.
 
         This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
-        `opt_method="scipy"`, and assumes that the optimization parameters will
-        be passed in an `(optim_count,)` vector.
-
-        Returns:
-            A function implementing the kernel where all fixed parameters are
-            set. The function expects a list of current hyperparameter values
-            for unfixed parameters, which are expected to occur in a certain
-            order matching how they are set in
-            :func:`~MuyGPyS.gp.kernel.Matern.get_optim_params()`.
-        """
-        return self._get_array_opt_fn(
-            _matern_05_fn,
-            _matern_15_fn,
-            _matern_25_fn,
-            _matern_inf_fn,
-            _matern_gen_fn,
-            self.nu,
-            self.length_scale,
-        )
-
-    @staticmethod
-    def _get_array_opt_fn(
-        m_05_fn: Callable,
-        m_15_fn: Callable,
-        m_25_fn: Callable,
-        m_inf_fn: Callable,
-        m_gen_fn: Callable,
-        nu: Hyperparameter,
-        length_scale: Hyperparameter,
-    ) -> Callable:
-        nu_fixed = nu.fixed()
-        ls_fixed = length_scale.fixed()
-        if nu_fixed is False and ls_fixed is True:
-
-            def caller_fn(dists, x0):
-                return m_gen_fn(dists, nu=x0[0], length_scale=length_scale())
-
-        elif nu_fixed is False and ls_fixed is False:
-
-            def caller_fn(dists, x0):
-                return m_gen_fn(dists, nu=x0[0], length_scale=x0[1])
-
-        elif nu_fixed is True and ls_fixed is False:
-            if nu() == 0.5:
-
-                def caller_fn(dists, x0):
-                    return m_05_fn(dists, length_scale=x0[0])
-
-            elif nu() == 1.5:
-
-                def caller_fn(dists, x0):
-                    return m_15_fn(dists, length_scale=x0[0])
-
-            elif nu() == 2.5:
-
-                def caller_fn(dists, x0):
-                    return m_25_fn(dists, length_scale=x0[0])
-
-            elif nu() == mm.inf:
-
-                def caller_fn(dists, x0):
-                    return m_inf_fn(dists, length_scale=x0[0])
-
-            else:
-
-                def caller_fn(dists, x0):
-                    return m_gen_fn(dists, nu=nu(), length_scale=x0[0])
-
-        else:
-
-            if nu() == 0.5:
-
-                def caller_fn(dists, x0):
-                    return m_05_fn(dists, length_scale=length_scale())
-
-            elif nu() == 1.5:
-
-                def caller_fn(dists, x0):
-                    return m_15_fn(dists, length_scale=length_scale())
-
-            elif nu() == 2.5:
-
-                def caller_fn(dists, x0):
-                    return m_25_fn(dists, length_scale=length_scale())
-
-            elif nu() == mm.inf:
-
-                def caller_fn(dists, x0):
-                    return m_inf_fn(dists, length_scale=length_scale())
-
-            else:
-
-                def caller_fn(dists, x0):
-                    return m_gen_fn(dists, nu=nu(), length_scale=length_scale())
-
-        return caller_fn
-
-    def get_kwargs_opt_fn(self) -> Callable:
-        """
-        Return a kernel function with fixed parameters set.
-
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` with
-        `opt_method="bayesian"`, and assumes that optimization parameters will
-        be passed as keyword arguments.
+        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
+        that optimization parameters will be passed as keyword arguments.
 
         Returns:
             A function implementing the kernel where all fixed parameters are
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._get_kwargs_opt_fn(
+        return self._get_opt_fn(
             _matern_05_fn,
             _matern_15_fn,
             _matern_25_fn,
@@ -297,7 +193,7 @@ class Matern(KernelFn):
         )
 
     @staticmethod
-    def _get_kwargs_opt_fn(
+    def _get_opt_fn(
         m_05_fn: Callable,
         m_15_fn: Callable,
         m_25_fn: Callable,
