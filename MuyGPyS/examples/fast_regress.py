@@ -22,10 +22,8 @@ from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.examples.regress import (
-    _decide_and_make_regressor,
-    _unpack,
-)
+from MuyGPyS.examples.from_indices import fast_regress_from_indices
+from MuyGPyS.examples.regress import _decide_and_make_regressor
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import fast_nn_update
 from MuyGPyS.neighbors import NN_Wrapper
@@ -163,7 +161,7 @@ def do_fast_regress(
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
     verbose: bool = False,
-) -> Tuple[mm.ndarray, mm.ndarray, mm.ndarray, mm.ndarray, Dict]:
+) -> Tuple[mm.ndarray, NN_Wrapper, mm.ndarray, mm.ndarray, Dict]:
     """
     Convenience function initializing a model and performing regression.
 
@@ -273,10 +271,7 @@ def do_fast_regress(
         A dictionary containing timings for the training, precomputation,
         nearest neighbor computation, and prediction.
     """
-    if sigma_method is None:
-        apply_sigma_sq = False
-
-    regressor_args = _decide_and_make_regressor(
+    regressor, nbrs_lookup = _decide_and_make_regressor(
         train_features,
         train_targets,
         nn_count=nn_count,
@@ -289,15 +284,8 @@ def do_fast_regress(
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,
-        return_distances=False,
         verbose=verbose,
     )
-    regressor, regressor_args_less1 = _unpack(*regressor_args)
-    nbrs_lookup, regressor_args_less2 = _unpack(*regressor_args_less1)
-    if len(regressor_args_less2) > 0:
-        # Should not get here
-        # crosswise_dists, pairwise_dists = regressor_args_less2
-        pass
 
     predictions, precomputed_coefficients_matrix, timing = fast_regress_any(
         regressor,
@@ -380,7 +368,8 @@ def fast_regress_any(
     closest_set_new = nn_indices[closest_neighbor, :].astype(int)
     num_test_samples, _ = test_features.shape
 
-    predictions = muygps.fast_regress_from_indices(
+    predictions = fast_regress_from_indices(
+        muygps,
         mm.arange(0, num_test_samples),
         closest_set_new,
         test_features,

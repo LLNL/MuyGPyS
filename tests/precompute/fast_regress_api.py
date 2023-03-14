@@ -49,10 +49,9 @@ class HeatonFastTest(FastRegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, vm, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for vm in ["diagonal", None]
             for lm in ["mse"]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
@@ -75,7 +74,6 @@ class HeatonFastTest(FastRegressionAPITest):
         self,
         nn_count,
         batch_count,
-        variance_mode,
         loss_method,
         obj_method,
         opt_method_and_kwargs,
@@ -84,13 +82,6 @@ class HeatonFastTest(FastRegressionAPITest):
     ):
         target_mse, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
-
-        if variance_mode is None:
-            sigma_method = None
-            apply_sigma_sq = False
-        else:
-            sigma_method = "analytic"
-            apply_sigma_sq = True
 
         self._do_fast_regress_test_chassis(
             train=self.train,
@@ -101,12 +92,9 @@ class HeatonFastTest(FastRegressionAPITest):
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
-            sigma_method=sigma_method,
-            variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             opt_kwargs=opt_kwargs,
-            apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )
 
@@ -124,10 +112,9 @@ class MultivariateStargalFastRegressTest(FastRegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, vm, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for vm in [None]
             for lm in ["mse"]
             for om in ["loo_crossval"]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
@@ -176,7 +163,6 @@ class MultivariateStargalFastRegressTest(FastRegressionAPITest):
         self,
         nn_count,
         batch_count,
-        variance_mode,
         loss_method,
         obj_method,
         opt_method_and_kwargs,
@@ -188,13 +174,6 @@ class MultivariateStargalFastRegressTest(FastRegressionAPITest):
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
 
-        if variance_mode is None:
-            sigma_method = None
-            apply_sigma_sq = False
-        else:
-            sigma_method = "analytic"
-            apply_sigma_sq = True
-
         self._do_fast_regress_test_chassis(
             train=train,
             test=test,
@@ -204,13 +183,10 @@ class MultivariateStargalFastRegressTest(FastRegressionAPITest):
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
-            sigma_method=sigma_method,
-            variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_kwargs=k_args,
             opt_kwargs=opt_kwargs,
-            apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )
 
@@ -228,17 +204,17 @@ class StargalFastRegressTest(FastRegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, vm, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for vm in [None]
             for lm in ["mse"]
             for om in ["loo_crossval"]
-            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for nn_kwargs in _basic_nn_kwarg_options
-            for opt_method_and_kwargs in [
-                _basic_opt_method_and_kwarg_options[0]
-            ]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[0]
+            # ]
             for k_kwargs in (
                 (
                     1.0,
@@ -266,7 +242,6 @@ class StargalFastRegressTest(FastRegressionAPITest):
         self,
         nn_count,
         batch_count,
-        variance_mode,
         loss_method,
         obj_method,
         opt_method_and_kwargs,
@@ -278,13 +253,6 @@ class StargalFastRegressTest(FastRegressionAPITest):
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
 
-        if variance_mode is None:
-            sigma_method = None
-            apply_sigma_sq = False
-        else:
-            sigma_method = "analytic"
-            apply_sigma_sq = True
-
         self._do_fast_regress_test_chassis(
             train=train,
             test=test,
@@ -294,12 +262,9 @@ class StargalFastRegressTest(FastRegressionAPITest):
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
-            sigma_method=sigma_method,
-            variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             opt_kwargs=opt_kwargs,
-            apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )
 

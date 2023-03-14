@@ -38,6 +38,7 @@ from MuyGPyS._src.mpi_utils import (
 from MuyGPyS.examples.classify import (
     make_classifier,
 )
+from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import get_balanced_batch
@@ -406,7 +407,8 @@ def classify_two_class_uq(
         (
             means[nonconstant_mask, :],
             variances[nonconstant_mask],
-        ) = surrogate.regress_from_indices(
+        ) = regress_from_indices(
+            surrogate,
             np.where(nonconstant_mask == True)[0],
             test_nn_indices[nonconstant_mask, :],
             test_features,
@@ -414,7 +416,6 @@ def classify_two_class_uq(
             train_labels,
             variance_mode="diagonal",
             apply_sigma_sq=False,
-            indices_by_rank=_is_mpi_mode(),
         )
 
     time_pred = perf_counter()
@@ -474,7 +475,8 @@ def train_two_class_interval(
     batch_indices = _consistent_chunk_tensor(batch_indices)
     batch_nn_indices = _consistent_chunk_tensor(batch_nn_indices)
 
-    mean, variance = surrogate.regress_from_indices(
+    mean, variance = regress_from_indices(
+        surrogate,
         batch_indices,
         batch_nn_indices,
         train_features,
@@ -482,7 +484,6 @@ def train_two_class_interval(
         train_responses,
         variance_mode="diagonal",
         apply_sigma_sq=False,
-        indices_by_rank=_is_mpi_mode(),
     )
     predicted_labels = 2 * np.argmax(mean, axis=1) - 1
 

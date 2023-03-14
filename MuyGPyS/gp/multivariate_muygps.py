@@ -97,111 +97,6 @@ class MultivariateMuyGPS:
         """
         return bool(all([model.fixed() for model in self.models]))
 
-    def regress_from_indices(
-        self,
-        indices: mm.ndarray,
-        nn_indices: mm.ndarray,
-        test: mm.ndarray,
-        train: mm.ndarray,
-        targets: mm.ndarray,
-        variance_mode: Optional[str] = None,
-        apply_sigma_sq: bool = True,
-        return_distances: bool = False,
-        indices_by_rank: bool = False,
-    ) -> Union[
-        mm.ndarray,
-        Tuple[mm.ndarray, mm.ndarray],
-        Tuple[mm.ndarray, mm.ndarray, mm.ndarray],
-        Tuple[mm.ndarray, mm.ndarray, mm.ndarray, mm.ndarray],
-    ]:
-        """
-        Performs simultaneous regression on a list of observations.
-
-        Implicitly creates and discards the distance tensors and matrices. If
-        these data structures are needed for later reference, instead use
-        :func:`~MuyGPyS.gp.muygps.MultivariateMuyGPS.regress`.
-
-        Args:
-            indices:
-                An integral vector of shape `(batch_count,)` indices of the
-                observations to be approximated.
-            nn_indices:
-                An integral matrix of shape `(batch_count, nn_count)` listing the
-                nearest neighbor indices for all observations in the test batch.
-            test:
-                The full testing data matrix of shape
-                `(test_count, feature_count)`.
-            train:
-                The full training data matrix of shape
-                `(train_count, feature_count)`.
-            targets:
-                A matrix of shape `(train_count, response_count)` whose rows are
-                vector-valued responses for each training element.
-            variance_mode:
-                Specifies the type of variance to return. Currently supports
-                `"diagonal"` and None. If None, report no variance term.
-            apply_sigma_sq:
-                Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or
-                `sigma_sq.trained is False`.
-            return_distances:
-                If `True`, returns a `(test_count, nn_count)` matrix containing
-                the crosswise distances between the test elements and their
-                nearest neighbor sets and a `(test_count, nn_count, nn_count)`
-                tensor containing the pairwise distances between the test data's
-                nearest neighbor sets.
-            indices_by_rank:
-                If `True`, construct the tensors using local indices with no
-                communication. Only for use in MPI mode.
-        Returns
-        -------
-        responses:
-            A matrix of shape `(batch_count, response_count)` whose rows are
-            the predicted response for each of the given indices.
-        variance:
-            A vector of shape `(batch_count,)` consisting of the diagonal
-            elements of the posterior variance. Only returned where
-            `variance_mode == "diagonal"`.
-        crosswise_dists:
-            A matrix of shape `(test_count, nn_count)` whose rows list the
-            distance of the corresponding test element to each of its nearest
-            neighbors. Only returned if `return_distances is True`.
-        pairwise_dists:
-            A tensor of shape `(test_count, nn_count, nn_count)` whose latter
-            two dimensions contain square matrices containing the pairwise
-            distances between the nearest neighbors of the test elements. Only
-            returned if `return_distances is True`.
-        """
-        tensor_fn = (
-            _make_regress_tensors_n
-            if _is_mpi_mode() is True and indices_by_rank is True
-            else _make_regress_tensors
-        )
-
-        (crosswise_dists, pairwise_dists, batch_nn_targets,) = tensor_fn(
-            self.metric,
-            indices,
-            nn_indices,
-            test,
-            train,
-            targets,
-        )
-        responses = self.regress(
-            pairwise_dists,
-            crosswise_dists,
-            batch_nn_targets,
-            variance_mode=variance_mode,
-            apply_sigma_sq=apply_sigma_sq,
-        )
-        if return_distances is False:
-            return responses
-        else:
-            if variance_mode is None:
-                return responses, crosswise_dists, pairwise_dists
-            else:
-                responses, variances = responses
-                return responses, variances, crosswise_dists, pairwise_dists
-
     def regress(
         self,
         pairwise_dists: mm.ndarray,
@@ -221,10 +116,7 @@ class MultivariateMuyGPS:
         Also computes the posterior variance if `variance_mode` is set
         appropriately. Assumes that distance tensor `pairwise_dists` and
         crosswise distance matrix `crosswise_dists` are already computed and
-        given as arguments. To implicitly construct these values from indices
-        (useful if the distance tensors and matrices are not needed for later
-        reference) instead use
-        :func:`~MuyGPyS.gp.muygps.MultivariateMuyGPS.regress_from_indices`.
+        given as arguments.
 
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations by solving a system
@@ -431,76 +323,6 @@ class MultivariateMuyGPS:
             )
 
         return coeffs_tensor
-
-    def fast_regress_from_indices(
-        self,
-        indices: mm.ndarray,
-        nn_indices: mm.ndarray,
-        test_features: mm.ndarray,
-        train_features: mm.ndarray,
-        closest_index: mm.ndarray,
-        coeffs_tensor: mm.ndarray,
-    ) -> mm.ndarray:
-        """
-        Performs fast multivariate regression using provided
-        vectors and matrices used in constructed the crosswise distances matrix,
-        the index of the training point closest to the queried test point,
-        and precomputed coefficient matrix.
-
-        Returns the predicted response in the form of a posterior
-        mean for each element of the batch of observations, as computed in
-        Equation (9) of [dunton2022fast]_. For each test point
-        :math:`\\mathbf{z}`, we compute
-
-        .. math::
-            \\widehat{Y} (\\mathbf{z} \\mid X) =
-                K_\\theta (\\mathbf{z}, X_{N^*}) \mathbf{C}_{N^*}.
-
-        Here :math:`X_{N^*}` is the union of the nearest neighbor of the queried
-        test point :math:`\\mathbf{z}` and the nearest neighbors of that
-        training point, :math:`K_\\theta` is the kernel functor specified
-        by `self.kernel`, and :math:`\mathbf{C}_{N^*}` is the matrix of
-        precomputed coefficients given in Equation (8) of [dunton2022fast]_.
-
-        Args:
-            indices:
-                A vector of shape `('batch_count,)` providing the indices of the
-                test features to be queried in the formation of the crosswise
-                distance tensor.
-            nn_indices:
-                A matrix of shape `('batch_count, nn_count)` providing the index
-                of the closest training point to each queried test point, as
-                well as the `nn_count - 1` closest neighbors of that point.
-            test_features:
-                A matrix of shape `(batch_count, feature_count)` containing
-                the test data points.
-            train_features:
-                A matrix of shape `(train_count, feature_count)` containing the
-                training data.
-            closest_index:
-                A vector of shape `(batch_count,)` for which each entry is
-                the index of the training point closest to each queried
-                test point.
-            coeffs_tensor:
-                A tensor of shape `(batch_count, nn_count, response_count)`
-                providing the precomputed coefficients for fast regression.
-
-        Returns:
-            A matrix of shape `(batch_count, response_count)` whose rows are
-            the predicted response for each of the given indices.
-        """
-
-        crosswise_dists = crosswise_distances(
-            test_features,
-            train_features,
-            indices,
-            nn_indices,
-        )
-
-        return self.fast_regress(
-            crosswise_dists,
-            coeffs_tensor[closest_index, :, :],
-        )
 
     def fast_regress(
         self,
