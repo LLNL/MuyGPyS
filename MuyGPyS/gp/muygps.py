@@ -7,7 +7,7 @@
 MuyGPs implementation
 """
 
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.distance import _make_fast_regress_tensors
@@ -323,100 +323,6 @@ class MuyGPS:
         else:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
-            )
-
-    def regress(
-        self,
-        K: mm.ndarray,
-        Kcross: mm.ndarray,
-        batch_nn_targets: mm.ndarray,
-        variance_mode: Optional[str] = None,
-        apply_sigma_sq: bool = True,
-    ) -> Union[mm.ndarray, Tuple[mm.ndarray, mm.ndarray]]:
-        """
-        Performs simultaneous regression on provided covariance,
-        cross-covariance, and target.
-
-        Computes parallelized local solves of systems of linear equations using
-        the last two dimensions of `K` along with `Kcross` and
-        `batch_nn_targets` to predict responses in terms of the posterior mean.
-        Also computes the posterior variance if `variance_mode` is set
-        appropriately. Assumes that kernel tensor `K` and cross-covariance
-        matrix `Kcross` are already computed and given as arguments.
-
-        Returns the predicted response in the form of a posterior
-        mean for each element of the batch of observations, as computed in
-        Equation (3.4) of [muyskens2021muygps]_. For each batch element
-        :math:`\\mathbf{x}_i`, we compute
-
-        .. math::
-            \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}) =
-                K_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
-                Y(X_{N_i}).
-
-        Here :math:`X_{N_i}` is the set of nearest neighbors of
-        :math:`\\mathbf{x}_i` in the training data, :math:`K_\\theta` is the
-        kernel functor specified by `self.kernel`, :math:`\\varepsilon I_k` is a
-        diagonal homoscedastic noise matrix whose diagonal is the value of the
-        `self.eps` hyperparameter, and :math:`Y(X_{N_i})` is the
-        `(nn_count, respones_count)` matrix of responses of the nearest
-        neighbors given by the second two dimensions of the `batch_nn_targets`
-        argument.
-
-        If `variance_mode == "diagonal"`, also return the local posterior
-        variances of each prediction, corresponding to the diagonal elements of
-        a covariance matrix. For each batch element :math:`\\mathbf{x}_i`, we
-        compute
-
-        .. math::
-            Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})) =
-                K_\\theta (\\mathbf{x}_i, \\mathbf{x}_i) -
-                K_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
-                K_\\theta (X_{N_i}, \\mathbf{x}_i).
-
-        Args:
-            K:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count` -shaped kernel matrices corresponding
-                to each of the batch elements.
-            Kcross:
-                A matrix of shape `(batch_count, nn_count)` containing the
-                `1 x nn_count` -shaped cross-covariance matrix corresponding
-                to each of the batch elements.
-            batch_nn_targets:
-                A tensor of shape `(batch_count, nn_count, response_count)`
-                whose last dimension lists the vector-valued responses for the
-                nearest neighbors of each batch element.
-            variance_mode:
-                Specifies the type of variance to return. Currently supports
-                `"diagonal"` and None. If None, report no variance term.
-            apply_sigma_sq:
-                Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or
-                `sigma_sq.trained is False`.
-
-        Returns
-        -------
-        responses:
-            A matrix of shape `(batch_count, response_count)` whose rows are
-            the predicted response for each of the given indices.
-        diagonal_variance:
-            A vector of shape `(batch_count,)` consisting of the diagonal
-            elements of the posterior variance, or a matrix of shape
-            `(batch_count, response_count)` for a multidimensional response.
-            Only returned where `variance_mode == "diagonal"`.
-        """
-        responses = self.posterior_mean(K, Kcross, batch_nn_targets)
-        if variance_mode is None:
-            return responses
-        else:
-            return responses, self.posterior_variance(
-                K,
-                Kcross,
-                variance_mode=variance_mode,
-                apply_sigma_sq=apply_sigma_sq,
             )
 
     def fast_regress(

@@ -89,24 +89,21 @@ class MultivariateMuyGPS:
         """
         return bool(all([model.fixed() for model in self.models]))
 
-    def regress(
+    def posterior_mean(
         self,
         pairwise_dists: mm.ndarray,
         crosswise_dists: mm.ndarray,
         batch_nn_targets: mm.ndarray,
-        variance_mode: Optional[str] = None,
-        apply_sigma_sq: bool = True,
-    ) -> Union[mm.ndarray, Tuple[mm.ndarray, mm.ndarray]]:
+    ) -> mm.ndarray:
         """
-        Performs simultaneous regression on provided distance tensors and
-        the target matrix.
+        Performs simultaneous posterior mean inference on provided distance
+        tensors and the target matrix.
 
         Computes parallelized local solves of systems of linear equations using
         the kernel realizations, one for each internal model, of the last two
         dimensions of `pairwise_dists` along with `crosswise_dists` and
         `batch_nn_targets` to predict responses in terms of the posterior mean.
-        Also computes the posterior variance if `variance_mode` is set
-        appropriately. Assumes that distance tensor `pairwise_dists` and
+        Assumes that distance tensor `pairwise_dists` and
         crosswise distance matrix `crosswise_dists` are already computed and
         given as arguments.
 
@@ -132,6 +129,52 @@ class MultivariateMuyGPS:
         `(batch_count,)` vector of the jth responses of the nearest neighbors
         given by a slice of the `batch_nn_targets` argument.
 
+        Args:
+            pairwise_dists:
+                A tensor of shape `(batch_count, nn_count, nn_count)` containing
+                the `(nn_count, nn_count)` -shaped pairwise nearest neighbor
+                distance matrices corresponding to each of the batch elements.
+            crosswise_dists:
+                A matrix of shape `(batch_count, nn_count)` whose rows list the
+                distance between each batch element element and its nearest
+                neighbors.
+            batch_nn_targets:
+                A tensor of shape `(batch_count, nn_count, response_count)`
+                listing the vector-valued responses for the nearest neighbors
+                of each batch element.
+
+        Returns:
+            A matrix of shape `(batch_count, response_count)` whose rows are
+            the predicted response for each of the given indices.
+        """
+        batch_count, nn_count, response_count = batch_nn_targets.shape
+        responses = mm.zeros((batch_count, response_count))
+        for i, model in enumerate(self.models):
+            K = model.kernel(pairwise_dists)
+            Kcross = model.kernel(crosswise_dists)
+            responses = mm.assign(
+                responses,
+                model.posterior_mean(
+                    K,
+                    Kcross,
+                    batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+                ).reshape(batch_count),
+                slice(None),
+                i,
+            )
+        return responses
+
+    def posterior_variance(
+        self,
+        pairwise_dists: mm.ndarray,
+        crosswise_dists: mm.ndarray,
+        variance_mode: str = "diagonal",
+        apply_sigma_sq: bool = True,
+    ) -> mm.ndarray:
+        """
+        Performs simultaneous posterior variance inference on provided distance
+        tensors.
+
         If `variance_mode == "diagonal"`, also return the local posterior
         variances of each prediction, corresponding to the diagonal elements of
         a covariance matrix. For each batch element :math:`\\mathbf{x}_i`, we
@@ -153,10 +196,6 @@ class MultivariateMuyGPS:
                 A matrix of shape `(batch_count, nn_count)` whose rows list the
                 distance between each batch element element and its nearest
                 neighbors.
-            batch_nn_targets:
-                A tensor of shape `(batch_count, nn_count, response_count)`
-                listing the vector-valued responses for the nearest neighbors
-                of each batch element.
             variance_mode:
                 Specifies the type of variance to return. Currently supports
                 `"diagonal"` and None. If None, report no variance term.
@@ -165,41 +204,17 @@ class MultivariateMuyGPS:
                 Unused if `variance_mode is None` or
                 `sigma_sq.leanred() is False`.
 
-
-        Returns
-        -------
-        responses:
-            A matrix of shape `(batch_count, response_count)` whose rows are
-            the predicted response for each of the given indices.
-        diagonal_variance:
+        Returns:
             A vector of shape `(batch_count, response_count)` consisting of the
-            diagonal elements of the posterior variance for each model. Only
-            returned where `variance_mode == "diagonal"`.
+            diagonal elements of the posterior variance for each model.
         """
-        batch_count, nn_count, response_count = batch_nn_targets.shape
-        responses = mm.zeros((batch_count, response_count))
-        if variance_mode is None:
-            pass
-        elif variance_mode == "diagonal":
+        batch_count, _ = crosswise_dists.shape
+        response_count = len(self.models)
+        if variance_mode == "diagonal":
             diagonal_variance = mm.zeros((batch_count, response_count))
-        else:
-            raise NotImplementedError(
-                f"Variance mode {variance_mode} is not implemented."
-            )
-        for i, model in enumerate(self.models):
-            K = model.kernel(pairwise_dists)
-            Kcross = model.kernel(crosswise_dists)
-            responses = mm.assign(
-                responses,
-                model.posterior_mean(
-                    K,
-                    Kcross,
-                    batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
-                ).reshape(batch_count),
-                slice(None),
-                i,
-            )
-            if variance_mode == "diagonal":
+            for i, model in enumerate(self.models):
+                K = model.kernel(pairwise_dists)
+                Kcross = model.kernel(crosswise_dists)
                 ss = self.sigma_sq()[i] if apply_sigma_sq else 1.0
                 diagonal_variance = mm.assign(
                     diagonal_variance,
@@ -213,16 +228,11 @@ class MultivariateMuyGPS:
                     slice(None),
                     i,
                 )
-                # if apply_sigma_sq:
-                #     diagonal_variance = mm.assign(
-                #         diagonal_variance,
-                #         diagonal_variance[:, i] * sigma_sq()[i],
-                #         slice(None),
-                #         i,
-                #     )
-        if variance_mode == "diagonal":
-            return responses, diagonal_variance
-        return responses
+            return diagonal_variance
+        else:
+            raise NotImplementedError(
+                f"Variance mode {variance_mode} is not implemented."
+            )
 
     def build_fast_regress_coeffs(
         self,

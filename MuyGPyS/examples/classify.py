@@ -22,7 +22,7 @@ import numpy as np
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
-from MuyGPyS.examples.from_indices import regress_from_indices
+from MuyGPyS.examples.from_indices import posterior_mean_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
@@ -643,7 +643,7 @@ def classify_any(
     if np.sum(nonconstant_mask) > 0:
         nonconstant_indices = np.where(nonconstant_mask == True)[0]
         nonconstant_nn_indices = test_nn_indices[nonconstant_mask, :]
-        predictions[nonconstant_mask] = regress_from_indices(
+        predictions[nonconstant_mask] = posterior_mean_from_indices(
             surrogate,
             nonconstant_indices,
             nonconstant_nn_indices,

@@ -103,7 +103,7 @@ def make_fast_regress_tensors(
     Create the distance and target tensors for fast regression.
 
     Creates `pairwise_dists` and `batch_nn_targets`
-    tensors required by :func:`MuyGPyS.gp.MuyGPyS.fast_regress`.
+    tensors required by :func:`~MuyGPyS.gp.muygps.MuyGPS.fast_regress`.
 
     Args:
         metric:
@@ -152,7 +152,8 @@ def make_regress_tensors(
     Create the distance and target tensors for regression.
 
     Creates the `crosswise_dists`, `pairwise_dists` and `batch_nn_targets`
-    tensors required by :func:`MuyGPyS.gp.MuyGPyS.regress`.
+    tensors required by :func:`~MuyGPyS.gp.MuyGPS.posterior_mean` and
+    :func:`~MuyGPyS.gp.MuyGPS.posterior_variance`.
 
     Args:
         metric:
