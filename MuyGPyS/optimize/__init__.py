@@ -2,3 +2,5 @@
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
+
+from .chassis import optimize_from_tensors

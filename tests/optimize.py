@@ -31,8 +31,8 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.chassis import optimize_from_tensors
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 
 

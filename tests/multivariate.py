@@ -35,8 +35,8 @@ from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.chassis import optimize_from_tensors
 from MuyGPyS.optimize.sigma_sq import mmuygps_sigma_sq_optim
 
 

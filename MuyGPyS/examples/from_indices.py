@@ -17,7 +17,7 @@ from MuyGPyS.gp.distance import (
     make_train_tensors,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.optimize.chassis import optimize_from_tensors
+from MuyGPyS.optimize import optimize_from_tensors
 
 
 def regress_from_indices(

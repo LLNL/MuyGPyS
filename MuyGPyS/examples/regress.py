@@ -24,8 +24,8 @@ from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.chassis import optimize_from_tensors
 from MuyGPyS.optimize.sigma_sq import (
     muygps_sigma_sq_optim,
     mmuygps_sigma_sq_optim,

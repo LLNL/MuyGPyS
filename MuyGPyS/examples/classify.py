@@ -22,15 +22,11 @@ import numpy as np
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
-from MuyGPyS._src.mpi_utils import (
-    _is_mpi_mode,
-    _consistent_chunk_tensor,
-)
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.chassis import optimize_from_tensors
+from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import get_balanced_batch
 
 
@@ -629,7 +625,6 @@ def classify_any(
     one_hot_false = float(np.min(train_labels[0, :]))
 
     time_start = perf_counter()
-    test_features = _consistent_chunk_tensor(test_features)
     test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
