@@ -26,22 +26,14 @@ from MuyGPyS._test.utils import (
     _basic_opt_method_and_kwarg_options,
     _basic_nn_kwarg_options,
     _check_ndarray,
-    _exact_nn_kwarg_options,
-    _make_gaussian_dict,
     _sq_rel_err,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distance import (
-    pairwise_distances,
-    crosswise_distances,
-    make_train_tensors,
-)
+from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.chassis import optimize_from_tensors
-from MuyGPyS.optimize.loss import get_loss_func
-from MuyGPyS.optimize.objective import make_loo_crossval_fn
-from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim, make_sigma_sq_optim
+from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 
 
 class BenchmarkTestCase(parameterized.TestCase):
@@ -385,113 +377,6 @@ class BenchmarkTensorsOptimTest(BenchmarkOptimTestCase):
         print(f"optimizes with mean relative squared error {mrse}")
         # Is this a strong enough guarantee?
         self.assertAlmostEqual(mrse, 0.0, 0)
-
-
-# class GPIndicesOptimTest(parameterized.TestCase):
-#     @parameterized.parameters(
-#         (
-#             (
-#                 1001,
-#                 b,
-#                 n,
-#                 nn_kwargs,
-#                 loss_and_sigma_methods,
-#                 om,
-#                 opt_method_and_kwargs,
-#                 k_kwargs,
-#             )
-#             for b in [250]
-#             for n in [20]
-#             for loss_and_sigma_methods in [["lool", None], ["mse", None]]
-#             for om in ["loo_crossval"]
-#             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-#             # for opt_method_and_kwargs in [
-#             #     _advanced_opt_method_and_kwarg_options[0]
-#             # ]
-#             for nn_kwargs in _basic_nn_kwarg_options
-#             for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
-#             for k_kwargs in (
-#                 (
-#                     0.38,
-#                     {
-#                         "kern": "matern",
-#                         "metric": "l2",
-#                         "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
-#                         "length_scale": {"val": 1.5},
-#                         "eps": {"val": 1e-5},
-#                     },
-#                 ),
-#             )
-#         )
-#     )
-#     def test_hyper_optim_from_indices(
-#         self,
-#         data_count,
-#         batch_count,
-#         nn_count,
-#         nn_kwargs,
-#         loss_and_sigma_methods,
-#         obj_method,
-#         opt_method_and_kwargs,
-#         k_kwargs,
-#     ):
-#         if config.state.backend == "torch" or config.state.backend == "jax":
-#             _warn0(
-#                 f"{self.__class__.__name__} uses {BenchmarkGP.__name__}, which "
-#                 f"only supports numpy. Skipping"
-#             )
-#             return
-#         target, kwargs = k_kwargs
-#         loss_method, sigma_method = loss_and_sigma_methods
-#         opt_method, opt_kwargs = opt_method_and_kwargs
-
-#         # construct the observation locations
-#         sim_train = dict()
-#         sim_test = dict()
-#         x = mm.linspace(-10.0, 10.0, data_count).reshape(data_count, 1)
-#         sim_train["input"] = x[::2, :]
-#         sim_test["input"] = x[1::2, :]
-#         train_count = sim_train["input"].shape[0]
-#         test_count = sim_test["input"].shape[0]
-
-#         # compute nearest neighbor structure
-#         nbrs_lookup = NN_Wrapper(sim_train["input"], nn_count, **nn_kwargs)
-#         # nn_indices, _ = nbrs_lookup.get_nns(sim_test["input"])
-#         batch_indices, batch_nn_indices = sample_batch(
-#             nbrs_lookup, batch_count, train_count
-#         )
-#         # Make GP benchmark.
-#         gp_kwargs = kwargs.copy()
-#         gp_kwargs["nu"]["val"] = target
-#         gp = BenchmarkGP(**gp_kwargs)
-
-#         # Sample a response curve
-#         y = benchmark_sample_full(gp, sim_test["input"], sim_train["input"])
-#         sim_test["output"] = y[:test_count].reshape(test_count, 1)
-#         sim_train["output"] = y[test_count:].reshape(train_count, 1)
-
-#         # set up MuyGPS object
-#         muygps = MuyGPS(**kwargs)
-
-#         muygps = optimize_from_indices(
-#             muygps,
-#             batch_indices,
-#             batch_nn_indices,
-#             sim_train["input"],
-#             sim_train["output"],
-#             loss_method=loss_method,
-#             obj_method=obj_method,
-#             opt_method=opt_method,
-#             sigma_method=sigma_method,
-#             **opt_kwargs,
-#         )
-
-#         estimate = muygps.kernel.hyperparameters["nu"]()
-
-#         rse = _sq_rel_err(target, estimate)
-#         print(f"optimizes with relative squared error {rse}")
-#         # Is this a strong enough guarantee?
-#         self.assertAlmostEqual(rse, 0.0, 0)
 
 
 if __name__ == "__main__":
