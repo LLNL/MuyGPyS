@@ -14,22 +14,22 @@ from MuyGPyS._src.gp.distance.numpy import (
     _crosswise_distances as _crosswise_distances_n,
     _pairwise_distances as _pairwise_distances_n,
     _make_train_tensors as _make_train_tensors_n,
-    _make_regress_tensors as _make_regress_tensors_n,
+    _make_predict_tensors as _make_predict_tensors_n,
 )
 
 
-def _make_fast_regress_tensors(
+def _make_fast_predict_tensors(
     metric: str,
     batch_nn_indices: np.ndarray,
     train_features: np.ndarray,
     train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     raise NotImplementedError(
-        f'Function "make_fast_regress_tensors" does not support mpi!'
+        f'Function "make_fast_predict_tensors" does not support mpi!'
     )
 
 
-def _make_regress_tensors(
+def _make_predict_tensors(
     metric: str,
     batch_indices: np.ndarray,
     batch_nn_indices: np.ndarray,
@@ -38,7 +38,7 @@ def _make_regress_tensors(
     train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     return _chunk_function_tensor(
-        _make_regress_tensors_n,
+        _make_predict_tensors_n,
         metric,
         batch_indices,
         batch_nn_indices,

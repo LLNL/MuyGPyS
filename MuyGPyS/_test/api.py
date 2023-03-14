@@ -17,7 +17,7 @@ from MuyGPyS._test.utils import _check_ndarray, _precision_assert
 from MuyGPyS.examples.classify import do_classify
 from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq
 from MuyGPyS.examples.regress import do_regress
-from MuyGPyS.examples.fast_regress import do_fast_regress
+from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.loss import mse_fn
@@ -386,8 +386,8 @@ class RegressionAPITest(parameterized.TestCase):
         return (regressor, predictions, mse, variance)
 
 
-class FastRegressionAPITest(parameterized.TestCase):
-    def _do_fast_regress_test_chassis(
+class FastPosteriorMeanAPITest(parameterized.TestCase):
+    def _do_fast_posterior_mean_test_chassis(
         self,
         train: Dict[str, np.ndarray],
         test: Dict[str, np.ndarray],
@@ -403,7 +403,7 @@ class FastRegressionAPITest(parameterized.TestCase):
         kern: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
-        regressor, predictions, mse = self._do_fast_regress(
+        regressor, predictions, mse = self._do_fast_posterior_mean(
             train=train,
             test=test,
             nn_count=nn_count,
@@ -432,7 +432,7 @@ class FastRegressionAPITest(parameterized.TestCase):
                 for i, p in enumerate(param_names):
                     print(f"\t{p} : {param_vals[i]}")
 
-    def _do_fast_regress(
+    def _do_fast_posterior_mean(
         self,
         train: Dict[str, np.ndarray],
         test: Dict[str, np.ndarray],
@@ -453,7 +453,7 @@ class FastRegressionAPITest(parameterized.TestCase):
             predictions,
             precomputed_coefficient_matrix,
             _,
-        ) = do_fast_regress(
+        ) = do_fast_posterior_mean(
             test["input"],
             train["input"],
             train["output"],

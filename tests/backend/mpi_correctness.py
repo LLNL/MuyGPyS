@@ -26,11 +26,11 @@ from MuyGPyS._test.utils import (
     _exact_nn_kwarg_options,
 )
 from MuyGPyS._src.gp.distance.numpy import (
-    _make_regress_tensors as make_regress_tensors_n,
+    _make_predict_tensors as make_predict_tensors_n,
     _make_train_tensors as make_train_tensors_n,
 )
 from MuyGPyS._src.gp.distance.mpi import (
-    _make_regress_tensors as make_regress_tensors_m,
+    _make_predict_tensors as make_predict_tensors_m,
     _make_train_tensors as make_train_tensors_m,
 )
 from MuyGPyS._src.mpi_utils import _chunk_tensor
@@ -52,12 +52,12 @@ from MuyGPyS._src.gp.kernels.mpi import (
     _matern_gen_fn as matern_gen_fn_m,
 )
 from MuyGPyS._src.gp.muygps.numpy import (
-    _muygps_compute_solve as muygps_compute_solve_n,
-    _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
+    _muygps_posterior_mean as muygps_posterior_mean_n,
+    _muygps_diagonal_variance as muygps_diagonal_variance_n,
 )
 from MuyGPyS._src.gp.muygps.mpi import (
-    _muygps_compute_solve as muygps_compute_solve_m,
-    _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_m,
+    _muygps_posterior_mean as muygps_posterior_mean_m,
+    _muygps_diagonal_variance as muygps_diagonal_variance_m,
 )
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb as homoscedastic_perturb_n,
@@ -167,7 +167,7 @@ class DistanceTestCase(parameterized.TestCase):
                 cls.test_crosswise_dists,
                 cls.test_pairwise_dists,
                 cls.test_nn_targets,
-            ) = make_regress_tensors_n(
+            ) = make_predict_tensors_n(
                 cls.muygps.kernel.metric,
                 np.arange(cls.test_count),
                 test_nn_indices,
@@ -210,7 +210,7 @@ class DistanceTestCase(parameterized.TestCase):
             cls.test_crosswise_dists_chunk,
             cls.test_pairwise_dists_chunk,
             cls.test_nn_targets_chunk,
-        ) = make_regress_tensors_m(
+        ) = make_predict_tensors_m(
             cls.muygps.kernel.metric,
             np.arange(cls.test_count),
             test_nn_indices,
@@ -580,12 +580,12 @@ class MuyGPSTestCase(KernelTestCase):
             cls.batch_homoscedastic_covariance_gen = homoscedastic_perturb_n(
                 cls.batch_covariance_gen, cls.muygps.eps()
             )
-            cls.batch_prediction = muygps_compute_solve_n(
+            cls.batch_prediction = muygps_posterior_mean_n(
                 cls.batch_homoscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
                 cls.batch_nn_targets,
             )
-            cls.batch_variance = muygps_compute_diagonal_variance_n(
+            cls.batch_variance = muygps_diagonal_variance_n(
                 cls.batch_homoscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
             )
@@ -597,12 +597,12 @@ class MuyGPSTestCase(KernelTestCase):
         cls.batch_homoscedastic_covariance_gen_chunk = homoscedastic_perturb_m(
             cls.batch_covariance_gen_chunk, cls.muygps.eps()
         )
-        cls.batch_prediction_chunk = muygps_compute_solve_m(
+        cls.batch_prediction_chunk = muygps_posterior_mean_m(
             cls.batch_homoscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
             cls.batch_nn_targets_chunk,
         )
-        cls.batch_variance_chunk = muygps_compute_diagonal_variance_m(
+        cls.batch_variance_chunk = muygps_diagonal_variance_m(
             cls.batch_homoscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
         )
@@ -619,7 +619,7 @@ class MuyGPSTest(MuyGPSTestCase):
             self.batch_homoscedastic_covariance_gen_chunk,
         )
 
-    def test_batch_compute_solve(self):
+    def test_batch_posterior_mean(self):
         self._compare_tensors(
             self.batch_prediction, self.batch_prediction_chunk
         )
@@ -683,12 +683,12 @@ class OptimTestCase(MuyGPSTestCase):
     # Numpy predict functions
     def _get_mean_fn_n(self):
         return self.muygps._get_opt_mean_fn(
-            muygps_compute_solve_n, homoscedastic_perturb_n, self.muygps.eps
+            muygps_posterior_mean_n, homoscedastic_perturb_n, self.muygps.eps
         )
 
     def _get_var_fn_n(self):
         return self.muygps._get_opt_var_fn(
-            muygps_compute_diagonal_variance_n,
+            muygps_diagonal_variance_n,
             homoscedastic_perturb_n,
             self.muygps.eps,
         )
@@ -701,12 +701,12 @@ class OptimTestCase(MuyGPSTestCase):
     # MPI predict functions
     def _get_mean_fn_m(self):
         return self.muygps._get_opt_mean_fn(
-            muygps_compute_solve_m, homoscedastic_perturb_m, self.muygps.eps
+            muygps_posterior_mean_m, homoscedastic_perturb_m, self.muygps.eps
         )
 
     def _get_var_fn_m(self):
         return self.muygps._get_opt_var_fn(
-            muygps_compute_diagonal_variance_m,
+            muygps_diagonal_variance_m,
             homoscedastic_perturb_n,
             self.muygps.eps,
         )

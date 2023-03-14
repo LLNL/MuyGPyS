@@ -65,8 +65,8 @@ Example:
     ...         metric="l2"
     ... )
 
-The helper functions :func:`MuyGPyS.gp.distance.make_regress_tensors`,
-:func:`MuyGPyS.gp.distance.make_fast_regress_tensors`, and
+The helper functions :func:`MuyGPyS.gp.distance.make_predict_tensors`,
+:func:`MuyGPyS.gp.distance.make_fast_predict_tensors`, and
 :func:`MuyGPyS.gp.distance.make_train_tensors` wrap these distances tensors and
 also return the nearest neighbors sets' training targets and (in the latter
 case) the training targets of the training batch. These functions are convenient
@@ -78,8 +78,8 @@ from typing import Optional, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.distance import (
-    _make_fast_regress_tensors,
-    _make_regress_tensors,
+    _make_fast_predict_tensors,
+    _make_predict_tensors,
     _make_train_tensors,
     _crosswise_distances,
     _pairwise_distances,
@@ -93,17 +93,17 @@ def fast_nn_update(
     return _fast_nn_update(batch_nn_indices)
 
 
-def make_fast_regress_tensors(
+def make_fast_predict_tensors(
     metric: str,
     batch_nn_indices: mm.ndarray,
     train_features: mm.ndarray,
     train_targets: mm.ndarray,
 ) -> Tuple[mm.ndarray, mm.ndarray]:
     """
-    Create the distance and target tensors for fast regression.
+    Create the distance and target tensors for fast posterior mean inference.
 
-    Creates `pairwise_dists` and `batch_nn_targets`
-    tensors required by :func:`MuyGPyS.gp.MuyGPyS.fast_regress`.
+    Creates `pairwise_dists` and `batch_nn_targets` tensors required by
+    :func:`~MuyGPyS.gp.muygps.MuyGPS.fast_posterior_mean`.
 
     Args:
         metric:
@@ -132,7 +132,7 @@ def make_fast_regress_tensors(
         containing the expected response for each nearest neighbor of each batch
         element.
     """
-    return _make_fast_regress_tensors(
+    return _make_fast_predict_tensors(
         metric,
         batch_nn_indices,
         train_features,
@@ -140,7 +140,7 @@ def make_fast_regress_tensors(
     )
 
 
-def make_regress_tensors(
+def make_predict_tensors(
     metric: str,
     batch_indices: mm.ndarray,
     batch_nn_indices: mm.ndarray,
@@ -149,10 +149,11 @@ def make_regress_tensors(
     train_targets: mm.ndarray,
 ) -> Tuple[mm.ndarray, mm.ndarray, mm.ndarray]:
     """
-    Create the distance and target tensors for regression.
+    Create the distance and target tensors for prediction.
 
     Creates the `crosswise_dists`, `pairwise_dists` and `batch_nn_targets`
-    tensors required by :func:`MuyGPyS.gp.MuyGPyS.regress`.
+    tensors required by :func:`~MuyGPyS.gp.MuyGPS.posterior_mean` and
+    :func:`~MuyGPyS.gp.MuyGPS.posterior_variance`.
 
     Args:
         metric:
@@ -187,7 +188,7 @@ def make_regress_tensors(
         containing the expected response for each nearest neighbor of each batch
         element.
     """
-    return _make_regress_tensors(
+    return _make_predict_tensors(
         metric,
         batch_indices,
         batch_nn_indices,
@@ -207,7 +208,7 @@ def make_train_tensors(
     """
     Create the distance and target tensors needed for training.
 
-    Similar to :func:`~MuyGPyS.gp.data.make_regress_tensors` but returns the
+    Similar to :func:`~MuyGPyS.gp.data.make_predict_tensors` but returns the
     additional `batch_targets` matrix, which is only defined for a batch of
     training data.
 

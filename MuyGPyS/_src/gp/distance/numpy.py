@@ -8,7 +8,7 @@ from typing import Tuple
 import MuyGPyS._src.math.numpy as np
 
 
-def _make_fast_regress_tensors(
+def _make_fast_predict_tensors(
     metric: str,
     batch_nn_indices: np.ndarray,
     train_features: np.ndarray,
@@ -31,7 +31,7 @@ def _make_fast_regress_tensors(
     return pairwise_dists_fast, batch_nn_targets_fast
 
 
-def _make_regress_tensors(
+def _make_predict_tensors(
     metric: str,
     batch_indices: np.ndarray,
     batch_nn_indices: np.ndarray,
@@ -62,7 +62,7 @@ def _make_train_tensors(
     train_features: np.ndarray,
     train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    crosswise_dists, pairwise_dists, batch_nn_targets = _make_regress_tensors(
+    crosswise_dists, pairwise_dists, batch_nn_targets = _make_predict_tensors(
         metric,
         batch_indices,
         batch_nn_indices,

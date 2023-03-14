@@ -4,34 +4,34 @@
 # SPDX-License-Identifier: MIT
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.gp.muygps.numpy import (
-    _muygps_compute_solve,
-    _muygps_compute_diagonal_variance,
+    _muygps_posterior_mean,
+    _muygps_diagonal_variance,
 )
 
 
-def _muygps_fast_regress_solve(
+def _muygps_fast_posterior_mean(
     Kcross: np.ndarray,
     coeffs_tensor: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
-        f'Function "muygps_fast_regress_solve" does not support mpi!'
+        f'Function "muygps_fast_posterior_mean" does not support mpi!'
     )
 
 
-def _mmuygps_fast_regress_solve(
+def _mmuygps_fast_posterior_mean(
     Kcross: np.ndarray,
     coeffs_tensor: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
-        f'Function "mmuygps_fast_regress_solve" does not support mpi!'
+        f'Function "mmuygps_fast_posterior_mean" does not support mpi!'
     )
 
 
-def _muygps_fast_regress_precompute(
+def _muygps_fast_posterior_mean_precompute(
     K: np.ndarray,
     eps: float,
     train_nn_targets_fast: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
-        f'Function "muygps_fast_regress_precompute" does not support mpi!'
+        f'Function "muygps_fast_posterior_mean_precompute" does not support mpi!'
     )

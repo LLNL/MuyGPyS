@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Callable
+from copy import copy
+from typing import Callable, Type
 
 from bayes_opt import BayesianOptimization
 from scipy import optimize as opt
@@ -11,8 +12,8 @@ from scipy import optimize as opt
 from MuyGPyS.gp import MuyGPS
 
 
-def _new_muygps(mugps: MuyGPS, x0_names, bounds, opt_dict) -> MuyGPS:
-    ret = MuyGPS()
+def _new_muygps(muygps: MuyGPS, x0_names, bounds, opt_dict) -> MuyGPS:
+    ret = copy(muygps)
     for i, key in enumerate(x0_names):
         lb, ub = bounds[i]
         val = opt_dict[key]

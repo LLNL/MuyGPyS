@@ -13,11 +13,67 @@ from typing import Optional, Tuple, Union
 
 from MuyGPyS.gp.distance import (
     crosswise_distances,
-    make_regress_tensors,
+    make_predict_tensors,
     make_train_tensors,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize import optimize_from_tensors
+
+
+def tensors_from_indices(
+    muygps: Union[MuyGPS, MMuyGPS],
+    indices: np.ndarray,
+    nn_indices: np.ndarray,
+    test: np.ndarray,
+    train: np.ndarray,
+    targets: np.ndarray,
+    **kwargs,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    if isinstance(muygps, MuyGPS):
+        metric = muygps.kernel.metric
+    else:
+        metric = muygps.metric
+    crosswise_tensor, pairwise_tensor, batch_nn_targets = make_predict_tensors(
+        metric, indices, nn_indices, test, train, targets
+    )
+    if isinstance(muygps, MuyGPS):
+        pairwise_tensor = muygps.kernel(pairwise_tensor)
+        crosswise_tensor = muygps.kernel(crosswise_tensor)
+    return pairwise_tensor, crosswise_tensor, batch_nn_targets
+
+
+def posterior_mean_from_indices(
+    muygps: Union[MuyGPS, MMuyGPS],
+    indices: np.ndarray,
+    nn_indices: np.ndarray,
+    test: np.ndarray,
+    train: np.ndarray,
+    targets: np.ndarray,
+    **kwargs,
+) -> np.ndarray:
+    pairwise_tensor, crosswise_tensor, batch_nn_targets = tensors_from_indices(
+        muygps, indices, nn_indices, test, train, targets
+    )
+    return muygps.posterior_mean(
+        pairwise_tensor, crosswise_tensor, batch_nn_targets
+    )
+
+
+def posterior_variance_from_indices(
+    muygps: Union[MuyGPS, MMuyGPS],
+    indices: np.ndarray,
+    nn_indices: np.ndarray,
+    test: np.ndarray,
+    train: np.ndarray,
+    targets: np.ndarray,
+    **kwargs,
+) -> np.ndarray:
+    pairwise_tensor, crosswise_tensor, batch_nn_targets = tensors_from_indices(
+        muygps, indices, nn_indices, test, train, targets
+    )
+    return muygps.posterior_variance(
+        pairwise_tensor, crosswise_tensor, **kwargs
+    )
 
 
 def regress_from_indices(
@@ -29,23 +85,16 @@ def regress_from_indices(
     targets: np.ndarray,
     **kwargs,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    if isinstance(muygps, MuyGPS):
-        metric = muygps.kernel.metric
-    else:
-        metric = muygps.metric
-    crosswise_tensor, pairwise_tensor, batch_nn_targets = make_regress_tensors(
-        metric, indices, nn_indices, test, train, targets
+    pairwise_tensor, crosswise_tensor, batch_nn_targets = tensors_from_indices(
+        muygps, indices, nn_indices, test, train, targets
     )
-    if isinstance(muygps, MuyGPS):
-        pairwise_tensor = muygps.kernel(pairwise_tensor)
-        crosswise_tensor = muygps.kernel(crosswise_tensor)
-    return muygps.regress(
-        pairwise_tensor, crosswise_tensor, batch_nn_targets, **kwargs
-    )
+    return muygps.posterior_mean(
+        pairwise_tensor, crosswise_tensor, batch_nn_targets
+    ), muygps.posterior_variance(pairwise_tensor, crosswise_tensor, **kwargs)
 
 
-def fast_regress_from_indices(
-    self,
+def fast_posterior_mean_from_indices(
+    muygps: Union[MuyGPS, MMuyGPS],
     indices: np.ndarray,
     nn_indices: np.ndarray,
     test_features: np.ndarray,
@@ -60,7 +109,7 @@ def fast_regress_from_indices(
         nn_indices,
     )
 
-    return self.fast_regress(
+    return muygps.fast_posterior_mean(
         crosswise_dists,
         coeffs_tensor[closest_index, :, :],
     )

@@ -4,25 +4,27 @@
 # SPDX-License-Identifier: MIT
 
 """
-Resources and high-level API for a fast regression workflow.
+Resources and high-level API for a fast posterior mean inference workflow.
 
-:func:`~MuyGPyS.examples.regress.make_fast_regressor` is a high-level API for
-creating the necessary components for fast regression.
-:func:`~MuyGPyS.examples.regress.make_fast_multivariate_regressor` is a high-level
-API for creating the necessary components for fast regression with multiple
-outputs. 
+:func:`~MuyGPyS.examples.fast_posterior_mean.make_fast_regressor` is a
+high-level API for creating the necessary components for fast posterior mean
+inference.
+:func:`~MuyGPyS.examples.fast_posterior_mean.make_fast_multivariate_regressor`
+is a high-level API for creating the necessary components for fast posterior
+mean inference with multiple outputs.
 
-:func:`~MuyGPyS.examples.regress.do_fast_regress` is a high-level api 
-for executing a simple, generic regression workflow given data. 
-It calls the maker APIs above and 
-:func:`~MuyGPyS.examples.fast_regress.fast_regress_any`.
+:func:`~MuyGPyS.examples.fast_posterior_mean.do_fast_posterior_mean` is a
+high-level api for executing a simple, generic fast posterior medan workflow
+given data.
+It calls the maker APIs above and
+:func:`~MuyGPyS.examples.fast_posterior_mean.fast_posterior_mean_any`.
 """
 
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.examples.from_indices import fast_regress_from_indices
+from MuyGPyS.examples.from_indices import fast_posterior_mean_from_indices
 from MuyGPyS.examples.regress import _decide_and_make_regressor
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import fast_nn_update
@@ -69,7 +71,7 @@ def make_fast_regressor(
     )
     nn_indices = nn_indices.astype(int)
 
-    precomputed_coefficients_matrix = muygps.build_fast_regress_coeffs(
+    precomputed_coefficients_matrix = muygps.build_fast_posterior_mean_coeffs(
         train_features, nn_indices, train_targets
     )
     return precomputed_coefficients_matrix, nn_indices
@@ -114,7 +116,7 @@ def make_fast_multivariate_regressor(
     )
     nn_indices = nn_indices.astype(int)
 
-    precomputed_coefficients_matrix = muygps.build_fast_regress_coeffs(
+    precomputed_coefficients_matrix = muygps.build_fast_posterior_mean_coeffs(
         train_features, nn_indices, train_targets
     )
     return precomputed_coefficients_matrix, nn_indices
@@ -146,7 +148,7 @@ def _decide_and_make_fast_regressor(
     return precomputed_coefficients_matrix, nn_indices
 
 
-def do_fast_regress(
+def do_fast_posterior_mean(
     test_features: mm.ndarray,
     train_features: mm.ndarray,
     train_targets: mm.ndarray,
@@ -163,7 +165,8 @@ def do_fast_regress(
     verbose: bool = False,
 ) -> Tuple[mm.ndarray, NN_Wrapper, mm.ndarray, mm.ndarray, Dict]:
     """
-    Convenience function initializing a model and performing regression.
+    Convenience function initializing a model and performing fast posterior mean
+    inference.
 
     Expected parameters include keyword argument dicts specifying kernel
     parameters and nearest neighbor parameters. See the docstrings of the
@@ -175,7 +178,7 @@ def do_fast_regress(
 
     Example:
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
-        >>> from MuyGPyS.examples.fast_regress import do_fast_regress
+        >>> from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
         >>> from MuyGPyS.optimize.objective import mse_fn
         >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
@@ -186,7 +189,7 @@ def do_fast_regress(
         ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
         ... }
         >>> muygps, nbrs_lookup, predictions, precomputed_coefficients_matrix
-        ...         = do_fast_regress(
+        ...         = do_fast_posterior_mean(
         ...         test['input'],
         ...         train['input'],
         ...         train['output'],
@@ -217,7 +220,7 @@ def do_fast_regress(
         loss_method:
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-            Currently supports only `"mse"` for regression.
+            Currently supports only `"mse"` for posterior mean inference.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -287,7 +290,11 @@ def do_fast_regress(
         verbose=verbose,
     )
 
-    predictions, precomputed_coefficients_matrix, timing = fast_regress_any(
+    (
+        posterior_mean,
+        precomputed_coefficients_matrix,
+        timing,
+    ) = fast_posterior_mean_any(
         regressor,
         test_features,
         train_features,
@@ -297,13 +304,13 @@ def do_fast_regress(
     return (
         regressor,
         nbrs_lookup,
-        predictions,
+        posterior_mean,
         precomputed_coefficients_matrix,
         timing,
     )
 
 
-def fast_regress_any(
+def fast_posterior_mean_any(
     muygps: Union[MuyGPS, MMuyGPS],
     test_features: mm.ndarray,
     train_features: mm.ndarray,
@@ -312,7 +319,8 @@ def fast_regress_any(
 ) -> Tuple[mm.ndarray, mm.ndarray, Dict]:
 
     """
-    Convenience function performing regression using a pre-trained model.
+    Convenience function performing fast posterior mean inference using a
+    pre-trained model.
 
     Also supports workflows relying upon multivariate models.
 
@@ -335,7 +343,7 @@ def fast_regress_any(
 
     Returns
     -------
-    predictions:
+    posterior_mean:
         The predicted response associated with each test observation.
     precomputed_coefficients_matrix:
         A matrix of shape `(train_count, nn_count)` whose rows list the
@@ -368,7 +376,7 @@ def fast_regress_any(
     closest_set_new = nn_indices[closest_neighbor, :].astype(int)
     num_test_samples, _ = test_features.shape
 
-    predictions = fast_regress_from_indices(
+    posterior_mean = fast_posterior_mean_from_indices(
         muygps,
         mm.arange(0, num_test_samples),
         closest_set_new,
@@ -386,4 +394,4 @@ def fast_regress_any(
         "pred": time_pred - time_nn,
     }
 
-    return predictions, precomputed_coefficients_matrix, timing
+    return posterior_mean, precomputed_coefficients_matrix, timing

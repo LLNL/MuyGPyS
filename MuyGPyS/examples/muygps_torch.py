@@ -38,8 +38,8 @@ from MuyGPyS._src.gp.distance.torch import (
     _crosswise_distances,
 )
 from MuyGPyS._src.gp.muygps.torch import (
-    _muygps_compute_solve,
-    _muygps_compute_diagonal_variance,
+    _muygps_posterior_mean,
+    _muygps_diagonal_variance,
 )
 from MuyGPyS._src.gp.noise.torch import _homoscedastic_perturb
 from MuyGPyS._src.optimize.loss.torch import _lool_fn as lool_fn
@@ -149,7 +149,7 @@ def predict_single_model(
         length_scale=model.length_scale,
     )
 
-    predictions = _muygps_compute_solve(
+    predictions = _muygps_posterior_mean(
         _homoscedastic_perturb(K, model.eps), Kcross, test_nn_targets
     )
 
@@ -160,7 +160,7 @@ def predict_single_model(
     if variance_mode is None:
         return predictions
     elif variance_mode == "diagonal":
-        variances = _muygps_compute_diagonal_variance(
+        variances = _muygps_diagonal_variance(
             _homoscedastic_perturb(K, model.eps), Kcross
         )
         if apply_sigma_sq is True:
@@ -296,12 +296,12 @@ def predict_multiple_model(
     )
 
     for i in range(model.num_models):
-        predictions[:, i] = _muygps_compute_solve(
+        predictions[:, i] = _muygps_posterior_mean(
             _homoscedastic_perturb(K[:, :, :, i], model.eps[i]),
             Kcross[:, :, i],
             test_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
         ).reshape(batch_count)
-        variances[:, i] = _muygps_compute_diagonal_variance(
+        variances[:, i] = _muygps_diagonal_variance(
             _homoscedastic_perturb(K[:, :, :, i], model.eps[i]),
             Kcross[:, :, i],
         )

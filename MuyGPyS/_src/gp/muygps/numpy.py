@@ -6,7 +6,7 @@
 import MuyGPyS._src.math.numpy as np
 
 
-def _muygps_compute_solve(
+def _muygps_posterior_mean(
     K: np.ndarray,
     Kcross: np.ndarray,
     batch_nn_targets: np.ndarray,
@@ -18,7 +18,7 @@ def _muygps_compute_solve(
     return responses.reshape(batch_count, response_count)
 
 
-def _muygps_compute_diagonal_variance(
+def _muygps_diagonal_variance(
     K: np.ndarray,
     Kcross: np.ndarray,
 ) -> np.ndarray:
@@ -32,21 +32,21 @@ def _muygps_compute_diagonal_variance(
     )
 
 
-def _muygps_fast_regress_solve(
+def _muygps_fast_posterior_mean(
     Kcross: np.ndarray,
     coeffs_tensor: np.ndarray,
 ) -> np.ndarray:
     return np.einsum("ij,ijk->ik", Kcross, coeffs_tensor)
 
 
-def _mmuygps_fast_regress_solve(
+def _mmuygps_fast_posterior_mean(
     Kcross: np.ndarray,
     coeffs_tensor: np.ndarray,
 ) -> np.ndarray:
     return np.einsum("ijk,ijk->ik", Kcross, coeffs_tensor)
 
 
-def _muygps_fast_regress_precompute(
+def _muygps_fast_posterior_mean_precompute(
     K: np.ndarray,
     train_nn_targets_fast: np.ndarray,
 ) -> np.ndarray:
