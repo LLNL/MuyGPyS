@@ -176,26 +176,6 @@ class MultivariateMuyGPS:
             diagonal elements of the posterior variance for each model. Only
             returned where `variance_mode == "diagonal"`.
         """
-        return self._regress(
-            self.models,
-            pairwise_dists,
-            crosswise_dists,
-            batch_nn_targets,
-            self.sigma_sq,
-            variance_mode=variance_mode,
-            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained),
-        )
-
-    @staticmethod
-    def _regress(
-        models: List[MuyGPS],
-        pairwise_dists: mm.ndarray,
-        crosswise_dists: mm.ndarray,
-        batch_nn_targets: mm.ndarray,
-        sigma_sq: SigmaSq,
-        variance_mode: Optional[str] = None,
-        apply_sigma_sq: bool = True,
-    ) -> Union[mm.ndarray, Tuple[mm.ndarray, mm.ndarray]]:
         batch_count, nn_count, response_count = batch_nn_targets.shape
         responses = mm.zeros((batch_count, response_count))
         if variance_mode is None:
@@ -206,26 +186,28 @@ class MultivariateMuyGPS:
             raise NotImplementedError(
                 f"Variance mode {variance_mode} is not implemented."
             )
-        for i, model in enumerate(models):
+        for i, model in enumerate(self.models):
             K = model.kernel(pairwise_dists)
             Kcross = model.kernel(crosswise_dists)
             responses = mm.assign(
                 responses,
-                model._compute_solve(
+                model.posterior_mean(
                     K,
                     Kcross,
                     batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
-                    model.eps(),
                 ).reshape(batch_count),
                 slice(None),
                 i,
             )
             if variance_mode == "diagonal":
-                ss = sigma_sq()[i] if apply_sigma_sq else 1.0
+                ss = self.sigma_sq()[i] if apply_sigma_sq else 1.0
                 diagonal_variance = mm.assign(
                     diagonal_variance,
-                    model._compute_diagonal_variance(
-                        K, Kcross, model.eps()
+                    model.posterior_variance(
+                        K,
+                        Kcross,
+                        variance_mode=variance_mode,
+                        apply_sigma_sq=False,
                     ).reshape(batch_count)
                     * ss,
                     slice(None),
@@ -247,7 +229,6 @@ class MultivariateMuyGPS:
         train: mm.ndarray,
         nn_indices: mm.ndarray,
         targets: mm.ndarray,
-        indices_by_rank: bool = False,
     ) -> mm.ndarray:
         """
         Produces coefficient tensor for fast regression given in Equation
@@ -289,19 +270,9 @@ class MultivariateMuyGPS:
             train_nn_targets_fast,
         ) = _make_fast_regress_tensors(self.metric, nn_indices, train, targets)
 
-        return self._build_fast_regress_coeffs(
-            self.models, pairwise_dists_fast, train_nn_targets_fast
-        )
-
-    @staticmethod
-    def _build_fast_regress_coeffs(
-        models: List[MuyGPS],
-        pairwise_dists_fast: mm.ndarray,
-        train_nn_targets_fast: mm.ndarray,
-    ) -> mm.ndarray:
         train_count, nn_count, response_count = train_nn_targets_fast.shape
         coeffs_tensor = mm.zeros((train_count, nn_count, response_count))
-        for i, model in enumerate(models):
+        for i, model in enumerate(self.models):
             K = model.kernel(pairwise_dists_fast)
             mm.assign(
                 coeffs_tensor,
@@ -354,18 +325,8 @@ class MultivariateMuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        models = self.models
-        responses = self._fast_regress(models, crosswise_dists, coeffs_tensor)
-        return responses
-
-    @staticmethod
-    def _fast_regress(
-        models: List[MuyGPS],
-        crosswise_dists: mm.ndarray,
-        coeffs_tensor: mm.ndarray,
-    ) -> mm.ndarray:
         Kcross = mm.zeros(coeffs_tensor.shape)
-        for i, model in enumerate(models):
+        for i, model in enumerate(self.models):
             mm.assign(
                 Kcross,
                 model.kernel(crosswise_dists),

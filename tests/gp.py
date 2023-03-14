@@ -492,7 +492,7 @@ class GPSolveTest(GPTestCase):
             nn_kwargs,
         )
         responses = _consistent_unchunk_tensor(
-            muygps._compute_solve(K, Kcross, batch_nn_targets, muygps.eps())
+            muygps.posterior_mean(K, Kcross, batch_nn_targets)
         )
         _check_ndarray(self.assertEqual, responses, mm.ftype)
 
@@ -587,14 +587,7 @@ class GPDiagonalVariance(GPTestCase):
         # _check_ndarray(self.assertEqual, K, mm.ftype)
         # _check_ndarray(self.assertEqual, Kcross, mm.ftype)
 
-        (
-            K,
-            Kcross,
-            batch_nn_targets,
-            train_responses,
-            test_nn_indices,
-            _,
-        ) = self._prepare_tensors(
+        K, Kcross, _, _, _, _ = self._prepare_tensors(
             muygps,
             train_count,
             test_count,
@@ -604,7 +597,7 @@ class GPDiagonalVariance(GPTestCase):
             nn_kwargs,
         )
         diagonal_variance = _consistent_unchunk_tensor(
-            muygps._compute_diagonal_variance(K, Kcross, muygps.eps())
+            muygps.posterior_variance(K, Kcross)
         )
         _check_ndarray(self.assertEqual, diagonal_variance, mm.ftype)
 
@@ -630,12 +623,11 @@ class GPDiagonalVariance(GPTestCase):
 class MakeClassifierTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, rt, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lm, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
-            for rt in [True, False]
             for k_kwargs in (
                 {
                     "kern": "matern",
@@ -656,7 +648,6 @@ class MakeClassifierTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_method,
-        return_distances,
         k_kwargs,
     ):
         if config.state.backend == "torch":
@@ -671,7 +662,7 @@ class MakeClassifierTest(parameterized.TestCase):
             categorical=True,
         )
 
-        classifier_args = make_classifier(
+        muygps, _ = make_classifier(
             train["input"],
             train["output"],
             nn_count=nn_count,
@@ -679,7 +670,6 @@ class MakeClassifierTest(parameterized.TestCase):
             loss_method=loss_method,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
-            return_distances=return_distances,
             opt_method="bayes",
             opt_kwargs={
                 "allow_duplicate_points": True,
@@ -689,16 +679,6 @@ class MakeClassifierTest(parameterized.TestCase):
             verbose=False,
         )
 
-        if len(classifier_args) == 2:
-            muygps, _ = classifier_args
-        elif len(classifier_args) == 4:
-            muygps, _, crosswise_dists, pairwise_dists = classifier_args
-            crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
-            pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
-            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
-            self.assertEqual(
-                pairwise_dists.shape, (batch_count, nn_count, nn_count)
-            )
         print(k_kwargs)
         for key in k_kwargs:
             if key == "eps":
@@ -722,15 +702,13 @@ class MakeClassifierTest(parameterized.TestCase):
 class MakeRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, rt, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
             # for ssm in ["analytic"]
-            # for rt in [True]
             for ssm in ["analytic", None]
-            for rt in [True, False]
             for k_kwargs in (
                 {
                     "kern": "matern",
@@ -753,7 +731,6 @@ class MakeRegressorTest(parameterized.TestCase):
         nn_kwargs,
         loss_method,
         sigma_method,
-        return_distances,
         k_kwargs,
     ):
         if config.state.backend == "torch":
@@ -769,7 +746,7 @@ class MakeRegressorTest(parameterized.TestCase):
             categorical=False,
         )
 
-        regressor_args = make_regressor(
+        muygps, _ = make_regressor(
             train["input"],
             train["output"],
             nn_count=nn_count,
@@ -784,19 +761,7 @@ class MakeRegressorTest(parameterized.TestCase):
             },
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
-            return_distances=return_distances,
         )
-
-        if len(regressor_args) == 2:
-            muygps, _ = regressor_args
-        elif len(regressor_args) == 4:
-            muygps, _, crosswise_dists, pairwise_dists = regressor_args
-            crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
-            pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
-            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
-            self.assertEqual(
-                pairwise_dists.shape, (batch_count, nn_count, nn_count)
-            )
 
         for key in k_kwargs:
             if key == "eps":

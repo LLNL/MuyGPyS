@@ -157,81 +157,11 @@ class MuyGPS:
             bounds.append(self.eps.get_bounds())
         return names, mm.array(params), mm.array(bounds)
 
-    @staticmethod
-    def _compute_solve(
-        K: mm.ndarray,
-        Kcross: mm.ndarray,
-        batch_nn_targets: mm.ndarray,
-        eps: float,
-    ) -> mm.ndarray:
-        """
-        Simultaneously solve all of the GP inference systems of linear
-        equations.
-
-        @NOTE[bwp] We might want to get rid of these static methods.
-
-        Args:
-            K:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count` -shaped kernel matrices corresponding
-                to each of the batch elements.
-            Kcross:
-                A matrix of shape `(batch_count, nn_count)` containing the
-                `1 x nn_count` -shaped cross-covariance matrix corresponding
-                to each of the batch elements.
-            batch_nn_targets:
-                A tensor of shape `(batch_count, nn_count, response_count)`
-                whose last dimension lists the vector-valued responses for the
-                nearest neighbors of each batch element.
-            eps:
-                The value of the homoscedastic nugget parameter.
-
-        Returns:
-            A matrix of shape `(batch_count, response_count)` listing the
-            predicted response for each of the batch elements.
-        """
-        return _muygps_compute_solve(
-            _homoscedastic_perturb(K, eps), Kcross, batch_nn_targets
-        )
-
-    @staticmethod
-    def _compute_diagonal_variance(
-        K: mm.ndarray,
-        Kcross: mm.ndarray,
-        eps: float,
-    ) -> mm.ndarray:
-        """
-        Simultaneously solve all of the GP inference systems of linear
-        equations.
-
-        @NOTE[bwp] We might want to get rid of these static methods.
-
-        Args:
-            K:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count` -shaped kernel matrices corresponding
-                to each of the batch elements.
-            Kcross:
-                A matrix of shape `(batch_count, nn_count)` containing the
-                `1 x nn_count` -shaped cross-covariance vector corresponding
-                to each of the batch elements.
-            eps:
-                The value of the homoscedastic nugget parameter.
-
-        Returns:
-            A vector of shape `(batch_count)` listing the diagonal variances for
-            each of the batch elements.
-        """
-        return _muygps_compute_diagonal_variance(
-            _homoscedastic_perturb(K, eps), Kcross
-        )
-
     def build_fast_regress_coeffs(
         self,
         train: mm.ndarray,
         nn_indices: mm.ndarray,
         targets: mm.ndarray,
-        indices_by_rank: bool = False,
     ) -> mm.ndarray:
         """
         Produces coefficient matrix for fast regression given in Equation
@@ -274,20 +204,126 @@ class MuyGPS:
         )
         K = self.kernel(pairwise_dists_fast)
 
-        return self._build_fast_regress_coeffs(
-            K, self.eps(), train_nn_targets_fast
-        )
-
-    @staticmethod
-    def _build_fast_regress_coeffs(
-        K: mm.ndarray,
-        eps: float,
-        train_nn_targets_fast: mm.ndarray,
-    ) -> mm.ndarray:
-
         return _muygps_fast_regress_precompute(
-            _homoscedastic_perturb(K, eps), train_nn_targets_fast
+            _homoscedastic_perturb(K, self.eps()), train_nn_targets_fast
         )
+
+    def posterior_mean(
+        self, K: mm.ndarray, Kcross: mm.ndarray, batch_nn_targets: mm.ndarray
+    ) -> mm.ndarray:
+        """
+        Returns the posterior mean from the provided covariance,
+        cross-covariance, and target tensors.
+
+        Computes parallelized local solves of systems of linear equations using
+        the last two dimensions of `K` along with `Kcross` and
+        `batch_nn_targets` to predict responses in terms of the posterior mean.
+        Assumes that kernel tensor `K` and cross-covariance
+        matrix `Kcross` are already computed and given as arguments.
+
+        Returns the predicted response in the form of a posterior
+        mean for each element of the batch of observations, as computed in
+        Equation (3.4) of [muyskens2021muygps]_. For each batch element
+        :math:`\\mathbf{x}_i`, we compute
+
+        .. math::
+            \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}) =
+                K_\\theta (\\mathbf{x}_i, X_{N_i})
+                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
+                Y(X_{N_i}).
+
+        Here :math:`X_{N_i}` is the set of nearest neighbors of
+        :math:`\\mathbf{x}_i` in the training data, :math:`K_\\theta` is the
+        kernel functor specified by `self.kernel`, :math:`\\varepsilon I_k` is a
+        diagonal homoscedastic noise matrix whose diagonal is the value of the
+        `self.eps` hyperparameter, and :math:`Y(X_{N_i})` is the
+        `(nn_count, respones_count)` matrix of responses of the nearest
+        neighbors given by the second two dimensions of the `batch_nn_targets`
+        argument.
+
+        Args:
+            K:
+                A tensor of shape `(batch_count, nn_count, nn_count)` containing
+                the `(nn_count, nn_count` -shaped kernel matrices corresponding
+                to each of the batch elements.
+            Kcross:
+                A matrix of shape `(batch_count, nn_count)` containing the
+                `1 x nn_count` -shaped cross-covariance matrix corresponding
+                to each of the batch elements.
+            batch_nn_targets:
+                A tensor of shape `(batch_count, nn_count, response_count)`
+                whose last dimension lists the vector-valued responses for the
+                nearest neighbors of each batch element.
+
+        Returns:
+            A matrix of shape `(batch_count, response_count)` whose rows are
+            the predicted response for each of the given indices.
+        """
+        return _muygps_compute_solve(
+            _homoscedastic_perturb(K, self.eps()), Kcross, batch_nn_targets
+        )
+
+    def posterior_variance(
+        self,
+        K: mm.ndarray,
+        Kcross: mm.ndarray,
+        variance_mode: str = "diagonal",
+        apply_sigma_sq: bool = True,
+    ) -> mm.ndarray:
+        """
+        Returns the posterior mean from the provided covariance and
+        cross-covariance tensors.
+
+        If `variance_mode == "diagonal"`, return the local posterior
+        variances of each prediction, corresponding to the diagonal elements of
+        a covariance matrix. For each batch element :math:`\\mathbf{x}_i`, we
+        compute
+
+        .. math::
+            Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})) =
+                K_\\theta (\\mathbf{x}_i, \\mathbf{x}_i) -
+                K_\\theta (\\mathbf{x}_i, X_{N_i})
+                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
+                K_\\theta (X_{N_i}, \\mathbf{x}_i).
+
+        Args:
+            K:
+                A tensor of shape `(batch_count, nn_count, nn_count)` containing
+                the `(nn_count, nn_count` -shaped kernel matrices corresponding
+                to each of the batch elements.
+            Kcross:
+                A matrix of shape `(batch_count, nn_count)` containing the
+                `1 x nn_count` -shaped cross-covariance matrix corresponding
+                to each of the batch elements.
+            variance_mode:
+                Specifies the type of variance to return. Currently supports
+                `"diagonal"`.
+            apply_sigma_sq:
+                Indicates whether to scale the posterior variance by `sigma_sq`.
+                Unused if `variance_mode is None` or
+                `sigma_sq.trained is False`.
+
+        Returns:
+            A vector of shape `(batch_count,)` consisting of the diagonal
+            elements of the posterior variance, or a matrix of shape
+            `(batch_count, response_count)` for a multidimensional response.
+        """
+        if variance_mode == "diagonal":
+            diagonal_variance = _muygps_compute_diagonal_variance(
+                _homoscedastic_perturb(K, self.eps()), Kcross
+            )
+            if apply_sigma_sq is True:
+                if len(self.sigma_sq()) == 1:
+                    diagonal_variance *= self.sigma_sq()
+                else:
+                    diagonal_variance = mm.array(
+                        [ss * diagonal_variance for ss in self.sigma_sq()]
+                    ).T
+            return diagonal_variance
+        else:
+            raise NotImplementedError(
+                f"Variance mode {variance_mode} is not implemented."
+            )
 
     def regress(
         self,
@@ -372,44 +408,15 @@ class MuyGPS:
             `(batch_count, response_count)` for a multidimensional response.
             Only returned where `variance_mode == "diagonal"`.
         """
-        return self._regress(
-            K,
-            Kcross,
-            batch_nn_targets,
-            self.eps(),
-            self.sigma_sq(),
-            variance_mode=variance_mode,
-            apply_sigma_sq=(apply_sigma_sq and self.sigma_sq.trained),
-        )
-
-    @staticmethod
-    def _regress(
-        K: mm.ndarray,
-        Kcross: mm.ndarray,
-        batch_nn_targets: mm.ndarray,
-        eps: float,
-        sigma_sq: mm.ndarray,
-        variance_mode: Optional[str] = None,
-        apply_sigma_sq: bool = True,
-    ) -> Union[mm.ndarray, Tuple[mm.ndarray, mm.ndarray]]:
-        responses = MuyGPS._compute_solve(K, Kcross, batch_nn_targets, eps)
+        responses = self.posterior_mean(K, Kcross, batch_nn_targets)
         if variance_mode is None:
             return responses
-        elif variance_mode == "diagonal":
-            diagonal_variance = MuyGPS._compute_diagonal_variance(
-                K, Kcross, eps
-            )
-            if apply_sigma_sq is True:
-                if len(sigma_sq) == 1:
-                    diagonal_variance *= sigma_sq
-                else:
-                    diagonal_variance = mm.array(
-                        [ss * diagonal_variance for ss in sigma_sq]
-                    ).T
-            return responses, diagonal_variance
         else:
-            raise NotImplementedError(
-                f"Variance mode {variance_mode} is not implemented."
+            return responses, self.posterior_variance(
+                K,
+                Kcross,
+                variance_mode=variance_mode,
+                apply_sigma_sq=apply_sigma_sq,
             )
 
     def fast_regress(
@@ -454,18 +461,7 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return self._fast_regress(
-            Kcross,
-            coeffs_tensor,
-        )
-
-    @staticmethod
-    def _fast_regress(
-        Kcross: mm.ndarray,
-        coeffs_tensor: mm.ndarray,
-    ) -> mm.ndarray:
-        responses = _muygps_fast_regress_solve(Kcross, coeffs_tensor)
-        return responses
+        return _muygps_fast_regress_solve(Kcross, coeffs_tensor)
 
     def get_opt_mean_fn(self) -> Callable:
         """
