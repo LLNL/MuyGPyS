@@ -7,13 +7,11 @@
 Multivariate MuyGPs implementation
 """
 
-from typing import List, Optional, Tuple, Union
-
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.distance import _make_fast_regress_tensors
+from MuyGPyS._src.gp.distance import _make_fast_predict_tensors
 from MuyGPyS._src.gp.muygps import (
-    _muygps_fast_regress_precompute,
-    _mmuygps_fast_regress_solve,
+    _muygps_fast_posterior_mean_precompute,
+    _mmuygps_fast_posterior_mean,
 )
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS.gp.kernels import SigmaSq
@@ -234,15 +232,17 @@ class MultivariateMuyGPS:
                 f"Variance mode {variance_mode} is not implemented."
             )
 
-    def build_fast_regress_coeffs(
+    def build_fast_posterior_mean_coeffs(
         self,
         train: mm.ndarray,
         nn_indices: mm.ndarray,
         targets: mm.ndarray,
     ) -> mm.ndarray:
         """
-        Produces coefficient tensor for fast regression given in Equation
-        (8) of [dunton2022fast]_. To form the tensor, we compute
+        Produces coefficient tensor for fast posterior mean inference given in
+        Equation (8) of [dunton2022fast]_.
+
+        To form the tensor, we compute
 
         .. math::
             \\mathbf{C}_{N^*}(i, :, j) =
@@ -272,13 +272,12 @@ class MultivariateMuyGPS:
         Returns:
             A tensor of shape `(batch_count, nn_count, response_count)`
             whose entries comprise the precomputed coefficients for fast
-            regression.
-
+            posterior mean inference.
         """
         (
             pairwise_dists_fast,
             train_nn_targets_fast,
-        ) = _make_fast_regress_tensors(self.metric, nn_indices, train, targets)
+        ) = _make_fast_predict_tensors(self.metric, nn_indices, train, targets)
 
         train_count, nn_count, response_count = train_nn_targets_fast.shape
         coeffs_tensor = mm.zeros((train_count, nn_count, response_count))
@@ -286,7 +285,7 @@ class MultivariateMuyGPS:
             K = model.kernel(pairwise_dists_fast)
             mm.assign(
                 coeffs_tensor,
-                _muygps_fast_regress_precompute(
+                _muygps_fast_posterior_mean_precompute(
                     _homoscedastic_perturb(K, model.eps()),
                     train_nn_targets_fast[:, :, i],
                 ),
@@ -297,14 +296,14 @@ class MultivariateMuyGPS:
 
         return coeffs_tensor
 
-    def fast_regress(
+    def fast_posterior_mean(
         self,
         crosswise_dists: mm.ndarray,
         coeffs_tensor: mm.ndarray,
     ) -> mm.ndarray:
         """
-        Performs fast regression using provided
-        crosswise distances and precomputed coefficient matrix.
+        Performs fast posterior mean inference using provided crosswise
+        distances and precomputed coefficient matrix.
 
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations, as computed in
@@ -328,8 +327,7 @@ class MultivariateMuyGPS:
                 nearest neighbors.
             coeffs_tensor:
                 A tensor of shape `(batch_count, nn_count, response_count)`
-                providing the precomputed coefficients for fast regression.
-
+                providing the precomputed coefficients.
 
         Returns:
             A matrix of shape `(batch_count, response_count)` whose rows are
@@ -344,4 +342,4 @@ class MultivariateMuyGPS:
                 slice(None),
                 i,
             )
-        return _mmuygps_fast_regress_solve(Kcross, coeffs_tensor)
+        return _mmuygps_fast_posterior_mean(Kcross, coeffs_tensor)

@@ -9,16 +9,14 @@ MuyGPs PyTorch implementation
 
 import torch
 from torch import nn
-import numpy as np
 from MuyGPyS._src.gp.distance.torch import (
     _pairwise_distances,
     _crosswise_distances,
 )
 
-
 from MuyGPyS._src.gp.muygps.torch import (
-    _muygps_compute_solve,
-    _muygps_compute_diagonal_variance,
+    _muygps_posterior_mean,
+    _muygps_diagonal_variance,
 )
 from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
 
@@ -160,7 +158,7 @@ class MuyGPs_layer(nn.Module):
             nu=self.nu,
             length_scale=self.length_scale,
         )
-        predictions = _muygps_compute_solve(
+        predictions = _muygps_posterior_mean(
             _homoscedastic_perturb(K, self.eps), Kcross, self.batch_nn_targets
         )
 
@@ -171,7 +169,7 @@ class MuyGPs_layer(nn.Module):
         if self.variance_mode is None:
             return predictions
         elif self.variance_mode == "diagonal":
-            variances = _muygps_compute_diagonal_variance(
+            variances = _muygps_diagonal_variance(
                 _homoscedastic_perturb(K, self.eps), Kcross
             )
             if self.apply_sigma_sq is True:
@@ -336,14 +334,14 @@ class MultivariateMuyGPs_layer(nn.Module):
         )
 
         for i in range(self.num_models):
-            predictions[:, i] = _muygps_compute_solve(
+            predictions[:, i] = _muygps_posterior_mean(
                 _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
                 Kcross[:, :, i],
                 self.batch_nn_targets[:, :, i].reshape(
                     batch_count, nn_count, 1
                 ),
             ).reshape(batch_count)
-            variances[:, i] = _muygps_compute_diagonal_variance(
+            variances[:, i] = _muygps_diagonal_variance(
                 _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
                 Kcross[:, :, i],
             )

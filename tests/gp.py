@@ -19,7 +19,7 @@ from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distance import (
     make_train_tensors,
-    make_regress_tensors,
+    make_predict_tensors,
 )
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
@@ -272,7 +272,7 @@ class GPTestCase(parameterized.TestCase):
             crosswise_dists,
             pairwise_dists,
             batch_nn_targets,
-        ) = make_regress_tensors(
+        ) = make_predict_tensors(
             muygps.kernel.metric,
             indices,
             test_nn_indices,
@@ -562,7 +562,7 @@ class GPDiagonalVariance(GPTestCase):
         # indices = mm.arange(test_count)
         # _check_ndarray(self.assertEqual, indices, mm.itype)
         # _check_ndarray(self.assertEqual, nn_indices, mm.itype)
-        # (nn_dists, F2_dists, _) = make_regress_tensors(
+        # (nn_dists, F2_dists, _) = make_predict_tensors(
         #     muygps.kernel.metric,
         #     indices,
         #     nn_indices,

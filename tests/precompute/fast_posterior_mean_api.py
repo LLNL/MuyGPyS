@@ -18,7 +18,7 @@ config.parse_flags_with_absl()  # Affords option setting from CLI
 if config.state.backend in ["mpi", "torch"]:
     raise ValueError(f"This test only supports numpy and jax backends!")
 
-from MuyGPyS._test.api import FastRegressionAPITest
+from MuyGPyS._test.api import FastPosteriorMeanAPITest
 from MuyGPyS._test.utils import (
     _balanced_subsample,
     _basic_nn_kwarg_options,
@@ -40,7 +40,7 @@ stargal_files = {
 heaton_file = "heaton/sub_heaton.pkl"
 
 
-class HeatonFastTest(FastRegressionAPITest):
+class HeatonFastTest(FastPosteriorMeanAPITest):
     @classmethod
     def setUpClass(cls):
         super(HeatonFastTest, cls).setUpClass()
@@ -70,7 +70,7 @@ class HeatonFastTest(FastRegressionAPITest):
             )
         )
     )
-    def test_fast_regress(
+    def test_fast_posterior_mean(
         self,
         nn_count,
         batch_count,
@@ -83,7 +83,7 @@ class HeatonFastTest(FastRegressionAPITest):
         target_mse, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
 
-        self._do_fast_regress_test_chassis(
+        self._do_fast_posterior_mean_test_chassis(
             train=self.train,
             test=self.test,
             target_mse=target_mse,
@@ -99,10 +99,10 @@ class HeatonFastTest(FastRegressionAPITest):
         )
 
 
-class MultivariateStargalFastRegressTest(FastRegressionAPITest):
+class MultivariateStargalTest(FastPosteriorMeanAPITest):
     @classmethod
     def setUpClass(cls):
-        super(MultivariateStargalFastRegressTest, cls).setUpClass()
+        super(MultivariateStargalTest, cls).setUpClass()
         with open(
             os.path.join(hardpath + stargal_dir, stargal_files["40"]), "rb"
         ) as f:
@@ -159,7 +159,7 @@ class MultivariateStargalFastRegressTest(FastRegressionAPITest):
             )
         )
     )
-    def test_fast_regress(
+    def test_fast_posterior_mean(
         self,
         nn_count,
         batch_count,
@@ -174,7 +174,7 @@ class MultivariateStargalFastRegressTest(FastRegressionAPITest):
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
 
-        self._do_fast_regress_test_chassis(
+        self._do_fast_posterior_mean_test_chassis(
             train=train,
             test=test,
             target_mse=target_mse,
@@ -191,10 +191,10 @@ class MultivariateStargalFastRegressTest(FastRegressionAPITest):
         )
 
 
-class StargalFastRegressTest(FastRegressionAPITest):
+class StargalFastTest(FastPosteriorMeanAPITest):
     @classmethod
     def setUpClass(cls):
-        super(StargalFastRegressTest, cls).setUpClass()
+        super(StargalFastTest, cls).setUpClass()
         with open(
             os.path.join(hardpath + stargal_dir, stargal_files["40"]), "rb"
         ) as f:
@@ -238,7 +238,7 @@ class StargalFastRegressTest(FastRegressionAPITest):
             )
         )
     )
-    def test_fast_regress(
+    def test_fast_posterior_mean(
         self,
         nn_count,
         batch_count,
@@ -253,7 +253,7 @@ class StargalFastRegressTest(FastRegressionAPITest):
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
 
-        self._do_fast_regress_test_chassis(
+        self._do_fast_posterior_mean_test_chassis(
             train=train,
             test=test,
             target_mse=target_mse,

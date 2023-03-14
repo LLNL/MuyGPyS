@@ -10,12 +10,12 @@ MuyGPs implementation
 from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.distance import _make_fast_regress_tensors
+from MuyGPyS._src.gp.distance import _make_fast_predict_tensors
 from MuyGPyS._src.gp.muygps import (
-    _muygps_compute_solve,
-    _muygps_compute_diagonal_variance,
-    _muygps_fast_regress_solve,
-    _muygps_fast_regress_precompute,
+    _muygps_posterior_mean,
+    _muygps_diagonal_variance,
+    _muygps_fast_posterior_mean,
+    _muygps_fast_posterior_mean_precompute,
 )
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS.gp.kernels import (
@@ -157,15 +157,17 @@ class MuyGPS:
             bounds.append(self.eps.get_bounds())
         return names, mm.array(params), mm.array(bounds)
 
-    def build_fast_regress_coeffs(
+    def build_fast_posterior_mean_coeffs(
         self,
         train: mm.ndarray,
         nn_indices: mm.ndarray,
         targets: mm.ndarray,
     ) -> mm.ndarray:
         """
-        Produces coefficient matrix for fast regression given in Equation
-        (8) of [dunton2022fast]_. To form each row of this matrix, we compute
+        Produces coefficient matrix for the fast posterior mean given in
+        Equation (8) of [dunton2022fast]_.
+
+        To form each row of this matrix, we compute
 
         .. math::
             \\mathbf{C}_{N^*}(i, :) =
@@ -193,18 +195,18 @@ class MuyGPS:
                 vector-valued responses for each training element.
         Returns:
             A matrix of shape `(train_count, nn_count)` whose rows are
-            the precomputed coefficients for fast regression.
+            the precomputed coefficients for fast posterior mean inference.
 
         """
         (
             pairwise_dists_fast,
             train_nn_targets_fast,
-        ) = _make_fast_regress_tensors(
+        ) = _make_fast_predict_tensors(
             self.kernel.metric, nn_indices, train, targets
         )
         K = self.kernel(pairwise_dists_fast)
 
-        return _muygps_fast_regress_precompute(
+        return _muygps_fast_posterior_mean_precompute(
             _homoscedastic_perturb(K, self.eps()), train_nn_targets_fast
         )
 
@@ -259,7 +261,7 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return _muygps_compute_solve(
+        return _muygps_posterior_mean(
             _homoscedastic_perturb(K, self.eps()), Kcross, batch_nn_targets
         )
 
@@ -309,7 +311,7 @@ class MuyGPS:
             `(batch_count, response_count)` for a multidimensional response.
         """
         if variance_mode == "diagonal":
-            diagonal_variance = _muygps_compute_diagonal_variance(
+            diagonal_variance = _muygps_diagonal_variance(
                 _homoscedastic_perturb(K, self.eps()), Kcross
             )
             if apply_sigma_sq is True:
@@ -325,14 +327,14 @@ class MuyGPS:
                 f"Variance mode {variance_mode} is not implemented."
             )
 
-    def fast_regress(
+    def fast_posterior_mean(
         self,
         Kcross: mm.ndarray,
         coeffs_tensor: mm.ndarray,
     ) -> mm.ndarray:
         """
-        Performs fast regression using provided
-        cross-covariance and precomputed coefficient matrix.
+        Performs fast posterior mean inference using provided cross-covariance
+        and precomputed coefficient matrix.
 
         Assumes that cross-covariance matrix `Kcross` is already computed and
         given as an argument.
@@ -359,15 +361,15 @@ class MuyGPS:
                 `1 x nn_count` -shaped cross-covariance vector corresponding
                 to each of the batch elements.
             coeffs_tensor:
-                A matrix of shape `(batch_count, nn_count, response_count)` whose rows
-                are given by precomputed coefficients for fast regression.
+                A matrix of shape `(batch_count, nn_count, response_count)`
+                whose rows are given by precomputed coefficients.
 
 
         Returns:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return _muygps_fast_regress_solve(Kcross, coeffs_tensor)
+        return _muygps_fast_posterior_mean(Kcross, coeffs_tensor)
 
     def get_opt_mean_fn(self) -> Callable:
         """
@@ -385,7 +387,7 @@ class MuyGPS:
         """
         if isinstance(self.eps, HomoscedasticNoise):
             return self._get_opt_mean_fn(
-                _muygps_compute_solve, _homoscedastic_perturb, self.eps
+                _muygps_posterior_mean, _homoscedastic_perturb, self.eps
             )
         else:
             raise TypeError(
@@ -427,7 +429,7 @@ class MuyGPS:
         """
         if isinstance(self.eps, HomoscedasticNoise):
             return self._get_opt_var_fn(
-                _muygps_compute_diagonal_variance,
+                _muygps_diagonal_variance,
                 _homoscedastic_perturb,
                 self.eps,
             )

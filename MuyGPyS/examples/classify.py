@@ -53,7 +53,7 @@ def make_classifier(
 
     Example:
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
-        >>> from MuyGPyS.examples.regress import make_regressor
+        >>> from MuyGPyS.examples.classify import make_classifier
         >>> train = _make_gaussian_dict(10000, 100, 10, categorial=True)
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
@@ -218,7 +218,7 @@ def make_multivariate_classifier(
 
     Example:
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
-        >>> from MuyGPyS.examples.regress import make_regressor
+        >>> from MuyGPyS.examples.classif import make_multivariate_classifier
         >>> train = _make_gaussian_dict(10000, 100, 10, categorial=True)
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_args = [
@@ -274,7 +274,7 @@ def make_multivariate_classifier(
         loss_method:
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-            Currently supports only `"mse"` for regression.
+            Currently supports only `"log"` for classification.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -455,7 +455,7 @@ def do_classify(
     Example:
         >>> import numpy as np
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
-        >>> from MuyGPyS.examples.regress import do_classify
+        >>> from MuyGPyS.examples.classify import do_classify
         >>> train, test  = _make_gaussian_dict(10000, 100, 100, 10, categorial=True)
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
@@ -535,7 +535,8 @@ def do_classify(
             specifications for kernel hyperparameters. If all of the
             hyperparameters are fixed or are not given optimization bounds, no
             optimization will occur. If `"kern"` is specified and `"k_kwargs"`
-            is a list of such dicts, will create a multivariate regressor model.
+            is a list of such dicts, will create a multivariate classifier
+            model.
         nn_kwargs:
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and

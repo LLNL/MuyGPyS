@@ -18,9 +18,7 @@ from MuyGPyS._test.utils import (
     _basic_opt_method_and_kwarg_options,
     _make_gaussian_data,
 )
-from MuyGPyS.examples.fast_regress import (
-    do_fast_regress,
-)
+from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 
 
 class MakeFastRegressorTest(parameterized.TestCase):
@@ -74,7 +72,7 @@ class MakeFastRegressorTest(parameterized.TestCase):
             predictions,
             precomputed_coefficient_matrix,
             _,
-        ) = do_fast_regress(
+        ) = do_fast_posterior_mean(
             test["input"],
             train["input"],
             train["output"],
@@ -173,7 +171,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
             predictions,
             precomputed_coefficient_matrix,
             timings,
-        ) = do_fast_regress(
+        ) = do_fast_posterior_mean(
             test["input"],
             train["input"],
             train["output"],

@@ -29,12 +29,6 @@ import numpy as np
 from time import perf_counter
 from typing import Callable, Dict, List, Tuple, Union
 
-
-from MuyGPyS._src.mpi_utils import (
-    _consistent_chunk_tensor,
-    _consistent_reduce_scalar,
-    _is_mpi_mode,
-)
 from MuyGPyS.examples.classify import (
     make_classifier,
 )
@@ -385,7 +379,6 @@ def classify_two_class_uq(
     # train_count, _ = train_features.shape
 
     time_start = perf_counter()
-    test_feature = _consistent_chunk_tensor(test_features)
     test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
@@ -471,9 +464,6 @@ def train_two_class_interval(
         scale parameter that minimizes each considered objective function.
     """
     targets = train_labels[batch_indices]
-    targets = _consistent_chunk_tensor(targets)
-    batch_indices = _consistent_chunk_tensor(batch_indices)
-    batch_nn_indices = _consistent_chunk_tensor(batch_nn_indices)
 
     mean, variance = regress_from_indices(
         surrogate,
@@ -509,7 +499,6 @@ def train_two_class_interval(
                 > 0.0,
             )
         )
-        _alpha[i] = _consistent_reduce_scalar(_alpha[i])
         _beta[i] = np.mean(
             np.logical_and(
                 (
@@ -524,12 +513,9 @@ def train_two_class_interval(
                 > 0.0,
             )
         )
-        _beta[i] = _consistent_reduce_scalar(_beta[i])
 
     correct_count = np.sum(correct_mask)
-    correct_count = _consistent_reduce_scalar(correct_count)
     incorrect_count = np.sum(incorrect_mask)
-    incorrect_count = _consistent_reduce_scalar(incorrect_count)
     cutoffs = np.array(
         [
             cutv[obj_f(_alpha, _beta, correct_count, incorrect_count)]

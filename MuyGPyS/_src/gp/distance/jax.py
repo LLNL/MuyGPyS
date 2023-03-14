@@ -12,7 +12,7 @@ import MuyGPyS._src.math.jax as jnp
 
 # from sklearn.metrics.pairwise import cosine_similarity
 @partial(jit, static_argnums=(0,))
-def _make_fast_regress_tensors(
+def _make_fast_predict_tensors(
     metric: str,
     batch_nn_indices: jnp.ndarray,
     train_features: jnp.ndarray,
@@ -35,7 +35,7 @@ def _make_fast_regress_tensors(
 
 
 @partial(jit, static_argnums=(0,))
-def _make_regress_tensors(
+def _make_predict_tensors(
     metric: str,
     batch_indices: jnp.ndarray,
     batch_nn_indices: jnp.ndarray,
@@ -67,7 +67,7 @@ def _make_train_tensors(
     train_features: jnp.ndarray,
     train_targets: jnp.ndarray,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    crosswise_dists, pairwise_dists, batch_nn_targets = _make_regress_tensors(
+    crosswise_dists, pairwise_dists, batch_nn_targets = _make_predict_tensors(
         metric,
         batch_indices,
         batch_nn_indices,

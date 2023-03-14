@@ -13,7 +13,7 @@ from typing import Optional, Tuple, Union
 
 from MuyGPyS.gp.distance import (
     crosswise_distances,
-    make_regress_tensors,
+    make_predict_tensors,
     make_train_tensors,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
@@ -33,7 +33,7 @@ def tensors_from_indices(
         metric = muygps.kernel.metric
     else:
         metric = muygps.metric
-    crosswise_tensor, pairwise_tensor, batch_nn_targets = make_regress_tensors(
+    crosswise_tensor, pairwise_tensor, batch_nn_targets = make_predict_tensors(
         metric, indices, nn_indices, test, train, targets
     )
     if isinstance(muygps, MuyGPS):
@@ -93,8 +93,8 @@ def regress_from_indices(
     ), muygps.posterior_variance(pairwise_tensor, crosswise_tensor, **kwargs)
 
 
-def fast_regress_from_indices(
-    self,
+def fast_posterior_mean_from_indices(
+    muygps: Union[MuyGPS, MMuyGPS],
     indices: np.ndarray,
     nn_indices: np.ndarray,
     test_features: np.ndarray,
@@ -109,7 +109,7 @@ def fast_regress_from_indices(
         nn_indices,
     )
 
-    return self.fast_regress(
+    return muygps.fast_posterior_mean(
         crosswise_dists,
         coeffs_tensor[closest_index, :, :],
     )

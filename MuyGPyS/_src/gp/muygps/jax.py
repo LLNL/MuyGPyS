@@ -9,7 +9,7 @@ import MuyGPyS._src.math.jax as jnp
 
 
 @jit
-def _muygps_compute_solve(
+def _muygps_posterior_mean(
     K: jnp.ndarray,
     Kcross: jnp.ndarray,
     batch_nn_targets: jnp.ndarray,
@@ -22,7 +22,7 @@ def _muygps_compute_solve(
 
 
 @jit
-def _muygps_compute_diagonal_variance(
+def _muygps_diagonal_variance(
     K: jnp.ndarray,
     Kcross: jnp.ndarray,
 ) -> jnp.ndarray:
@@ -37,7 +37,7 @@ def _muygps_compute_diagonal_variance(
 
 
 @jit
-def _muygps_fast_regress_solve(
+def _muygps_fast_posterior_mean(
     Kcross: jnp.ndarray,
     coeffs_tensor: jnp.ndarray,
 ) -> jnp.ndarray:
@@ -45,7 +45,7 @@ def _muygps_fast_regress_solve(
 
 
 @jit
-def _mmuygps_fast_regress_solve(
+def _mmuygps_fast_posterior_mean(
     Kcross: jnp.ndarray,
     coeffs_tensor: jnp.ndarray,
 ) -> jnp.ndarray:
@@ -53,7 +53,7 @@ def _mmuygps_fast_regress_solve(
 
 
 @jit
-def _muygps_fast_regress_precompute(
+def _muygps_fast_posterior_mean_precompute(
     K: jnp.ndarray,
     train_nn_targets_fast: jnp.ndarray,
 ) -> jnp.ndarray:

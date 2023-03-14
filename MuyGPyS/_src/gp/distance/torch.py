@@ -8,7 +8,7 @@ from typing import Tuple
 import MuyGPyS._src.math.torch as torch
 
 
-def _make_fast_regress_tensors(
+def _make_fast_predict_tensors(
     metric: str,
     batch_nn_indices: torch.ndarray,
     train_features: torch.ndarray,
@@ -31,7 +31,7 @@ def _make_fast_regress_tensors(
     return pairwise_dists_fast, batch_nn_targets_fast
 
 
-def _make_regress_tensors(
+def _make_predict_tensors(
     metric: str,
     batch_indices: torch.ndarray,
     batch_nn_indices: torch.ndarray,
@@ -62,7 +62,7 @@ def _make_train_tensors(
     train_features: torch.ndarray,
     train_targets: torch.ndarray,
 ) -> Tuple[torch.ndarray, torch.ndarray, torch.ndarray, torch.ndarray]:
-    crosswise_dists, pairwise_dists, batch_nn_targets = _make_regress_tensors(
+    crosswise_dists, pairwise_dists, batch_nn_targets = _make_predict_tensors(
         metric,
         batch_indices,
         batch_nn_indices,
