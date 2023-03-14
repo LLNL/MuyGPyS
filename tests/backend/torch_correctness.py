@@ -30,14 +30,14 @@ from MuyGPyS._src.gp.distance.numpy import (
     _pairwise_distances as pairwise_distances_n,
     _crosswise_distances as crosswise_distances_n,
     _make_train_tensors as make_train_tensors_n,
-    _make_fast_regress_tensors as make_fast_regress_tensors_n,
+    _make_fast_predict_tensors as make_fast_predict_tensors_n,
     _fast_nn_update as fast_nn_update_n,
 )
 from MuyGPyS._src.gp.distance.torch import (
     _pairwise_distances as pairwise_distances_t,
     _crosswise_distances as crosswise_distances_t,
     _make_train_tensors as make_train_tensors_t,
-    _make_fast_regress_tensors as make_fast_regress_tensors_t,
+    _make_fast_predict_tensors as make_fast_predict_tensors_t,
     _fast_nn_update as fast_nn_update_t,
 )
 from MuyGPyS._src.gp.kernels.numpy import (
@@ -57,18 +57,18 @@ from MuyGPyS._src.gp.kernels.torch import (
     _matern_gen_fn as matern_gen_fn_t,
 )
 from MuyGPyS._src.gp.muygps.numpy import (
-    _muygps_compute_solve as muygps_compute_solve_n,
-    _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_n,
-    _muygps_fast_regress_solve as muygps_fast_regress_solve_n,
-    _mmuygps_fast_regress_solve as mmuygps_fast_regress_solve_n,
-    _muygps_fast_regress_precompute as muygps_fast_regress_precompute_n,
+    _muygps_posterior_mean as muygps_posterior_mean_n,
+    _muygps_diagonal_variance as muygps_diagonal_variance_n,
+    _muygps_fast_posterior_mean as muygps_fast_posterior_mean_n,
+    _mmuygps_fast_posterior_mean as mmuygps_fast_posterior_mean_n,
+    _muygps_fast_posterior_mean_precompute as muygps_fast_posterior_mean_precompute_n,
 )
 from MuyGPyS._src.gp.muygps.torch import (
-    _muygps_compute_solve as muygps_compute_solve_t,
-    _muygps_compute_diagonal_variance as muygps_compute_diagonal_variance_t,
-    _muygps_fast_regress_solve as muygps_fast_regress_solve_t,
-    _mmuygps_fast_regress_solve as mmuygps_fast_regress_solve_t,
-    _muygps_fast_regress_precompute as muygps_fast_regress_precompute_t,
+    _muygps_posterior_mean as muygps_posterior_mean_t,
+    _muygps_diagonal_variance as muygps_diagonal_variance_t,
+    _muygps_fast_posterior_mean as muygps_fast_posterior_mean_t,
+    _mmuygps_fast_posterior_mean as mmuygps_fast_posterior_mean_t,
+    _muygps_fast_posterior_mean_precompute as muygps_fast_posterior_mean_precompute_t,
 )
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb as homoscedastic_perturb_n,
@@ -399,15 +399,15 @@ class MuyGPSTest(MuyGPSTestCase):
             np.allclose(self.homoscedastic_K_n, self.homoscedastic_K_t)
         )
 
-    def test_compute_solve(self):
+    def test_posterior_mean(self):
         self.assertTrue(
             _allclose(
-                muygps_compute_solve_n(
+                muygps_posterior_mean_n(
                     self.homoscedastic_K_n,
                     self.Kcross_n,
                     self.batch_nn_targets_n,
                 ),
-                muygps_compute_solve_t(
+                muygps_posterior_mean_t(
                     self.homoscedastic_K_t,
                     self.Kcross_t,
                     self.batch_nn_targets_t,
@@ -418,10 +418,10 @@ class MuyGPSTest(MuyGPSTestCase):
     def test_diagonal_variance(self):
         self.assertTrue(
             np.allclose(
-                muygps_compute_diagonal_variance_n(
+                muygps_diagonal_variance_n(
                     self.homoscedastic_K_n, self.Kcross_n
                 ),
-                muygps_compute_diagonal_variance_t(
+                muygps_diagonal_variance_t(
                     self.homoscedastic_K_t, self.Kcross_t
                 ),
             )
@@ -450,7 +450,7 @@ class FastPredictTestCase(MuyGPSTestCase):
         (
             cls.K_fast_n,
             cls.train_nn_targets_fast_n,
-        ) = make_fast_regress_tensors_n(
+        ) = make_fast_predict_tensors_n(
             cls.muygps.kernel.metric,
             cls.nn_indices_all_n,
             cls.train_features_n,
@@ -460,7 +460,7 @@ class FastPredictTestCase(MuyGPSTestCase):
         cls.homoscedastic_K_fast_n = homoscedastic_perturb_n(
             cls.K_fast_n, cls.muygps.eps()
         )
-        cls.fast_regress_coeffs_n = muygps_fast_regress_precompute_n(
+        cls.fast_regress_coeffs_n = muygps_fast_posterior_mean_precompute_n(
             cls.homoscedastic_K_fast_n, cls.train_nn_targets_fast_n
         )
 
@@ -491,7 +491,7 @@ class FastPredictTestCase(MuyGPSTestCase):
         (
             cls.K_fast_t,
             cls.train_nn_targets_fast_t,
-        ) = make_fast_regress_tensors_t(
+        ) = make_fast_predict_tensors_t(
             cls.muygps.kernel.metric,
             cls.nn_indices_all_t,
             cls.train_features_t,
@@ -501,7 +501,7 @@ class FastPredictTestCase(MuyGPSTestCase):
         cls.homoscedastic_K_fast_t = homoscedastic_perturb_t(
             cls.K_fast_t, cls.muygps.eps()
         )
-        cls.fast_regress_coeffs_t = muygps_fast_regress_precompute_t(
+        cls.fast_regress_coeffs_t = muygps_fast_posterior_mean_precompute_t(
             cls.homoscedastic_K_fast_t, cls.train_nn_targets_fast_t
         )
 
@@ -531,7 +531,7 @@ class FastPredictTestCase(MuyGPSTestCase):
             )
         )
 
-    def test_make_fast_regress_tensors(self):
+    def test_make_fast_predict_tensors(self):
         self.assertTrue(np.allclose(self.K_fast_n, self.K_fast_t))
         self.assertTrue(
             np.allclose(
@@ -549,11 +549,11 @@ class FastPredictTestCase(MuyGPSTestCase):
     def test_fast_predict(self):
         self.assertTrue(
             _allclose(
-                muygps_fast_regress_solve_n(
+                muygps_fast_posterior_mean_n(
                     self.Kcross_fast_n,
                     self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
                 ),
-                muygps_fast_regress_solve_t(
+                muygps_fast_posterior_mean_t(
                     self.Kcross_fast_t,
                     self.fast_regress_coeffs_t[self.closest_neighbor_t, :],
                 ),
@@ -625,7 +625,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         (
             cls.K_fast_n,
             cls.train_nn_targets_fast_n,
-        ) = make_fast_regress_tensors_n(
+        ) = make_fast_predict_tensors_n(
             cls.muygps.metric,
             cls.nn_indices_all_n,
             cls.train_features_n,
@@ -635,7 +635,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         cls.homoscedastic_K_fast_n = homoscedastic_perturb_n(
             cls.K_fast_n, cls.eps
         )
-        cls.fast_regress_coeffs_n = muygps_fast_regress_precompute_n(
+        cls.fast_regress_coeffs_n = muygps_fast_posterior_mean_precompute_n(
             cls.homoscedastic_K_fast_n, cls.train_nn_targets_fast_n
         )
 
@@ -671,7 +671,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         (
             cls.K_fast_t,
             cls.train_nn_targets_fast_t,
-        ) = make_fast_regress_tensors_t(
+        ) = make_fast_predict_tensors_t(
             cls.muygps.metric,
             cls.nn_indices_all_t,
             cls.train_features_t,
@@ -681,7 +681,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         cls.homoscedastic_K_fast_t = homoscedastic_perturb_t(
             cls.K_fast_t, cls.eps
         )
-        cls.fast_regress_coeffs_t = muygps_fast_regress_precompute_t(
+        cls.fast_regress_coeffs_t = muygps_fast_posterior_mean_precompute_t(
             cls.homoscedastic_K_fast_t, cls.train_nn_targets_fast_t
         )
 
@@ -700,7 +700,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
 
         cls.Kcross_fast_t = torch.from_numpy(Kcross_fast_n)
 
-    def test_make_fast_multivariate_regress_tensors(self):
+    def test_make_fast_multivariate_predict_tensors(self):
         self.assertTrue(np.allclose(self.K_fast_n, self.K_fast_t))
         self.assertTrue(
             np.allclose(
@@ -711,11 +711,11 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
     def test_fast_multivariate_predict(self):
         self.assertTrue(
             _allclose(
-                mmuygps_fast_regress_solve_n(
+                mmuygps_fast_posterior_mean_n(
                     self.Kcross_fast_n,
                     self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
                 ),
-                mmuygps_fast_regress_solve_t(
+                mmuygps_fast_posterior_mean_t(
                     self.Kcross_fast_t,
                     self.fast_regress_coeffs_t[self.closest_neighbor_t, :],
                 ),
@@ -735,10 +735,10 @@ class OptimTestCase(MuyGPSTestCase):
     @classmethod
     def setUpClass(cls):
         super(OptimTestCase, cls).setUpClass()
-        cls.predictions_t = muygps_compute_solve_t(
+        cls.predictions_t = muygps_posterior_mean_t(
             cls.homoscedastic_K_t, cls.Kcross_t, cls.batch_nn_targets_t
         )
-        cls.variances_t = muygps_compute_diagonal_variance_t(
+        cls.variances_t = muygps_diagonal_variance_t(
             cls.homoscedastic_K_t, cls.Kcross_t
         )
         cls.predictions_n = cls.predictions_t.detach().numpy()
@@ -772,12 +772,12 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_mean_fn_n(self):
         return self.muygps._get_opt_mean_fn(
-            muygps_compute_solve_n, homoscedastic_perturb_n, self.muygps.eps
+            muygps_posterior_mean_n, homoscedastic_perturb_n, self.muygps.eps
         )
 
     def _get_var_fn_n(self):
         return self.muygps._get_opt_var_fn(
-            muygps_compute_diagonal_variance_n,
+            muygps_diagonal_variance_n,
             homoscedastic_perturb_n,
             self.muygps.eps,
         )
@@ -789,12 +789,12 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_mean_fn_t(self):
         return self.muygps._get_opt_mean_fn(
-            muygps_compute_solve_t, homoscedastic_perturb_t, self.muygps.eps
+            muygps_posterior_mean_t, homoscedastic_perturb_t, self.muygps.eps
         )
 
     def _get_var_fn_t(self):
         return self.muygps._get_opt_var_fn(
-            muygps_compute_diagonal_variance_t,
+            muygps_diagonal_variance_t,
             homoscedastic_perturb_t,
             self.muygps.eps,
         )
