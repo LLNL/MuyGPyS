@@ -10,20 +10,12 @@ Multivariate MuyGPs implementation
 from typing import List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.distance import (
-    _make_regress_tensors,
-    _make_fast_regress_tensors,
-)
-from MuyGPyS._src.gp.distance.numpy import (
-    _make_regress_tensors as _make_regress_tensors_n,
-)
+from MuyGPyS._src.gp.distance import _make_fast_regress_tensors
 from MuyGPyS._src.gp.muygps import (
     _muygps_fast_regress_precompute,
     _mmuygps_fast_regress_solve,
 )
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS._src.mpi_utils import _is_mpi_mode
-from MuyGPyS.gp.distance import crosswise_distances
 from MuyGPyS.gp.kernels import SigmaSq
 from MuyGPyS.gp.muygps import MuyGPS
 

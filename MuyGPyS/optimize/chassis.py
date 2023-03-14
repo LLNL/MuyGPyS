@@ -28,7 +28,6 @@ documentation for details.
 from typing import Optional
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.distance import _make_train_tensors
 from MuyGPyS._src.optimize.chassis import (
     _scipy_optimize,
     _bayes_opt_optimize,

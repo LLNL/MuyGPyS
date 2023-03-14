@@ -10,13 +10,7 @@ MuyGPs implementation
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.distance import (
-    _make_regress_tensors,
-    _make_fast_regress_tensors,
-)
-from MuyGPyS._src.gp.distance.numpy import (
-    _make_regress_tensors as _make_regress_tensors_n,
-)
+from MuyGPyS._src.gp.distance import _make_fast_regress_tensors
 from MuyGPyS._src.gp.muygps import (
     _muygps_compute_solve,
     _muygps_compute_diagonal_variance,
@@ -24,15 +18,12 @@ from MuyGPyS._src.gp.muygps import (
     _muygps_fast_regress_precompute,
 )
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS._src.mpi_utils import _is_mpi_mode
-from MuyGPyS.gp.distance import crosswise_distances
 from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
     SigmaSq,
 )
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
 class MuyGPS:

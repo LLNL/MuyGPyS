@@ -19,10 +19,7 @@ from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS.optimize.utils import (
-    _switch_on_opt_method,
-    _switch_on_sigma_method,
-)
+from MuyGPyS.optimize.utils import _switch_on_sigma_method
 
 
 def muygps_sigma_sq_optim(
