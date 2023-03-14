@@ -43,7 +43,6 @@ class ClassifyAPITest(APITestCase):
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
         kern: Optional[str] = None,
-        return_distances: bool = False,
         verbose: bool = False,
     ) -> None:
         (
@@ -51,8 +50,6 @@ class ClassifyAPITest(APITestCase):
             surrogate_predictions,
             predicted_labels,
             acc,
-            crosswise_dists,
-            pairwise_dists,
         ) = self._do_classify(
             train,
             test,
@@ -65,7 +62,6 @@ class ClassifyAPITest(APITestCase):
             kern,
             k_kwargs,
             opt_kwargs,
-            return_distances=return_distances,
             verbose=verbose,
         )
         self.assertEqual(surrogate_predictions.shape, test["output"].shape)
@@ -99,12 +95,6 @@ class ClassifyAPITest(APITestCase):
                     print(f"\t{p} : {param_vals[i]}")
         print(f"obtains accuracy: {acc}")
         self.assertGreaterEqual(acc, target_acc)
-        if crosswise_dists is not None:
-            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
-        if pairwise_dists is not None:
-            self.assertEqual(
-                pairwise_dists.shape, (batch_count, nn_count, nn_count)
-            )
 
     def _do_classify(
         self,
@@ -119,17 +109,9 @@ class ClassifyAPITest(APITestCase):
         kern: Optional[str],
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
-        return_distances: bool = False,
         verbose: bool = False,
-    ) -> Tuple[
-        Union[MuyGPS, MMuyGPS],
-        np.ndarray,
-        np.ndarray,
-        float,
-        np.ndarray,
-        np.ndarray,
-    ]:
-        ret = do_classify(
+    ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, np.ndarray, float]:
+        classifier, _, surrogate_predictions = do_classify(
             test["input"],
             train["input"],
             train["output"],
@@ -142,33 +124,8 @@ class ClassifyAPITest(APITestCase):
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
-            return_distances=return_distances,
             verbose=verbose,
         )
-
-        crosswise_dists = None
-        pairwise_dists = None
-        if return_distances is False:
-            classifier, _, surrogate_predictions = cast(
-                Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray], ret
-            )
-        else:
-            (
-                classifier,
-                _,
-                surrogate_predictions,
-                crosswise_dists,
-                pairwise_dists,
-            ) = cast(
-                Tuple[
-                    Union[MuyGPS, MMuyGPS],
-                    NN_Wrapper,
-                    np.ndarray,
-                    np.ndarray,
-                    np.ndarray,
-                ],
-                ret,
-            )
 
         predicted_labels = np.argmax(surrogate_predictions, axis=1)
         target_labels = np.argmax(test["output"], axis=1)
@@ -187,15 +144,11 @@ class ClassifyAPITest(APITestCase):
             surrogate_predictions
         )
         predicted_labels = _consistent_unchunk_tensor(predicted_labels)
-        crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
-        pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
         return (
             classifier,
             surrogate_predictions,
             predicted_labels,
             acc,
-            crosswise_dists,
-            pairwise_dists,
         )
 
     def _do_classify_uq_test_chassis(
@@ -333,17 +286,9 @@ class RegressionAPITest(parameterized.TestCase):
         opt_kwargs: Dict,
         kern: Optional[str] = None,
         apply_sigma_sq: bool = False,
-        return_distances: bool = False,
         verbose: bool = False,
     ) -> None:
-        (
-            regressor,
-            predictions,
-            mse,
-            variance,
-            crosswise_dists,
-            pairwise_dists,
-        ) = self._do_regress(
+        regressor, predictions, mse, variance = self._do_regress(
             train,
             test,
             nn_count,
@@ -358,7 +303,6 @@ class RegressionAPITest(parameterized.TestCase):
             opt_kwargs,
             kern=kern,
             apply_sigma_sq=apply_sigma_sq,
-            return_distances=return_distances,
             verbose=verbose,
         )
         self.assertEqual(predictions.shape, test["output"].shape)
@@ -377,12 +321,6 @@ class RegressionAPITest(parameterized.TestCase):
                 )
         print(f"obtains mse: {mse}")
         self.assertLessEqual(mse, target_mse)
-        if crosswise_dists is not None:
-            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
-        if pairwise_dists is not None:
-            self.assertEqual(
-                pairwise_dists.shape, (batch_count, nn_count, nn_count)
-            )
 
     def _verify_regressor(self, regressor, variance, targets, sigma_method):
         param_names, param_vals, _ = regressor.get_optim_params()
@@ -420,18 +358,10 @@ class RegressionAPITest(parameterized.TestCase):
         opt_kwargs: Dict,
         kern: Optional[str] = None,
         apply_sigma_sq: bool = True,
-        return_distances: bool = False,
         verbose: bool = False,
-    ) -> Tuple[
-        Union[MuyGPS, MMuyGPS],
-        np.ndarray,
-        float,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-    ]:
+    ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, float, np.ndarray,]:
         # print("gets here")
-        ret = do_regress(
+        regressor, _, predictions, variance = do_regress(
             test["input"],
             train["input"],
             train["output"],
@@ -447,63 +377,13 @@ class RegressionAPITest(parameterized.TestCase):
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
             apply_sigma_sq=apply_sigma_sq,
-            return_distances=return_distances,
             verbose=verbose,
         )
-        variance = None
-        crosswise_dists = None
-        pairwise_dists = None
-        if variance_mode is None and return_distances is False:
-            regressor, _, predictions = cast(
-                Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray], ret
-            )
-        elif variance_mode == "diagonal":
-            if return_distances is False:
-                regressor, _, predictions, variance = cast(
-                    Tuple[
-                        Union[MuyGPS, MMuyGPS],
-                        NN_Wrapper,
-                        np.ndarray,
-                        np.ndarray,
-                    ],
-                    ret,
-                )
-            else:
-                (
-                    regressor,
-                    _,
-                    predictions,
-                    variance,
-                    crosswise_dists,
-                    pairwise_dists,
-                ) = cast(
-                    Tuple[
-                        Union[MuyGPS, MMuyGPS],
-                        NN_Wrapper,
-                        np.ndarray,
-                        np.ndarray,
-                        np.ndarray,
-                        np.ndarray,
-                    ],
-                    ret,
-                )
-        else:
-            raise ValueError(f"Variance mode {variance_mode} is not supported.")
 
         predictions = _consistent_unchunk_tensor(predictions)
         variance = _consistent_unchunk_tensor(variance)
-        crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
-        pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
-
         mse = mse_fn(predictions, test["output"])
-        return (
-            regressor,
-            predictions,
-            mse,
-            variance,
-            crosswise_dists,
-            pairwise_dists,
-        )
+        return (regressor, predictions, mse, variance)
 
 
 class FastRegressionAPITest(parameterized.TestCase):
@@ -517,32 +397,24 @@ class FastRegressionAPITest(parameterized.TestCase):
         loss_method: str,
         obj_method: str,
         opt_method: str,
-        sigma_method: Optional[str],
-        variance_mode: Optional[str],
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
         kern: Optional[str] = None,
-        apply_sigma_sq: bool = False,
-        return_distances: bool = False,
         verbose: bool = False,
     ) -> None:
-        (regressor, predictions, mse) = self._do_fast_regress(
-            train,
-            test,
-            nn_count,
-            batch_count,
-            loss_method,
-            obj_method,
-            opt_method,
-            sigma_method,
-            variance_mode,
-            nn_kwargs,
-            k_kwargs,
-            opt_kwargs,
+        regressor, predictions, mse = self._do_fast_regress(
+            train=train,
+            test=test,
+            nn_count=nn_count,
+            batch_count=batch_count,
+            loss_method=loss_method,
+            obj_method=obj_method,
+            opt_method=opt_method,
+            nn_kwargs=nn_kwargs,
+            k_kwargs=k_kwargs,
+            opt_kwargs=opt_kwargs,
             kern=kern,
-            apply_sigma_sq=apply_sigma_sq,
-            return_distances=return_distances,
             verbose=verbose,
         )
         self.assertEqual(predictions.shape, test["output"].shape)
@@ -569,14 +441,10 @@ class FastRegressionAPITest(parameterized.TestCase):
         loss_method: str,
         obj_method: str,
         opt_method: str,
-        sigma_method: Optional[str],
-        variance_mode: Optional[str],
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
         kern: Optional[str] = None,
-        apply_sigma_sq: bool = True,
-        return_distances: bool = False,
         verbose: bool = False,
     ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, float]:
         (
@@ -594,7 +462,6 @@ class FastRegressionAPITest(parameterized.TestCase):
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
-            sigma_method=sigma_method,
             kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,

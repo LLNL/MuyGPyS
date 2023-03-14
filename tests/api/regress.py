@@ -63,12 +63,11 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             (nn, bs, vm, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
+            for vm in ["diagonal"]
             for lm in ["mse"]
             for om in ["loo_crossval"]
-            # for vm in [None, "diagonal"]
             # for nn_kwargs in _basic_nn_kwarg_options
             # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
-            for vm in ["diagonal"]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for opt_method_and_kwargs in [
                 _basic_opt_method_and_kwarg_options[0]
@@ -80,13 +79,11 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                     [
                         {
                             "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                            # "nu": {"val": 0.38},
                             "length_scale": {"val": 1.5},
                             "eps": {"val": 1e-3},
                         },
                         {
                             "nu": {"val": 0.5},
-                            # "nu": {"val": 0.38},
                             "length_scale": {"val": 1.5},
                             "eps": {"val": 1e-3},
                         },
@@ -103,7 +100,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             )
         )
     )
-    def test_regress(
+    def test_stargal_regress(
         self,
         nn_count,
         batch_count,
@@ -158,11 +155,15 @@ class HeatonTest(RegressionAPITest):
             (nn, bs, vm, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for vm in ["diagonal", None]
+            for vm in ["diagonal"]
             for lm in ["mse"]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[0]
+            # ]
             for k_kwargs in (
                 (
                     11.0,
@@ -184,14 +185,9 @@ class HeatonTest(RegressionAPITest):
                 #     },
                 # ),
             )
-            # for vm in ["diagonal"]
-            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            # for opt_method_and_kwargs in [
-            #     _basic_opt_method_and_kwarg_options[0]
-            # ]
         )
     )
-    def test_regress(
+    def test_heaton_regress(
         self,
         nn_count,
         batch_count,

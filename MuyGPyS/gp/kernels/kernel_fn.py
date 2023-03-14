@@ -39,7 +39,6 @@ Example:
 from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.optimize.utils import _switch_on_opt_method
 
 
 class KernelFn:

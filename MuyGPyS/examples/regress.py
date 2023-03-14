@@ -20,11 +20,12 @@ import numpy as np
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
+from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.chassis import optimize_from_tensors
 from MuyGPyS.optimize.sigma_sq import (
     muygps_sigma_sq_optim,
     mmuygps_sigma_sq_optim,
@@ -43,11 +44,8 @@ def make_regressor(
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
-    return_distances: bool = False,
     verbose: bool = False,
-) -> Union[
-    Tuple[MuyGPS, NN_Wrapper], Tuple[MuyGPS, NN_Wrapper, np.ndarray, np.ndarray]
-]:
+) -> Tuple[MuyGPS, NN_Wrapper]:
     """
     Convenience function for creating MuyGPyS functor and neighbor lookup data
     structure.
@@ -92,7 +90,6 @@ def make_regressor(
         ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
-        ...         return_distances=True,
         ...         verbose=False,
         ... )
 
@@ -140,12 +137,6 @@ def make_regressor(
         opt_kwargs:
             Parameters for the wrapped optimizer. See the docs of the
             corresponding library for supported parameters.
-        return_distances:
-            If `True` and any training occurs, returns a
-            `(batch_count, nn_count)` matrix containing the crosswise distances
-            between the batch's elements and their nearest neighbor sets and a
-            `(batch_count, nn_count, nn_count)` matrix containing the pairwise
-            distances between the batch's nearest neighbor sets.
         verbose:
             If `True`, print summary statistics.
 
@@ -156,15 +147,6 @@ def make_regressor(
     nbrs_lookup:
         A data structure supporting nearest neighbor queries into
         `train_features`.
-    crosswise_dists:
-        A matrix of shape `(batch_count, nn_count)` whose rows list the distance
-        of the corresponding batch element to each of its nearest neighbors.
-        Only returned if `return_distances is True`.
-    pairwise_dists:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
-        dimensions contain square matrices containing the pairwise distances
-        between the nearest neighbors of the batch elements. Only returned if
-        `return_distances is True`.
     """
     train_count, _ = train_features.shape
     _, response_count = train_targets.shape
@@ -240,9 +222,6 @@ def make_regressor(
             print(f"hyper opt time: {time_opt - time_tensor}s")
             print(f"sigma_sq opt time: {time_sopt - time_opt}s")
 
-        if return_distances is True:
-            return muygps, nbrs_lookup, crosswise_dists, pairwise_dists
-
     return muygps, nbrs_lookup
 
 
@@ -259,12 +238,8 @@ def make_multivariate_regressor(
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
-    return_distances: bool = False,
     verbose: bool = False,
-) -> Union[
-    Tuple[MMuyGPS, NN_Wrapper],
-    Tuple[MMuyGPS, NN_Wrapper, np.ndarray, np.ndarray],
-]:
+) -> Tuple[MMuyGPS, NN_Wrapper]:
     """
     Convenience function for creating a Multivariate MuyGPyS functor and
     neighbor lookup data structure.
@@ -315,7 +290,6 @@ def make_multivariate_regressor(
         ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
-        ...         return_distances=return_distances,
         ...         verbose=False,
         ... )
 
@@ -366,12 +340,6 @@ def make_multivariate_regressor(
         opt_kwargs:
             Parameters for the wrapped optimizer. See the docs of the
             corresponding library for supported parameters.
-        return_distances:
-            If `True` and any training occurs, returns a
-            `(batch_count, nn_count)` matrix containing the crosswise distances
-            between the batch's elements and their nearest neighbor sets and a
-            `(batch_count, nn_count, nn_count)` matrix containing the pairwise
-            distances between the batch's nearest neighbor sets.
         verbose:
             If `True`, print summary statistics.
 
@@ -383,15 +351,6 @@ def make_multivariate_regressor(
     nbrs_lookup:
         A data structure supporting nearest neighbor queries into
         `train_features`.
-    crosswise_dists:
-        A matrix of shape `(batch_count, nn_count)` whose rows list the distance
-        of the corresponding batch element to each of its nearest neighbors.
-        Only returned if `return_distances is True`.
-    pairwise_dists:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
-        dimensions contain square matrices containing the pairwise distances
-        between the nearest neighbors of the batch elements. Only returned if
-        `return_distances is True`.
     """
     train_count, response_count = train_targets.shape
     if response_count != len(k_args):
@@ -474,9 +433,6 @@ def make_multivariate_regressor(
             print(f"hyper opt time: {time_opt - time_tensor}s")
             print(f"sigma_sq opt time: {time_sopt - time_opt}s")
 
-        if return_distances is True:
-            return mmuygps, nbrs_lookup, crosswise_dists, pairwise_dists
-
     return mmuygps, nbrs_lookup
 
 
@@ -527,12 +483,8 @@ def _decide_and_make_regressor(
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
-    return_distances: bool = False,
     verbose: bool = False,
-) -> Union[
-    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper],
-    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray],
-]:
+) -> Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper]:
     if kern is not None and (
         isinstance(k_kwargs, list) or isinstance(k_kwargs, tuple)
     ):
@@ -549,7 +501,6 @@ def _decide_and_make_regressor(
             k_args=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
-            return_distances=return_distances,
             verbose=verbose,
         )
     else:
@@ -566,7 +517,6 @@ def _decide_and_make_regressor(
                 k_kwargs=k_kwargs,
                 nn_kwargs=nn_kwargs,
                 opt_kwargs=opt_kwargs,
-                return_distances=return_distances,
                 verbose=verbose,
             )
         else:
@@ -593,23 +543,8 @@ def do_regress(
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
     apply_sigma_sq: bool = True,
-    return_distances: bool = False,
     verbose: bool = False,
-) -> Union[
-    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray],
-    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray],
-    Tuple[
-        Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray, np.ndarray
-    ],
-    Tuple[
-        Union[MuyGPS, MMuyGPS],
-        NN_Wrapper,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-    ],
-]:
+) -> Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray]:
     """
     Convenience function initializing a model and performing regression.
 
@@ -660,7 +595,6 @@ def do_regress(
         ...         variance_mode="diagonal",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
-        ...         return_distances=True,
         ...         verbose=False,
         ... )
         >>> mse = mse_fn(test['output'], predictions)
@@ -725,12 +659,6 @@ def do_regress(
         apply_sigma_sq:
             If `True` and `variance_mode is not None`, automatically scale the
             posterior variances by `sigma_sq`.
-        return_distances:
-            If `True`, returns a `(test_count, nn_count)` matrix containing the
-            crosswise distances between the test elements and their nearest
-            neighbor sets and a `(test_count, nn_count, nn_count)` tensor
-            containing the pairwise distances between the test's nearest
-            neighbor sets.
         verbose:
             If `True`, print summary statistics.
 
@@ -750,20 +678,11 @@ def do_regress(
         `sigma_method is not None` and `apply_sigma_sq is True`, each column
         of the variance is automatically scaled by the corresponding `sigma_sq`
         parameter.
-    crosswise_dists:
-        A matrix of shape `(test_count, nn_count)` whose rows list the distance
-        of the corresponding test element to each of its nearest neighbors.
-        Only returned if `return_distances is True`.
-    pairwise_dists:
-        A tensor of shape `(test_count, nn_count, nn_count,)` whose latter two
-        dimensions contain square matrices containing the pairwise distances
-        between the nearest neighbors of the test elements. Only returned if
-        `return_distances is True`.
     """
     if sigma_method is None:
         apply_sigma_sq = False
 
-    regressor_args = _decide_and_make_regressor(
+    regressor, nbrs_lookup = _decide_and_make_regressor(
         train_features,
         train_targets,
         nn_count=nn_count,
@@ -776,17 +695,10 @@ def do_regress(
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,
-        return_distances=False,
         verbose=verbose,
     )
-    regressor, regressor_args_less1 = _unpack(*regressor_args)
-    nbrs_lookup, regressor_args_less2 = _unpack(*regressor_args_less1)
-    if len(regressor_args_less2) > 0:
-        # Should not get here
-        # crosswise_dists, pairwise_dists = regressor_args_less2
-        pass
 
-    prediction_args, pred_timing = regress_any(
+    posterior_mean, posterior_variance, pred_timing = regress_any(
         regressor,
         test_features,
         train_features,
@@ -794,45 +706,9 @@ def do_regress(
         train_targets,
         variance_mode=variance_mode,
         apply_sigma_sq=apply_sigma_sq,
-        return_distances=return_distances,
     )
 
-    # predictions, prediction_args_less1 = _unpack(*prediction_args)
-    if verbose is True:
-        print("prediction time breakdown:")
-        for k in pred_timing:
-            print(f"\t{k} time:{pred_timing[k]}s")
-
-    if variance_mode is None and len(regressor_args_less2) == 0:
-        return regressor, nbrs_lookup, prediction_args
-    elif variance_mode is not None and return_distances is False:
-        predictions, prediction_args_less1 = _unpack(*prediction_args)
-        variance, prediction_args_less2 = _unpack(*prediction_args_less1)
-        return regressor, nbrs_lookup, predictions, variance
-    elif variance_mode is None and len(regressor_args_less2) > 0:
-        predictions, prediction_args_less1 = _unpack(*prediction_args)
-        crosswise_dists, prediction_args_less2 = _unpack(*prediction_args_less1)
-        pairwise_dists, prediction_args_less3 = _unpack(*prediction_args_less2)
-        return (
-            regressor,
-            nbrs_lookup,
-            predictions,
-            crosswise_dists,
-            pairwise_dists,
-        )
-    else:
-        predictions, prediction_args_less1 = _unpack(*prediction_args)
-        variance, prediction_args_less2 = _unpack(*prediction_args_less1)
-        crosswise_dists, prediction_args_less3 = _unpack(*prediction_args_less2)
-        pairwise_dists, prediction_args_less4 = _unpack(*prediction_args_less3)
-        return (
-            regressor,
-            nbrs_lookup,
-            predictions,
-            variance,
-            crosswise_dists,
-            pairwise_dists,
-        )
+    return regressor, nbrs_lookup, posterior_mean, posterior_variance
 
 
 def regress_any(
@@ -843,15 +719,7 @@ def regress_any(
     train_targets: np.ndarray,
     variance_mode: Optional[str] = None,
     apply_sigma_sq: bool = True,
-    return_distances: bool = False,
-) -> Union[
-    Tuple[np.ndarray, Dict[str, float]],
-    Tuple[Tuple[np.ndarray, np.ndarray], Dict[str, float]],
-    Tuple[Tuple[np.ndarray, np.ndarray, np.ndarray], Dict[str, float]],
-    Tuple[
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], Dict[str, float]
-    ],
-]:
+) -> Tuple[np.ndarray, np.ndarray, Dict[str, float]]:
     """
     Simultaneously predicts the response for each test item.
 
@@ -873,12 +741,6 @@ def regress_any(
         apply_sigma_sq:
             If `True` and `variance_mode is not None`, automatically scale the
             posterior variances by `sigma_sq`.
-        return_distances:
-            If `True`, returns a `(test_count, nn_count)` matrix containing the
-            crosswise distances between the test elements and their nearest
-            neighbor sets and a `(test_count, nn_count, nn_count)` tensor
-            containing the pairwise distances between the test data's nearest
-            neighbor sets.
 
     Returns
     -------
@@ -892,15 +754,6 @@ def regress_any(
         `(test_count, response_count)` if `regressor` is an instance of
         :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS`. Returned only when
         `variance_mode == "diagonal"`.
-    crosswise_dists:
-        A matrix of shape `(test_count, nn_count)` whose rows list the distance
-        of the corresponding test element to each of its nearest neighbors.
-        Only returned if `return_distances is True`.
-    pairwise_dists:
-        A tensor of shape `(test_count, nn_count, nn_count,)` whose latter two
-        dimensions contain square matrices containing the pairwise distances
-        between the nearest neighbors of the test elements. Only returned if
-        `return_distances is True`.
     timing : dict
         Timing for the subroutines of this function.
     """
@@ -913,7 +766,8 @@ def regress_any(
 
     time_agree = perf_counter()
 
-    predictions = regressor.regress_from_indices(
+    posterior_mean, posterior_variance = regress_from_indices(
+        regressor,
         np.arange(test_count),
         test_nn_indices,
         test_features,
@@ -921,7 +775,6 @@ def regress_any(
         train_targets,
         variance_mode=variance_mode,
         apply_sigma_sq=apply_sigma_sq,
-        return_distances=return_distances,
     )
     time_pred = perf_counter()
 
@@ -930,4 +783,4 @@ def regress_any(
         "agree": time_agree - time_nn,
         "pred": time_pred - time_agree,
     }
-    return predictions, timing
+    return posterior_mean, posterior_variance, timing

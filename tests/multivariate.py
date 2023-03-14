@@ -35,11 +35,8 @@ from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
 from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.chassis import (
-    optimize_from_indices,
-    optimize_from_tensors,
-)
 from MuyGPyS.optimize.sigma_sq import mmuygps_sigma_sq_optim
 
 
@@ -312,143 +309,6 @@ class OptimTest(parameterized.TestCase):
                     b_nn_t,
                     crosswise_dists,
                     pairwise_dists,
-                    loss_method=loss_method,
-                    obj_method=obj_method,
-                    opt_method=opt_method,
-                    sigma_method=sigma_method,
-                    **opt_kwargs,
-                )
-                estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
-                mse += mm.sum(estimate - target[i]) ** 2
-        mse /= its * response_count
-        print(f"optimizes with mse {mse}")
-        self.assertAlmostEqual(mse, 0.0, 1)
-
-
-class OptimFromIndicesTest(parameterized.TestCase):
-    @parameterized.parameters(
-        (
-            (
-                1001,
-                10,
-                b,
-                n,
-                nn_kwargs,
-                loss_and_sigma_methods,
-                om,
-                opt_method_and_kwargs,
-                k_kwargs,
-            )
-            for b in [250]
-            for n in [20]
-            for loss_and_sigma_methods in [["mse", None]]
-            for om in ["loo_crossval"]
-            # for nn_kwargs in _basic_nn_kwarg_options
-            # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for opt_method_and_kwargs in [
-                _basic_opt_method_and_kwarg_options[1]
-            ]
-            for k_kwargs in (
-                (
-                    "matern",
-                    "l2",
-                    [0.38, 0.78],
-                    [
-                        {
-                            "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
-                            "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
-                        },
-                        {
-                            "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
-                            "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
-                        },
-                    ],
-                ),
-            )
-        )
-    )
-    def test_hyper_optim_from_indices(
-        self,
-        data_count,
-        its,
-        batch_count,
-        nn_count,
-        nn_kwargs,
-        loss_and_sigma_methods,
-        obj_method,
-        opt_method_and_kwargs,
-        k_kwargs,
-    ):
-        if config.state.backend != "numpy":
-            _warn0(
-                f"{self.__class__.__name__} relies on "
-                f"{BenchmarkGP.__class__.__name__}, which only supports numpy. "
-                f"Skipping."
-            )
-            return
-        kern, metric, target, args = k_kwargs
-        loss_method, sigma_method = loss_and_sigma_methods
-        opt_method, opt_kwargs = opt_method_and_kwargs
-        response_count = len(args)
-
-        # construct the observation locations
-        sim_train = dict()
-        sim_test = dict()
-        x = np.linspace(-10.0, 10.0, data_count).reshape(data_count, 1)
-        sim_train["input"] = x[::2, :]
-        sim_test["input"] = x[1::2, :]
-        train_count = sim_train["input"].shape[0]
-        test_count = sim_test["input"].shape[0]
-
-        mse = 0.0
-
-        # compute nearest neighbor structure
-        nbrs_lookup = NN_Wrapper(
-            mm.array(sim_train["input"]), nn_count, **nn_kwargs
-        )
-        batch_indices, batch_nn_indices = sample_batch(
-            nbrs_lookup, batch_count, train_count
-        )
-        _check_ndarray(self.assertEqual, batch_indices, mm.itype)
-        _check_ndarray(self.assertEqual, batch_nn_indices, mm.itype)
-
-        gp_args = args.copy()
-        for i, m in enumerate(gp_args):
-            m["nu"]["val"] = target[i]
-        gps = [BenchmarkGP(kern=kern, **a) for a in gp_args]
-        cholKs = [
-            benchmark_prepare_cholK(
-                gp, np.vstack((sim_test["input"], sim_train["input"]))
-            )
-            for gp in gps
-        ]
-        for _ in range(its):
-            # Simulate the response
-            sim_test["output"] = np.zeros((test_count, response_count))
-            sim_train["output"] = np.zeros((train_count, response_count))
-            for i, cholK in enumerate(cholKs):
-                y = benchmark_sample_from_cholK(cholK)
-                # sim_test["output"] = mm.assign(
-                #     sim_test["output"], y[:test_count, 0], slice(None), i
-                # )
-                # sim_train["output"] = mm.assign(
-                #     sim_train["output"], y[test_count:, 0], slice(None), i
-                # )
-                sim_test["output"][:, i] = y[:test_count, 0]
-                sim_train["output"][:, i] = y[test_count:, 0]
-
-            mmuygps = MMuyGPS(kern, *args)
-
-            for i, muygps in enumerate(mmuygps.models):
-                mmuygps.models[i] = optimize_from_indices(
-                    muygps,
-                    batch_indices,
-                    batch_nn_indices,
-                    mm.array(sim_train["input"]),
-                    mm.array(sim_train["output"][:, i].reshape(train_count, 1)),
                     loss_method=loss_method,
                     obj_method=obj_method,
                     opt_method=opt_method,

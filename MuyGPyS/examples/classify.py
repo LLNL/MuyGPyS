@@ -22,14 +22,11 @@ import numpy as np
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple, Union
 
-from MuyGPyS._src.mpi_utils import (
-    _is_mpi_mode,
-    _consistent_chunk_tensor,
-)
+from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distance import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.chassis import optimize_from_tensors
+from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import get_balanced_batch
 
 
@@ -44,11 +41,8 @@ def make_classifier(
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
-    return_distances: bool = False,
     verbose: bool = False,
-) -> Union[
-    Tuple[MuyGPS, NN_Wrapper], Tuple[MuyGPS, NN_Wrapper, np.ndarray, np.ndarray]
-]:
+) -> Tuple[MuyGPS, NN_Wrapper]:
     """
     Convenience function for creating MuyGPyS functor and neighbor lookup data
     structure.
@@ -91,7 +85,6 @@ def make_classifier(
         ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
-        ...         return_distances=True,
         ...         verbose=False,
         ... )
 
@@ -132,12 +125,6 @@ def make_classifier(
         opt_kwargs:
             Parameters for the wrapped optimizer. See the docs of the
             corresponding library for supported parameters.
-        return_distances:
-            If `True` and any training occurs, returns a
-            `(batch_count, nn_count)` matrix containing the crosswise distances
-            between the batch's elements and their nearest neighbor sets and a
-            `(batch_count, nn_count, nn_count)` matrix containing the pairwise
-            distances between the batch's nearest neighbor sets.
         verbose : Boolean
             If `True`, print summary statistics.
 
@@ -148,15 +135,6 @@ def make_classifier(
     nbrs_lookup:
         A data structure supporting nearest neighbor queries into
         `train_features`.
-    crosswise_dists:
-        A matrix of shape `(batch_count, nn_count)` whose rows list the distance
-        of the corresponding batch element to each of its nearest neighbors.
-        Only returned if `return_distances is True`.
-    pairwise_dists:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
-        dimensions contain square matrices containing the pairwise distances
-        between the nearest neighbors of the batch elements. Only returned if
-        `return_distances is True`.
     """
     time_start = perf_counter()
 
@@ -213,9 +191,6 @@ def make_classifier(
             print(f"tensor creation time: {time_tensor - time_batch}s")
             print(f"hyper opt time: {time_opt - time_tensor}s")
 
-        if return_distances is True:
-            return muygps, nbrs_lookup, crosswise_dists, pairwise_dists
-
     return muygps, nbrs_lookup
 
 
@@ -231,12 +206,8 @@ def make_multivariate_classifier(
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
-    return_distances: bool = False,
     verbose: bool = False,
-) -> Union[
-    Tuple[MMuyGPS, NN_Wrapper],
-    Tuple[MMuyGPS, NN_Wrapper, np.ndarray, np.ndarray],
-]:
+) -> Tuple[MMuyGPS, NN_Wrapper]:
     """
     Convenience function for creating MuyGPyS functor and neighbor lookup data
     structure.
@@ -285,7 +256,6 @@ def make_multivariate_classifier(
         ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
-        ...         return_distances=return_distances,
         ...         verbose=False,
         ... )
 
@@ -328,12 +298,6 @@ def make_multivariate_classifier(
         opt_kwargs:
             Parameters for the wrapped optimizer. See the docs of the
             corresponding library for supported parameters.
-        return_distances:
-            If `True` and any training occurs, returns a
-            `(batch_count, nn_count)` matrix containing the crosswise distances
-            between the batch's elements and their nearest neighbor sets and a
-            `(batch_count, nn_count, nn_count)` matrix containing the pairwise
-            distances between the batch's nearest neighbor sets.
         verbose:
             If `True`, print summary statistics.
 
@@ -344,15 +308,6 @@ def make_multivariate_classifier(
     nbrs_lookup:
         A data structure supporting nearest neighbor queries into
         `train_features`.
-    crosswise_dists:
-        A matrix of shape `(batch_count, nn_count)` whose rows list the distance
-        of the corresponding batch element to each of its nearest neighbors.
-        Only returned if `return_distances is True`.
-    pairwise_dists:
-        A tensor of shape `(batch_count, nn_count, nn_count,)` whose latter two
-        dimensions contain square matrices containing the pairwise distances
-        between the nearest neighbors of the batch elements. Only returned if
-        `return_distances is True`.
     """
     train_count, response_count = train_labels.shape
     if response_count != len(k_args):
@@ -419,9 +374,6 @@ def make_multivariate_classifier(
             print(f"tensor creation time: {time_tensor - time_batch}s")
             print(f"hyper opt time: {time_opt - time_tensor}s")
 
-        if return_distances is True:
-            return mmuygps, nbrs_lookup, crosswise_dists, pairwise_dists
-
     return mmuygps, nbrs_lookup
 
 
@@ -437,12 +389,8 @@ def _decide_and_make_classifier(
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
-    return_distances: bool = False,
     verbose: bool = False,
-) -> Union[
-    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper],
-    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray],
-]:
+) -> Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper]:
     if kern is not None and isinstance(k_kwargs, list):
         return make_multivariate_classifier(
             train_features,
@@ -456,7 +404,6 @@ def _decide_and_make_classifier(
             k_args=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
-            return_distances=return_distances,
             verbose=verbose,
         )
     else:
@@ -472,7 +419,6 @@ def _decide_and_make_classifier(
                 k_kwargs=k_kwargs,
                 nn_kwargs=nn_kwargs,
                 opt_kwargs=opt_kwargs,
-                return_distances=return_distances,
                 verbose=verbose,
             )
         else:
@@ -496,14 +442,8 @@ def do_classify(
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
-    return_distances: bool = False,
     verbose: bool = False,
-) -> Union[
-    Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray],
-    Tuple[
-        Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray, np.ndarray
-    ],
-]:
+) -> Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray]:
     """
     Convenience function for initializing a model and performing surrogate
     classification.
@@ -549,7 +489,6 @@ def do_classify(
         ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
-        ...         return_distances=return_distances,
         ...         verbose=False,
         ... )
         >>> predicted_labels = np.argmax(surrogate_predictions, axis=1)
@@ -604,12 +543,6 @@ def do_classify(
         opt_kwargs:
             Parameters for the wrapped optimizer. See the docs of the
             corresponding library for supported parameters.
-        return_distances:
-            If `True` and any training occurs, returns a
-            `(batch_count, nn_count)` matrix containing the crosswise distances
-            between the batch's elements and their nearest neighbor sets and a
-            `(batch_count, nn_count, nn_count)` matrix containing the pairwise
-            distances between the batch's nearest neighbor sets.
         verbose:
             If `True`, print summary statistics.
 
@@ -625,7 +558,7 @@ def do_classify(
         the surrogate predictions of the model. The predicted classes are given
         by the indices of the largest elements of each row.
     """
-    classifier_args = _decide_and_make_classifier(
+    classifier, nbrs_lookup = _decide_and_make_classifier(
         train_features,
         train_labels,
         nn_count=nn_count,
@@ -637,13 +570,8 @@ def do_classify(
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,
-        return_distances=return_distances,
         verbose=verbose,
     )
-    classifier, classifier_args_less1 = _unpack(*classifier_args)
-    nbrs_lookup, classifier_args_less2 = _unpack(*classifier_args_less1)
-    if len(classifier_args_less2) > 0:
-        crosswise_dists, pairwise_dists = classifier_args_less2
 
     surrogate_predictions, pred_timing = classify_any(
         classifier,
@@ -656,16 +584,7 @@ def do_classify(
         print("prediction time breakdown:")
         for k in pred_timing:
             print(f"\t{k} time:{pred_timing[k]}s")
-    if len(classifier_args_less2) > 0:
-        return (
-            classifier,
-            nbrs_lookup,
-            surrogate_predictions,
-            crosswise_dists,
-            pairwise_dists,
-        )
-    else:
-        return classifier, nbrs_lookup, surrogate_predictions
+    return classifier, nbrs_lookup, surrogate_predictions
 
 
 def classify_any(
@@ -706,7 +625,6 @@ def classify_any(
     one_hot_false = float(np.min(train_labels[0, :]))
 
     time_start = perf_counter()
-    test_features = _consistent_chunk_tensor(test_features)
     test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)
     time_nn = perf_counter()
 
@@ -725,14 +643,14 @@ def classify_any(
     if np.sum(nonconstant_mask) > 0:
         nonconstant_indices = np.where(nonconstant_mask == True)[0]
         nonconstant_nn_indices = test_nn_indices[nonconstant_mask, :]
-        predictions[nonconstant_mask] = surrogate.regress_from_indices(
+        predictions[nonconstant_mask] = regress_from_indices(
+            surrogate,
             nonconstant_indices,
             nonconstant_nn_indices,
             test_features,
             train_features,
             train_labels,
             apply_sigma_sq=False,
-            indices_by_rank=_is_mpi_mode(),
         )
     time_pred = perf_counter()
 

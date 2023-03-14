@@ -13,7 +13,6 @@ indicating them to optimization.
 from typing import Callable
 
 import MuyGPyS._src.math as mm
-
 from MuyGPyS.optimize.utils import _switch_on_loss_method
 
 

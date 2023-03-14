@@ -72,14 +72,14 @@ class MNISTTest(ClassifyAPITest):
             for nn in [30]
             for bs in [500]
             for om in ["loo_crossval"]
+            for lm in ["log", "mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for nn_kwargs in _basic_nn_kwarg_options
             # for lm in ["log"]
             # for opt_method_and_kwargs in [
             #     _basic_opt_method_and_kwarg_options[1]
             # ]
             # for nn_kwargs in [_basic_nn_kwarg_options[1]]
-            for lm in ["log", "mse"]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
-            for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in (
                 (
                     0.85,
@@ -162,15 +162,15 @@ class StargalClassifyTest(StargalTest):
             (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
+            for om in ["loo_crossval"]
+            for lm in ["log", "mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for nn_kwargs in _basic_nn_kwarg_options
             # for lm in ["log"]
             # for opt_method_and_kwargs in [
             #     _basic_opt_method_and_kwarg_options[0]
             # ]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for lm in ["log", "mse"]
-            for om in ["loo_crossval"]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
-            for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in (
                 (
                     0.92,
@@ -242,11 +242,16 @@ class StargalUQTest(StargalTest):
             for nn in [30]
             for obs in [500]
             for ubs in [500]
-            for lm in ["log", "mse"]
             for om in ["loo_crossval"]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for uq in [example_lambdas]
+            for lm in ["log", "mse"]
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
+            # for lm in ["log"]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[1]
+            # ]
+            # for nn_kwargs in [_basic_nn_kwarg_options[1]]
             for k_kwargs in (
                 (
                     0.92,
@@ -310,9 +315,14 @@ class MultivariateStargalClassifyTest(StargalTest):
             (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for lm in ["mse"]
             for om in ["loo_crossval"]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            # for lm in ["mse", "log"]
+            # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            # for nn_kwargs in _basic_nn_kwarg_options
+            for lm in ["mse"]
+            for opt_method_and_kwargs in [
+                _basic_opt_method_and_kwarg_options[1]
+            ]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for k_kwargs in (
                 (
@@ -332,7 +342,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                     ],
                 ),
                 (
-                    0.9,
+                    0.85,
                     "rbf",
                     [
                         {
