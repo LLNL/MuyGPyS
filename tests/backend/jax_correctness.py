@@ -32,14 +32,14 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_data,
 )
-from MuyGPyS._src.gp.distance.numpy import (
+from MuyGPyS._src.gp.tensors.numpy import (
     _pairwise_distances as pairwise_distances_n,
     _crosswise_distances as crosswise_distances_n,
     _make_train_tensors as make_train_tensors_n,
     _make_fast_predict_tensors as make_fast_predict_tensors_n,
     _fast_nn_update as fast_nn_update_n,
 )
-from MuyGPyS._src.gp.distance.jax import (
+from MuyGPyS._src.gp.tensors.jax import (
     _pairwise_distances as pairwise_distances_j,
     _crosswise_distances as crosswise_distances_j,
     _make_train_tensors as make_train_tensors_j,

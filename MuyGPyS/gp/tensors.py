@@ -15,7 +15,7 @@ a batch of training data and their nearest neighbors.
 Example:
     >>> from MuyGPyS.neighbors import NN_Wrapper
     >>> from MuyGPyS.optimize.batch import sample_batch
-    >>> from MuyGPyS.gp.distance import crosswise_distances
+    >>> from MuyGPyS.gp.tensors import crosswise_distances, pairwise_distances
     >>> train_features = load_train_features()
     >>> nn_count = 10
     >>> nbrs_lookup = NN_Wrapper(
@@ -43,7 +43,7 @@ test dataset and their nearest neighors in the training data.
 
 Example:
     >>> from MuyGPyS.neighbors import NN_Wrapper
-    >>> from MuyGPyS.gp.distance import crosswise_distances
+    >>> from MuyGPyS.gp.tensors import crosswise_distances, pairwise_distances
     >>> train_features = load_train_features()
     >>> test_features = load_test_features()
     >>> nn_count = 10
@@ -77,7 +77,7 @@ as the distance and target tensors are usually needed together.
 from typing import Optional, Tuple
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.distance import (
+from MuyGPyS._src.gp.tensors import (
     _make_fast_predict_tensors,
     _make_predict_tensors,
     _make_train_tensors,

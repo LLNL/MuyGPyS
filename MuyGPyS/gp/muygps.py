@@ -10,7 +10,7 @@ MuyGPs implementation
 from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.distance import _make_fast_predict_tensors
+from MuyGPyS._src.gp.tensors import _make_fast_predict_tensors
 from MuyGPyS._src.gp.muygps import (
     _muygps_fast_posterior_mean,
     _muygps_fast_posterior_mean_precompute,

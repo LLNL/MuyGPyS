@@ -25,11 +25,11 @@ from MuyGPyS._test.utils import (
     _make_gaussian_data,
     _exact_nn_kwarg_options,
 )
-from MuyGPyS._src.gp.distance.numpy import (
+from MuyGPyS._src.gp.tensors.numpy import (
     _make_predict_tensors as make_predict_tensors_n,
     _make_train_tensors as make_train_tensors_n,
 )
-from MuyGPyS._src.gp.distance.mpi import (
+from MuyGPyS._src.gp.tensors.mpi import (
     _make_predict_tensors as make_predict_tensors_m,
     _make_train_tensors as make_train_tensors_m,
 )

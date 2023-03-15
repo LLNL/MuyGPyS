@@ -13,7 +13,7 @@ from MuyGPyS._src.util import _collect_implementation
     _pairwise_distances,
     _fast_nn_update,
 ) = _collect_implementation(
-    "MuyGPyS._src.gp.distance",
+    "MuyGPyS._src.gp.tensors",
     "_make_predict_tensors",
     "_make_fast_predict_tensors",
     "_make_train_tensors",

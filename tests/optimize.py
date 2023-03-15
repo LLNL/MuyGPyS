@@ -29,7 +29,7 @@ from MuyGPyS._test.utils import (
     _sq_rel_err,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distance import pairwise_distances, crosswise_distances
+from MuyGPyS.gp.tensors import pairwise_distances, crosswise_distances
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch

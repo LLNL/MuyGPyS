@@ -10,7 +10,7 @@ import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.mpi_utils import (
     _chunk_function_tensor,
 )
-from MuyGPyS._src.gp.distance.numpy import (
+from MuyGPyS._src.gp.tensors.numpy import (
     _crosswise_distances as _crosswise_distances_n,
     _pairwise_distances as _pairwise_distances_n,
     _make_train_tensors as _make_train_tensors_n,

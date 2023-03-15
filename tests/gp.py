@@ -17,7 +17,7 @@ from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distance import (
+from MuyGPyS.gp.tensors import (
     make_train_tensors,
     make_predict_tensors,
 )

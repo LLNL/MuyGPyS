@@ -11,7 +11,7 @@ import numpy as np
 
 from typing import Optional, Tuple, Union
 
-from MuyGPyS.gp.distance import (
+from MuyGPyS.gp.tensors import (
     crosswise_distances,
     make_predict_tensors,
     make_train_tensors,

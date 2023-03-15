@@ -9,7 +9,7 @@ MuyGPs PyTorch implementation
 
 import torch
 from torch import nn
-from MuyGPyS._src.gp.distance.torch import (
+from MuyGPyS._src.gp.tensors.torch import (
     _pairwise_distances,
     _crosswise_distances,
 )

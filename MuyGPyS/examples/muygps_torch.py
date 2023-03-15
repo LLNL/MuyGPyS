@@ -33,7 +33,7 @@ if config.state.backend != "torch":
 
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
-from MuyGPyS._src.gp.distance.torch import (
+from MuyGPyS._src.gp.tensors.torch import (
     _pairwise_distances,
     _crosswise_distances,
 )
