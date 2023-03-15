@@ -13,6 +13,13 @@ import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import _fullname
 
 
+def sigma_sq_scale(fn):
+    def scaled_fn(*args, sigma_sq=[1.0], **kwargs):
+        return mm.outer(fn(*args, **kwargs), sigma_sq)
+
+    return scaled_fn
+
+
 class SigmaSq:
     """
     A :math:`\\sigma^2` covariance scale parameter.

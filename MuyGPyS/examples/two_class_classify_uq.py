@@ -266,7 +266,7 @@ def make_masks(
             interval scale parameter :math:`\\sigma^2` that minimizes each of
             the considered objective function.
         variances:
-            A vector of shape `(test_count,)` indicating the diagonal
+            A vector of shape `(test_count, 1)` indicating the diagonal
             posterior variance of each test item.
         mid_value:
             The discriminating value determining absolute uncertainty. Usually
@@ -277,6 +277,8 @@ def make_masks(
         index masks into the training set. Each `True` index includes
         `mid_value` within the associated prediction's confidence interval.
     """
+    batch_count, _ = predictions.shape
+    variances = variances.reshape((batch_count,))
     return np.array(
         [
             np.logical_and(
@@ -385,7 +387,7 @@ def classify_two_class_uq(
     nn_labels = train_labels[test_nn_indices, :]
 
     means = np.zeros((nn_labels.shape[0], 2))
-    variances = np.zeros(nn_labels.shape[0])
+    variances = np.zeros((nn_labels.shape[0], 1))
     nonconstant_mask = np.max(nn_labels[:, :, 0], axis=-1) != np.min(
         nn_labels[:, :, 0], axis=-1
     )
@@ -399,7 +401,7 @@ def classify_two_class_uq(
     if np.sum(nonconstant_mask) > 0:
         (
             means[nonconstant_mask, :],
-            variances[nonconstant_mask],
+            variances[nonconstant_mask, :],
         ) = regress_from_indices(
             surrogate,
             np.where(nonconstant_mask == True)[0],
@@ -407,8 +409,6 @@ def classify_two_class_uq(
             test_features,
             train_features,
             train_labels,
-            variance_mode="diagonal",
-            apply_sigma_sq=False,
         )
 
     time_pred = perf_counter()
@@ -472,8 +472,6 @@ def train_two_class_interval(
         train_features,
         train_features,
         train_responses,
-        variance_mode="diagonal",
-        apply_sigma_sq=False,
     )
     predicted_labels = 2 * np.argmax(mean, axis=1) - 1
 

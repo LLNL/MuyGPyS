@@ -396,10 +396,9 @@ class ClassifyTest(parameterized.TestCase):
 class RegressTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 200, f, nn, vm, nn_kwargs, k_kwargs)
+            (1000, 200, f, nn, nn_kwargs, k_kwargs)
             for f in [100, 2]
             for nn in [5, 10]
-            for vm in [None, "diagonal"]
             # for f in [2]
             # for nn in [5]
             # for vm in ["diagonal"]
@@ -429,7 +428,6 @@ class RegressTest(parameterized.TestCase):
         test_count,
         feature_count,
         nn_count,
-        variance_mode,
         nn_kwargs,
         k_kwargs,
     ):
@@ -455,21 +453,15 @@ class RegressTest(parameterized.TestCase):
 
         self.assertFalse(mmuygps.sigma_sq.trained)
 
-        predictions, _ = regress_any(
+        predictions, diagonal_variance = regress_any(
             mmuygps,
             test["input"],
             train["input"],
             nbrs_lookup,
             train["output"],
-            variance_mode=variance_mode,
-            apply_sigma_sq=False,
         )
-        if variance_mode is not None:
-            predictions, diagonal_variance = predictions
-            diagonal_variance = _consistent_unchunk_tensor(diagonal_variance)
-            self.assertEqual(
-                diagonal_variance.shape, (test_count, response_count)
-            )
+        diagonal_variance = _consistent_unchunk_tensor(diagonal_variance)
+        self.assertEqual(diagonal_variance.shape, (test_count, response_count))
         predictions = _consistent_unchunk_tensor(predictions)
         self.assertEqual(predictions.shape, (test_count, response_count))
 

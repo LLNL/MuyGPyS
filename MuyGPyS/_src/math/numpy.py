@@ -10,6 +10,7 @@ from numpy import (
     argmax,
     argmin,
     atleast_1d,
+    atleast_2d,
     concatenate,
     copy,
     corrcoef,

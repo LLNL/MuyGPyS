@@ -22,8 +22,9 @@ from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
     SigmaSq,
+    sigma_sq_scale,
 )
-from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb
 
 
 class MuyGPS:
@@ -87,6 +88,13 @@ class MuyGPS:
             only `matern` and `rbf`.
         eps:
             A hyperparameter dict.
+        response_count:
+            The number of response dimensions.
+        variance_mode:
+            Specifies the type of variance to return. Currently supports
+            only `"diagonal"`.
+        apply_sigma_sq:
+            Indicates whether to scale the posterior variance by `sigma_sq`.
         kwargs:
             Addition parameters to be passed to the kernel, possibly including
             additional hyperparameter dicts and a metric keyword.
@@ -97,14 +105,31 @@ class MuyGPS:
         kern: str = "matern",
         eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
         response_count: int = 1,
+        variance_mode: str = "diagonal",
+        apply_sigma_sq: bool = True,
         **kwargs,
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
+        self.sigma_sq = SigmaSq(response_count)
         self.eps = _init_hyperparameter(
             1e-14, "fixed", HomoscedasticNoise, **eps
         )
-        self.sigma_sq = SigmaSq(response_count)
+        self.posterior_mean_fn = _muygps_posterior_mean
+        self.posterior_variance_fn = _muygps_diagonal_variance
+        if isinstance(self.eps, HomoscedasticNoise):
+            self.posterior_mean_fn = noise_perturb(_homoscedastic_perturb)(
+                self.posterior_mean_fn
+            )
+            self.posterior_variance_fn = noise_perturb(_homoscedastic_perturb)(
+                self.posterior_variance_fn
+            )
+        else:
+            raise ValueError(f"Noise model {type(self.eps)} is not supported")
+        if apply_sigma_sq is True:
+            self.posterior_variance_fn = sigma_sq_scale(
+                self.posterior_variance_fn
+            )
 
     def set_eps(self, **eps) -> None:
         """
@@ -261,25 +286,22 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return _muygps_posterior_mean(
-            _homoscedastic_perturb(K, self.eps()), Kcross, batch_nn_targets
+        return self.posterior_mean_fn(
+            K, Kcross, batch_nn_targets, eps=self.eps()
         )
 
     def posterior_variance(
         self,
         K: mm.ndarray,
         Kcross: mm.ndarray,
-        variance_mode: str = "diagonal",
-        apply_sigma_sq: bool = True,
     ) -> mm.ndarray:
         """
         Returns the posterior mean from the provided covariance and
         cross-covariance tensors.
 
-        If `variance_mode == "diagonal"`, return the local posterior
-        variances of each prediction, corresponding to the diagonal elements of
-        a covariance matrix. For each batch element :math:`\\mathbf{x}_i`, we
-        compute
+        Return the local posterior variances of each prediction, corresponding
+        to the diagonal elements of a covariance matrix. For each batch element
+        :math:`\\mathbf{x}_i`, we compute
 
         .. math::
             Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})) =
@@ -297,35 +319,14 @@ class MuyGPS:
                 A matrix of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
-            variance_mode:
-                Specifies the type of variance to return. Currently supports
-                `"diagonal"`.
-            apply_sigma_sq:
-                Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or
-                `sigma_sq.trained is False`.
 
         Returns:
-            A vector of shape `(batch_count,)` consisting of the diagonal
-            elements of the posterior variance, or a matrix of shape
-            `(batch_count, response_count)` for a multidimensional response.
+            A vector of shape `(batch_count, response_count)` consisting of the
+            diagonal elements of the posterior variance.
         """
-        if variance_mode == "diagonal":
-            diagonal_variance = _muygps_diagonal_variance(
-                _homoscedastic_perturb(K, self.eps()), Kcross
-            )
-            if apply_sigma_sq is True:
-                if len(self.sigma_sq()) == 1:
-                    diagonal_variance *= self.sigma_sq()
-                else:
-                    diagonal_variance = mm.array(
-                        [ss * diagonal_variance for ss in self.sigma_sq()]
-                    ).T
-            return diagonal_variance
-        else:
-            raise NotImplementedError(
-                f"Variance mode {variance_mode} is not implemented."
-            )
+        return self.posterior_variance_fn(
+            K, Kcross, eps=self.eps(), sigma_sq=self.sigma_sq()
+        )
 
     def fast_posterior_mean(
         self,
@@ -386,9 +387,7 @@ class MuyGPS:
             values for unfixed parameters.
         """
         if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_opt_mean_fn(
-                _muygps_posterior_mean, _homoscedastic_perturb, self.eps
-            )
+            return self._get_opt_mean_fn(self.posterior_mean_fn, self.eps)
         else:
             raise TypeError(
                 f"Noise parameter type {type(self.eps)} is not supported for "
@@ -397,19 +396,17 @@ class MuyGPS:
 
     @staticmethod
     def _get_opt_mean_fn(
-        solve_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
+        mean_fn: Callable, eps: HomoscedasticNoise
     ) -> Callable:
         if not eps.fixed():
 
             def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
-                return solve_fn(
-                    perturb_fn(K, kwargs["eps"]), Kcross, batch_nn_targets
-                )
+                return mean_fn(K, Kcross, batch_nn_targets, eps=kwargs["eps"])
 
         else:
 
             def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
-                return solve_fn(perturb_fn(K, eps()), Kcross, batch_nn_targets)
+                return mean_fn(K, Kcross, batch_nn_targets, eps=eps())
 
         return caller_fn
 
@@ -429,9 +426,7 @@ class MuyGPS:
         """
         if isinstance(self.eps, HomoscedasticNoise):
             return self._get_opt_var_fn(
-                _muygps_diagonal_variance,
-                _homoscedastic_perturb,
-                self.eps,
+                self.posterior_variance_fn, self.eps, self.sigma_sq
             )
         else:
             raise TypeError(
@@ -441,17 +436,17 @@ class MuyGPS:
 
     @staticmethod
     def _get_opt_var_fn(
-        var_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
+        var_fn: Callable, eps: HomoscedasticNoise, sigma_sq: SigmaSq
     ) -> Callable:
         if not eps.fixed():
 
             def caller_fn(K, Kcross, **kwargs):
-                return var_fn(perturb_fn(K, kwargs["eps"]), Kcross)
+                return var_fn(K, Kcross, eps=kwargs["eps"], sigma_sq=sigma_sq())
 
         else:
 
             def caller_fn(K, Kcross, **kwargs):
-                return var_fn(perturb_fn(K, eps()), Kcross)
+                return var_fn(K, Kcross, eps=eps(), sigma_sq=sigma_sq())
 
         return caller_fn
 

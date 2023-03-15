@@ -551,42 +551,6 @@ class GPDiagonalVariance(GPTestCase):
     ):
         muygps = MuyGPS(**k_kwargs)
 
-        # # prepare data
-        # train, test = _make_gaussian_data(
-        #     train_count, test_count, feature_count, response_count
-        # )
-
-        # # neighbors and distances
-        # nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
-        # nn_indices, _ = nbrs_lookup.get_nns(test["input"])
-        # indices = mm.arange(test_count)
-        # _check_ndarray(self.assertEqual, indices, mm.itype)
-        # _check_ndarray(self.assertEqual, nn_indices, mm.itype)
-        # (nn_dists, F2_dists, _) = make_predict_tensors(
-        #     muygps.kernel.metric,
-        #     indices,
-        #     nn_indices,
-        #     test["input"],
-        #     train["input"],
-        #     train["output"],
-        # )
-        # _check_ndarray(self.assertEqual, nn_dists, mm.ftype)
-        # _check_ndarray(self.assertEqual, F2_dists, mm.ftype)
-
-        # # make kernels and variance
-        # K, Kcross = muygps.kernel(F2_dists), muygps.kernel(nn_dists)
-        # _check_ndarray(self.assertEqual, K, mm.ftype)
-        # _check_ndarray(self.assertEqual, Kcross, mm.ftype)
-        # diagonal_variance = _consistent_unchunk_tensor(
-        #     muygps._compute_diagonal_variance(K, Kcross, muygps.eps())
-        # )
-        # _check_ndarray(self.assertEqual, diagonal_variance, mm.ftype)
-
-        # K = _consistent_unchunk_tensor(K)
-        # Kcross = _consistent_unchunk_tensor(Kcross)
-        # _check_ndarray(self.assertEqual, K, mm.ftype)
-        # _check_ndarray(self.assertEqual, Kcross, mm.ftype)
-
         K, Kcross, _, _, _, _ = self._prepare_tensors(
             muygps,
             train_count,
@@ -602,7 +566,8 @@ class GPDiagonalVariance(GPTestCase):
         _check_ndarray(self.assertEqual, diagonal_variance, mm.ftype)
 
         # validate
-        self.assertEqual(diagonal_variance.shape, (test_count,))
+        self.assertEqual(diagonal_variance.shape, (test_count, 1))
+        diagonal_variance = diagonal_variance.reshape((test_count,))
         for i in range(test_count):
             manual_diagonal_variance = mm.array(1.0) - Kcross[
                 i, :

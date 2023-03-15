@@ -9,6 +9,7 @@ from torch import (
     all,
     allclose,
     atleast_1d,
+    atleast_2d,
     cat,
     clone,
     cov,

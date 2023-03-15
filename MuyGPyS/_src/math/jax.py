@@ -11,6 +11,7 @@ from jax.numpy import (
     argmax,
     argmin,
     atleast_1d,
+    atleast_2d,
     clip,
     concatenate,
     copy,

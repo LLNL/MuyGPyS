@@ -166,17 +166,14 @@ class MultivariateMuyGPS:
         self,
         pairwise_dists: mm.ndarray,
         crosswise_dists: mm.ndarray,
-        variance_mode: str = "diagonal",
-        apply_sigma_sq: bool = True,
     ) -> mm.ndarray:
         """
         Performs simultaneous posterior variance inference on provided distance
         tensors.
 
-        If `variance_mode == "diagonal"`, also return the local posterior
-        variances of each prediction, corresponding to the diagonal elements of
-        a covariance matrix. For each batch element :math:`\\mathbf{x}_i`, we
-        compute
+        Return the local posterior variances of each prediction, corresponding
+        to the diagonal elements of a covariance matrix. For each batch element
+        :math:`\\mathbf{x}_i`, we compute
 
         .. math::
             Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}))_j =
@@ -194,13 +191,6 @@ class MultivariateMuyGPS:
                 A matrix of shape `(batch_count, nn_count)` whose rows list the
                 distance between each batch element element and its nearest
                 neighbors.
-            variance_mode:
-                Specifies the type of variance to return. Currently supports
-                `"diagonal"` and None. If None, report no variance term.
-            apply_sigma_sq:
-                Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or
-                `sigma_sq.leanred() is False`.
 
         Returns:
             A vector of shape `(batch_count, response_count)` consisting of the
@@ -208,29 +198,18 @@ class MultivariateMuyGPS:
         """
         batch_count, _ = crosswise_dists.shape
         response_count = len(self.models)
-        if variance_mode == "diagonal":
-            diagonal_variance = mm.zeros((batch_count, response_count))
-            for i, model in enumerate(self.models):
-                K = model.kernel(pairwise_dists)
-                Kcross = model.kernel(crosswise_dists)
-                ss = self.sigma_sq()[i] if apply_sigma_sq else 1.0
-                diagonal_variance = mm.assign(
-                    diagonal_variance,
-                    model.posterior_variance(
-                        K,
-                        Kcross,
-                        variance_mode=variance_mode,
-                        apply_sigma_sq=False,
-                    ).reshape(batch_count)
-                    * ss,
-                    slice(None),
-                    i,
-                )
-            return diagonal_variance
-        else:
-            raise NotImplementedError(
-                f"Variance mode {variance_mode} is not implemented."
+        diagonal_variance = mm.zeros((batch_count, response_count))
+        for i, model in enumerate(self.models):
+            K = model.kernel(pairwise_dists)
+            Kcross = model.kernel(crosswise_dists)
+            ss = self.sigma_sq()[i]
+            diagonal_variance = mm.assign(
+                diagonal_variance,
+                model.posterior_variance(K, Kcross).reshape(batch_count) * ss,
+                slice(None),
+                i,
             )
+        return diagonal_variance
 
     def build_fast_posterior_mean_coeffs(
         self,

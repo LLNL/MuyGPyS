@@ -124,8 +124,6 @@ class MuyGPs_layer(nn.Module):
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
         self.batch_nn_targets = batch_nn_targets
-        self.variance_mode = "diagonal"
-        self.apply_sigma_sq = True
 
     def forward(self, x):
         """
@@ -166,21 +164,10 @@ class MuyGPs_layer(nn.Module):
             _homoscedastic_perturb(K, self.eps), self.batch_nn_targets
         )
 
-        if self.variance_mode is None:
-            return predictions
-        elif self.variance_mode == "diagonal":
-            variances = _muygps_diagonal_variance(
-                _homoscedastic_perturb(K, self.eps), Kcross
-            )
-            if self.apply_sigma_sq is True:
-                if len(sigma_sq) == 1:
-                    variances *= sigma_sq
-                else:
-                    variances = torch.outer(variances, sigma_sq)
-        else:
-            raise NotImplementedError(
-                f"Variance mode {self.variance_mode} is not implemented."
-            )
+        variances = _muygps_diagonal_variance(
+            _homoscedastic_perturb(K, self.eps), Kcross
+        )
+        variances = torch.outer(variances, sigma_sq)
 
         return predictions, variances, sigma_sq
 
