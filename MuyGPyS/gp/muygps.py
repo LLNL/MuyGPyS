@@ -12,8 +12,6 @@ from typing import Callable, Dict, List, Tuple, Union
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.distance import _make_fast_predict_tensors
 from MuyGPyS._src.gp.muygps import (
-    _muygps_posterior_mean,
-    _muygps_diagonal_variance,
     _muygps_fast_posterior_mean,
     _muygps_fast_posterior_mean_precompute,
 )
@@ -22,10 +20,10 @@ from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
     SigmaSq,
-    sigma_sq_scale,
 )
 from MuyGPyS.gp.mean import PosteriorMean
-from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb
+from MuyGPyS.gp.variance import PosteriorVariance
+from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
 class MuyGPS:
@@ -91,11 +89,6 @@ class MuyGPS:
             A hyperparameter dict.
         response_count:
             The number of response dimensions.
-        variance_mode:
-            Specifies the type of variance to return. Currently supports
-            only `"diagonal"`.
-        apply_sigma_sq:
-            Indicates whether to scale the posterior variance by `sigma_sq`.
         kwargs:
             Addition parameters to be passed to the kernel, possibly including
             additional hyperparameter dicts and a metric keyword.
@@ -106,8 +99,6 @@ class MuyGPS:
         kern: str = "matern",
         eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
         response_count: int = 1,
-        variance_mode: str = "diagonal",
-        apply_sigma_sq: bool = True,
         **kwargs,
     ):
         self.kern = kern.lower()
@@ -117,17 +108,7 @@ class MuyGPS:
             1e-14, "fixed", HomoscedasticNoise, **eps
         )
         self._mean_fn = PosteriorMean(self.eps)
-        self.posterior_variance_fn = _muygps_diagonal_variance
-        if isinstance(self.eps, HomoscedasticNoise):
-            self.posterior_variance_fn = noise_perturb(_homoscedastic_perturb)(
-                self.posterior_variance_fn
-            )
-        else:
-            raise ValueError(f"Noise model {type(self.eps)} is not supported")
-        if apply_sigma_sq is True:
-            self.posterior_variance_fn = sigma_sq_scale(
-                self.posterior_variance_fn
-            )
+        self._var_fn = PosteriorVariance(self.eps, self.sigma_sq)
 
     def set_eps(self, **eps) -> None:
         """
@@ -320,9 +301,7 @@ class MuyGPS:
             A vector of shape `(batch_count, response_count)` consisting of the
             diagonal elements of the posterior variance.
         """
-        return self.posterior_variance_fn(
-            K, Kcross, eps=self.eps(), sigma_sq=self.sigma_sq()
-        )
+        return self._var_fn(K, Kcross)
 
     def fast_posterior_mean(
         self,
@@ -398,31 +377,7 @@ class MuyGPS:
             expects keyword arguments corresponding to current hyperparameter
             values for unfixed parameters.
         """
-        if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_opt_var_fn(
-                self.posterior_variance_fn, self.eps, self.sigma_sq
-            )
-        else:
-            raise TypeError(
-                f"Noise parameter type {type(self.eps)} is not supported for "
-                f"optimization!"
-            )
-
-    @staticmethod
-    def _get_opt_var_fn(
-        var_fn: Callable, eps: HomoscedasticNoise, sigma_sq: SigmaSq
-    ) -> Callable:
-        if not eps.fixed():
-
-            def caller_fn(K, Kcross, **kwargs):
-                return var_fn(K, Kcross, eps=kwargs["eps"], sigma_sq=sigma_sq())
-
-        else:
-
-            def caller_fn(K, Kcross, **kwargs):
-                return var_fn(K, Kcross, eps=eps(), sigma_sq=sigma_sq())
-
-        return caller_fn
+        return self._var_fn.get_opt_fn()
 
     def __eq__(self, rhs) -> bool:
         if isinstance(rhs, self.__class__):

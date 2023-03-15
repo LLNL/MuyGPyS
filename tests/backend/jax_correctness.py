@@ -900,7 +900,7 @@ class OptimTestCase(MuyGPSTestCase):
         )
 
     def _get_var_fn_n(self):
-        return self.muygps._get_opt_var_fn(
+        return self.muygps._var_fn._get_opt_fn(
             sigma_sq_scale(
                 noise_perturb(homoscedastic_perturb_n)(
                     muygps_diagonal_variance_n
@@ -922,7 +922,7 @@ class OptimTestCase(MuyGPSTestCase):
         )
 
     def _get_var_fn_j(self):
-        return self.muygps._get_opt_var_fn(
+        return self.muygps._var_fn._get_opt_fn(
             sigma_sq_scale(
                 noise_perturb(homoscedastic_perturb_j)(
                     muygps_diagonal_variance_j
