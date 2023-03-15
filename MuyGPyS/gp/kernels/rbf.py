@@ -44,7 +44,7 @@ from MuyGPyS.gp.kernels.hyperparameters import (
     _init_hyperparameter,
     Hyperparameter,
 )
-from MuyGPyS.gp.kernels.kernel_fn import KernelFn
+from MuyGPyS.gp.kernels import apply_hyperparameter, KernelFn
 
 
 class RBF(KernelFn):
@@ -83,6 +83,7 @@ class RBF(KernelFn):
         self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
         self.hyperparameters["length_scale"] = self.length_scale
         self.metric = metric
+        self._fn = _rbf_fn
 
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
         """
@@ -102,10 +103,6 @@ class RBF(KernelFn):
             dimensions are kernel matrices.
         """
         return self._fn(diffs, length_scale=self.length_scale())
-
-    @staticmethod
-    def _fn(dists: mm.ndarray, length_scale: float) -> mm.ndarray:
-        return _rbf_fn(dists, length_scale)
 
     def get_optim_params(
         self,
@@ -148,14 +145,5 @@ class RBF(KernelFn):
 
     @staticmethod
     def _get_opt_fn(rbf_fn: Callable, length_scale: Hyperparameter) -> Callable:
-        if not length_scale.fixed():
-
-            def caller_fn(dists, **kwargs):
-                return rbf_fn(dists, length_scale=kwargs["length_scale"])
-
-        else:
-
-            def caller_fn(dists, **kwargs):
-                return rbf_fn(dists, length_scale=length_scale())
-
-        return caller_fn
+        opt_fn = apply_hyperparameter(rbf_fn, length_scale, "length_scale")
+        return opt_fn

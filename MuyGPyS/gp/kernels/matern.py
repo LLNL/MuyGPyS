@@ -47,9 +47,29 @@ from MuyGPyS._src.gp.kernels import (
 )
 from MuyGPyS.gp.kernels.hyperparameters import (
     _init_hyperparameter,
+    apply_hyperparameter,
     Hyperparameter,
 )
 from MuyGPyS.gp.kernels.kernel_fn import KernelFn
+
+
+def _set_matern_fn(nu: Hyperparameter):
+    if nu.fixed() is True:
+        if nu == 0.5:
+            return _matern_05_fn
+        elif nu == 1.5:
+            return _matern_15_fn
+        elif nu == 2.5:
+            return _matern_25_fn
+        elif nu == mm.inf:
+            return _matern_inf_fn
+        else:
+
+            def fixed_matern_fn(*args, **kwargs):
+                kwargs.setdefault("nu", nu())
+                return _matern_gen_fn(*args, **kwargs)
+
+    return _matern_gen_fn
 
 
 class Matern(KernelFn):
@@ -106,6 +126,7 @@ class Matern(KernelFn):
         self.hyperparameters["nu"] = self.nu
         self.hyperparameters["length_scale"] = self.length_scale
         self.metric = metric
+        self._fn = _set_matern_fn(self.nu)
 
     def __call__(self, diffs):
         """
@@ -126,19 +147,6 @@ class Matern(KernelFn):
             dimensions are kernel matrices.
         """
         return self._fn(diffs, nu=self.nu(), length_scale=self.length_scale())
-
-    @staticmethod
-    def _fn(dists: mm.ndarray, nu: float, length_scale: float) -> mm.ndarray:
-        if nu == 0.5:
-            return _matern_05_fn(dists, length_scale)
-        elif nu == 1.5:
-            return _matern_15_fn(dists, length_scale)
-        elif nu == 2.5:
-            return _matern_25_fn(dists, length_scale)
-        elif nu == mm.inf:
-            return _matern_inf_fn(dists, length_scale)
-        else:
-            return _matern_gen_fn(dists, nu, length_scale)
 
     def get_optim_params(
         self,
@@ -181,95 +189,12 @@ class Matern(KernelFn):
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._get_opt_fn(
-            _matern_05_fn,
-            _matern_15_fn,
-            _matern_25_fn,
-            _matern_inf_fn,
-            _matern_gen_fn,
-            self.nu,
-            self.length_scale,
-        )
+        return self._get_opt_fn(self._fn, self.nu, self.length_scale)
 
     @staticmethod
     def _get_opt_fn(
-        m_05_fn: Callable,
-        m_15_fn: Callable,
-        m_25_fn: Callable,
-        m_inf_fn: Callable,
-        m_gen_fn: Callable,
-        nu: Hyperparameter,
-        length_scale: Hyperparameter,
+        matern_fn: Callable, nu: Hyperparameter, length_scale: Hyperparameter
     ) -> Callable:
-        nu_fixed = nu.fixed()
-        ls_fixed = length_scale.fixed()
-        if nu_fixed is False and ls_fixed is True:
-
-            def caller_fn(dists, **kwargs):
-                return m_gen_fn(
-                    dists, length_scale=length_scale(), nu=kwargs["nu"]
-                )
-
-        elif nu_fixed is False and ls_fixed is False:
-
-            def caller_fn(dists, **kwargs):
-                return m_gen_fn(
-                    dists, length_scale=kwargs["length_scale"], nu=kwargs["nu"]
-                )
-
-        elif nu_fixed is True and ls_fixed is False:
-            if nu() == 0.5:
-
-                def caller_fn(dists, **kwargs):
-                    return m_05_fn(dists, length_scale=kwargs["length_scale"])
-
-            elif nu() == 1.5:
-
-                def caller_fn(dists, **kwargs):
-                    return m_15_fn(dists, length_scale=kwargs["length_scale"])
-
-            elif nu() == 2.5:
-
-                def caller_fn(dists, **kwargs):
-                    return m_25_fn(dists, length_scale=kwargs["length_scale"])
-
-            elif nu() == mm.inf:
-
-                def caller_fn(dists, **kwargs):
-                    return m_inf_fn(dists, length_scale=kwargs["length_scale"])
-
-            else:
-
-                def caller_fn(dists, **kwargs):
-                    return m_gen_fn(
-                        dists, nu=nu(), length_scale=kwargs["length_scale"]
-                    )
-
-        else:
-
-            if nu() == 0.5:
-
-                def caller_fn(dists, **kwargs):
-                    return m_05_fn(dists, length_scale=length_scale())
-
-            elif nu() == 1.5:
-
-                def caller_fn(dists, **kwargs):
-                    return m_15_fn(dists, length_scale=length_scale())
-
-            elif nu() == 2.5:
-
-                def caller_fn(dists, **kwargs):
-                    return m_25_fn(dists, length_scale=length_scale())
-
-            elif nu() == mm.inf:
-
-                def caller_fn(dists, **kwargs):
-                    return m_inf_fn(dists, length_scale=length_scale())
-
-            else:
-
-                def caller_fn(dists, **kwargs):
-                    return m_gen_fn(dists, nu=nu(), length_scale=length_scale())
-
-        return caller_fn
+        opt_fn = apply_hyperparameter(matern_fn, length_scale, "length_scale")
+        opt_fn = apply_hyperparameter(opt_fn, nu, "nu")
+        return opt_fn
