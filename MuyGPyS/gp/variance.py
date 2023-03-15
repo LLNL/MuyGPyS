@@ -12,8 +12,9 @@ from typing import Callable
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
+from MuyGPyS.gp.kernels import apply_hyperparameter
 from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
-from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb, noise_apply
+from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb
 
 
 class PosteriorVariance:
@@ -48,13 +49,6 @@ class PosteriorVariance:
     def _get_opt_fn(
         var_fn: Callable, eps: HomoscedasticNoise, sigma_sq: SigmaSq
     ) -> Callable:
-        if isinstance(eps, HomoscedasticNoise):
-            opt_fn = noise_apply(var_fn, eps)
-        else:
-            raise TypeError(
-                f"Noise parameter type {type(eps)} is not supported for "
-                f"optimization!"
-            )
-
+        opt_fn = apply_hyperparameter(var_fn, eps, "eps")
         opt_fn = sigma_sq_apply(opt_fn, sigma_sq)
         return opt_fn

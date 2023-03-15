@@ -38,11 +38,5 @@ class PosteriorMean:
 
     @staticmethod
     def _get_opt_fn(mean_fn: Callable, eps: HomoscedasticNoise) -> Callable:
-        if isinstance(eps, HomoscedasticNoise):
-            opt_fn = apply_hyperparameter(mean_fn, eps, "eps")
-        else:
-            raise TypeError(
-                f"Noise parameter type {type(eps)} is not supported for "
-                f"optimization!"
-            )
+        opt_fn = apply_hyperparameter(mean_fn, eps, "eps")
         return opt_fn
