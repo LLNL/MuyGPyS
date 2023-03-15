@@ -23,7 +23,7 @@ def _make_fast_predict_tensors(
         dim=1,
     )
 
-    pairwise_dists_fast = _pairwise_distances(
+    pairwise_dists_fast = _pairwise_tensors(
         train_features, batch_nn_indices_fast, metric=metric
     )
     batch_nn_targets_fast = train_targets[batch_nn_indices_fast]
@@ -41,14 +41,14 @@ def _make_predict_tensors(
 ) -> Tuple[torch.ndarray, torch.ndarray, torch.ndarray]:
     if test_features is None:
         test_features = train_features
-    crosswise_dists = _crosswise_distances(
+    crosswise_dists = _crosswise_tensors(
         test_features,
         train_features,
         batch_indices,
         batch_nn_indices,
         metric=metric,
     )
-    pairwise_dists = _pairwise_distances(
+    pairwise_dists = _pairwise_tensors(
         train_features, batch_nn_indices, metric=metric
     )
     batch_nn_targets = train_targets[batch_nn_indices, :]
@@ -74,7 +74,7 @@ def _make_train_tensors(
     return crosswise_dists, pairwise_dists, batch_targets, batch_nn_targets
 
 
-def _crosswise_distances(
+def _crosswise_tensors(
     data: torch.ndarray,
     nn_data: torch.ndarray,
     data_indices: torch.ndarray,
@@ -97,7 +97,7 @@ def _crosswise_distances(
         raise ValueError(f"Metric {metric} is not supported!")
 
 
-def _pairwise_distances(
+def _pairwise_tensors(
     data: torch.ndarray,
     nn_indices: torch.ndarray,
     metric: str = "l2",

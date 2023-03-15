@@ -23,12 +23,12 @@ def _make_fast_predict_tensors(
         axis=1,
     )
 
-    pairwise_dists_fast = _pairwise_distances(
+    pairwise_diffs_fast = _pairwise_tensors(
         train_features, batch_nn_indices_fast, metric=metric
     )
     batch_nn_targets_fast = train_targets[batch_nn_indices_fast]
 
-    return pairwise_dists_fast, batch_nn_targets_fast
+    return pairwise_diffs_fast, batch_nn_targets_fast
 
 
 def _make_predict_tensors(
@@ -41,18 +41,18 @@ def _make_predict_tensors(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     if test_features is None:
         test_features = train_features
-    crosswise_dists = _crosswise_distances(
+    crosswise_diffs = _crosswise_tensors(
         test_features,
         train_features,
         batch_indices,
         batch_nn_indices,
         metric=metric,
     )
-    pairwise_dists = _pairwise_distances(
+    pairwise_diffs = _pairwise_tensors(
         train_features, batch_nn_indices, metric=metric
     )
     batch_nn_targets = train_targets[batch_nn_indices, :]
-    return crosswise_dists, pairwise_dists, batch_nn_targets
+    return crosswise_diffs, pairwise_diffs, batch_nn_targets
 
 
 def _make_train_tensors(
@@ -62,7 +62,7 @@ def _make_train_tensors(
     train_features: np.ndarray,
     train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    crosswise_dists, pairwise_dists, batch_nn_targets = _make_predict_tensors(
+    crosswise_diffs, pairwise_diffs, batch_nn_targets = _make_predict_tensors(
         metric,
         batch_indices,
         batch_nn_indices,
@@ -71,10 +71,10 @@ def _make_train_tensors(
         train_targets,
     )
     batch_targets = train_targets[batch_indices, :]
-    return crosswise_dists, pairwise_dists, batch_targets, batch_nn_targets
+    return crosswise_diffs, pairwise_diffs, batch_targets, batch_nn_targets
 
 
-def _crosswise_distances(
+def _crosswise_tensors(
     data: np.ndarray,
     nn_data: np.ndarray,
     data_indices: np.ndarray,
@@ -97,7 +97,7 @@ def _crosswise_distances(
         raise ValueError(f"Metric {metric} is not supported!")
 
 
-def _pairwise_distances(
+def _pairwise_tensors(
     data: np.ndarray,
     nn_indices: np.ndarray,
     metric: str = "l2",

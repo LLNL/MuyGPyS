@@ -10,8 +10,8 @@ MuyGPs PyTorch implementation
 import torch
 from torch import nn
 from MuyGPyS._src.gp.tensors.torch import (
-    _pairwise_distances,
-    _crosswise_distances,
+    _pairwise_tensors,
+    _crosswise_tensors,
 )
 
 from MuyGPyS._src.gp.muygps.torch import (
@@ -134,7 +134,7 @@ class MuyGPs_layer(nn.Module):
             predicted response for each of the batch elements.
         """
 
-        crosswise_dists = _crosswise_distances(
+        crosswise_diffs = _crosswise_tensors(
             x,
             x,
             self.batch_indices,
@@ -142,17 +142,17 @@ class MuyGPs_layer(nn.Module):
             metric="l2",
         )
 
-        pairwise_dists = _pairwise_distances(
+        pairwise_diffs = _pairwise_tensors(
             x, self.batch_nn_indices, metric="l2"
         )
 
         Kcross = kernel_func(
-            crosswise_dists,
+            crosswise_diffs,
             nu=self.nu,
             length_scale=self.length_scale,
         )
         K = kernel_func(
-            pairwise_dists,
+            pairwise_diffs,
             nu=self.nu,
             length_scale=self.length_scale,
         )
@@ -284,7 +284,7 @@ class MultivariateMuyGPs_layer(nn.Module):
             A torch.Tensor of shape `(batch_count, response_count)` listing the
             predicted response for each of the batch elements.
         """
-        crosswise_dists = _crosswise_distances(
+        crosswise_diffs = _crosswise_tensors(
             x,
             x,
             self.batch_indices,
@@ -292,7 +292,7 @@ class MultivariateMuyGPs_layer(nn.Module):
             metric="l2",
         )
 
-        pairwise_dists = _pairwise_distances(
+        pairwise_diffs = _pairwise_tensors(
             x, self.batch_nn_indices, metric="l2"
         )
 
@@ -303,13 +303,13 @@ class MultivariateMuyGPs_layer(nn.Module):
 
         for i in range(self.num_models):
             Kcross[:, :, i] = kernel_func(
-                crosswise_dists,
+                crosswise_diffs,
                 nu=self.nu[i],
                 length_scale=self.length_scale[i],
             )
 
             K[:, :, :, i] = kernel_func(
-                pairwise_dists,
+                pairwise_diffs,
                 nu=self.nu[i],
                 length_scale=self.length_scale[i],
             )

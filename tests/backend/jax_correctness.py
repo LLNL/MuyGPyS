@@ -33,15 +33,15 @@ from MuyGPyS._test.utils import (
     _make_gaussian_data,
 )
 from MuyGPyS._src.gp.tensors.numpy import (
-    _pairwise_distances as pairwise_distances_n,
-    _crosswise_distances as crosswise_distances_n,
+    _pairwise_tensors as pairwise_tensors_n,
+    _crosswise_tensors as crosswise_tensors_n,
     _make_train_tensors as make_train_tensors_n,
     _make_fast_predict_tensors as make_fast_predict_tensors_n,
     _fast_nn_update as fast_nn_update_n,
 )
 from MuyGPyS._src.gp.tensors.jax import (
-    _pairwise_distances as pairwise_distances_j,
-    _crosswise_distances as crosswise_distances_j,
+    _pairwise_tensors as pairwise_tensors_j,
+    _crosswise_tensors as crosswise_tensors_j,
     _make_train_tensors as make_train_tensors_j,
     _make_fast_predict_tensors as make_fast_predict_tensors_j,
     _fast_nn_update as fast_nn_update_j,
@@ -205,28 +205,28 @@ class DistanceTest(DistanceTestCase):
             self.train_responses_j, jnp.ftype, ctype=jnp.ndarray
         )
 
-    def test_pairwise_distances(self):
+    def test_pairwise_tensors(self):
         self.assertTrue(
             allclose_gen(
-                pairwise_distances_n(
+                pairwise_tensors_n(
                     self.train_features_n, self.batch_nn_indices_n
                 ),
-                pairwise_distances_j(
+                pairwise_tensors_j(
                     self.train_features_j, self.batch_nn_indices_j
                 ),
             )
         )
 
-    def test_crosswise_distances(self):
+    def test_crosswise_tensors(self):
         self.assertTrue(
             allclose_gen(
-                crosswise_distances_n(
+                crosswise_tensors_n(
                     self.train_features_n,
                     self.train_features_n,
                     self.batch_indices_n,
                     self.batch_nn_indices_n,
                 ),
-                crosswise_distances_j(
+                crosswise_tensors_j(
                     self.train_features_j,
                     self.train_features_j,
                     self.batch_indices_j,
@@ -592,7 +592,7 @@ class FastPredictTest(MuyGPSTestCase):
         cls.closest_set_new_n = cls.new_nn_indices_n[
             cls.closest_neighbor_n
         ].astype(int)
-        cls.crosswise_dists_fast_n = crosswise_distances_n(
+        cls.crosswise_dists_fast_n = crosswise_tensors_n(
             cls.test_features_n,
             cls.train_features_n,
             np.arange(0, cls.test_count),
@@ -635,7 +635,7 @@ class FastPredictTest(MuyGPSTestCase):
 
         cls.new_nn_indices_j = fast_nn_update_j(cls.nn_indices_all_j)
         cls.closest_set_new_j = cls.new_nn_indices_j[cls.closest_neighbor_j]
-        cls.crosswise_dists_fast_j = crosswise_distances_j(
+        cls.crosswise_dists_fast_j = crosswise_tensors_j(
             cls.test_features_j,
             cls.train_features_j,
             np.arange(0, cls.test_count),
@@ -771,7 +771,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.closest_set_new_n = cls.new_nn_indices_n[
             cls.closest_neighbor_n
         ].astype(int)
-        cls.crosswise_dists_fast_n = crosswise_distances_n(
+        cls.crosswise_dists_fast_n = crosswise_tensors_n(
             cls.test_features_n,
             cls.train_features_n,
             np.arange(0, cls.test_count),
@@ -814,7 +814,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
 
         cls.new_nn_indices_j = fast_nn_update_j(cls.nn_indices_all_j)
         cls.closest_set_new_j = cls.new_nn_indices_j[cls.closest_neighbor_j]
-        cls.crosswise_dists_fast_j = crosswise_distances_j(
+        cls.crosswise_dists_fast_j = crosswise_tensors_j(
             cls.test_features_j,
             cls.train_features_j,
             np.arange(0, cls.test_count),

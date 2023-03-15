@@ -34,8 +34,8 @@ if config.state.backend != "torch":
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS._src.gp.tensors.torch import (
-    _pairwise_distances,
-    _crosswise_distances,
+    _pairwise_tensors,
+    _crosswise_tensors,
 )
 from MuyGPyS._src.gp.muygps.torch import (
     _muygps_posterior_mean,
@@ -115,7 +115,7 @@ def predict_single_model(
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
-    crosswise_dists = _crosswise_distances(
+    crosswise_diffs = _crosswise_tensors(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
@@ -123,17 +123,17 @@ def predict_single_model(
         metric="l2",
     )
 
-    pairwise_dists = _pairwise_distances(
+    pairwise_diffs = _pairwise_tensors(
         train_features_embedded, nn_indices_test, metric="l2"
     )
 
     Kcross = kernel_func(
-        crosswise_dists,
+        crosswise_diffs,
         nu=model.nu,
         length_scale=model.length_scale,
     )
     K = kernel_func(
-        pairwise_dists,
+        pairwise_diffs,
         nu=model.nu,
         length_scale=model.length_scale,
     )
@@ -221,7 +221,7 @@ def predict_multiple_model(
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
-    crosswise_dists = _crosswise_distances(
+    crosswise_diffs = _crosswise_tensors(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
@@ -229,7 +229,7 @@ def predict_multiple_model(
         metric="l2",
     )
 
-    pairwise_dists = _pairwise_distances(
+    pairwise_diffs = _pairwise_tensors(
         train_features_embedded, nn_indices_test, metric="l2"
     )
 
@@ -244,13 +244,13 @@ def predict_multiple_model(
 
     for i in range(num_responses):
         Kcross[:, :, i] = kernel_func(
-            crosswise_dists,
+            crosswise_diffs,
             nu=model.nu[i],
             length_scale=model.length_scale[i],
         )
 
         K[:, :, :, i] = kernel_func(
-            pairwise_dists,
+            pairwise_diffs,
             nu=model.nu[i],
             length_scale=model.length_scale[i],
         )

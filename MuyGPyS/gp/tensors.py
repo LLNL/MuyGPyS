@@ -15,7 +15,7 @@ a batch of training data and their nearest neighbors.
 Example:
     >>> from MuyGPyS.neighbors import NN_Wrapper
     >>> from MuyGPyS.optimize.batch import sample_batch
-    >>> from MuyGPyS.gp.tensors import crosswise_distances, pairwise_distances
+    >>> from MuyGPyS.gp.tensors import crosswise_tensors, pairwise_tensors
     >>> train_features = load_train_features()
     >>> nn_count = 10
     >>> nbrs_lookup = NN_Wrapper(
@@ -26,10 +26,10 @@ Example:
     >>> batch_indices, batch_nn_indices = sample_batch(
     ...         nbrs_lookup, batch_count, train_count
     ... )
-    >>> pairwise_dists = pairwise_distances(
+    >>> pairwise_diffs = pairwise_tensors(
     ...         train_features, batch_nn_inidices, metric="l2"
     ... )
-    >>> crosswise_dists = crosswise_distances(
+    >>> crosswise_diffs = crosswise_tensors(
     ...         train_features,
     ...         train_features,
     ...         batch_indices,
@@ -43,21 +43,21 @@ test dataset and their nearest neighors in the training data.
 
 Example:
     >>> from MuyGPyS.neighbors import NN_Wrapper
-    >>> from MuyGPyS.gp.tensors import crosswise_distances, pairwise_distances
+    >>> from MuyGPyS.gp.tensors import crosswise_tensors, pairwise_tensors
     >>> train_features = load_train_features()
     >>> test_features = load_test_features()
     >>> nn_count = 10
     >>> nbrs_lookup = NN_Wrapper(
     ...         train_features, nn_count, nn_method="exact", algorithm="ball_tree"
     ... )
-    >>> nn_indices, nn_dists = nbrs_lookup.get_nns(test_features)
+    >>> nn_indices, nn_diffs = nbrs_lookup.get_nns(test_features)
     >>> test_count, _ = test_features.shape
     >>> indices = np.arange(test_count)
     >>> nn_indices, _ = nbrs_lookup.get_nns(test_features)
-    >>> pairwise_dists = pairwise_distances(
+    >>> pairwise_diffs = pairwise_tensors(
     ...         train_features, nn_inidices, metric="l2"
     ... )
-    >>> crosswise_dists = crosswise_distances(
+    >>> crosswise_diffs = crosswise_tensors(
     ...         test_features,
     ...         train_features,
     ...         indices,
@@ -81,8 +81,8 @@ from MuyGPyS._src.gp.tensors import (
     _make_fast_predict_tensors,
     _make_predict_tensors,
     _make_train_tensors,
-    _crosswise_distances,
-    _pairwise_distances,
+    _crosswise_tensors,
+    _pairwise_tensors,
     _fast_nn_update,
 )
 
@@ -102,7 +102,7 @@ def make_fast_predict_tensors(
     """
     Create the distance and target tensors for fast posterior mean inference.
 
-    Creates `pairwise_dists` and `batch_nn_targets` tensors required by
+    Creates `pairwise_diffs` and `batch_nn_targets` tensors required by
     :func:`~MuyGPyS.gp.muygps.MuyGPS.fast_posterior_mean`.
 
     Args:
@@ -123,7 +123,7 @@ def make_fast_predict_tensors(
 
     Returns
     -------
-    pairwise_dists:
+    pairwise_diffs:
         A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
@@ -151,7 +151,7 @@ def make_predict_tensors(
     """
     Create the distance and target tensors for prediction.
 
-    Creates the `crosswise_dists`, `pairwise_dists` and `batch_nn_targets`
+    Creates the `crosswise_diffs`, `pairwise_diffs` and `batch_nn_targets`
     tensors required by :func:`~MuyGPyS.gp.MuyGPS.posterior_mean` and
     :func:`~MuyGPyS.gp.MuyGPS.posterior_variance`.
 
@@ -176,10 +176,10 @@ def make_predict_tensors(
 
     Returns
     -------
-    crosswise_dists:
+    crosswise_diffs:
         A matrix of shape `(batch_count, nn_count)` whose rows list the distance
         of the corresponding batch element to each of its nearest neighbors.
-    pairwise_dists:
+    pairwise_diffs:
         A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
@@ -230,10 +230,10 @@ def make_train_tensors(
 
     Returns
     -------
-    crosswise_dists:
+    crosswise_diffs:
         A matrix of shape `(batch_count, nn_count)` whose rows list the distance
         of the corresponding batch element to each of its nearest neighbors.
-    pairwise_dists:
+    pairwise_diffs:
         A tensor of shape `(batch_count, nn_count, nn_count)` whose latter two
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
@@ -250,7 +250,7 @@ def make_train_tensors(
     )
 
 
-def crosswise_distances(
+def crosswise_tensors(
     data: mm.ndarray,
     nn_data: mm.ndarray,
     data_indices: mm.ndarray,
@@ -292,12 +292,12 @@ def crosswise_distances(
         A matrix of shape `(batch_count, nn_count)` whose rows list the distance
         of the corresponding batch element to each of its nearest neighbors.
     """
-    return _crosswise_distances(
+    return _crosswise_tensors(
         data, nn_data, data_indices, nn_indices, metric=metric
     )
 
 
-def pairwise_distances(
+def pairwise_tensors(
     data: mm.ndarray,
     nn_indices: mm.ndarray,
     metric: str = "l2",
@@ -326,4 +326,4 @@ def pairwise_distances(
         dimensions contain square matrices containing the pairwise distances
         between the nearest neighbors of the batch elements.
     """
-    return _pairwise_distances(data, nn_indices, metric=metric)
+    return _pairwise_tensors(data, nn_indices, metric=metric)
