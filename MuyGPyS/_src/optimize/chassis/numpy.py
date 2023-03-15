@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from copy import copy
+from copy import deepcopy
 from typing import Callable, Type
 
 from bayes_opt import BayesianOptimization
@@ -13,7 +13,8 @@ from MuyGPyS.gp import MuyGPS
 
 
 def _new_muygps(muygps: MuyGPS, x0_names, bounds, opt_dict) -> MuyGPS:
-    ret = copy(muygps)
+    # This will need to be revisited once we start using heteroscedastic noise
+    ret = deepcopy(muygps)
     for i, key in enumerate(x0_names):
         lb, ub = bounds[i]
         val = opt_dict[key]
