@@ -12,8 +12,8 @@ from typing import Callable
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS.gp.kernels import SigmaSq, sigma_sq_scale
-from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb
+from MuyGPyS.gp.kernels import SigmaSq, sigma_sq_scale, sigma_sq_apply
+from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb, noise_apply
 
 
 class PosteriorVariance:
@@ -32,7 +32,7 @@ class PosteriorVariance:
         else:
             raise ValueError(f"Noise model {type(self.eps)} is not supported")
         if apply_sigma_sq is True:
-            self.posterior_variance_fn = sigma_sq_scale(self._fn)
+            self._fn = sigma_sq_scale(self._fn)
 
     def __call__(
         self,
@@ -42,28 +42,19 @@ class PosteriorVariance:
         return self._fn(K, Kcross, eps=self.eps(), sigma_sq=self.sigma_sq())
 
     def get_opt_fn(self) -> Callable:
-        if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_opt_fn(
-                self.posterior_variance_fn, self.eps, self.sigma_sq
-            )
-        else:
-            raise TypeError(
-                f"Noise parameter type {type(self.eps)} is not supported for "
-                f"optimization!"
-            )
+        return self._get_opt_fn(self._fn, self.eps, self.sigma_sq)
 
     @staticmethod
     def _get_opt_fn(
         var_fn: Callable, eps: HomoscedasticNoise, sigma_sq: SigmaSq
     ) -> Callable:
-        if not eps.fixed():
-
-            def caller_fn(K, Kcross, **kwargs):
-                return var_fn(K, Kcross, eps=kwargs["eps"], sigma_sq=sigma_sq())
-
+        if isinstance(eps, HomoscedasticNoise):
+            opt_fn = noise_apply(var_fn, eps)
         else:
+            raise TypeError(
+                f"Noise parameter type {type(eps)} is not supported for "
+                f"optimization!"
+            )
 
-            def caller_fn(K, Kcross, **kwargs):
-                return var_fn(K, Kcross, eps=eps(), sigma_sq=sigma_sq())
-
-        return caller_fn
+        opt_fn = sigma_sq_apply(opt_fn, sigma_sq)
+        return opt_fn

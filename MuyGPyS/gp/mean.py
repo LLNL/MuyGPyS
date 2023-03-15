@@ -12,7 +12,7 @@ from typing import Callable
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb
+from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb, noise_apply
 
 
 class PosteriorMean:
@@ -33,24 +33,15 @@ class PosteriorMean:
         return self._fn(K, Kcross, batch_nn_targets, eps=self.eps())
 
     def get_opt_fn(self) -> Callable:
-        if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_opt_fn(self._fn, self.eps)
-        else:
-            raise TypeError(
-                f"Noise parameter type {type(self.eps)} is not supported for "
-                f"optimization!"
-            )
+        return self._get_opt_fn(self._fn, self.eps)
 
     @staticmethod
     def _get_opt_fn(mean_fn: Callable, eps: HomoscedasticNoise) -> Callable:
-        if not eps.fixed():
-
-            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
-                return mean_fn(K, Kcross, batch_nn_targets, eps=kwargs["eps"])
-
+        if isinstance(eps, HomoscedasticNoise):
+            opt_fn = noise_apply(mean_fn, eps)
         else:
-
-            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
-                return mean_fn(K, Kcross, batch_nn_targets, eps=eps())
-
-        return caller_fn
+            raise TypeError(
+                f"Noise parameter type {type(eps)} is not supported for "
+                f"optimization!"
+            )
+        return opt_fn
