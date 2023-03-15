@@ -16,12 +16,9 @@ from MuyGPyS._src.gp.muygps import (
     _muygps_fast_posterior_mean_precompute,
 )
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS.gp.kernels import (
-    _get_kernel,
-    _init_hyperparameter,
-    SigmaSq,
-)
+from MuyGPyS.gp.kernels import _get_kernel, _init_hyperparameter
 from MuyGPyS.gp.mean import PosteriorMean
+from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
 from MuyGPyS.gp.noise import HomoscedasticNoise
 

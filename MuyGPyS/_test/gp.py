@@ -3,17 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Tuple, Union
 
 from sklearn.metrics import pairwise_distances as skl_pairwise_distances
 
 import MuyGPyS._src.math.numpy as np
-from MuyGPyS.gp.kernels import (
-    _get_kernel,
-    _init_hyperparameter,
-    Hyperparameter,
-    SigmaSq,
-)
+from MuyGPyS.gp.kernels import _get_kernel, _init_hyperparameter, Hyperparameter
+from MuyGPyS.gp.sigma_sq import SigmaSq
 
 
 def benchmark_select_skl_metric(metric: str) -> str:

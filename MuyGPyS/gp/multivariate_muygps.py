@@ -14,7 +14,7 @@ from MuyGPyS._src.gp.muygps import (
     _mmuygps_fast_posterior_mean,
 )
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS.gp.kernels import SigmaSq
+from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.muygps import MuyGPS
 
 
@@ -198,7 +198,7 @@ class MultivariateMuyGPS:
             A vector of shape `(batch_count, response_count)` consisting of the
             diagonal elements of the posterior variance for each model.
         """
-        batch_count, _, _ = crosswise_diffs.shape
+        batch_count, _ = crosswise_diffs.shape
         response_count = len(self.models)
         diagonal_variance = mm.zeros((batch_count, response_count))
         for i, model in enumerate(self.models):

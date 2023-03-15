@@ -7,7 +7,6 @@ from .hyperparameters import _init_hyperparameter, Hyperparameter
 from .kernel_fn import KernelFn
 from .matern import Matern
 from .rbf import RBF
-from .sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
 
 
 def _get_kernel(kern: str, **kwargs) -> KernelFn:

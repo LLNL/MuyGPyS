@@ -290,7 +290,6 @@ class OptimTest(parameterized.TestCase):
 
             mmuygps = MMuyGPS(kern, *args)
 
-            print(sim_train["output"])
             batch_targets = sim_train["output"][batch_indices, :]
             batch_nn_targets = sim_train["output"][
                 np.iarray(batch_nn_indices), :
@@ -453,7 +452,7 @@ class RegressTest(parameterized.TestCase):
 
         self.assertFalse(mmuygps.sigma_sq.trained)
 
-        predictions, diagonal_variance = regress_any(
+        predictions, diagonal_variance, _ = regress_any(
             mmuygps,
             test["input"],
             train["input"],

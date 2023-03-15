@@ -12,7 +12,7 @@ from typing import Callable
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS.gp.kernels import SigmaSq, sigma_sq_scale, sigma_sq_apply
+from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
 from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb, noise_apply
 
 
