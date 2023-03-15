@@ -3,7 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .hyperparameters import _init_hyperparameter, Hyperparameter
+from .hyperparameters import (
+    _init_hyperparameter,
+    apply_hyperparameter,
+    Hyperparameter,
+)
 from .kernel_fn import KernelFn
 from .matern import Matern
 from .rbf import RBF

@@ -4,4 +4,4 @@
 # SPDX-License-Identifier: MIT
 
 from .homoscedastic import HomoscedasticNoise
-from .perturbation import noise_perturb, noise_apply
+from .perturbation import noise_perturb

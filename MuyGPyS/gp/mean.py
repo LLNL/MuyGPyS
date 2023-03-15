@@ -12,7 +12,8 @@ from typing import Callable
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb, noise_apply
+from MuyGPyS.gp.kernels import apply_hyperparameter
+from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb
 
 
 class PosteriorMean:
@@ -38,7 +39,7 @@ class PosteriorMean:
     @staticmethod
     def _get_opt_fn(mean_fn: Callable, eps: HomoscedasticNoise) -> Callable:
         if isinstance(eps, HomoscedasticNoise):
-            opt_fn = noise_apply(mean_fn, eps)
+            opt_fn = apply_hyperparameter(mean_fn, eps, "eps")
         else:
             raise TypeError(
                 f"Noise parameter type {type(eps)} is not supported for "

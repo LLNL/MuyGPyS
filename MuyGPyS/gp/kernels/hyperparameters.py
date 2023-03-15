@@ -16,7 +16,7 @@ between the upper and lower bounds if specified).
 
 from collections.abc import Sequence
 from numbers import Number
-from typing import cast, Optional, Tuple, Type, Union
+from typing import Callable, cast, Optional, Tuple, Type, Union
 
 from MuyGPyS import config
 
@@ -317,3 +317,15 @@ def _init_hyperparameter(
     val = kwargs.get("val", val_def)
     bounds = kwargs.get("bounds", bounds_def)
     return type(val, bounds)
+
+
+def apply_hyperparameter(fn: Callable, param: Hyperparameter, name: str):
+    if param.fixed():
+
+        def applied_fn(*args, **kwargs):
+            kwargs.setdefault(name, param())
+            return fn(*args, **kwargs)
+
+        return applied_fn
+
+    return fn

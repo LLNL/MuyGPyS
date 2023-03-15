@@ -8,7 +8,6 @@ Noise perturbation function wrapper
 """
 
 from typing import Callable
-from MuyGPyS.gp.noise.homoscedastic import HomoscedasticNoise
 
 
 def noise_perturb(perturb_fn: Callable):
@@ -19,17 +18,3 @@ def noise_perturb(perturb_fn: Callable):
         return fn_wrapper
 
     return perturbed_version
-
-
-def noise_apply(fn: Callable, eps: HomoscedasticNoise):
-    if not eps.fixed():
-
-        def caller_fn(*args, **kwargs):
-            return fn(*args, eps=kwargs["eps"], **kwargs)
-
-    else:
-
-        def caller_fn(*args, **kwargs):
-            return fn(*args, eps=eps(), **kwargs)
-
-    return caller_fn
