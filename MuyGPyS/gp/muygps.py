@@ -65,19 +65,19 @@ class MuyGPS:
 
     MuyGPyS depends upon linear operations on specially-constructed tensors in
     order to efficiently estimate GP realizations. One can use (see their
-    documentation for details) :func:`MuyGPyS.gp.distance.pairwise_distances` to
-    construct pairwise distance tensors and
-    :func:`MuyGPyS.gp.distance.crosswise_distances` to produce crosswise distance
-    matrices that `MuyGPS` can then use to construct kernel tensors and
+    documentation for details) :func:`MuyGPyS.gp.tensors.pairwise_tensor` to
+    construct pairwise difference tensors and
+    :func:`MuyGPyS.gp.tensors.crosswise_tensor` to produce crosswise diff
+    tensors that `MuyGPS` can then use to construct kernel tensors and
     cross-covariance matrices, respectively.
 
     We can easily realize kernel tensors using a `MuyGPS` object's `kernel`
-    functor once we have computed a `pairwise_dists` tensor and a
-    `crosswise_dists` matrix.
+    functor once we have computed a `pairwise_diffs` tensor and a
+    `crosswise_diffs` matrix.
 
     Example:
-        >>> K = muygps.kernel(pairwise_dists)
-        >>> Kcross = muygps.kernel(crosswise_dists)
+        >>> K = muygps.kernel(pairwise_diffs)
+        >>> Kcross = muygps.kernel(crosswise_diffs)
 
 
     Args:
@@ -203,12 +203,12 @@ class MuyGPS:
 
         """
         (
-            pairwise_dists_fast,
+            pairwise_diffs_fast,
             train_nn_targets_fast,
         ) = _make_fast_predict_tensors(
             self.kernel.metric, nn_indices, train, targets
         )
-        K = self.kernel(pairwise_dists_fast)
+        K = self.kernel(pairwise_diffs_fast)
 
         return _muygps_fast_posterior_mean_precompute(
             _homoscedastic_perturb(K, self.eps()), train_nn_targets_fast

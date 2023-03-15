@@ -78,8 +78,7 @@ def make_regressor(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> # Can alternately return distance tensors for reuse
-        >>> muygps, nbrs_lookup, crosswise_dists, pairwise_dists = make_regressor(
+        >>> muygps, nbrs_lookup = make_regressor(
         ...         train_features,
         ...         train_responses,
         ...         nn_count=30,
@@ -173,8 +172,8 @@ def make_regressor(
         time_batch = perf_counter()
 
         (
-            crosswise_dists,
-            pairwise_dists,
+            crosswise_diffs,
+            pairwise_diffs,
             batch_targets,
             batch_nn_targets,
         ) = make_train_tensors(
@@ -193,8 +192,8 @@ def make_regressor(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
-                crosswise_dists,
-                pairwise_dists,
+                crosswise_diffs,
+                pairwise_diffs,
                 loss_method=loss_method,
                 obj_method=obj_method,
                 opt_method=opt_method,
@@ -207,7 +206,7 @@ def make_regressor(
         if sigma_method is not None:
             muygps = muygps_sigma_sq_optim(
                 muygps,
-                pairwise_dists,
+                pairwise_diffs,
                 batch_nn_targets,
                 sigma_method=sigma_method,
             )
@@ -277,7 +276,6 @@ def make_multivariate_regressor(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> # Can alternately return distance tensors for reuse
         >>> mmuygps, nbrs_lookup = make_multivariate_regressor(
         ...         train_features,
         ...         train_responses,
@@ -381,8 +379,8 @@ def make_multivariate_regressor(
         time_batch = perf_counter()
 
         (
-            crosswise_dists,
-            pairwise_dists,
+            crosswise_diffs,
+            pairwise_diffs,
             batch_targets,
             batch_nn_targets,
         ) = make_train_tensors(
@@ -404,8 +402,8 @@ def make_multivariate_regressor(
                         batch_nn_targets[:, :, i].reshape(
                             batch_nn_targets.shape[0], nn_count, 1
                         ),
-                        crosswise_dists,
-                        pairwise_dists,
+                        crosswise_diffs,
+                        pairwise_diffs,
                         loss_method=loss_method,
                         obj_method=obj_method,
                         opt_method=opt_method,
@@ -418,7 +416,7 @@ def make_multivariate_regressor(
         if sigma_method is not None:
             mmuygps = mmuygps_sigma_sq_optim(
                 mmuygps,
-                pairwise_dists,
+                pairwise_diffs,
                 batch_nn_targets,
                 sigma_method=sigma_method,
             )
@@ -579,8 +577,7 @@ def do_regress(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> # Can alternately return distance tensors for reuse
-        >>> muygps, nbrs_lookup, predictions, variance, crosswise_dists, pairwise_dists = do_regress(
+        >>> muygps, nbrs_lookup, predictions, variance = do_regress(
         ...         test['input'],
         ...         train['input'],
         ...         train['output'],

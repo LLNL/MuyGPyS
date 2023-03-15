@@ -8,8 +8,8 @@ Hyperparameters and kernel functors
 
 Defines kernel functors (inheriting
 :class:`~MuyGPyS.gp.kernels.kernel_fn.KernelFn`) that transform crosswise
-distance matrices into cross-covariance matrices and pairwise distance matrices
-into covariance or kernel matrices.
+difference tensors into cross-covariance matrices and pairwise difference
+matrices into covariance or kernel tensors.
 
 See the following example to initialize an :class:`MuyGPyS.gp.kernels.Matern`
 object. Other kernel functors are similar, but require different
@@ -23,17 +23,18 @@ Example:
     ...         metric = "l2",
     ... }
 
-One uses a previously computed `pairwise_dists` tensor (see
-:func:`MuyGPyS.gp.distance.pairwise_distance`) to compute a kernel tensor whose
+One uses a previously computed `pairwise_diffs` tensor (see
+:func:`MuyGPyS.gp.tensor.pairwise_tensor`) to compute a kernel tensor whose
 second two dimensions contain square kernel matrices. Similarly, one uses a
-previously computed `crosswise_dists` matrix (see
-:func:`MuyGPyS.gp.distance.crosswise_distance`) to compute a cross-covariance
+previously computed `crosswise_diffs` matrix (see
+:func:`MuyGPyS.gp.tensor.crosswise_diffs`) to compute a cross-covariance
 matrix. See the following example, which assumes that you have already
-constructed the distance `numpy.nparrays` and the kernel `kern` as shown above.
+constructed the difference `numpy.nparrays` and the kernel `kern` as shown
+above.
 
 Example:
-    >>> K = kern(pairwise_dists)
-    >>> Kcross = kern(crosswise_dists)
+    >>> K = kern(pairwise_diffs)
+    >>> Kcross = kern(crosswise_diffs)
 """
 
 from typing import Callable, List, Tuple
@@ -71,7 +72,7 @@ class KernelFn:
         for name in kwargs:
             self.hyperparameters[name]._set(**kwargs[name])
 
-    def __call__(self, dists: mm.ndarray) -> mm.ndarray:
+    def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
         raise NotImplementedError(
             f"__call__ is not implemented for base KernelFn"
         )

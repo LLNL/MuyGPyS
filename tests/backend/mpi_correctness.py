@@ -103,10 +103,10 @@ rank = world.Get_rank()
 size = world.Get_size()
 
 
-class DistanceTestCase(parameterized.TestCase):
+class TensorsTestCase(parameterized.TestCase):
     @classmethod
     def setUpClass(cls):
-        super(DistanceTestCase, cls).setUpClass()
+        super(TensorsTestCase, cls).setUpClass()
         cls.train_count = 1000
         cls.test_count = 100
         cls.feature_count = 10
@@ -151,8 +151,8 @@ class DistanceTestCase(parameterized.TestCase):
             )
 
             (
-                cls.batch_crosswise_dists,
-                cls.batch_pairwise_dists,
+                cls.batch_crosswise_diffs,
+                cls.batch_pairwise_diffs,
                 cls.batch_targets,
                 cls.batch_nn_targets,
             ) = make_train_tensors_n(
@@ -166,8 +166,8 @@ class DistanceTestCase(parameterized.TestCase):
             test_nn_indices, _ = nbrs_lookup.get_nns(cls.test_features)
 
             (
-                cls.test_crosswise_dists,
-                cls.test_pairwise_dists,
+                cls.test_crosswise_diffs,
+                cls.test_pairwise_diffs,
                 cls.test_nn_targets,
             ) = make_predict_tensors_n(
                 cls.muygps.kernel.metric,
@@ -187,18 +187,18 @@ class DistanceTestCase(parameterized.TestCase):
             batch_nn_indices = None
             test_nn_indices = None
 
-            cls.batch_crosswise_dists = None
-            cls.batch_pairwise_dists = None
+            cls.batch_crosswise_diffs = None
+            cls.batch_pairwise_diffs = None
             cls.batch_targets = None
             cls.batch_nn_targets = None
 
-            cls.test_crosswise_dists = None
-            cls.test_pairwise_dists = None
+            cls.test_crosswise_diffs = None
+            cls.test_pairwise_diffs = None
             cls.test_nn_targets = None
 
         (
-            cls.batch_crosswise_dists_chunk,
-            cls.batch_pairwise_dists_chunk,
+            cls.batch_crosswise_diffs_chunk,
+            cls.batch_pairwise_diffs_chunk,
             cls.batch_targets_chunk,
             cls.batch_nn_targets_chunk,
         ) = make_train_tensors_m(
@@ -209,8 +209,8 @@ class DistanceTestCase(parameterized.TestCase):
             cls.train_responses,
         )
         (
-            cls.test_crosswise_dists_chunk,
-            cls.test_pairwise_dists_chunk,
+            cls.test_crosswise_diffs_chunk,
+            cls.test_pairwise_diffs_chunk,
             cls.test_nn_targets_chunk,
         ) = make_predict_tensors_m(
             cls.muygps.kernel.metric,
@@ -233,29 +233,29 @@ class DistanceTestCase(parameterized.TestCase):
             self.assertTrue(np.allclose(recovered_tensor, tensor))
 
 
-class DistanceTest(DistanceTestCase):
+class TensorsTest(TensorsTestCase):
     @classmethod
     def setUpClass(cls):
-        super(DistanceTest, cls).setUpClass()
+        super(TensorsTest, cls).setUpClass()
 
-    def test_batch_pairwise_dists(self):
+    def test_batch_pairwise_diffs(self):
         self._compare_tensors(
-            self.batch_pairwise_dists, self.batch_pairwise_dists_chunk
+            self.batch_pairwise_diffs, self.batch_pairwise_diffs_chunk
         )
 
-    def test_test_pairwise_dists(self):
+    def test_test_pairwise_diffs(self):
         self._compare_tensors(
-            self.test_pairwise_dists, self.test_pairwise_dists_chunk
+            self.test_pairwise_diffs, self.test_pairwise_diffs_chunk
         )
 
-    def test_batch_crosswise_dists(self):
+    def test_batch_crosswise_diffs(self):
         self._compare_tensors(
-            self.batch_crosswise_dists, self.batch_crosswise_dists_chunk
+            self.batch_crosswise_diffs, self.batch_crosswise_diffs_chunk
         )
 
-    def test_test_crosswise_dists(self):
+    def test_test_crosswise_diffs(self):
         self._compare_tensors(
-            self.test_crosswise_dists, self.test_crosswise_dists_chunk
+            self.test_crosswise_diffs, self.test_crosswise_diffs_chunk
         )
 
     def test_batch_targets(self):
@@ -270,83 +270,83 @@ class DistanceTest(DistanceTestCase):
         self._compare_tensors(self.test_nn_targets, self.test_nn_targets_chunk)
 
 
-class KernelTestCase(DistanceTestCase):
+class KernelTestCase(TensorsTestCase):
     @classmethod
     def setUpClass(cls):
         super(KernelTestCase, cls).setUpClass()
         ls = cls.kernel_kwargs["length_scale"]
         if rank == 0:
             cls.batch_covariance_rbf = rbf_fn_n(
-                cls.batch_pairwise_dists, length_scale=ls
+                cls.batch_pairwise_diffs, length_scale=ls
             )
             cls.batch_covariance_05 = matern_05_fn_n(
-                cls.batch_pairwise_dists, length_scale=ls
+                cls.batch_pairwise_diffs, length_scale=ls
             )
             cls.batch_covariance_15 = matern_15_fn_n(
-                cls.batch_pairwise_dists, length_scale=ls
+                cls.batch_pairwise_diffs, length_scale=ls
             )
             cls.batch_covariance_25 = matern_25_fn_n(
-                cls.batch_pairwise_dists, length_scale=ls
+                cls.batch_pairwise_diffs, length_scale=ls
             )
             cls.batch_covariance_inf = matern_inf_fn_n(
-                cls.batch_pairwise_dists, length_scale=ls
+                cls.batch_pairwise_diffs, length_scale=ls
             )
             cls.batch_covariance_gen = matern_gen_fn_n(
-                cls.batch_pairwise_dists, **cls.kernel_kwargs
+                cls.batch_pairwise_diffs, **cls.kernel_kwargs
             )
             cls.batch_crosscov_rbf = rbf_fn_n(
-                cls.batch_crosswise_dists, length_scale=ls
+                cls.batch_crosswise_diffs, length_scale=ls
             )
             cls.batch_crosscov_05 = matern_05_fn_n(
-                cls.batch_crosswise_dists, length_scale=ls
+                cls.batch_crosswise_diffs, length_scale=ls
             )
             cls.batch_crosscov_15 = matern_15_fn_n(
-                cls.batch_crosswise_dists, length_scale=ls
+                cls.batch_crosswise_diffs, length_scale=ls
             )
             cls.batch_crosscov_25 = matern_25_fn_n(
-                cls.batch_crosswise_dists, length_scale=ls
+                cls.batch_crosswise_diffs, length_scale=ls
             )
             cls.batch_crosscov_inf = matern_inf_fn_n(
-                cls.batch_crosswise_dists, length_scale=ls
+                cls.batch_crosswise_diffs, length_scale=ls
             )
             cls.batch_crosscov_gen = matern_gen_fn_n(
-                cls.batch_crosswise_dists, **cls.kernel_kwargs
+                cls.batch_crosswise_diffs, **cls.kernel_kwargs
             )
             cls.test_covariance_rbf = rbf_fn_n(
-                cls.test_pairwise_dists, length_scale=ls
+                cls.test_pairwise_diffs, length_scale=ls
             )
             cls.test_covariance_05 = matern_05_fn_n(
-                cls.test_pairwise_dists, length_scale=ls
+                cls.test_pairwise_diffs, length_scale=ls
             )
             cls.test_covariance_15 = matern_15_fn_n(
-                cls.test_pairwise_dists, length_scale=ls
+                cls.test_pairwise_diffs, length_scale=ls
             )
             cls.test_covariance_25 = matern_25_fn_n(
-                cls.test_pairwise_dists, length_scale=ls
+                cls.test_pairwise_diffs, length_scale=ls
             )
             cls.test_covariance_inf = matern_inf_fn_n(
-                cls.test_pairwise_dists, length_scale=ls
+                cls.test_pairwise_diffs, length_scale=ls
             )
             cls.test_covariance_gen = matern_gen_fn_n(
-                cls.test_pairwise_dists, **cls.kernel_kwargs
+                cls.test_pairwise_diffs, **cls.kernel_kwargs
             )
             cls.test_crosscov_rbf = rbf_fn_n(
-                cls.test_crosswise_dists, length_scale=ls
+                cls.test_crosswise_diffs, length_scale=ls
             )
             cls.test_crosscov_05 = matern_05_fn_n(
-                cls.test_crosswise_dists, length_scale=ls
+                cls.test_crosswise_diffs, length_scale=ls
             )
             cls.test_crosscov_15 = matern_15_fn_n(
-                cls.test_crosswise_dists, length_scale=ls
+                cls.test_crosswise_diffs, length_scale=ls
             )
             cls.test_crosscov_25 = matern_25_fn_n(
-                cls.test_crosswise_dists, length_scale=ls
+                cls.test_crosswise_diffs, length_scale=ls
             )
             cls.test_crosscov_inf = matern_inf_fn_n(
-                cls.test_crosswise_dists, length_scale=ls
+                cls.test_crosswise_diffs, length_scale=ls
             )
             cls.test_crosscov_gen = matern_gen_fn_n(
-                cls.test_crosswise_dists, **cls.kernel_kwargs
+                cls.test_crosswise_diffs, **cls.kernel_kwargs
             )
         else:
             cls.batch_covariance_rbf = None
@@ -375,76 +375,76 @@ class KernelTestCase(DistanceTestCase):
             cls.test_crosscov_gen = None
 
         cls.batch_covariance_rbf_chunk = rbf_fn_m(
-            cls.batch_pairwise_dists_chunk, length_scale=ls
+            cls.batch_pairwise_diffs_chunk, length_scale=ls
         )
         cls.batch_covariance_05_chunk = matern_05_fn_m(
-            cls.batch_pairwise_dists_chunk, length_scale=ls
+            cls.batch_pairwise_diffs_chunk, length_scale=ls
         )
         cls.batch_covariance_15_chunk = matern_15_fn_m(
-            cls.batch_pairwise_dists_chunk, length_scale=ls
+            cls.batch_pairwise_diffs_chunk, length_scale=ls
         )
         cls.batch_covariance_25_chunk = matern_25_fn_m(
-            cls.batch_pairwise_dists_chunk, length_scale=ls
+            cls.batch_pairwise_diffs_chunk, length_scale=ls
         )
         cls.batch_covariance_inf_chunk = matern_inf_fn_m(
-            cls.batch_pairwise_dists_chunk, length_scale=ls
+            cls.batch_pairwise_diffs_chunk, length_scale=ls
         )
         cls.batch_covariance_gen_chunk = matern_gen_fn_m(
-            cls.batch_pairwise_dists_chunk, **cls.kernel_kwargs
+            cls.batch_pairwise_diffs_chunk, **cls.kernel_kwargs
         )
         cls.batch_crosscov_rbf_chunk = rbf_fn_m(
-            cls.batch_crosswise_dists_chunk, length_scale=ls
+            cls.batch_crosswise_diffs_chunk, length_scale=ls
         )
         cls.batch_crosscov_05_chunk = matern_05_fn_n(
-            cls.batch_crosswise_dists_chunk, length_scale=ls
+            cls.batch_crosswise_diffs_chunk, length_scale=ls
         )
         cls.batch_crosscov_15_chunk = matern_15_fn_n(
-            cls.batch_crosswise_dists_chunk, length_scale=ls
+            cls.batch_crosswise_diffs_chunk, length_scale=ls
         )
         cls.batch_crosscov_25_chunk = matern_25_fn_n(
-            cls.batch_crosswise_dists_chunk, length_scale=ls
+            cls.batch_crosswise_diffs_chunk, length_scale=ls
         )
         cls.batch_crosscov_inf_chunk = matern_inf_fn_n(
-            cls.batch_crosswise_dists_chunk, length_scale=ls
+            cls.batch_crosswise_diffs_chunk, length_scale=ls
         )
         cls.batch_crosscov_gen_chunk = matern_gen_fn_n(
-            cls.batch_crosswise_dists_chunk, **cls.kernel_kwargs
+            cls.batch_crosswise_diffs_chunk, **cls.kernel_kwargs
         )
         cls.test_covariance_rbf_chunk = rbf_fn_m(
-            cls.test_pairwise_dists_chunk, length_scale=ls
+            cls.test_pairwise_diffs_chunk, length_scale=ls
         )
         cls.test_covariance_05_chunk = matern_05_fn_m(
-            cls.test_pairwise_dists_chunk, length_scale=ls
+            cls.test_pairwise_diffs_chunk, length_scale=ls
         )
         cls.test_covariance_15_chunk = matern_15_fn_m(
-            cls.test_pairwise_dists_chunk, length_scale=ls
+            cls.test_pairwise_diffs_chunk, length_scale=ls
         )
         cls.test_covariance_25_chunk = matern_25_fn_m(
-            cls.test_pairwise_dists_chunk, length_scale=ls
+            cls.test_pairwise_diffs_chunk, length_scale=ls
         )
         cls.test_covariance_inf_chunk = matern_inf_fn_m(
-            cls.test_pairwise_dists_chunk, length_scale=ls
+            cls.test_pairwise_diffs_chunk, length_scale=ls
         )
         cls.test_covariance_gen_chunk = matern_gen_fn_m(
-            cls.test_pairwise_dists_chunk, **cls.kernel_kwargs
+            cls.test_pairwise_diffs_chunk, **cls.kernel_kwargs
         )
         cls.test_crosscov_rbf_chunk = rbf_fn_m(
-            cls.test_crosswise_dists_chunk, length_scale=ls
+            cls.test_crosswise_diffs_chunk, length_scale=ls
         )
         cls.test_crosscov_05_chunk = matern_05_fn_n(
-            cls.test_crosswise_dists_chunk, length_scale=ls
+            cls.test_crosswise_diffs_chunk, length_scale=ls
         )
         cls.test_crosscov_15_chunk = matern_15_fn_n(
-            cls.test_crosswise_dists_chunk, length_scale=ls
+            cls.test_crosswise_diffs_chunk, length_scale=ls
         )
         cls.test_crosscov_25_chunk = matern_25_fn_n(
-            cls.test_crosswise_dists_chunk, length_scale=ls
+            cls.test_crosswise_diffs_chunk, length_scale=ls
         )
         cls.test_crosscov_inf_chunk = matern_inf_fn_n(
-            cls.test_crosswise_dists_chunk, length_scale=ls
+            cls.test_crosswise_diffs_chunk, length_scale=ls
         )
         cls.test_crosscov_gen_chunk = matern_gen_fn_n(
-            cls.test_crosswise_dists_chunk, **cls.kernel_kwargs
+            cls.test_crosswise_diffs_chunk, **cls.kernel_kwargs
         )
 
 
@@ -737,8 +737,8 @@ class OptimTestCase(MuyGPSTestCase):
             self._get_mean_fn_n(),
             self._get_var_fn_n(),
             self._get_sigma_sq_fn_n(),
-            self.batch_pairwise_dists,
-            self.batch_crosswise_dists,
+            self.batch_pairwise_diffs,
+            self.batch_crosswise_diffs,
             self.batch_nn_targets,
             self.batch_targets,
         )
@@ -752,8 +752,8 @@ class OptimTestCase(MuyGPSTestCase):
             self._get_mean_fn_m(),
             self._get_var_fn_m(),
             self._get_sigma_sq_fn_m(),
-            self.batch_pairwise_dists_chunk,
-            self.batch_crosswise_dists_chunk,
+            self.batch_pairwise_diffs_chunk,
+            self.batch_crosswise_diffs_chunk,
             self.batch_nn_targets_chunk,
             self.batch_targets_chunk,
         )
@@ -831,13 +831,13 @@ class ObjectiveTest(OptimTestCase):
     def test_kernel_fn(self):
         if rank == 0:
             kernel_fn_n = self._get_kernel_fn_n()
-            kernel = kernel_fn_n(self.batch_pairwise_dists, **self.x0_map)
+            kernel = kernel_fn_n(self.batch_pairwise_diffs, **self.x0_map)
         else:
             kernel = None
 
         kernel_fn_m = self._get_kernel_fn_m()
         kernel_chunk = kernel_fn_m(
-            self.batch_pairwise_dists_chunk, **self.x0_map
+            self.batch_pairwise_diffs_chunk, **self.x0_map
         )
 
         self._compare_tensors(kernel, kernel_chunk)

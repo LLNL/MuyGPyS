@@ -33,7 +33,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.tensors import pairwise_distances, crosswise_distances
+from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
@@ -138,24 +138,24 @@ class SigmaSqTest(parameterized.TestCase):
         # prepare data
         data = _make_gaussian_dict(data_count, feature_count, response_count)
 
-        # neighbors and distances
+        # neighbors and differences
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices = mm.arange(data_count)
         nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
         nn_targets = _consistent_chunk_tensor(data["output"][nn_indices, :])
-        pairwise_dists = pairwise_distances(
+        pairwise_diffs = pairwise_tensor(
             data["input"], nn_indices, metric=mmuygps.metric
         )
 
         # fit sigmas
         mmuygps = mmuygps_sigma_sq_optim(
-            mmuygps, pairwise_dists, nn_targets, sigma_method=sigma_method
+            mmuygps, pairwise_diffs, nn_targets, sigma_method=sigma_method
         )
 
         K = mm.zeros((data_count, nn_count, nn_count))
         nn_targets = _consistent_unchunk_tensor(nn_targets)
         for i, muygps in enumerate(mmuygps.models):
-            K = _consistent_unchunk_tensor(muygps.kernel(pairwise_dists))
+            K = _consistent_unchunk_tensor(muygps.kernel(pairwise_diffs))
             sigmas = _get_sigma_sq_series(
                 K,
                 nn_targets[:, :, i].reshape(data_count, nn_count, 1),
@@ -258,14 +258,14 @@ class OptimTest(parameterized.TestCase):
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup, batch_count, train_count
         )
-        crosswise_dists = crosswise_distances(
+        crosswise_diffs = crosswise_tensor(
             mm.array(sim_train["input"]),
             mm.array(sim_train["input"]),
             batch_indices,
             batch_nn_indices,
             metric=metric,
         )
-        pairwise_dists = pairwise_distances(
+        pairwise_diffs = pairwise_tensor(
             mm.array(sim_train["input"]), batch_nn_indices, metric=metric
         )
 
@@ -307,8 +307,8 @@ class OptimTest(parameterized.TestCase):
                     muygps,
                     b_t,
                     b_nn_t,
-                    crosswise_dists,
-                    pairwise_dists,
+                    crosswise_diffs,
+                    pairwise_diffs,
                     loss_method=loss_method,
                     obj_method=obj_method,
                     opt_method=opt_method,
@@ -478,7 +478,6 @@ class MakeClassifierTest(parameterized.TestCase):
                 nn_kwargs,
                 lm,
                 opt_method_and_kwargs,
-                rt,
                 k_kwargs,
             )
             for b in [250]
@@ -486,7 +485,6 @@ class MakeClassifierTest(parameterized.TestCase):
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
-            for rt in [True, False]
             for k_kwargs in (
                 (
                     "matern",
@@ -516,7 +514,6 @@ class MakeClassifierTest(parameterized.TestCase):
         nn_kwargs,
         loss_method,
         opt_method_and_kwargs,
-        return_distances,
         k_kwargs,
     ):
         # skip if we are using the MPI implementation
@@ -540,7 +537,7 @@ class MakeClassifierTest(parameterized.TestCase):
             categorical=True,
         )
 
-        classifier_args = make_multivariate_classifier(
+        mmuygps, _ = make_multivariate_classifier(
             train["input"],
             train["output"],
             nn_count=nn_count,
@@ -551,19 +548,7 @@ class MakeClassifierTest(parameterized.TestCase):
             kern=kern,
             k_args=args,
             opt_kwargs=opt_kwargs,
-            return_distances=return_distances,
         )
-
-        if len(classifier_args) == 2:
-            mmuygps, _ = classifier_args
-        elif len(classifier_args) == 4:
-            mmuygps, _, crosswise_dists, pairwise_dists = classifier_args
-            crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
-            pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
-            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
-            self.assertEqual(
-                pairwise_dists.shape, (batch_count, nn_count, nn_count)
-            )
 
         for i, muygps in enumerate(mmuygps.models):
             for key in args[i]:
@@ -594,7 +579,6 @@ class MakeRegressorTest(parameterized.TestCase):
                 lm,
                 opt_method_and_kwargs,
                 ssm,
-                rt,
                 k_kwargs,
             )
             for b in [250]
@@ -603,7 +587,6 @@ class MakeRegressorTest(parameterized.TestCase):
             for lm in ["mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for ssm in ["analytic", None]
-            for rt in [True, False]
             for k_kwargs in (
                 (
                     "matern",
@@ -634,7 +617,6 @@ class MakeRegressorTest(parameterized.TestCase):
         loss_method,
         opt_method_and_kwargs,
         sigma_method,
-        return_distances,
         k_kwargs,
     ):
         if config.state.backend == "mpi":
@@ -657,7 +639,7 @@ class MakeRegressorTest(parameterized.TestCase):
             categorical=False,
         )
 
-        regressor_args = make_multivariate_regressor(
+        mmuygps, _ = make_multivariate_regressor(
             train["input"],
             train["output"],
             nn_count=nn_count,
@@ -669,19 +651,7 @@ class MakeRegressorTest(parameterized.TestCase):
             opt_kwargs=opt_kwargs,
             kern=kern,
             k_args=args,
-            return_distances=return_distances,
         )
-
-        if len(regressor_args) == 2:
-            mmuygps, _ = regressor_args
-        elif len(regressor_args) == 4:
-            mmuygps, _, crosswise_dists, pairwise_dists = regressor_args
-            crosswise_dists = _consistent_unchunk_tensor(crosswise_dists)
-            pairwise_dists = _consistent_unchunk_tensor(pairwise_dists)
-            self.assertEqual(crosswise_dists.shape, (batch_count, nn_count))
-            self.assertEqual(
-                pairwise_dists.shape, (batch_count, nn_count, nn_count)
-            )
 
         for i, muygps in enumerate(mmuygps.models):
             print(f"For model {i}:")

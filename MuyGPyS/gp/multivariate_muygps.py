@@ -47,13 +47,13 @@ class MultivariateMuyGPS:
 
     We can realize kernel tensors for each of the models contained within a
     `MultivariateMuyGPS` object by iterating over its `models` member. Once we
-    have computed a `pairwise_dists` tensor and a `crosswise_dists` matrix, it
+    have computed `pairwise_diffs` and `crosswise_diffs` tensors, it
     is straightforward to perform each of these realizations.
 
     Example:
         >>> for model in MuyGPyS.models:
-        >>>         K = model.kernel(pairwise_dists)
-        >>>         Kcross = model.kernel(crosswise_dists)
+        >>>         K = model.kernel(pairwise_diffs)
+        >>>         Kcross = model.kernel(crosswise_diffs)
         >>>         # do something with K and Kcross...
 
     Args
@@ -89,28 +89,26 @@ class MultivariateMuyGPS:
 
     def posterior_mean(
         self,
-        pairwise_dists: mm.ndarray,
-        crosswise_dists: mm.ndarray,
+        pairwise_diffs: mm.ndarray,
+        crosswise_diffs: mm.ndarray,
         batch_nn_targets: mm.ndarray,
     ) -> mm.ndarray:
         """
-        Performs simultaneous posterior mean inference on provided distance
+        Performs simultaneous posterior mean inference on provided difference
         tensors and the target matrix.
 
         Computes parallelized local solves of systems of linear equations using
         the kernel realizations, one for each internal model, of the last two
-        dimensions of `pairwise_dists` along with `crosswise_dists` and
+        dimensions of `pairwise_diffs` along with `crosswise_diffs` and
         `batch_nn_targets` to predict responses in terms of the posterior mean.
-        Assumes that distance tensor `pairwise_dists` and
-        crosswise distance matrix `crosswise_dists` are already computed and
-        given as arguments.
+        Assumes that difference tensors `pairwise_diffs` and `crosswise_diffs`
+        are already computed and given as arguments.
 
-        Returns the predicted response in the form of a posterior
-        mean for each element of the batch of observations by solving a system
-        of linear equations induced by each kernel functor, one per response
-        dimension, in a generalization of Equation (3.4) of
-        [muyskens2021muygps]_. For each batch element :math:`\\mathbf{x}_i` we
-        compute
+        Returns the predicted response in the form of a posterior mean for each
+        element of the batch of observations by solving a system of linear
+        equations induced by each kernel functor, one per response dimension, in
+        a generalization of Equation (3.4) of [muyskens2021muygps]_. For each
+        batch element :math:`\\mathbf{x}_i` we compute
 
         .. math::
             \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})_{:,j} =
@@ -128,14 +126,16 @@ class MultivariateMuyGPS:
         given by a slice of the `batch_nn_targets` argument.
 
         Args:
-            pairwise_dists:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count)` -shaped pairwise nearest neighbor
-                distance matrices corresponding to each of the batch elements.
-            crosswise_dists:
-                A matrix of shape `(batch_count, nn_count)` whose rows list the
-                distance between each batch element element and its nearest
-                neighbors.
+            pairwise_diffs:
+                A tensor of shape
+                `(batch_count, nn_count, nn_count, feature_count)` containing
+                the `(nn_count, nn_count, feature_count)`-shaped pairwise
+                nearest neighbor difference tensors corresponding to each of the
+                batch elements.
+            crosswise_diffs:
+                A matrix of shape `(batch_count, nn_count, feature_count)` whose
+                rows list the difference between each feature of each batch
+                element element and its nearest neighbors.
             batch_nn_targets:
                 A tensor of shape `(batch_count, nn_count, response_count)`
                 listing the vector-valued responses for the nearest neighbors
@@ -148,8 +148,8 @@ class MultivariateMuyGPS:
         batch_count, nn_count, response_count = batch_nn_targets.shape
         responses = mm.zeros((batch_count, response_count))
         for i, model in enumerate(self.models):
-            K = model.kernel(pairwise_dists)
-            Kcross = model.kernel(crosswise_dists)
+            K = model.kernel(pairwise_diffs)
+            Kcross = model.kernel(crosswise_diffs)
             responses = mm.assign(
                 responses,
                 model.posterior_mean(
@@ -164,12 +164,12 @@ class MultivariateMuyGPS:
 
     def posterior_variance(
         self,
-        pairwise_dists: mm.ndarray,
-        crosswise_dists: mm.ndarray,
+        pairwise_diffs: mm.ndarray,
+        crosswise_diffs: mm.ndarray,
     ) -> mm.ndarray:
         """
-        Performs simultaneous posterior variance inference on provided distance
-        tensors.
+        Performs simultaneous posterior variance inference on provided
+        difference tensors.
 
         Return the local posterior variances of each prediction, corresponding
         to the diagonal elements of a covariance matrix. For each batch element
@@ -183,25 +183,27 @@ class MultivariateMuyGPS:
                 K^{(j)}_\\theta (X_{N_i}, \\mathbf{x}_i).
 
         Args:
-            pairwise_dists:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count)` -shaped pairwise nearest neighbor
-                distance matrices corresponding to each of the batch elements.
-            crosswise_dists:
-                A matrix of shape `(batch_count, nn_count)` whose rows list the
-                distance between each batch element element and its nearest
-                neighbors.
+            pairwise_diffs:
+                A tensor of shape
+                `(batch_count, nn_count, nn_count, feature_count)` containing
+                the `(nn_count, nn_count, feature_count)`-shaped pairwise
+                nearest neighbor difference tensors corresponding to each of the
+                batch elements.
+            crosswise_diffs:
+                A matrix of shape `(batch_count, nn_count, feature_count)` whose
+                rows list the difference between each feature of each batch
+                element element and its nearest neighbors.
 
         Returns:
             A vector of shape `(batch_count, response_count)` consisting of the
             diagonal elements of the posterior variance for each model.
         """
-        batch_count, _ = crosswise_dists.shape
+        batch_count, _, _ = crosswise_diffs.shape
         response_count = len(self.models)
         diagonal_variance = mm.zeros((batch_count, response_count))
         for i, model in enumerate(self.models):
-            K = model.kernel(pairwise_dists)
-            Kcross = model.kernel(crosswise_dists)
+            K = model.kernel(pairwise_diffs)
+            Kcross = model.kernel(crosswise_diffs)
             ss = self.sigma_sq()[i]
             diagonal_variance = mm.assign(
                 diagonal_variance,
@@ -254,14 +256,14 @@ class MultivariateMuyGPS:
             posterior mean inference.
         """
         (
-            pairwise_dists_fast,
+            pairwise_diffs_fast,
             train_nn_targets_fast,
         ) = _make_fast_predict_tensors(self.metric, nn_indices, train, targets)
 
         train_count, nn_count, response_count = train_nn_targets_fast.shape
         coeffs_tensor = mm.zeros((train_count, nn_count, response_count))
         for i, model in enumerate(self.models):
-            K = model.kernel(pairwise_dists_fast)
+            K = model.kernel(pairwise_diffs_fast)
             mm.assign(
                 coeffs_tensor,
                 _muygps_fast_posterior_mean_precompute(
@@ -277,12 +279,12 @@ class MultivariateMuyGPS:
 
     def fast_posterior_mean(
         self,
-        crosswise_dists: mm.ndarray,
+        crosswise_diffs: mm.ndarray,
         coeffs_tensor: mm.ndarray,
     ) -> mm.ndarray:
         """
         Performs fast posterior mean inference using provided crosswise
-        distances and precomputed coefficient matrix.
+        differences and precomputed coefficient matrix.
 
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations, as computed in
@@ -300,10 +302,10 @@ class MultivariateMuyGPS:
         precomputed coefficients given in Equation (8) of [dunton2022fast]_.
 
         Args:
-            crosswise_dists:
-                A matrix of shape `(batch_count, nn_count)` whose rows list the
-                distance of the corresponding test element to each of its
-                nearest neighbors.
+            crosswise_diffs:
+                A matrix of shape `(batch_count, nn_count, feature_count)` whose
+                rows list the difference between each feature of each batch
+                element element and its nearest neighbors.
             coeffs_tensor:
                 A tensor of shape `(batch_count, nn_count, response_count)`
                 providing the precomputed coefficients.
@@ -316,7 +318,7 @@ class MultivariateMuyGPS:
         for i, model in enumerate(self.models):
             mm.assign(
                 Kcross,
-                model.kernel(crosswise_dists),
+                model.kernel(crosswise_diffs),
                 slice(None),
                 slice(None),
                 i,

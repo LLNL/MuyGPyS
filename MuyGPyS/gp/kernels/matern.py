@@ -7,9 +7,9 @@
 Hyperparameters and kernel functors
 
 Defines the Matérn kernel functor (inheriting
-:class:`~MuyGPyS.gp.kernels.kernel_fn.KernelFn`) that transform crosswise
-distance matrices into cross-covariance matrices and pairwise distance matrices
-into covariance or kernel matrices.
+:class:`~MuyGPyS.gp.kernels.kernel_fn.KernelFn`) that transform crosswise and
+pairwise difference tensors into cross-covariance and covariance (or kernel)
+tensors, respectively.
 
 See the following example to initialize an :class:`MuyGPyS.gp.kernels.Matern`
 object.
@@ -22,17 +22,17 @@ Example:
     ...         metric = "l2",
     ... }
 
-One uses a previously computed `pairwise_dists` tensor (see
-:func:`MuyGPyS.gp.distance.pairwise_distance`) to compute a kernel tensor whose
+One uses a previously computed `pairwise_diffs` tensor (see
+:func:`MuyGPyS.gp.tensors.pairwise_tensor`) to compute a kernel tensor whose
 second two dimensions contain square kernel matrices. Similarly, one uses a
-previously computed `crosswise_dists` matrix (see
-:func:`MuyGPyS.gp.distance.crosswise_distance`) to compute a cross-covariance
+previously computed `crosswise_diffs` matrix (see
+:func:`MuyGPyS.gp.tensor.crosswise_tensor`) to compute a cross-covariance
 matrix. See the following example, which assumes that you have already
-constructed the distance `numpy.nparrays` and the kernel `kern` as shown above.
+constructed the differenece tensors and kernel as shown above.
 
 Example:
-    >>> K = kern(pairwise_dists)
-    >>> Kcross = kern(crosswise_dists)
+    >>> K = kern(pairwise_diffs)
+    >>> Kcross = kern(crosswise_diffs)
 """
 
 from typing import Callable, Dict, List, Optional, Tuple, Union
@@ -107,7 +107,7 @@ class Matern(KernelFn):
         self.hyperparameters["length_scale"] = self.length_scale
         self.metric = metric
 
-    def __call__(self, dists):
+    def __call__(self, diffs):
         """
         Compute Matern kernels from distance tensor.
 
@@ -115,18 +115,17 @@ class Matern(KernelFn):
         [scikit-learn](https://github.com/scikit-learn/scikit-learn/blob/95119c13a/sklearn/gaussian_process/kernels.py#L1529)
 
         Args:
-            squared_dists:
-                A matrix or tensor of pairwise distances (usually squared l2 or
-                F2) of shape `(data_count, nn_count, nn_count)` or
-                `(data_count, nn_count)`. In the tensor case, matrix diagonals
-                along last two dimensions are expected to be 0.
+            diffs:
+                A tensor of pairwise differences of shape
+                `(data_count, nn_count, nn_count, feature_count)`. It is assumed
+                that the vectors along the diagonals diffs[i, j, j, :] == 0.
 
         Returns:
             A cross-covariance matrix of shape `(data_count, nn_count)` or a
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self._fn(dists, nu=self.nu(), length_scale=self.length_scale())
+        return self._fn(diffs, nu=self.nu(), length_scale=self.length_scale())
 
     @staticmethod
     def _fn(dists: mm.ndarray, nu: float, length_scale: float) -> mm.ndarray:

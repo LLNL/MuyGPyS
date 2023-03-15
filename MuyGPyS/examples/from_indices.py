@@ -12,7 +12,7 @@ import numpy as np
 from typing import Optional, Tuple, Union
 
 from MuyGPyS.gp.tensors import (
-    crosswise_distances,
+    crosswise_tensor,
     make_predict_tensors,
     make_train_tensors,
 )
@@ -102,7 +102,7 @@ def fast_posterior_mean_from_indices(
     closest_index: np.ndarray,
     coeffs_tensor: np.ndarray,
 ) -> np.ndarray:
-    crosswise_dists = crosswise_distances(
+    crosswise_diffs = crosswise_tensor(
         test_features,
         train_features,
         indices,
@@ -110,7 +110,7 @@ def fast_posterior_mean_from_indices(
     )
 
     return muygps.fast_posterior_mean(
-        crosswise_dists,
+        crosswise_diffs,
         coeffs_tensor[closest_index, :, :],
     )
 
@@ -131,8 +131,8 @@ def optimize_from_indices(
     """
     Find an optimal model directly from the data.
 
-    Use this method if you do not need to retain the distance matrices used for
-    optimization.
+    Use this method if you do not need to retain the difference and kernel
+    tensors used for optimization.
 
     See the following example, where we have already created a `batch_indices`
     vector and a `batch_nn_indices` matrix using
@@ -204,8 +204,8 @@ def optimize_from_indices(
         A new MuyGPs model whose specified hyperparameters have been optimized.
     """
     (
-        crosswise_dists,
-        pairwise_dists,
+        crosswise_diffs,
+        pairwise_diffs,
         batch_targets,
         batch_nn_targets,
     ) = make_train_tensors(
@@ -219,8 +219,8 @@ def optimize_from_indices(
         muygps,
         batch_targets,
         batch_nn_targets,
-        crosswise_dists,
-        pairwise_dists,
+        crosswise_diffs,
+        pairwise_diffs,
         loss_method=loss_method,
         obj_method=obj_method,
         opt_method=opt_method,

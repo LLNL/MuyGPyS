@@ -108,7 +108,6 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                 lm,
                 opt_method_and_kwargs,
                 ssm,
-                rt,
                 k_kwargs,
             )
             for b in [250]
@@ -117,7 +116,6 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
             for lm in ["mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for ssm in ["analytic", None]
-            for rt in [True, False]
             for k_kwargs in (
                 (
                     "matern",
@@ -148,7 +146,6 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
         loss_method,
         opt_method_and_kwargs,
         sigma_method,
-        return_distances,
         k_kwargs,
     ):
         # skip if we are using the MPI implementation

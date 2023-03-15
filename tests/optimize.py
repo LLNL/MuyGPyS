@@ -29,7 +29,7 @@ from MuyGPyS._test.utils import (
     _sq_rel_err,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.tensors import pairwise_distances, crosswise_distances
+from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
@@ -184,15 +184,15 @@ class BenchmarkOptimTestCase(BenchmarkTestCase):
         cls.nu_target_list = list()
         cls.batch_indices_list = list()
         cls.batch_nn_indices_list = list()
-        cls.crosswise_dists_list = list()
-        cls.pairwise_dists_list = list()
+        cls.crosswise_diffs_list = list()
+        cls.pairwise_diffs_list = list()
         cls.batch_nn_targets_list = list()
         for i, kwargs in enumerate(cls.k_kwargs):
             cls.nu_target_list.append(kwargs["nu"]["val"])
             cls.batch_indices_list.append(list())
             cls.batch_nn_indices_list.append(list())
-            cls.crosswise_dists_list.append(list())
-            cls.pairwise_dists_list.append(list())
+            cls.crosswise_diffs_list.append(list())
+            cls.pairwise_diffs_list.append(list())
             cls.batch_nn_targets_list.append(list())
             for j, sigma_sq in enumerate(cls.sigma_sqs):
                 batch_indices, batch_nn_indices = sample_batch(
@@ -200,8 +200,8 @@ class BenchmarkOptimTestCase(BenchmarkTestCase):
                 )
                 cls.batch_indices_list[i].append(batch_indices)
                 cls.batch_nn_indices_list[i].append(batch_nn_indices)
-                cls.crosswise_dists_list[i].append(
-                    crosswise_distances(
+                cls.crosswise_diffs_list[i].append(
+                    crosswise_tensor(
                         cls.train_features,
                         cls.train_features,
                         cls.batch_indices_list[i][j],
@@ -209,8 +209,8 @@ class BenchmarkOptimTestCase(BenchmarkTestCase):
                         metric=kwargs["metric"],
                     )
                 )
-                cls.pairwise_dists_list[i].append(
-                    pairwise_distances(
+                cls.pairwise_diffs_list[i].append(
+                    pairwise_tensor(
                         cls.train_features,
                         cls.batch_nn_indices_list[i][j],
                         metric=kwargs["metric"],
@@ -239,8 +239,8 @@ class BenchmarkOptimTypesTest(BenchmarkOptimTestCase):
             for j, sigma_sq in enumerate(self.sigma_sqs):
                 self._check_ndarray(self.batch_indices_list[i][j], mm.itype)
                 self._check_ndarray(self.batch_nn_indices_list[i][j], mm.itype)
-                self._check_ndarray(self.crosswise_dists_list[i][j], mm.ftype)
-                self._check_ndarray(self.pairwise_dists_list[i][j], mm.ftype)
+                self._check_ndarray(self.crosswise_diffs_list[i][j], mm.ftype)
+                self._check_ndarray(self.pairwise_diffs_list[i][j], mm.ftype)
                 self.assertEqual(
                     self.batch_indices_list[i][j].shape, (self.batch_count,)
                 )
@@ -249,11 +249,11 @@ class BenchmarkOptimTypesTest(BenchmarkOptimTestCase):
                     (self.batch_count, self.nn_count),
                 )
                 self.assertEqual(
-                    self.crosswise_dists_list[i][j].shape,
+                    self.crosswise_diffs_list[i][j].shape,
                     (self.batch_count, self.nn_count),
                 )
                 self.assertEqual(
-                    self.pairwise_dists_list[i][j].shape,
+                    self.pairwise_diffs_list[i][j].shape,
                     (self.batch_count, self.nn_count, self.nn_count),
                 )
                 for k in range(self.its):
@@ -279,7 +279,7 @@ class BenchmarkSigmaSqOptimTest(BenchmarkOptimTestCase):
                     muygps = MuyGPS(**kwargs)
                     muygps = muygps_sigma_sq_optim(
                         muygps,
-                        self.pairwise_dists_list[i][j],
+                        self.pairwise_diffs_list[i][j],
                         self.batch_nn_targets_list[i][j][k],
                         sigma_method="analytic",
                     )
@@ -358,8 +358,8 @@ class BenchmarkTensorsOptimTest(BenchmarkOptimTestCase):
                 muygps,
                 batch_targets,
                 batch_nn_targets,
-                self.crosswise_dists_list[model_idx][ss_idx],
-                self.pairwise_dists_list[model_idx][ss_idx],
+                self.crosswise_diffs_list[model_idx][ss_idx],
+                self.pairwise_diffs_list[model_idx][ss_idx],
                 loss_method=loss_method,
                 obj_method=obj_method,
                 opt_method=opt_method,

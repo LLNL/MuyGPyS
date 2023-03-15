@@ -27,7 +27,7 @@ def _make_fast_predict_tensors(
         axis=1,
     )
 
-    pairwise_diffs_fast = _pairwise_tensors(
+    pairwise_diffs_fast = _pairwise_tensor(
         train_features, batch_nn_indices_fast, metric=metric
     )
     batch_nn_targets_fast = train_targets[batch_nn_indices_fast, :]
@@ -45,14 +45,14 @@ def _make_predict_tensors(
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     if test_features is None:
         test_features = train_features
-    crosswise_diffs = _crosswise_tensors(
+    crosswise_diffs = _crosswise_tensor(
         test_features,
         train_features,
         batch_indices,
         batch_nn_indices,
         metric=metric,
     )
-    pairwise_diffs = _pairwise_tensors(
+    pairwise_diffs = _pairwise_tensor(
         train_features, batch_nn_indices, metric=metric
     )
     batch_nn_targets = train_targets[batch_nn_indices, :]
@@ -80,7 +80,7 @@ def _make_train_tensors(
 
 
 @partial(jit, static_argnums=(4,))
-def _crosswise_tensors(
+def _crosswise_tensor(
     data: jnp.ndarray,
     nn_data: jnp.ndarray,
     data_indices: jnp.ndarray,
@@ -111,7 +111,7 @@ def _crosswise_diffs(
 
 
 @partial(jit, static_argnums=(2,))
-def _pairwise_tensors(
+def _pairwise_tensor(
     data: jnp.ndarray,
     nn_indices: jnp.ndarray,
     metric: str = "l2",

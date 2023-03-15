@@ -10,8 +10,8 @@ MuyGPs PyTorch implementation
 import torch
 from torch import nn
 from MuyGPyS._src.gp.tensors.torch import (
-    _pairwise_tensors,
-    _crosswise_tensors,
+    _pairwise_tensor,
+    _crosswise_tensor,
 )
 
 from MuyGPyS._src.gp.muygps.torch import (
@@ -134,7 +134,7 @@ class MuyGPs_layer(nn.Module):
             predicted response for each of the batch elements.
         """
 
-        crosswise_diffs = _crosswise_tensors(
+        crosswise_diffs = _crosswise_tensor(
             x,
             x,
             self.batch_indices,
@@ -142,9 +142,7 @@ class MuyGPs_layer(nn.Module):
             metric="l2",
         )
 
-        pairwise_diffs = _pairwise_tensors(
-            x, self.batch_nn_indices, metric="l2"
-        )
+        pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices, metric="l2")
 
         Kcross = kernel_func(
             crosswise_diffs,
@@ -284,7 +282,7 @@ class MultivariateMuyGPs_layer(nn.Module):
             A torch.Tensor of shape `(batch_count, response_count)` listing the
             predicted response for each of the batch elements.
         """
-        crosswise_diffs = _crosswise_tensors(
+        crosswise_diffs = _crosswise_tensor(
             x,
             x,
             self.batch_indices,
@@ -292,9 +290,7 @@ class MultivariateMuyGPs_layer(nn.Module):
             metric="l2",
         )
 
-        pairwise_diffs = _pairwise_tensors(
-            x, self.batch_nn_indices, metric="l2"
-        )
+        pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices, metric="l2")
 
         batch_count, nn_count, response_count = self.batch_nn_targets.shape
 
@@ -342,16 +338,16 @@ class MultivariateMuyGPs_layer(nn.Module):
 
 
 def kernel_func(
-    dist_tensor: torch.Tensor, nu: float, length_scale: float
+    diff_tensor: torch.Tensor, nu: float, length_scale: float
 ) -> torch.Tensor:
     """
-    Generate kernel tensors using the Matern kernel given an input distance
+    Generate kernel tensors using the Matern kernel given an input difference
     tensor. Currently only supports the Matern kernel, but more kernels will
     be added in future releases.
 
     Args:
-        dist_matrix:
-            A torch.Tensor distance tensor on which to evaluate the kernel.
+        diff_tensor:
+            A torch.Tensor difference tensor on which to evaluate the kernel.
         nu:
             The smoothness hyperparameter in the Matern kernel.
         length_scale:
@@ -362,15 +358,15 @@ def kernel_func(
         input values.
     """
     if nu == 1 / 2:
-        return _matern_05_fn(dist_tensor, length_scale=length_scale)
+        return _matern_05_fn(diff_tensor, length_scale=length_scale)
 
     if nu == 3 / 2:
-        return _matern_15_fn(dist_tensor, length_scale=length_scale)
+        return _matern_15_fn(diff_tensor, length_scale=length_scale)
 
     if nu == 5 / 2:
-        return _matern_25_fn(dist_tensor, length_scale=length_scale)
+        return _matern_25_fn(diff_tensor, length_scale=length_scale)
 
     if nu == torch.inf:
-        return _matern_inf_fn(dist_tensor, length_scale=length_scale)
+        return _matern_inf_fn(diff_tensor, length_scale=length_scale)
     else:
-        return _matern_gen_fn(dist_tensor, nu, length_scale=length_scale)
+        return _matern_gen_fn(diff_tensor, nu, length_scale=length_scale)

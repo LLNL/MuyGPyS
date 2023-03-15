@@ -27,15 +27,15 @@ from absl.testing import parameterized
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS._src.gp.tensors.numpy import (
-    _pairwise_tensors as pairwise_tensors_n,
-    _crosswise_tensors as crosswise_tensors_n,
+    _pairwise_tensor as pairwise_tensor_n,
+    _crosswise_tensor as crosswise_tensor_n,
     _make_train_tensors as make_train_tensors_n,
     _make_fast_predict_tensors as make_fast_predict_tensors_n,
     _fast_nn_update as fast_nn_update_n,
 )
 from MuyGPyS._src.gp.tensors.torch import (
-    _pairwise_tensors as pairwise_tensors_t,
-    _crosswise_tensors as crosswise_tensors_t,
+    _pairwise_tensor as pairwise_tensor_t,
+    _crosswise_tensor as crosswise_tensor_t,
     _make_train_tensors as make_train_tensors_t,
     _make_fast_predict_tensors as make_fast_predict_tensors_t,
     _fast_nn_update as fast_nn_update_t,
@@ -112,10 +112,10 @@ def _allclose(x, y) -> bool:
     )
 
 
-class DistanceTestCase(parameterized.TestCase):
+class TensorsTestCase(parameterized.TestCase):
     @classmethod
     def setUpClass(cls):
-        super(DistanceTestCase, cls).setUpClass()
+        super(TensorsTestCase, cls).setUpClass()
         cls.train_count = 1000
         cls.test_count = 100
         cls.feature_count = 10
@@ -159,33 +159,33 @@ class DistanceTestCase(parameterized.TestCase):
         cls.batch_nn_indices_t = torch.from_numpy(cls.batch_nn_indices_n)
 
 
-class DistanceTest(DistanceTestCase):
+class TensorsTest(TensorsTestCase):
     @classmethod
     def setUpClass(cls):
-        super(DistanceTest, cls).setUpClass()
+        super(TensorsTest, cls).setUpClass()
 
-    def test_pairwise_tensors(self):
+    def test_pairwise_tensor(self):
         self.assertTrue(
             np.allclose(
-                pairwise_tensors_n(
+                pairwise_tensor_n(
                     self.train_features_n, self.batch_nn_indices_n
                 ),
-                pairwise_tensors_t(
+                pairwise_tensor_t(
                     self.train_features_t, self.batch_nn_indices_t
                 ),
             )
         )
 
-    def test_crosswise_tensors(self):
+    def test_crosswise_tensor(self):
         self.assertTrue(
             np.allclose(
-                crosswise_tensors_n(
+                crosswise_tensor_n(
                     self.train_features_n,
                     self.train_features_n,
                     self.batch_indices_n,
                     self.batch_nn_indices_n,
                 ),
-                crosswise_tensors_t(
+                crosswise_tensor_t(
                     self.train_features_t,
                     self.train_features_t,
                     self.batch_indices_t,
@@ -196,8 +196,8 @@ class DistanceTest(DistanceTestCase):
 
     def test_make_train_tensors(self):
         (
-            crosswise_dists_n,
-            pairwise_dists_n,
+            crosswise_diffs_n,
+            pairwise_diffs_n,
             batch_targets_n,
             batch_nn_targets_n,
         ) = make_train_tensors_n(
@@ -208,8 +208,8 @@ class DistanceTest(DistanceTestCase):
             self.train_responses_n,
         )
         (
-            crosswise_dists_t,
-            pairwise_dists_t,
+            crosswise_diffs_t,
+            pairwise_diffs_t,
             batch_targets_t,
             batch_nn_targets_t,
         ) = make_train_tensors_t(
@@ -219,19 +219,19 @@ class DistanceTest(DistanceTestCase):
             self.train_features_t,
             self.train_responses_t,
         )
-        self.assertTrue(np.allclose(crosswise_dists_n, crosswise_dists_t))
-        self.assertTrue(np.allclose(pairwise_dists_n, pairwise_dists_t))
+        self.assertTrue(np.allclose(crosswise_diffs_n, crosswise_diffs_t))
+        self.assertTrue(np.allclose(pairwise_diffs_n, pairwise_diffs_t))
         self.assertTrue(np.allclose(batch_targets_n, batch_targets_t))
         self.assertTrue(np.allclose(batch_nn_targets_n, batch_nn_targets_t))
 
 
-class KernelTestCase(DistanceTestCase):
+class KernelTestCase(TensorsTestCase):
     @classmethod
     def setUpClass(cls):
         super(KernelTestCase, cls).setUpClass()
         (
-            cls.crosswise_dists_n,
-            cls.pairwise_dists_n,
+            cls.crosswise_diffs_n,
+            cls.pairwise_diffs_n,
             cls.batch_targets_n,
             cls.batch_nn_targets_n,
         ) = make_train_tensors_n(
@@ -242,8 +242,8 @@ class KernelTestCase(DistanceTestCase):
             cls.train_responses_n,
         )
         (
-            cls.crosswise_dists_t,
-            cls.pairwise_dists_t,
+            cls.crosswise_diffs_t,
+            cls.pairwise_diffs_t,
             cls.batch_targets_t,
             cls.batch_nn_targets_t,
         ) = make_train_tensors_t(
@@ -264,10 +264,10 @@ class KernelTest(KernelTestCase):
         self.assertTrue(
             np.allclose(
                 rbf_fn_n(
-                    self.crosswise_dists_n, length_scale=self.length_scale
+                    self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
                 rbf_fn_t(
-                    self.crosswise_dists_t, length_scale=self.length_scale
+                    self.crosswise_diffs_t, length_scale=self.length_scale
                 ),
             )
         )
@@ -275,8 +275,8 @@ class KernelTest(KernelTestCase):
     def test_pairwise_rbf(self):
         self.assertTrue(
             np.allclose(
-                rbf_fn_n(self.pairwise_dists_n, length_scale=self.length_scale),
-                rbf_fn_t(self.pairwise_dists_t, length_scale=self.length_scale),
+                rbf_fn_n(self.pairwise_diffs_n, length_scale=self.length_scale),
+                rbf_fn_t(self.pairwise_diffs_t, length_scale=self.length_scale),
             )
         )
 
@@ -284,40 +284,40 @@ class KernelTest(KernelTestCase):
         self.assertTrue(
             np.allclose(
                 matern_05_fn_n(
-                    self.crosswise_dists_n, length_scale=self.length_scale
+                    self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_05_fn_t(
-                    self.crosswise_dists_t, length_scale=self.length_scale
+                    self.crosswise_diffs_t, length_scale=self.length_scale
                 ),
             )
         )
         self.assertTrue(
             np.allclose(
                 matern_15_fn_n(
-                    self.crosswise_dists_n, length_scale=self.length_scale
+                    self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_15_fn_t(
-                    self.crosswise_dists_t, length_scale=self.length_scale
+                    self.crosswise_diffs_t, length_scale=self.length_scale
                 ),
             )
         )
         self.assertTrue(
             np.allclose(
                 matern_25_fn_n(
-                    self.crosswise_dists_n, length_scale=self.length_scale
+                    self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_25_fn_t(
-                    self.crosswise_dists_t, length_scale=self.length_scale
+                    self.crosswise_diffs_t, length_scale=self.length_scale
                 ),
             )
         )
         self.assertTrue(
             np.allclose(
                 matern_inf_fn_n(
-                    self.crosswise_dists_n, length_scale=self.length_scale
+                    self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_inf_fn_t(
-                    self.crosswise_dists_t, length_scale=self.length_scale
+                    self.crosswise_diffs_t, length_scale=self.length_scale
                 ),
             )
         )
@@ -326,40 +326,40 @@ class KernelTest(KernelTestCase):
         self.assertTrue(
             np.allclose(
                 matern_05_fn_n(
-                    self.pairwise_dists_n, length_scale=self.length_scale
+                    self.pairwise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_05_fn_t(
-                    self.pairwise_dists_t, length_scale=self.length_scale
+                    self.pairwise_diffs_t, length_scale=self.length_scale
                 ),
             )
         )
         self.assertTrue(
             np.allclose(
                 matern_15_fn_n(
-                    self.pairwise_dists_n, length_scale=self.length_scale
+                    self.pairwise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_15_fn_t(
-                    self.pairwise_dists_t, length_scale=self.length_scale
+                    self.pairwise_diffs_t, length_scale=self.length_scale
                 ),
             )
         )
         self.assertTrue(
             np.allclose(
                 matern_25_fn_n(
-                    self.pairwise_dists_n, length_scale=self.length_scale
+                    self.pairwise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_25_fn_t(
-                    self.pairwise_dists_t, length_scale=self.length_scale
+                    self.pairwise_diffs_t, length_scale=self.length_scale
                 ),
             )
         )
         self.assertTrue(
             np.allclose(
                 matern_inf_fn_n(
-                    self.pairwise_dists_n, length_scale=self.length_scale
+                    self.pairwise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_inf_fn_t(
-                    self.pairwise_dists_t, length_scale=self.length_scale
+                    self.pairwise_diffs_t, length_scale=self.length_scale
                 ),
             )
         )
@@ -370,24 +370,24 @@ class MuyGPSTestCase(KernelTestCase):
     def setUpClass(cls):
         super(MuyGPSTestCase, cls).setUpClass()
         cls.K_n = matern_05_fn_n(
-            cls.pairwise_dists_n, length_scale=cls.length_scale
+            cls.pairwise_diffs_n, length_scale=cls.length_scale
         )
         cls.homoscedastic_K_n = homoscedastic_perturb_n(
             cls.K_n, cls.muygps.eps()
         )
 
         cls.K_t = matern_05_fn_t(
-            cls.pairwise_dists_t, length_scale=cls.length_scale
+            cls.pairwise_diffs_t, length_scale=cls.length_scale
         )
         cls.homoscedastic_K_t = homoscedastic_perturb_t(
             cls.K_t, cls.muygps.eps()
         )
 
         cls.Kcross_n = matern_05_fn_n(
-            cls.crosswise_dists_n, length_scale=cls.length_scale
+            cls.crosswise_diffs_n, length_scale=cls.length_scale
         )
         cls.Kcross_t = matern_05_fn_t(
-            cls.crosswise_dists_t, length_scale=cls.length_scale
+            cls.crosswise_diffs_t, length_scale=cls.length_scale
         )
 
 
@@ -474,7 +474,7 @@ class FastPredictTestCase(MuyGPSTestCase):
         cls.closest_set_new_n = cls.new_nn_indices_n[
             cls.closest_neighbor_n
         ].astype(int)
-        cls.crosswise_dists_fast_n = crosswise_tensors_n(
+        cls.crosswise_diffs_fast_n = crosswise_tensor_n(
             cls.test_features_n,
             cls.train_features_n,
             np.arange(0, cls.test_count),
@@ -483,7 +483,7 @@ class FastPredictTestCase(MuyGPSTestCase):
 
         kernel_func_n = matern_05_fn_n
         cls.Kcross_fast_n = kernel_func_n(
-            cls.crosswise_dists_fast_n, cls.length_scale
+            cls.crosswise_diffs_fast_n, cls.length_scale
         )
 
         cls.nn_indices_all_t, _ = cls.nbrs_lookup.get_batch_nns(
@@ -513,7 +513,7 @@ class FastPredictTestCase(MuyGPSTestCase):
 
         cls.new_nn_indices_t = fast_nn_update_t(cls.nn_indices_all_t)
         cls.closest_set_new_t = cls.new_nn_indices_t[cls.closest_neighbor_t]
-        cls.crosswise_dists_fast_t = crosswise_tensors_t(
+        cls.crosswise_diffs_fast_t = crosswise_tensor_t(
             cls.test_features_t,
             cls.train_features_t,
             torch.arange(0, cls.test_count),
@@ -522,7 +522,7 @@ class FastPredictTestCase(MuyGPSTestCase):
 
         kernel_func_t = matern_05_fn_t
         cls.Kcross_fast_t = kernel_func_t(
-            cls.crosswise_dists_fast_t, cls.length_scale
+            cls.crosswise_diffs_fast_t, cls.length_scale
         )
 
     def test_fast_nn_update(self):
@@ -649,7 +649,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         cls.closest_set_new_n = cls.new_nn_indices_n[
             cls.closest_neighbor_n
         ].astype(int)
-        cls.crosswise_dists_fast_n = crosswise_tensors_n(
+        cls.crosswise_diffs_fast_n = crosswise_tensor_n(
             cls.test_features_n,
             cls.train_features_n,
             np.arange(0, cls.test_count),
@@ -661,7 +661,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         kernel_func_n = matern_05_fn_n
         for i, model in enumerate(cls.muygps.models):
             Kcross_fast_n[:, :, i] = kernel_func_n(
-                cls.crosswise_dists_fast_n, cls.length_scale
+                cls.crosswise_diffs_fast_n, cls.length_scale
             )
         cls.Kcross_fast_n = Kcross_fast_n
 
@@ -693,7 +693,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
 
         cls.new_nn_indices_t = fast_nn_update_t(cls.nn_indices_all_t)
         cls.closest_set_new_t = cls.new_nn_indices_t[cls.closest_neighbor_t]
-        cls.crosswise_dists_fast_t = crosswise_tensors_t(
+        cls.crosswise_diffs_fast_t = crosswise_tensor_t(
             cls.test_features_t,
             cls.train_features_t,
             torch.arange(0, cls.test_count),
@@ -824,8 +824,8 @@ class OptimTestCase(MuyGPSTestCase):
             self._get_mean_fn_n(),
             self._get_var_fn_n(),
             self._get_sigma_sq_fn_n(),
-            self.pairwise_dists_n,
-            self.crosswise_dists_n,
+            self.pairwise_diffs_n,
+            self.crosswise_diffs_n,
             self.batch_nn_targets_n,
             self.batch_targets_n,
         )
@@ -838,8 +838,8 @@ class OptimTestCase(MuyGPSTestCase):
             self._get_mean_fn_t(),
             self._get_var_fn_t(),
             self._get_sigma_sq_fn_t(),
-            self.pairwise_dists_t,
-            self.crosswise_dists_t,
+            self.pairwise_diffs_t,
+            self.crosswise_diffs_t,
             self.batch_nn_targets_t,
             self.batch_targets_t,
         )
@@ -909,8 +909,8 @@ class ObjectiveTest(OptimTestCase):
         kernel_fn_t = self._get_kernel_fn_t()
         self.assertTrue(
             np.allclose(
-                kernel_fn_n(self.pairwise_dists_n, **self.x0_map_n),
-                kernel_fn_t(self.pairwise_dists_t, **self.x0_map_t),
+                kernel_fn_n(self.pairwise_diffs_n, **self.x0_map_n),
+                kernel_fn_t(self.pairwise_diffs_t, **self.x0_map_t),
             )
         )
 

@@ -22,7 +22,7 @@ from MuyGPyS._test.utils import (
     _consistent_assert,
     _make_gaussian_matrix,
 )
-from MuyGPyS.gp.tensors import pairwise_distances
+from MuyGPyS.gp.tensors import pairwise_tensor
 from MuyGPyS.gp.kernels import Hyperparameter, SigmaSq, RBF, Matern
 from MuyGPyS.neighbors import NN_Wrapper
 
@@ -57,11 +57,11 @@ class DistancesTest(parameterized.TestCase):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         self.assertEqual(nn_indices.shape, (test_count, nn_count))
         self.assertEqual(nn_dists.shape, (test_count, nn_count))
-        dists = _consistent_unchunk_tensor(
-            pairwise_distances(train, nn_indices, metric=metric)
+        diffs = _consistent_unchunk_tensor(
+            pairwise_tensor(train, nn_indices, metric=metric)
         )
-        _check_ndarray(self.assertEqual, dists, mm.ftype)
-        self.assertEqual(dists.shape, (test_count, nn_count, nn_count))
+        _check_ndarray(self.assertEqual, diffs, mm.ftype)
+        self.assertEqual(diffs.shape, (test_count, nn_count, nn_count))
 
     @parameterized.parameters(
         (
@@ -93,24 +93,24 @@ class DistancesTest(parameterized.TestCase):
             )
         )
         self.assertEqual(dists.shape, (test_count, nn_count, nn_count))
-        ll_dists = points[:, :, None, :] - points[:, None, :, :]
-        ll_dists = ll_dists**2
+        ll_diffs = points[:, :, None, :] - points[:, None, :, :]
+        ll_dists = ll_diffs**2
         ll_dists = mm.sum(ll_dists, axis=-1)
         self.assertEqual(ll_dists.shape, (test_count, nn_count, nn_count))
-        l2_dists = _consistent_unchunk_tensor(
-            pairwise_distances(train, nn_indices, metric="l2")
+        l2_diffs = _consistent_unchunk_tensor(
+            pairwise_tensor(train, nn_indices, metric="l2")
         )
-        self.assertEqual(l2_dists.shape, (test_count, nn_count, nn_count))
-        F2_dists = _consistent_unchunk_tensor(
-            pairwise_distances(train, nn_indices, metric="F2")
+        self.assertEqual(l2_diffs.shape, (test_count, nn_count, nn_count))
+        F2_diffs = _consistent_unchunk_tensor(
+            pairwise_tensor(train, nn_indices, metric="F2")
         )
-        self.assertEqual(l2_dists.shape, (test_count, nn_count, nn_count))
+        self.assertEqual(l2_diffs.shape, (test_count, nn_count, nn_count))
         _check_ndarray(self.assertEqual, dists, mm.ftype)
-        _check_ndarray(self.assertEqual, F2_dists, mm.ftype)
-        _check_ndarray(self.assertEqual, l2_dists, mm.ftype)
+        _check_ndarray(self.assertEqual, F2_diffs, mm.ftype)
+        _check_ndarray(self.assertEqual, l2_diffs, mm.ftype)
         _check_ndarray(self.assertEqual, ll_dists, mm.ftype)
-        _consistent_assert(self.assertTrue, mm.allclose(dists, F2_dists))
-        _consistent_assert(self.assertTrue, mm.allclose(dists, l2_dists**2))
+        _consistent_assert(self.assertTrue, mm.allclose(dists, F2_diffs))
+        _consistent_assert(self.assertTrue, mm.allclose(dists, l2_diffs**2))
         _consistent_assert(self.assertTrue, mm.allclose(dists, ll_dists))
 
 
@@ -344,10 +344,10 @@ class RBFTest(KernelTest):
         test = _make_gaussian_matrix(test_count, feature_count)
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
-        F2_dists = pairwise_distances(train, nn_indices, metric="F2")
+        F2_diffs = pairwise_tensor(train, nn_indices, metric="F2")
         rbf = RBF(**k_kwargs)
         self._check_params_chassis(rbf, **k_kwargs)
-        kern = _consistent_unchunk_tensor(rbf(F2_dists))
+        kern = _consistent_unchunk_tensor(rbf(F2_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         sk_rbf = sk_RBF(length_scale=rbf.length_scale())
@@ -484,10 +484,10 @@ class MaternTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
-        l2_dists = pairwise_distances(train, nn_indices, metric="l2")
+        l2_diffs = pairwise_tensor(train, nn_indices, metric="l2")
         mtn = Matern(**k_kwargs)
         self._check_params_chassis(mtn, **k_kwargs)
-        kern = _consistent_unchunk_tensor(mtn(l2_dists))
+        kern = _consistent_unchunk_tensor(mtn(l2_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=mtn.length_scale())

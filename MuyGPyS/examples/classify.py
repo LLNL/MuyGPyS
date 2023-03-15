@@ -74,7 +74,6 @@ def make_classifier(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> # Can alternately return distance tensors for reuse
         >>> muygps, nbrs_lookup = make_classifier(
         ...         train['input'],
         ...         train['output'],
@@ -156,8 +155,8 @@ def make_classifier(
         time_batch = perf_counter()
 
         (
-            crosswise_dists,
-            pairwise_dists,
+            crosswise_diffs,
+            pairwise_diffs,
             batch_targets,
             batch_nn_targets,
         ) = make_train_tensors(
@@ -174,8 +173,8 @@ def make_classifier(
             muygps,
             batch_targets,
             batch_nn_targets,
-            crosswise_dists,
-            pairwise_dists,
+            crosswise_diffs,
+            pairwise_diffs,
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
@@ -244,7 +243,6 @@ def make_multivariate_classifier(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> # Can alternately return distance tensors for reuse
         >>> mmuygps, nbrs_lookup = make_multivariate_classifier(
         ...         train['input'],
         ...         train['output'],
@@ -335,8 +333,8 @@ def make_multivariate_classifier(
         time_batch = perf_counter()
 
         (
-            crosswise_dists,
-            pairwise_dists,
+            crosswise_diffs,
+            pairwise_diffs,
             batch_targets,
             batch_nn_targets,
         ) = make_train_tensors(
@@ -357,8 +355,8 @@ def make_multivariate_classifier(
                     batch_nn_targets[:, :, i].reshape(
                         batch_nn_targets.shape[0], nn_count, 1
                     ),
-                    crosswise_dists,
-                    pairwise_dists,
+                    crosswise_diffs,
+                    pairwise_diffs,
                     loss_method=loss_method,
                     obj_method=obj_method,
                     opt_method=opt_method,
@@ -477,7 +475,6 @@ def do_classify(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> # Can alternately return distance tensors for reuse
         >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
         ...         test['input'],
         ...         train['input'],

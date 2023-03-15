@@ -34,8 +34,8 @@ if config.state.backend != "torch":
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS._src.gp.tensors.torch import (
-    _pairwise_tensors,
-    _crosswise_tensors,
+    _pairwise_tensor,
+    _crosswise_tensor,
 )
 from MuyGPyS._src.gp.muygps.torch import (
     _muygps_posterior_mean,
@@ -115,7 +115,7 @@ def predict_single_model(
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
-    crosswise_diffs = _crosswise_tensors(
+    crosswise_diffs = _crosswise_tensor(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
@@ -123,7 +123,7 @@ def predict_single_model(
         metric="l2",
     )
 
-    pairwise_diffs = _pairwise_tensors(
+    pairwise_diffs = _pairwise_tensor(
         train_features_embedded, nn_indices_test, metric="l2"
     )
 
@@ -221,7 +221,7 @@ def predict_multiple_model(
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
-    crosswise_diffs = _crosswise_tensors(
+    crosswise_diffs = _crosswise_tensor(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
@@ -229,7 +229,7 @@ def predict_multiple_model(
         metric="l2",
     )
 
-    pairwise_diffs = _pairwise_tensors(
+    pairwise_diffs = _pairwise_tensor(
         train_features_embedded, nn_indices_test, metric="l2"
     )
 

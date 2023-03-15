@@ -7,9 +7,9 @@
 RBF kernel functor
 
 Defines RBF (or Gaussian, or squared exponential) kernel  (inheriting
-:class:`~MuyGPyS.gp.kernels.kernel_fn.KernelFn`) that transform crosswise
-distance matrices into cross-covariance matrices and pairwise distance matrices
-into covariance or kernel matrices.
+:class:`~MuyGPyS.gp.kernels.kernel_fn.KernelFn`) that transform crosswise and
+pairwise difference tensors into cross-covariance and covariance (or kernel)
+tensors, respectively.
 
 See the following example to initialize an :class:`MuyGPyS.gp.kernels.Matern`
 object. Other kernel functors are similar, but require different
@@ -17,22 +17,23 @@ hyperparameters.
 
 Example:
     >>> from MuyGPyS.gp.kernels import RBF
-    >>> kern = RBF(
+    >>> kernel_fn = RBF(
     ...         length_scale = {"val": 7.2, , "bounds": (0.1, 2.5)}},
     ...         metric = "l2",
     ... }
 
-One uses a previously computed `pairwise_dists` tensor (see
-:func:`MuyGPyS.gp.distance.pairwise_distance`) to compute a kernel tensor whose
+One uses a previously computed `pairwise_diffs` tensor (see
+:func:`MuyGPyS.gp.tensors.pairwise_tensor`) to compute a kernel tensor whose
 second two dimensions contain square kernel matrices. Similarly, one uses a
-previously computed `crosswise_dists` matrix (see
-:func:`MuyGPyS.gp.distance.crosswise_distance`) to compute a cross-covariance
+previously computed `crosswise_diffs` matrix (see
+:func:`MuyGPyS.gp.tensors.crosswise_tensor`) to compute a cross-covariance
 matrix. See the following example, which assumes that you have already
-constructed the distance `numpy.nparrays` and the kernel `kern` as shown above.
+constructed the difference `numpy.nparrays` and the kernel `kernel_fn` as shown
+above.
 
 Example:
-    >>> K = kern(pairwise_dists)
-    >>> Kcross = kern(crosswise_dists)
+    >>> K = kernel_fn(pairwise_diffs)
+    >>> Kcross = kernel_fn(crosswise_diffs)
 """
 
 from typing import Callable, Dict, List, Optional, Tuple, Union
@@ -83,27 +84,28 @@ class RBF(KernelFn):
         self.hyperparameters["length_scale"] = self.length_scale
         self.metric = metric
 
-    def __call__(self, squared_dists: mm.ndarray) -> mm.ndarray:
+    def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
         """
-        Compute RBF kernel(s) from a distance matrix or tensor.
+        Compute RBF kernel(s) from a difference tensor.
 
         Args:
-            squared_dists:
-                A matrix or tensor of pairwise distances (usually squared l2 or
-                F2) of shape `(data_count, nn_count, nn_count)` or
-                `(data_count, nn_count)`. In the tensor case, matrix diagonals
-                along last two dimensions are expected to be 0.
+            diffs:
+                A tensor of pairwise diffs of shape
+                `(data_count, nn_count, nn_count, feature_count)` or
+                `(data_count, nn_count, feature_count)`. In the four dimensional
+                case, it is assumed that the diagonals dists
+                diffs[i, j, j, :] == 0.
 
         Returns:
             A cross-covariance matrix of shape `(data_count, nn_count)` or a
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self._fn(squared_dists, length_scale=self.length_scale())
+        return self._fn(diffs, length_scale=self.length_scale())
 
     @staticmethod
-    def _fn(squared_dists: mm.ndarray, length_scale: float) -> mm.ndarray:
-        return _rbf_fn(squared_dists, length_scale)
+    def _fn(dists: mm.ndarray, length_scale: float) -> mm.ndarray:
+        return _rbf_fn(dists, length_scale)
 
     def get_optim_params(
         self,

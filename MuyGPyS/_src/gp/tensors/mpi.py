@@ -11,8 +11,8 @@ from MuyGPyS._src.mpi_utils import (
     _chunk_function_tensor,
 )
 from MuyGPyS._src.gp.tensors.numpy import (
-    _crosswise_tensors as _crosswise_tensors_n,
-    _pairwise_tensors as _pairwise_tensors_n,
+    _crosswise_tensor as _crosswise_tensor_n,
+    _pairwise_tensor as _pairwise_tensor_n,
     _make_train_tensors as _make_train_tensors_n,
     _make_predict_tensors as _make_predict_tensors_n,
 )
@@ -67,7 +67,7 @@ def _make_train_tensors(
     )
 
 
-def _crosswise_tensors(
+def _crosswise_tensor(
     data: np.ndarray,
     nn_data: np.ndarray,
     data_indices: np.ndarray,
@@ -75,7 +75,7 @@ def _crosswise_tensors(
     metric: str = "l2",
 ) -> np.ndarray:
     return _chunk_function_tensor(
-        _crosswise_tensors_n,
+        _crosswise_tensor_n,
         data,
         nn_data,
         data_indices,
@@ -84,13 +84,13 @@ def _crosswise_tensors(
     )
 
 
-def _pairwise_tensors(
+def _pairwise_tensor(
     data: np.ndarray,
     nn_indices: np.ndarray,
     metric: str = "l2",
 ) -> np.ndarray:
     return _chunk_function_tensor(
-        _pairwise_tensors_n,
+        _pairwise_tensor_n,
         data,
         nn_indices,
         metric,
