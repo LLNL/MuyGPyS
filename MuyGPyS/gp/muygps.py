@@ -24,6 +24,7 @@ from MuyGPyS.gp.kernels import (
     SigmaSq,
     sigma_sq_scale,
 )
+from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb
 
 
@@ -115,12 +116,9 @@ class MuyGPS:
         self.eps = _init_hyperparameter(
             1e-14, "fixed", HomoscedasticNoise, **eps
         )
-        self.posterior_mean_fn = _muygps_posterior_mean
+        self._mean_fn = PosteriorMean(self.eps)
         self.posterior_variance_fn = _muygps_diagonal_variance
         if isinstance(self.eps, HomoscedasticNoise):
-            self.posterior_mean_fn = noise_perturb(_homoscedastic_perturb)(
-                self.posterior_mean_fn
-            )
             self.posterior_variance_fn = noise_perturb(_homoscedastic_perturb)(
                 self.posterior_variance_fn
             )
@@ -286,9 +284,7 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return self.posterior_mean_fn(
-            K, Kcross, batch_nn_targets, eps=self.eps()
-        )
+        return self._mean_fn(K, Kcross, batch_nn_targets)
 
     def posterior_variance(
         self,
@@ -386,29 +382,7 @@ class MuyGPS:
             expects keyword arguments corresponding to current hyperparameter
             values for unfixed parameters.
         """
-        if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_opt_mean_fn(self.posterior_mean_fn, self.eps)
-        else:
-            raise TypeError(
-                f"Noise parameter type {type(self.eps)} is not supported for "
-                f"optimization!"
-            )
-
-    @staticmethod
-    def _get_opt_mean_fn(
-        mean_fn: Callable, eps: HomoscedasticNoise
-    ) -> Callable:
-        if not eps.fixed():
-
-            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
-                return mean_fn(K, Kcross, batch_nn_targets, eps=kwargs["eps"])
-
-        else:
-
-            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
-                return mean_fn(K, Kcross, batch_nn_targets, eps=eps())
-
-        return caller_fn
+        return self._mean_fn.get_opt_fn()
 
     def get_opt_var_fn(self) -> Callable:
         """

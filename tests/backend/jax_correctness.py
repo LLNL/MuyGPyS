@@ -894,7 +894,7 @@ class OptimTestCase(MuyGPSTestCase):
         )
 
     def _get_mean_fn_n(self):
-        return self.muygps._get_opt_mean_fn(
+        return self.muygps._mean_fn._get_opt_fn(
             noise_perturb(homoscedastic_perturb_n)(muygps_posterior_mean_n),
             self.muygps.eps,
         )
@@ -916,7 +916,7 @@ class OptimTestCase(MuyGPSTestCase):
         )
 
     def _get_mean_fn_j(self):
-        return self.muygps._get_opt_mean_fn(
+        return self.muygps._mean_fn._get_opt_fn(
             noise_perturb(homoscedastic_perturb_j)(muygps_posterior_mean_j),
             self.muygps.eps,
         )
