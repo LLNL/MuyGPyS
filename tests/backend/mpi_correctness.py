@@ -93,6 +93,8 @@ from MuyGPyS._src.optimize.chassis.mpi import (
     _bayes_opt_optimize as bayes_optimize_m,
 )
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.kernels import sigma_sq_scale
+from MuyGPyS.gp.noise import noise_perturb
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 
@@ -683,14 +685,19 @@ class OptimTestCase(MuyGPSTestCase):
     # Numpy predict functions
     def _get_mean_fn_n(self):
         return self.muygps._get_opt_mean_fn(
-            muygps_posterior_mean_n, homoscedastic_perturb_n, self.muygps.eps
+            noise_perturb(homoscedastic_perturb_n)(muygps_posterior_mean_n),
+            self.muygps.eps,
         )
 
     def _get_var_fn_n(self):
         return self.muygps._get_opt_var_fn(
-            muygps_diagonal_variance_n,
-            homoscedastic_perturb_n,
+            sigma_sq_scale(
+                noise_perturb(homoscedastic_perturb_n)(
+                    muygps_diagonal_variance_n
+                )
+            ),
             self.muygps.eps,
+            self.muygps.sigma_sq,
         )
 
     def _get_sigma_sq_fn_n(self):
@@ -701,14 +708,19 @@ class OptimTestCase(MuyGPSTestCase):
     # MPI predict functions
     def _get_mean_fn_m(self):
         return self.muygps._get_opt_mean_fn(
-            muygps_posterior_mean_m, homoscedastic_perturb_m, self.muygps.eps
+            noise_perturb(homoscedastic_perturb_m)(muygps_posterior_mean_m),
+            self.muygps.eps,
         )
 
     def _get_var_fn_m(self):
         return self.muygps._get_opt_var_fn(
-            muygps_diagonal_variance_m,
-            homoscedastic_perturb_n,
+            sigma_sq_scale(
+                noise_perturb(homoscedastic_perturb_m)(
+                    muygps_diagonal_variance_m
+                )
+            ),
             self.muygps.eps,
+            self.muygps.sigma_sq,
         )
 
     def _get_sigma_sq_fn_m(self):
