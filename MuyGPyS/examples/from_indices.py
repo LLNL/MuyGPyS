@@ -11,8 +11,8 @@ import numpy as np
 
 from typing import Optional, Tuple, Union
 
-from MuyGPyS.gp.distance import (
-    crosswise_distances,
+from MuyGPyS.gp.tensors import (
+    crosswise_tensor,
     make_predict_tensors,
     make_train_tensors,
 )
@@ -29,12 +29,8 @@ def tensors_from_indices(
     targets: np.ndarray,
     **kwargs,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if isinstance(muygps, MuyGPS):
-        metric = muygps.kernel.metric
-    else:
-        metric = muygps.metric
     crosswise_tensor, pairwise_tensor, batch_nn_targets = make_predict_tensors(
-        metric, indices, nn_indices, test, train, targets
+        indices, nn_indices, test, train, targets
     )
     if isinstance(muygps, MuyGPS):
         pairwise_tensor = muygps.kernel(pairwise_tensor)
@@ -102,7 +98,7 @@ def fast_posterior_mean_from_indices(
     closest_index: np.ndarray,
     coeffs_tensor: np.ndarray,
 ) -> np.ndarray:
-    crosswise_dists = crosswise_distances(
+    crosswise_diffs = crosswise_tensor(
         test_features,
         train_features,
         indices,
@@ -110,7 +106,7 @@ def fast_posterior_mean_from_indices(
     )
 
     return muygps.fast_posterior_mean(
-        crosswise_dists,
+        crosswise_diffs,
         coeffs_tensor[closest_index, :, :],
     )
 
@@ -131,8 +127,8 @@ def optimize_from_indices(
     """
     Find an optimal model directly from the data.
 
-    Use this method if you do not need to retain the distance matrices used for
-    optimization.
+    Use this method if you do not need to retain the difference and kernel
+    tensors used for optimization.
 
     See the following example, where we have already created a `batch_indices`
     vector and a `batch_nn_indices` matrix using
@@ -204,12 +200,11 @@ def optimize_from_indices(
         A new MuyGPs model whose specified hyperparameters have been optimized.
     """
     (
-        crosswise_dists,
-        pairwise_dists,
+        crosswise_diffs,
+        pairwise_diffs,
         batch_targets,
         batch_nn_targets,
     ) = make_train_tensors(
-        muygps.kernel.metric,
         batch_indices,
         batch_nn_indices,
         train_features,
@@ -219,8 +214,8 @@ def optimize_from_indices(
         muygps,
         batch_targets,
         batch_nn_targets,
-        crosswise_dists,
-        pairwise_dists,
+        crosswise_diffs,
+        pairwise_diffs,
         loss_method=loss_method,
         obj_method=obj_method,
         opt_method=opt_method,

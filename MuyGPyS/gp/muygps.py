@@ -10,10 +10,8 @@ MuyGPs implementation
 from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.distance import _make_fast_predict_tensors
+from MuyGPyS._src.gp.tensors import _make_fast_predict_tensors
 from MuyGPyS._src.gp.muygps import (
-    _muygps_posterior_mean,
-    _muygps_diagonal_variance,
     _muygps_fast_posterior_mean,
     _muygps_fast_posterior_mean_precompute,
 )
@@ -21,8 +19,11 @@ from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
-    SigmaSq,
+    append_optim_params_lists,
 )
+from MuyGPyS.gp.mean import PosteriorMean
+from MuyGPyS.gp.sigma_sq import SigmaSq
+from MuyGPyS.gp.variance import PosteriorVariance
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
@@ -65,19 +66,19 @@ class MuyGPS:
 
     MuyGPyS depends upon linear operations on specially-constructed tensors in
     order to efficiently estimate GP realizations. One can use (see their
-    documentation for details) :func:`MuyGPyS.gp.distance.pairwise_distances` to
-    construct pairwise distance tensors and
-    :func:`MuyGPyS.gp.distance.crosswise_distances` to produce crosswise distance
-    matrices that `MuyGPS` can then use to construct kernel tensors and
+    documentation for details) :func:`MuyGPyS.gp.tensors.pairwise_tensor` to
+    construct pairwise difference tensors and
+    :func:`MuyGPyS.gp.tensors.crosswise_tensor` to produce crosswise diff
+    tensors that `MuyGPS` can then use to construct kernel tensors and
     cross-covariance matrices, respectively.
 
     We can easily realize kernel tensors using a `MuyGPS` object's `kernel`
-    functor once we have computed a `pairwise_dists` tensor and a
-    `crosswise_dists` matrix.
+    functor once we have computed a `pairwise_diffs` tensor and a
+    `crosswise_diffs` matrix.
 
     Example:
-        >>> K = muygps.kernel(pairwise_dists)
-        >>> Kcross = muygps.kernel(crosswise_dists)
+        >>> K = muygps.kernel(pairwise_diffs)
+        >>> Kcross = muygps.kernel(crosswise_diffs)
 
 
     Args:
@@ -87,6 +88,8 @@ class MuyGPS:
             only `matern` and `rbf`.
         eps:
             A hyperparameter dict.
+        response_count:
+            The number of response dimensions.
         kwargs:
             Addition parameters to be passed to the kernel, possibly including
             additional hyperparameter dicts and a metric keyword.
@@ -101,10 +104,12 @@ class MuyGPS:
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
+        self.sigma_sq = SigmaSq(response_count)
         self.eps = _init_hyperparameter(
             1e-14, "fixed", HomoscedasticNoise, **eps
         )
-        self.sigma_sq = SigmaSq(response_count)
+        self._mean_fn = PosteriorMean(self.eps)
+        self._var_fn = PosteriorVariance(self.eps, self.sigma_sq)
 
     def set_eps(self, **eps) -> None:
         """
@@ -151,10 +156,7 @@ class MuyGPS:
                 A list of unfixed hyperparameter bound tuples.
         """
         names, params, bounds = self.kernel.get_optim_params()
-        if not self.eps.fixed():
-            names.append("eps")
-            params.append(self.eps())
-            bounds.append(self.eps.get_bounds())
+        append_optim_params_lists(self.eps, "eps", names, params, bounds)
         return names, mm.array(params), mm.array(bounds)
 
     def build_fast_posterior_mean_coeffs(
@@ -199,12 +201,10 @@ class MuyGPS:
 
         """
         (
-            pairwise_dists_fast,
+            pairwise_diffs_fast,
             train_nn_targets_fast,
-        ) = _make_fast_predict_tensors(
-            self.kernel.metric, nn_indices, train, targets
-        )
-        K = self.kernel(pairwise_dists_fast)
+        ) = _make_fast_predict_tensors(nn_indices, train, targets)
+        K = self.kernel(pairwise_diffs_fast)
 
         return _muygps_fast_posterior_mean_precompute(
             _homoscedastic_perturb(K, self.eps()), train_nn_targets_fast
@@ -261,25 +261,20 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return _muygps_posterior_mean(
-            _homoscedastic_perturb(K, self.eps()), Kcross, batch_nn_targets
-        )
+        return self._mean_fn(K, Kcross, batch_nn_targets)
 
     def posterior_variance(
         self,
         K: mm.ndarray,
         Kcross: mm.ndarray,
-        variance_mode: str = "diagonal",
-        apply_sigma_sq: bool = True,
     ) -> mm.ndarray:
         """
         Returns the posterior mean from the provided covariance and
         cross-covariance tensors.
 
-        If `variance_mode == "diagonal"`, return the local posterior
-        variances of each prediction, corresponding to the diagonal elements of
-        a covariance matrix. For each batch element :math:`\\mathbf{x}_i`, we
-        compute
+        Return the local posterior variances of each prediction, corresponding
+        to the diagonal elements of a covariance matrix. For each batch element
+        :math:`\\mathbf{x}_i`, we compute
 
         .. math::
             Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})) =
@@ -297,35 +292,12 @@ class MuyGPS:
                 A matrix of shape `(batch_count, nn_count)` containing the
                 `1 x nn_count` -shaped cross-covariance matrix corresponding
                 to each of the batch elements.
-            variance_mode:
-                Specifies the type of variance to return. Currently supports
-                `"diagonal"`.
-            apply_sigma_sq:
-                Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or
-                `sigma_sq.trained is False`.
 
         Returns:
-            A vector of shape `(batch_count,)` consisting of the diagonal
-            elements of the posterior variance, or a matrix of shape
-            `(batch_count, response_count)` for a multidimensional response.
+            A vector of shape `(batch_count, response_count)` consisting of the
+            diagonal elements of the posterior variance.
         """
-        if variance_mode == "diagonal":
-            diagonal_variance = _muygps_diagonal_variance(
-                _homoscedastic_perturb(K, self.eps()), Kcross
-            )
-            if apply_sigma_sq is True:
-                if len(self.sigma_sq()) == 1:
-                    diagonal_variance *= self.sigma_sq()
-                else:
-                    diagonal_variance = mm.array(
-                        [ss * diagonal_variance for ss in self.sigma_sq()]
-                    ).T
-            return diagonal_variance
-        else:
-            raise NotImplementedError(
-                f"Variance mode {variance_mode} is not implemented."
-            )
+        return self._var_fn(K, Kcross)
 
     def fast_posterior_mean(
         self,
@@ -369,7 +341,9 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return _muygps_fast_posterior_mean(Kcross, coeffs_tensor)
+        return _muygps_fast_posterior_mean(
+            self.kernel._distortion_fn(Kcross), coeffs_tensor
+        )
 
     def get_opt_mean_fn(self) -> Callable:
         """
@@ -385,33 +359,7 @@ class MuyGPS:
             expects keyword arguments corresponding to current hyperparameter
             values for unfixed parameters.
         """
-        if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_opt_mean_fn(
-                _muygps_posterior_mean, _homoscedastic_perturb, self.eps
-            )
-        else:
-            raise TypeError(
-                f"Noise parameter type {type(self.eps)} is not supported for "
-                f"optimization!"
-            )
-
-    @staticmethod
-    def _get_opt_mean_fn(
-        solve_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
-    ) -> Callable:
-        if not eps.fixed():
-
-            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
-                return solve_fn(
-                    perturb_fn(K, kwargs["eps"]), Kcross, batch_nn_targets
-                )
-
-        else:
-
-            def caller_fn(K, Kcross, batch_nn_targets, **kwargs):
-                return solve_fn(perturb_fn(K, eps()), Kcross, batch_nn_targets)
-
-        return caller_fn
+        return self._mean_fn.get_opt_fn()
 
     def get_opt_var_fn(self) -> Callable:
         """
@@ -427,33 +375,7 @@ class MuyGPS:
             expects keyword arguments corresponding to current hyperparameter
             values for unfixed parameters.
         """
-        if isinstance(self.eps, HomoscedasticNoise):
-            return self._get_opt_var_fn(
-                _muygps_diagonal_variance,
-                _homoscedastic_perturb,
-                self.eps,
-            )
-        else:
-            raise TypeError(
-                f"Noise parameter type {type(self.eps)} is not supported for "
-                f"optimization!"
-            )
-
-    @staticmethod
-    def _get_opt_var_fn(
-        var_fn: Callable, perturb_fn: Callable, eps: HomoscedasticNoise
-    ) -> Callable:
-        if not eps.fixed():
-
-            def caller_fn(K, Kcross, **kwargs):
-                return var_fn(perturb_fn(K, kwargs["eps"]), Kcross)
-
-        else:
-
-            def caller_fn(K, Kcross, **kwargs):
-                return var_fn(perturb_fn(K, eps()), Kcross)
-
-        return caller_fn
+        return self._var_fn.get_opt_fn()
 
     def __eq__(self, rhs) -> bool:
         if isinstance(rhs, self.__class__):

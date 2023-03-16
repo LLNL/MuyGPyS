@@ -60,10 +60,9 @@ class MultivariateStargalRegressTest(RegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, vm, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for vm in ["diagonal"]
             for lm in ["mse"]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
@@ -104,7 +103,6 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         self,
         nn_count,
         batch_count,
-        variance_mode,
         loss_method,
         obj_method,
         opt_method_and_kwargs,
@@ -116,12 +114,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
 
-        if variance_mode is None:
-            sigma_method = None
-            apply_sigma_sq = False
-        else:
-            sigma_method = "analytic"
-            apply_sigma_sq = True
+        sigma_method = "analytic"
 
         self._do_regress_test_chassis(
             train=train,
@@ -133,12 +126,10 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
-            variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             kern=kern,
             k_kwargs=k_args,
             opt_kwargs=opt_kwargs,
-            apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )
 
@@ -152,10 +143,9 @@ class HeatonTest(RegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, vm, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for vm in ["diagonal"]
             for lm in ["mse"]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
@@ -191,7 +181,6 @@ class HeatonTest(RegressionAPITest):
         self,
         nn_count,
         batch_count,
-        variance_mode,
         loss_method,
         obj_method,
         opt_method_and_kwargs,
@@ -201,12 +190,7 @@ class HeatonTest(RegressionAPITest):
         target_mse, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
 
-        if variance_mode is None:
-            sigma_method = None
-            apply_sigma_sq = False
-        else:
-            sigma_method = "analytic"
-            apply_sigma_sq = True
+        sigma_method = "analytic"
 
         self._do_regress_test_chassis(
             train=self.train,
@@ -218,11 +202,9 @@ class HeatonTest(RegressionAPITest):
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
-            variance_mode=variance_mode,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             opt_kwargs=opt_kwargs,
-            apply_sigma_sq=apply_sigma_sq,
             verbose=False,
         )
 

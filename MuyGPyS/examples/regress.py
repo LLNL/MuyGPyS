@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distance import make_train_tensors
+from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
@@ -78,8 +78,7 @@ def make_regressor(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> # Can alternately return distance tensors for reuse
-        >>> muygps, nbrs_lookup, crosswise_dists, pairwise_dists = make_regressor(
+        >>> muygps, nbrs_lookup = make_regressor(
         ...         train_features,
         ...         train_responses,
         ...         nn_count=30,
@@ -173,12 +172,11 @@ def make_regressor(
         time_batch = perf_counter()
 
         (
-            crosswise_dists,
-            pairwise_dists,
+            crosswise_diffs,
+            pairwise_diffs,
             batch_targets,
             batch_nn_targets,
         ) = make_train_tensors(
-            muygps.kernel.metric,
             batch_indices,
             batch_nn_indices,
             train_features,
@@ -193,8 +191,8 @@ def make_regressor(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
-                crosswise_dists,
-                pairwise_dists,
+                crosswise_diffs,
+                pairwise_diffs,
                 loss_method=loss_method,
                 obj_method=obj_method,
                 opt_method=opt_method,
@@ -207,7 +205,7 @@ def make_regressor(
         if sigma_method is not None:
             muygps = muygps_sigma_sq_optim(
                 muygps,
-                pairwise_dists,
+                pairwise_diffs,
                 batch_nn_targets,
                 sigma_method=sigma_method,
             )
@@ -277,7 +275,6 @@ def make_multivariate_regressor(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> # Can alternately return distance tensors for reuse
         >>> mmuygps, nbrs_lookup = make_multivariate_regressor(
         ...         train_features,
         ...         train_responses,
@@ -381,12 +378,11 @@ def make_multivariate_regressor(
         time_batch = perf_counter()
 
         (
-            crosswise_dists,
-            pairwise_dists,
+            crosswise_diffs,
+            pairwise_diffs,
             batch_targets,
             batch_nn_targets,
         ) = make_train_tensors(
-            mmuygps.metric,
             batch_indices,
             batch_nn_indices,
             train_features,
@@ -404,8 +400,8 @@ def make_multivariate_regressor(
                         batch_nn_targets[:, :, i].reshape(
                             batch_nn_targets.shape[0], nn_count, 1
                         ),
-                        crosswise_dists,
-                        pairwise_dists,
+                        crosswise_diffs,
+                        pairwise_diffs,
                         loss_method=loss_method,
                         obj_method=obj_method,
                         opt_method=opt_method,
@@ -418,7 +414,7 @@ def make_multivariate_regressor(
         if sigma_method is not None:
             mmuygps = mmuygps_sigma_sq_optim(
                 mmuygps,
-                pairwise_dists,
+                pairwise_diffs,
                 batch_nn_targets,
                 sigma_method=sigma_method,
             )
@@ -537,12 +533,10 @@ def do_regress(
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
-    variance_mode: Optional[str] = None,
     kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
-    apply_sigma_sq: bool = True,
     verbose: bool = False,
 ) -> Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper, np.ndarray, np.ndarray]:
     """
@@ -577,13 +571,11 @@ def do_regress(
         ...         loss_method="mse",
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
-        ...         variance_mode="diagonal",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> # Can alternately return distance tensors for reuse
-        >>> muygps, nbrs_lookup, predictions, variance, crosswise_dists, pairwise_dists = do_regress(
+        >>> muygps, nbrs_lookup, predictions, variance = do_regress(
         ...         test['input'],
         ...         train['input'],
         ...         train['output'],
@@ -592,7 +584,6 @@ def do_regress(
         ...         loss_method="mse",
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
-        ...         variance_mode="diagonal",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -634,9 +625,6 @@ def do_regress(
             member whose value, invoked via `muygps.sigma_sq()`, is a
             `(response_count,)` vector to be used for scaling posterior
             variances.
-        variance_mode:
-            Specifies the type of variance to return. Currently supports
-            `diagonal` and None. If None, report no variance term.
         kern:
             The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
             details. Only used in the multivariate case. If `None`, assume
@@ -656,9 +644,6 @@ def do_regress(
         opt_kwargs:
             Parameters for the wrapped optimizer. See the docs of the
             corresponding library for supported parameters.
-        apply_sigma_sq:
-            If `True` and `variance_mode is not None`, automatically scale the
-            posterior variances by `sigma_sq`.
         verbose:
             If `True`, print summary statistics.
 
@@ -672,16 +657,9 @@ def do_regress(
     predictions:
         The predicted response associated with each test observation.
     variance:
-        Estimated posterior variance of each test prediction. If
-        `variance_mode == "diagonal"` return a `(test_count, response_count)`
-        matrix where each row is the posterior variance. If
-        `sigma_method is not None` and `apply_sigma_sq is True`, each column
-        of the variance is automatically scaled by the corresponding `sigma_sq`
-        parameter.
+        Estimated `(test_count, response_count)` posterior variance of each
+        test prediction.
     """
-    if sigma_method is None:
-        apply_sigma_sq = False
-
     regressor, nbrs_lookup = _decide_and_make_regressor(
         train_features,
         train_targets,
@@ -704,8 +682,6 @@ def do_regress(
         train_features,
         nbrs_lookup,
         train_targets,
-        variance_mode=variance_mode,
-        apply_sigma_sq=apply_sigma_sq,
     )
 
     return regressor, nbrs_lookup, posterior_mean, posterior_variance
@@ -717,8 +693,6 @@ def regress_any(
     train_features: np.ndarray,
     train_nbrs_lookup: NN_Wrapper,
     train_targets: np.ndarray,
-    variance_mode: Optional[str] = None,
-    apply_sigma_sq: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, Dict[str, float]]:
     """
     Simultaneously predicts the response for each test item.
@@ -735,12 +709,6 @@ def regress_any(
         train_targets:
             Observed response for all training data of shape
             `(train_count, class_count)`.
-        variance_mode : str or None
-            Specifies the type of variance to return. Currently supports
-            `diagonal` and None. If None, report no variance term.
-        apply_sigma_sq:
-            If `True` and `variance_mode is not None`, automatically scale the
-            posterior variances by `sigma_sq`.
 
     Returns
     -------
@@ -752,8 +720,7 @@ def regress_any(
         shape `(test_count,)` if the argument `regressor` is an instance of
         :class:`MuyGPyS.gp.muygps.MuyGPS`, and of shape
         `(test_count, response_count)` if `regressor` is an instance of
-        :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS`. Returned only when
-        `variance_mode == "diagonal"`.
+        :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS`.
     timing : dict
         Timing for the subroutines of this function.
     """
@@ -773,8 +740,6 @@ def regress_any(
         test_features,
         train_features,
         train_targets,
-        variance_mode=variance_mode,
-        apply_sigma_sq=apply_sigma_sq,
     )
     time_pred = perf_counter()
 

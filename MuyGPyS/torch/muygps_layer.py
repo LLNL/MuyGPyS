@@ -9,11 +9,11 @@ MuyGPs PyTorch implementation
 
 import torch
 from torch import nn
-from MuyGPyS._src.gp.distance.torch import (
-    _pairwise_distances,
-    _crosswise_distances,
+from MuyGPyS._src.gp.tensors.torch import (
+    _pairwise_tensor,
+    _crosswise_tensor,
+    _l2,
 )
-
 from MuyGPyS._src.gp.muygps.torch import (
     _muygps_posterior_mean,
     _muygps_diagonal_variance,
@@ -124,8 +124,6 @@ class MuyGPs_layer(nn.Module):
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
         self.batch_nn_targets = batch_nn_targets
-        self.variance_mode = "diagonal"
-        self.apply_sigma_sq = True
 
     def forward(self, x):
         """
@@ -136,25 +134,22 @@ class MuyGPs_layer(nn.Module):
             predicted response for each of the batch elements.
         """
 
-        crosswise_dists = _crosswise_distances(
+        crosswise_diffs = _crosswise_tensor(
             x,
             x,
             self.batch_indices,
             self.batch_nn_indices,
-            metric="l2",
         )
 
-        pairwise_dists = _pairwise_distances(
-            x, self.batch_nn_indices, metric="l2"
-        )
+        pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices)
 
         Kcross = kernel_func(
-            crosswise_dists,
+            crosswise_diffs,
             nu=self.nu,
             length_scale=self.length_scale,
         )
         K = kernel_func(
-            pairwise_dists,
+            pairwise_diffs,
             nu=self.nu,
             length_scale=self.length_scale,
         )
@@ -166,21 +161,10 @@ class MuyGPs_layer(nn.Module):
             _homoscedastic_perturb(K, self.eps), self.batch_nn_targets
         )
 
-        if self.variance_mode is None:
-            return predictions
-        elif self.variance_mode == "diagonal":
-            variances = _muygps_diagonal_variance(
-                _homoscedastic_perturb(K, self.eps), Kcross
-            )
-            if self.apply_sigma_sq is True:
-                if len(sigma_sq) == 1:
-                    variances *= sigma_sq
-                else:
-                    variances = torch.outer(variances, sigma_sq)
-        else:
-            raise NotImplementedError(
-                f"Variance mode {self.variance_mode} is not implemented."
-            )
+        variances = _muygps_diagonal_variance(
+            _homoscedastic_perturb(K, self.eps), Kcross
+        )
+        variances = torch.outer(variances, sigma_sq)
 
         return predictions, variances, sigma_sq
 
@@ -297,17 +281,14 @@ class MultivariateMuyGPs_layer(nn.Module):
             A torch.Tensor of shape `(batch_count, response_count)` listing the
             predicted response for each of the batch elements.
         """
-        crosswise_dists = _crosswise_distances(
+        crosswise_diffs = _crosswise_tensor(
             x,
             x,
             self.batch_indices,
             self.batch_nn_indices,
-            metric="l2",
         )
 
-        pairwise_dists = _pairwise_distances(
-            x, self.batch_nn_indices, metric="l2"
-        )
+        pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices)
 
         batch_count, nn_count, response_count = self.batch_nn_targets.shape
 
@@ -316,13 +297,13 @@ class MultivariateMuyGPs_layer(nn.Module):
 
         for i in range(self.num_models):
             Kcross[:, :, i] = kernel_func(
-                crosswise_dists,
+                crosswise_diffs,
                 nu=self.nu[i],
                 length_scale=self.length_scale[i],
             )
 
             K[:, :, :, i] = kernel_func(
-                pairwise_dists,
+                pairwise_diffs,
                 nu=self.nu[i],
                 length_scale=self.length_scale[i],
             )
@@ -355,16 +336,16 @@ class MultivariateMuyGPs_layer(nn.Module):
 
 
 def kernel_func(
-    dist_tensor: torch.Tensor, nu: float, length_scale: float
+    diff_tensor: torch.Tensor, nu: float, length_scale: float
 ) -> torch.Tensor:
     """
-    Generate kernel tensors using the Matern kernel given an input distance
+    Generate kernel tensors using the Matern kernel given an input difference
     tensor. Currently only supports the Matern kernel, but more kernels will
     be added in future releases.
 
     Args:
-        dist_matrix:
-            A torch.Tensor distance tensor on which to evaluate the kernel.
+        diff_tensor:
+            A torch.Tensor difference tensor on which to evaluate the kernel.
         nu:
             The smoothness hyperparameter in the Matern kernel.
         length_scale:
@@ -375,15 +356,15 @@ def kernel_func(
         input values.
     """
     if nu == 1 / 2:
-        return _matern_05_fn(dist_tensor, length_scale=length_scale)
+        return _matern_05_fn(_l2(diff_tensor), length_scale=length_scale)
 
     if nu == 3 / 2:
-        return _matern_15_fn(dist_tensor, length_scale=length_scale)
+        return _matern_15_fn(_l2(diff_tensor), length_scale=length_scale)
 
     if nu == 5 / 2:
-        return _matern_25_fn(dist_tensor, length_scale=length_scale)
+        return _matern_25_fn(_l2(diff_tensor), length_scale=length_scale)
 
     if nu == torch.inf:
-        return _matern_inf_fn(dist_tensor, length_scale=length_scale)
+        return _matern_inf_fn(_l2(diff_tensor), length_scale=length_scale)
     else:
-        return _matern_gen_fn(dist_tensor, nu, length_scale=length_scale)
+        return _matern_gen_fn(_l2(diff_tensor), nu, length_scale=length_scale)

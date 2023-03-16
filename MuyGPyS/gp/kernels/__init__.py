@@ -3,11 +3,15 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .hyperparameters import _init_hyperparameter, Hyperparameter
-from .kernel_fn import KernelFn
+from .hyperparameters import (
+    _init_hyperparameter,
+    append_optim_params_lists,
+    apply_hyperparameter,
+    Hyperparameter,
+)
+from .kernel_fn import apply_distortion, KernelFn
 from .matern import Matern
 from .rbf import RBF
-from .sigma_sq import SigmaSq
 
 
 def _get_kernel(kern: str, **kwargs) -> KernelFn:

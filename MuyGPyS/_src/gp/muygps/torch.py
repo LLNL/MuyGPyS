@@ -10,6 +10,7 @@ def _muygps_posterior_mean(
     K: torch.ndarray,
     Kcross: torch.ndarray,
     batch_nn_targets: torch.ndarray,
+    **kwargs,
 ) -> torch.ndarray:
     batch_count, nn_count, response_count = batch_nn_targets.shape
     responses = Kcross.reshape(batch_count, 1, nn_count) @ torch.linalg.solve(
@@ -21,6 +22,7 @@ def _muygps_posterior_mean(
 def _muygps_diagonal_variance(
     K: torch.ndarray,
     Kcross: torch.ndarray,
+    **kwargs,
 ) -> torch.ndarray:
     batch_count, nn_count = Kcross.shape
     return 1 - torch.sum(

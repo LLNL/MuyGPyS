@@ -49,8 +49,8 @@ def make_loo_crossval_fn(
     mean_fn: Callable,
     var_fn: Callable,
     sigma_sq_fn: Callable,
-    pairwise_dists: mm.ndarray,
-    crosswise_dists: mm.ndarray,
+    pairwise_diffs: mm.ndarray,
+    crosswise_diffs: mm.ndarray,
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
 ) -> Callable:
@@ -77,15 +77,15 @@ def make_loo_crossval_fn(
         sigma_sq_fn:
             A function that realizes `sigma_sq` optimization given an epsilon
             value. The given value is unused if epsilon is fixed.
-        pairwise_dists:
-            Distance tensor of floats of shape
-            `(batch_count, nn_count, nn_count)` whose second two dimensions give
-            the pairwise distances between the nearest neighbors of each batch
-            element.
-        crosswise_dists:
-            Distance matrix of floats of shape `(batch_count, nn_count)` whose
-            rows give the distances between each batch element and its nearest
-            neighbors.
+        pairwise_diffs:
+            A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
+            containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
+            nearest neighbor difference tensors corresponding to each of the
+            batch elements.
+        crosswise_diffs:
+            A tensor of shape `(batch_count, nn_count, feature_count)` whose
+            last two dimensions list the difference between each feature of each
+            batch element element and its nearest neighbors.
         batch_nn_targets:
             Tensor of floats of shape `(batch_count, nn_count, response_count)`
             containing the expected response for each nearest neighbor of each
@@ -97,7 +97,7 @@ def make_loo_crossval_fn(
     Returns:
         A Callable `objective_fn`, whose format depends on `opt_method`.
     """
-    kernels_fn = make_kernels_fn(kernel_fn, pairwise_dists, crosswise_dists)
+    kernels_fn = make_kernels_fn(kernel_fn, pairwise_diffs, crosswise_diffs)
     predict_and_loss_fn = _switch_on_loss_method(
         loss_method,
         make_raw_predict_and_loss_fn,
@@ -120,12 +120,12 @@ def make_loo_crossval_fn(
 
 def make_kernels_fn(
     kernel_fn: Callable,
-    pairwise_dists: mm.ndarray,
-    crosswise_dists: mm.ndarray,
+    pairwise_diffs: mm.ndarray,
+    crosswise_diffs: mm.ndarray,
 ) -> Callable:
     def kernels_fn(**kwargs):
-        K = kernel_fn(pairwise_dists, **kwargs)
-        Kcross = kernel_fn(crosswise_dists, **kwargs)
+        K = kernel_fn(pairwise_diffs, **kwargs)
+        Kcross = kernel_fn(crosswise_diffs, **kwargs)
         return K, Kcross
 
     return kernels_fn

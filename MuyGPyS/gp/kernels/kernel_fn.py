@@ -8,8 +8,8 @@ Hyperparameters and kernel functors
 
 Defines kernel functors (inheriting
 :class:`~MuyGPyS.gp.kernels.kernel_fn.KernelFn`) that transform crosswise
-distance matrices into cross-covariance matrices and pairwise distance matrices
-into covariance or kernel matrices.
+difference tensors into cross-covariance matrices and pairwise difference
+matrices into covariance or kernel tensors.
 
 See the following example to initialize an :class:`MuyGPyS.gp.kernels.Matern`
 object. Other kernel functors are similar, but require different
@@ -23,22 +23,47 @@ Example:
     ...         metric = "l2",
     ... }
 
-One uses a previously computed `pairwise_dists` tensor (see
-:func:`MuyGPyS.gp.distance.pairwise_distance`) to compute a kernel tensor whose
+One uses a previously computed `pairwise_diffs` tensor (see
+:func:`MuyGPyS.gp.tensor.pairwise_tensor`) to compute a kernel tensor whose
 second two dimensions contain square kernel matrices. Similarly, one uses a
-previously computed `crosswise_dists` matrix (see
-:func:`MuyGPyS.gp.distance.crosswise_distance`) to compute a cross-covariance
+previously computed `crosswise_diffs` matrix (see
+:func:`MuyGPyS.gp.tensor.crosswise_diffs`) to compute a cross-covariance
 matrix. See the following example, which assumes that you have already
-constructed the distance `numpy.nparrays` and the kernel `kern` as shown above.
+constructed the difference `numpy.nparrays` and the kernel `kern` as shown
+above.
 
 Example:
-    >>> K = kern(pairwise_dists)
-    >>> Kcross = kern(crosswise_dists)
+    >>> K = kern(pairwise_diffs)
+    >>> Kcross = kern(crosswise_diffs)
 """
 
 from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
+from MuyGPyS._src.gp.tensors import _F2, _l2
+
+
+def apply_distortion(distortion_fn):
+    def distortion_appier(fn):
+        def distorted_fn(diffs, *args, **kwargs):
+            return fn(distortion_fn(diffs), *args, **kwargs)
+
+        return distorted_fn
+
+    return distortion_appier
+
+
+class IsotropicDistortion:
+    def __init__(self, metric):
+        if metric == "l2":
+            self._dist_fn = _l2
+        elif metric == "F2":
+            self._dist_fn = _F2
+        else:
+            raise ValueError(f"Metric {metric} is not supported!")
+
+    def __call__(self, diffs):
+        return self._dist_fn(diffs)
 
 
 class KernelFn:
@@ -53,12 +78,13 @@ class KernelFn:
             Ignored (by this base class) keyword arguments.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, metric="l2", **kwargs):
         """
         Initialize dict holding hyperparameters.
         """
         self.hyperparameters = dict()
-        self.metric = ""
+        self.metric = metric
+        self._distortion_fn = IsotropicDistortion(self.metric)
 
     def set_params(self, **kwargs) -> None:
         """
@@ -71,7 +97,7 @@ class KernelFn:
         for name in kwargs:
             self.hyperparameters[name]._set(**kwargs[name])
 
-    def __call__(self, dists: mm.ndarray) -> mm.ndarray:
+    def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
         raise NotImplementedError(
             f"__call__ is not implemented for base KernelFn"
         )

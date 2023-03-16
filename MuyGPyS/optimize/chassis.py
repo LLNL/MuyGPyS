@@ -43,8 +43,8 @@ def optimize_from_tensors(
     muygps: MuyGPS,
     batch_targets: mm.ndarray,
     batch_nn_targets: mm.ndarray,
-    crosswise_dists: mm.ndarray,
-    pairwise_dists: mm.ndarray,
+    crosswise_diffs: mm.ndarray,
+    pairwise_diffs: mm.ndarray,
     loss_method: str = "mse",
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
@@ -53,16 +53,13 @@ def optimize_from_tensors(
     **kwargs,
 ) -> MuyGPS:
     """
-    Find the optimal model using existing distance matrices.
-
-    Use this method if you need to retain the distance matrices used for later
-    use.
+    Find the optimal model using existing difference matrices.
 
     See the following example, where we have already created a `batch_indices`
     vector and a `batch_nn_indices` matrix using
-    :class:`MuyGPyS.neighbors.NN_Wrapper`, a `crosswise_dists`
-    matrix using :func:`MuyGPyS.gp.distance.crosswise_distances` and
-    `pairwise_dists` using :func:`MuyGPyS.gp.distance.pairwise_distances`, and
+    :class:`MuyGPyS.neighbors.NN_Wrapper`, a `crosswise_diffs`
+    matrix using :func:`MuyGPyS.gp.tensors.crosswise_tensor` and
+    `pairwise_diffs` using :func:`MuyGPyS.gp.tensors.pairwise_tensor`, and
     initialized a :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
 
     Example:
@@ -71,8 +68,8 @@ def optimize_from_tensors(
         ...         muygps,
         ...         batch_indices,
         ...         batch_nn_indices,
-        ...         crosswise_dists,
-        ...         pairwise_dists,
+        ...         crosswise_diffs,
+        ...         pairwise_diffs,
         ...         train_responses,
         ...         loss_method='mse',
         ...         obj_method='loo_crossval',
@@ -104,15 +101,15 @@ def optimize_from_tensors(
             Tensor of floats of shape `(batch_count, nn_count, response_count)`
             containing the expected response for each nearest neighbor of each
             batch element.
-        crosswise_dists:
-            Distance matrix of floats of shape `(batch_count, nn_count)` whose
-            rows give the distances between each batch element and its nearest
-            neighbors.
-        pairwise_dists:
-            Distance tensor of floats of shape
-            `(batch_count, nn_count, nn_count)` whose second two dimensions give
-            the pairwise distances between the nearest neighbors of each batch
-            element.
+        crosswise_diffs:
+            A tensor of shape `(batch_count, nn_count, feature_count)` whose
+            last two dimensions list the difference between each feature of each
+            batch element element and its nearest neighbors.
+        pairwise_diffs:
+            A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
+            containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
+            nearest neighbor difference tensors corresponding to each of the
+            batch elements.
         loss_method:
             Indicates the loss function to be used.
         obj_method:
@@ -147,8 +144,8 @@ def optimize_from_tensors(
         mean_fn,
         var_fn,
         sigma_sq_fn,
-        pairwise_dists,
-        crosswise_dists,
+        pairwise_diffs,
+        crosswise_diffs,
         batch_nn_targets,
         batch_targets,
     )

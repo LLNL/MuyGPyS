@@ -10,10 +10,9 @@ from jax import jit
 
 import MuyGPyS._src.math.jax as jnp
 
-# from sklearn.metrics.pairwise import cosine_similarity
-@partial(jit, static_argnums=(0,))
+
+@jit
 def _make_fast_predict_tensors(
-    metric: str,
     batch_nn_indices: jnp.ndarray,
     train_features: jnp.ndarray,
     train_targets: jnp.ndarray,
@@ -27,16 +26,15 @@ def _make_fast_predict_tensors(
         axis=1,
     )
 
-    pairwise_dists_fast = _pairwise_distances(
-        train_features, batch_nn_indices_fast, metric=metric
+    pairwise_diffs_fast = _pairwise_tensor(
+        train_features, batch_nn_indices_fast
     )
     batch_nn_targets_fast = train_targets[batch_nn_indices_fast, :]
-    return pairwise_dists_fast, batch_nn_targets_fast
+    return pairwise_diffs_fast, batch_nn_targets_fast
 
 
-@partial(jit, static_argnums=(0,))
+@jit
 def _make_predict_tensors(
-    metric: str,
     batch_indices: jnp.ndarray,
     batch_nn_indices: jnp.ndarray,
     test_features: jnp.ndarray,
@@ -45,30 +43,25 @@ def _make_predict_tensors(
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     if test_features is None:
         test_features = train_features
-    crosswise_dists = _crosswise_distances(
+    crosswise_diffs = _crosswise_tensor(
         test_features,
         train_features,
         batch_indices,
         batch_nn_indices,
-        metric=metric,
     )
-    pairwise_dists = _pairwise_distances(
-        train_features, batch_nn_indices, metric=metric
-    )
+    pairwise_diffs = _pairwise_tensor(train_features, batch_nn_indices)
     batch_nn_targets = train_targets[batch_nn_indices, :]
-    return crosswise_dists, pairwise_dists, batch_nn_targets
+    return crosswise_diffs, pairwise_diffs, batch_nn_targets
 
 
-@partial(jit, static_argnums=(0,))
+@jit
 def _make_train_tensors(
-    metric: str,
     batch_indices: jnp.ndarray,
     batch_nn_indices: jnp.ndarray,
     train_features: jnp.ndarray,
     train_targets: jnp.ndarray,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    crosswise_dists, pairwise_dists, batch_nn_targets = _make_predict_tensors(
-        metric,
+    crosswise_diffs, pairwise_diffs, batch_nn_targets = _make_predict_tensors(
         batch_indices,
         batch_nn_indices,
         train_features,
@@ -76,31 +69,19 @@ def _make_train_tensors(
         train_targets,
     )
     batch_targets = train_targets[batch_indices, :]
-    return crosswise_dists, pairwise_dists, batch_targets, batch_nn_targets
+    return crosswise_diffs, pairwise_diffs, batch_targets, batch_nn_targets
 
 
-@partial(jit, static_argnums=(4,))
-def _crosswise_distances(
+@jit
+def _crosswise_tensor(
     data: jnp.ndarray,
     nn_data: jnp.ndarray,
     data_indices: jnp.ndarray,
     nn_indices: jnp.ndarray,
-    metric: str = "l2",
 ) -> jnp.ndarray:
     locations = data[data_indices]
     points = nn_data[nn_indices]
-    if metric == "l2":
-        diffs = _crosswise_diffs(locations, points)
-        return _l2(diffs)
-    elif metric == "F2":
-        diffs = _crosswise_diffs(locations, points)
-        return _F2(diffs)
-    # elif metric == "ip":
-    #     return _crosswise_prods(locations, points)
-    # elif metric == "cosine":
-    #     return _crosswise_cosine(locations, points)
-    else:
-        raise ValueError(f"Metric {metric} is not supported!")
+    return _crosswise_diffs(locations, points)
 
 
 @jit
@@ -110,25 +91,13 @@ def _crosswise_diffs(
     return locations[:, None, :] - points
 
 
-@partial(jit, static_argnums=(2,))
-def _pairwise_distances(
+@jit
+def _pairwise_tensor(
     data: jnp.ndarray,
     nn_indices: jnp.ndarray,
-    metric: str = "l2",
 ) -> jnp.ndarray:
     points = data[nn_indices]
-    if metric == "l2":
-        diffs = _diffs(points)
-        return _l2(diffs)
-    elif metric == "F2":
-        diffs = _diffs(points)
-        return _F2(diffs)
-    # elif metric == "ip":
-    #     return _prods(points)
-    # elif metric == "cosine":
-    #     return _cosine(points)
-    else:
-        raise ValueError(f"Metric {metric} is not supported!")
+    return _diffs(points)
 
 
 @jit

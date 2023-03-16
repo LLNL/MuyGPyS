@@ -280,12 +280,10 @@ class RegressionAPITest(parameterized.TestCase):
         obj_method: str,
         opt_method: str,
         sigma_method: Optional[str],
-        variance_mode: Optional[str],
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
         kern: Optional[str] = None,
-        apply_sigma_sq: bool = False,
         verbose: bool = False,
     ) -> None:
         regressor, predictions, mse, variance = self._do_regress(
@@ -297,12 +295,10 @@ class RegressionAPITest(parameterized.TestCase):
             obj_method,
             opt_method,
             sigma_method,
-            variance_mode,
             nn_kwargs,
             k_kwargs,
             opt_kwargs,
             kern=kern,
-            apply_sigma_sq=apply_sigma_sq,
             verbose=verbose,
         )
         self.assertEqual(predictions.shape, test["output"].shape)
@@ -315,7 +311,7 @@ class RegressionAPITest(parameterized.TestCase):
             for i, model in enumerate(regressor.models):
                 self._verify_regressor(
                     model,
-                    variance[:, i] if variance is not None else None,
+                    variance[:, i].reshape(test_count, 1),
                     test["output"][:, i].reshape(test_count, 1),
                     sigma_method,
                 )
@@ -330,10 +326,7 @@ class RegressionAPITest(parameterized.TestCase):
                 print(f"\t{p} : {param_vals[i]}")
         if variance is not None:
             test_count, response_count = targets.shape
-            if response_count > 1:
-                self.assertEqual(variance.shape, (test_count, response_count))
-            else:
-                self.assertEqual(variance.shape, (test_count,))
+            self.assertEqual(variance.shape, (test_count, response_count))
         if sigma_method is None:
             self.assertFalse(regressor.sigma_sq.trained)
         elif sigma_method.lower() == "analytic":
@@ -352,12 +345,10 @@ class RegressionAPITest(parameterized.TestCase):
         obj_method: str,
         opt_method: str,
         sigma_method: Optional[str],
-        variance_mode: Optional[str],
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
         kern: Optional[str] = None,
-        apply_sigma_sq: bool = True,
         verbose: bool = False,
     ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, float, np.ndarray,]:
         # print("gets here")
@@ -371,12 +362,10 @@ class RegressionAPITest(parameterized.TestCase):
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
-            variance_mode=variance_mode,
             kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
-            apply_sigma_sq=apply_sigma_sq,
             verbose=verbose,
         )
 

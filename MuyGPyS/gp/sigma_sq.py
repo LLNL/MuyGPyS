@@ -7,7 +7,7 @@
 Sigma Square hyperparameter
 """
 
-from typing import Tuple
+from typing import Callable, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import _fullname
@@ -84,3 +84,17 @@ class SigmaSq:
             The shape of the SigmaSq value.
         """
         return self.val.shape
+
+
+def sigma_sq_scale(fn: Callable) -> Callable:
+    def scaled_fn(*args, sigma_sq=[1.0], **kwargs):
+        return mm.outer(fn(*args, **kwargs), sigma_sq)
+
+    return scaled_fn
+
+
+def sigma_sq_apply(fn: Callable, sigma_sq: SigmaSq) -> Callable:
+    def scaled_fn(*args, **kwargs):
+        return fn(*args, sigma_sq=sigma_sq(), **kwargs)
+
+    return scaled_fn

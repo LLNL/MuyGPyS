@@ -11,7 +11,7 @@ Currently only supports an analytic approximation, but will support other
 methods in the future.
 """
 
-from copy import copy
+from copy import deepcopy
 from typing import Callable, Optional
 
 import MuyGPyS._src.math as mm
@@ -24,7 +24,7 @@ from MuyGPyS.optimize.utils import _switch_on_sigma_method
 
 def muygps_sigma_sq_optim(
     muygps: MuyGPS,
-    pairwise_dists: mm.ndarray,
+    pairwise_diffs: mm.ndarray,
     nn_targets: mm.ndarray,
     sigma_method: Optional[str] = "analytic",
 ) -> MuyGPS:
@@ -37,10 +37,11 @@ def muygps_sigma_sq_optim(
     Args:
         muygps:
             The model to be optimized.
-        pairwise_dists:
-            A tensor of shape `(batch_count, nn_count, nn_count)` containing the
-            `(nn_count, nn_count)`-shaped pairwise nearest neighbor distance
-            matrices corresponding to each of the batch elements.
+        pairwise_diffs:
+            A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
+            containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
+            nearest neighbor difference tensors corresponding to each of the
+            batch elements.
         nn_targets:
             Tensor of floats of shape `(batch_count, nn_count, response_count)`
             containing the expected response for each nearest neighbor of each
@@ -55,16 +56,16 @@ def muygps_sigma_sq_optim(
     return _switch_on_sigma_method(
         sigma_method,
         muygps_analytic_sigma_sq_optim,
-        lambda muygps, pairwise_dists, nn_targets: muygps,
+        lambda muygps, pairwise_diffs, nn_targets: muygps,
         muygps,
-        pairwise_dists,
+        pairwise_diffs,
         nn_targets,
     )
 
 
 def mmuygps_sigma_sq_optim(
     mmuygps: MMuyGPS,
-    pairwise_dists: mm.ndarray,
+    pairwise_diffs: mm.ndarray,
     nn_targets: mm.ndarray,
     sigma_method: Optional[str] = "analytic",
 ) -> MMuyGPS:
@@ -77,10 +78,11 @@ def mmuygps_sigma_sq_optim(
     Args:
         mmuygps:
             The model to be optimized.
-        pairwise_dists:
-            A tensor of shape `(batch_count, nn_count, nn_count)` containing the
-            `(nn_count, nn_count)`-shaped pairwise nearest neighbor distance
-            matrices corresponding to each of the batch elements.
+        pairwise_diffs:
+            A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
+            containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
+            nearest neighbor difference tensors corresponding to each of the
+            batch elements.
         nn_targets:
             Tensor of floats of shape `(batch_count, nn_count, response_count)`
             containing the expected response for each nearest neighbor of each
@@ -96,9 +98,9 @@ def mmuygps_sigma_sq_optim(
     return _switch_on_sigma_method(
         sigma_method,
         mmuygps_analytic_sigma_sq_optim,
-        lambda mmuygps, pairwise_dists, nn_targets: mmuygps,
+        lambda mmuygps, pairwise_diffs, nn_targets: mmuygps,
         mmuygps,
-        pairwise_dists,
+        pairwise_diffs,
         nn_targets,
     )
 
@@ -137,7 +139,7 @@ def make_analytic_sigma_sq_optim(
 
 
 def muygps_analytic_sigma_sq_optim(
-    muygps: MuyGPS, pairwise_dists: mm.ndarray, nn_targets: mm.ndarray
+    muygps: MuyGPS, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
 ) -> MuyGPS:
     """
     Optimize the value of the :math:`\\sigma^2` scale parameter for each
@@ -158,10 +160,11 @@ def muygps_analytic_sigma_sq_optim(
     Args:
         muygps:
             The model to be optimized.
-        pairwise_dists:
-            A tensor of shape `(batch_count, nn_count, nn_count)` containing the
-            `(nn_count, nn_count)`-shaped pairwise nearest neighbor distance
-            matrices corresponding to each of the batch elements.
+        pairwise_diffs:
+            A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
+            containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
+            nearest neighbor difference tensors corresponding to each of the
+            batch elements.
         nn_targets:
             Tensor of floats of shape `(batch_count, nn_count, response_count)`
             containing the expected response for each nearest neighbor of each
@@ -170,24 +173,23 @@ def muygps_analytic_sigma_sq_optim(
     Returns:
         A new MuyGPs model whose sigma_sq parameter has been optimized.
     """
-    ret = copy(muygps)
-    if isinstance(muygps.eps, HomoscedasticNoise):
-        K = muygps.kernel(pairwise_dists)
-        ret.sigma_sq._set(
-            _analytic_sigma_sq_optim(
-                _homoscedastic_perturb(K, muygps.eps()), nn_targets
-            )
+    ret = deepcopy(muygps)
+    if isinstance(ret.eps, HomoscedasticNoise):
+        K = ret.kernel(pairwise_diffs)
+        ss = _analytic_sigma_sq_optim(
+            _homoscedastic_perturb(K, ret.eps()), nn_targets
         )
+        ret.sigma_sq._set(ss)
         return ret
     else:
         raise TypeError(
-            f"Noise parameter type {type(muygps.eps)} is not supported for "
+            f"Noise parameter type {type(ret.eps)} is not supported for "
             f"optimization!"
         )
 
 
 def mmuygps_analytic_sigma_sq_optim(
-    mmuygps: MMuyGPS, pairwise_dists: mm.ndarray, nn_targets: mm.ndarray
+    mmuygps: MMuyGPS, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
 ) -> MMuyGPS:
     """
     Optimize the value of the :math:`\\sigma^2` scale parameter for each
@@ -208,10 +210,11 @@ def mmuygps_analytic_sigma_sq_optim(
     Args:
         muygps:
             The model to be optimized.
-        pairwise_dists:
-            A tensor of shape `(batch_count, nn_count, nn_count)` containing the
-            `(nn_count, nn_count)`-shaped pairwise nearest neighbor distance
-            matrices corresponding to each of the batch elements.
+        pairwise_diffs:
+            A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
+            containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
+            nearest neighbor difference tensors corresponding to each of the
+            batch elements.
         nn_targets:
             Tensor of floats of shape `(batch_count, nn_count, response_count)`
             containing the expected response for each nearest neighbor of each
@@ -220,7 +223,7 @@ def mmuygps_analytic_sigma_sq_optim(
     Returns:
         A new MuyGPs model whose sigma_sq parameter has been optimized.
     """
-    ret = copy(mmuygps)
+    ret = deepcopy(mmuygps)
     batch_count, nn_count, response_count = nn_targets.shape
     if response_count != len(ret.models):
         raise ValueError(
@@ -228,11 +231,10 @@ def mmuygps_analytic_sigma_sq_optim(
             f"of models ({len(ret.models)})."
         )
 
-    K = mm.zeros((batch_count, nn_count, nn_count))
     sigma_sqs = mm.zeros((response_count,))
     for i, model in enumerate(ret.models):
         if isinstance(model.eps, HomoscedasticNoise):
-            K = model.kernel(pairwise_dists)
+            K = model.kernel(pairwise_diffs)
             new_sigma_val = _analytic_sigma_sq_optim(
                 _homoscedastic_perturb(K, model.eps()),
                 nn_targets[:, :, i].reshape(batch_count, nn_count, 1),

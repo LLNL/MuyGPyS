@@ -10,16 +10,17 @@ import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.mpi_utils import (
     _chunk_function_tensor,
 )
-from MuyGPyS._src.gp.distance.numpy import (
-    _crosswise_distances as _crosswise_distances_n,
-    _pairwise_distances as _pairwise_distances_n,
+from MuyGPyS._src.gp.tensors.numpy import (
+    _crosswise_tensor as _crosswise_tensor_n,
+    _pairwise_tensor as _pairwise_tensor_n,
     _make_train_tensors as _make_train_tensors_n,
     _make_predict_tensors as _make_predict_tensors_n,
+    _F2,
+    _l2,
 )
 
 
 def _make_fast_predict_tensors(
-    metric: str,
     batch_nn_indices: np.ndarray,
     train_features: np.ndarray,
     train_targets: np.ndarray,
@@ -30,7 +31,6 @@ def _make_fast_predict_tensors(
 
 
 def _make_predict_tensors(
-    metric: str,
     batch_indices: np.ndarray,
     batch_nn_indices: np.ndarray,
     test_features: np.ndarray,
@@ -39,7 +39,6 @@ def _make_predict_tensors(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     return _chunk_function_tensor(
         _make_predict_tensors_n,
-        metric,
         batch_indices,
         batch_nn_indices,
         test_features,
@@ -50,7 +49,6 @@ def _make_predict_tensors(
 
 
 def _make_train_tensors(
-    metric: str,
     batch_indices: np.ndarray,
     batch_nn_indices: np.ndarray,
     train_features: np.ndarray,
@@ -58,7 +56,6 @@ def _make_train_tensors(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     return _chunk_function_tensor(
         _make_train_tensors_n,
-        metric,
         batch_indices,
         batch_nn_indices,
         train_features,
@@ -67,33 +64,29 @@ def _make_train_tensors(
     )
 
 
-def _crosswise_distances(
+def _crosswise_tensor(
     data: np.ndarray,
     nn_data: np.ndarray,
     data_indices: np.ndarray,
     nn_indices: np.ndarray,
-    metric: str = "l2",
 ) -> np.ndarray:
     return _chunk_function_tensor(
-        _crosswise_distances_n,
+        _crosswise_tensor_n,
         data,
         nn_data,
         data_indices,
         nn_indices,
-        metric,
     )
 
 
-def _pairwise_distances(
+def _pairwise_tensor(
     data: np.ndarray,
     nn_indices: np.ndarray,
-    metric: str = "l2",
 ) -> np.ndarray:
     return _chunk_function_tensor(
-        _pairwise_distances_n,
+        _pairwise_tensor_n,
         data,
         nn_indices,
-        metric,
     )
 
 

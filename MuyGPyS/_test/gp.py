@@ -3,17 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Tuple, Union
 
 from sklearn.metrics import pairwise_distances as skl_pairwise_distances
 
 import MuyGPyS._src.math.numpy as np
-from MuyGPyS.gp.kernels import (
-    _get_kernel,
-    _init_hyperparameter,
-    Hyperparameter,
-    SigmaSq,
-)
+from MuyGPyS.gp.kernels import _get_kernel, _init_hyperparameter, Hyperparameter
+from MuyGPyS.gp.sigma_sq import SigmaSq
 
 
 def benchmark_select_skl_metric(metric: str) -> str:
@@ -102,6 +98,12 @@ class BenchmarkGP:
             The kernel to be used. Each kernel supports different
             hyperparameters that can be specified in kwargs.
             NOTE[bwp] Currently supports `matern` and `rbf`.
+        variance_mode:
+            Specifies the type of variance to return. Currently supports
+            `diagonal` and None. If None, report no variance term.
+        apply_sigma_sq:
+            Indicates whether to scale the posterior variance by `sigma_sq`.
+            Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
         kwargs:
             Kernel parameters. See :ref:`MuyGPyS-gp-kernels`.
     """
@@ -193,9 +195,7 @@ class BenchmarkGP:
         test: np.ndarray,
         train: np.ndarray,
         targets: np.ndarray,
-        variance_mode: Optional[str] = None,
-        apply_sigma_sq: bool = True,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Performs simultaneous regression on a list of observations.
 
@@ -209,12 +209,6 @@ class BenchmarkGP:
             targets:
                 A matrix of shape `(train_count, ouput_dim)` whose rows consist
                 of vector-valued responses for each training element.
-            variance_mode:
-                Specifies the type of variance to return. Currently supports
-                `diagonal` and None. If None, report no variance term.
-            apply_sigma_sq:
-                Indicates whether to scale the posterior variance by `sigma_sq`.
-                Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
 
         Returns
         -------
@@ -223,8 +217,7 @@ class BenchmarkGP:
             of the predicted response for each of the given indices.
         diagonal_variance:
             A vector of shape `(batch_count,)` consisting of the diagonal
-            elements of the posterior variance. Only returned where
-            `variance_mode == "diagonal"`.
+            elements of the posterior variance.
         """
         crosswise_dists = benchmark_crosswise_distances(
             test, train, metric=self.kernel.metric
@@ -232,28 +225,16 @@ class BenchmarkGP:
         pairwise_dists = benchmark_pairwise_distances(
             train, metric=self.kernel.metric
         )
-        Kcross = self.kernel(crosswise_dists)
-        K = self.kernel(pairwise_dists)
+        Kcross = self.kernel.from_distances(crosswise_dists)
+        K = self.kernel.from_distances(pairwise_dists)
         responses = Kcross @ np.linalg.solve(K, targets)
 
-        if variance_mode is None:
-            return responses
-        elif variance_mode in ["diagonal", "full"]:
-            test_pairwise_distances = benchmark_pairwise_distances(
-                test, metric=self.kernel.metric
-            )
-            Kstar = self.kernel(test_pairwise_distances)
-            variance = Kstar - Kcross @ np.linalg.solve(K, Kcross.T)
-            if apply_sigma_sq is True and self.sigma_sq.trained is True:
-                variance *= self.sigma_sq()[0]
-            if variance_mode == "diagonal":
-                return responses, np.diagonal(variance)
-            else:
-                return responses, variance
-        else:
-            raise NotImplementedError(
-                f"Variance mode {variance_mode} is not implemented."
-            )
+        test_pairwise_distances = benchmark_pairwise_distances(
+            test, metric=self.kernel.metric
+        )
+        Kstar = self.kernel.from_distances(test_pairwise_distances)
+        variance = Kstar - Kcross @ np.linalg.solve(K, Kcross.T)
+        return responses, variance
 
 
 def benchmark_sample_full(
@@ -300,7 +281,7 @@ def benchmark_prepare_cholK(
     pairwise_dists = benchmark_pairwise_distances(data, metric=gp.kernel.metric)
     data_count, _ = data.shape
     Kfull = gp.sigma_sq()[0] * (
-        gp.kernel(pairwise_dists) + gp.eps() * np.eye(data_count)
+        gp.kernel.from_distances(pairwise_dists) + gp.eps() * np.eye(data_count)
     )
     return np.linalg.cholesky(Kfull)
 

@@ -9,7 +9,6 @@ import MuyGPyS._src.math.torch as torch
 
 
 def _make_fast_predict_tensors(
-    metric: str,
     batch_nn_indices: torch.ndarray,
     train_features: torch.ndarray,
     train_targets: torch.ndarray,
@@ -23,8 +22,8 @@ def _make_fast_predict_tensors(
         dim=1,
     )
 
-    pairwise_dists_fast = _pairwise_distances(
-        train_features, batch_nn_indices_fast, metric=metric
+    pairwise_dists_fast = _pairwise_tensor(
+        train_features, batch_nn_indices_fast
     )
     batch_nn_targets_fast = train_targets[batch_nn_indices_fast]
 
@@ -32,7 +31,6 @@ def _make_fast_predict_tensors(
 
 
 def _make_predict_tensors(
-    metric: str,
     batch_indices: torch.ndarray,
     batch_nn_indices: torch.ndarray,
     test_features: torch.ndarray,
@@ -41,29 +39,24 @@ def _make_predict_tensors(
 ) -> Tuple[torch.ndarray, torch.ndarray, torch.ndarray]:
     if test_features is None:
         test_features = train_features
-    crosswise_dists = _crosswise_distances(
+    crosswise_dists = _crosswise_tensor(
         test_features,
         train_features,
         batch_indices,
         batch_nn_indices,
-        metric=metric,
     )
-    pairwise_dists = _pairwise_distances(
-        train_features, batch_nn_indices, metric=metric
-    )
+    pairwise_dists = _pairwise_tensor(train_features, batch_nn_indices)
     batch_nn_targets = train_targets[batch_nn_indices, :]
     return crosswise_dists, pairwise_dists, batch_nn_targets
 
 
 def _make_train_tensors(
-    metric: str,
     batch_indices: torch.ndarray,
     batch_nn_indices: torch.ndarray,
     train_features: torch.ndarray,
     train_targets: torch.ndarray,
 ) -> Tuple[torch.ndarray, torch.ndarray, torch.ndarray, torch.ndarray]:
     crosswise_dists, pairwise_dists, batch_nn_targets = _make_predict_tensors(
-        metric,
         batch_indices,
         batch_nn_indices,
         train_features,
@@ -74,47 +67,23 @@ def _make_train_tensors(
     return crosswise_dists, pairwise_dists, batch_targets, batch_nn_targets
 
 
-def _crosswise_distances(
+def _crosswise_tensor(
     data: torch.ndarray,
     nn_data: torch.ndarray,
     data_indices: torch.ndarray,
     nn_indices: torch.ndarray,
-    metric: str = "l2",
 ) -> torch.ndarray:
     locations = data[data_indices]
     points = nn_data[nn_indices]
-    if metric == "l2":
-        diffs = _crosswise_diffs(locations, points)
-        return _l2(diffs)
-    elif metric == "F2":
-        diffs = _crosswise_diffs(locations, points)
-        return _F2(diffs)
-    # elif metric == "ip":
-    #     return _crosswise_prods(locations, points)
-    # elif metric == "cosine":
-    #     return _crosswise_cosine(locations, points)
-    else:
-        raise ValueError(f"Metric {metric} is not supported!")
+    return _crosswise_diffs(locations, points)
 
 
-def _pairwise_distances(
+def _pairwise_tensor(
     data: torch.ndarray,
     nn_indices: torch.ndarray,
-    metric: str = "l2",
 ) -> torch.ndarray:
     points = data[nn_indices]
-    if metric == "l2":
-        diffs = _pairwise_diffs(points)
-        return _l2(diffs)
-    elif metric == "F2":
-        diffs = _pairwise_diffs(points)
-        return _F2(diffs)
-    # elif metric == "ip":
-    #     return _pairwise_prods(points)
-    # elif metric == "cosine":
-    #     return _pairwise_cosine(points)
-    else:
-        raise ValueError(f"Metric {metric} is not supported!")
+    return _pairwise_diffs(points)
 
 
 def _crosswise_diffs(

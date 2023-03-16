@@ -27,7 +27,7 @@ import MuyGPyS._src.math as mm
 from MuyGPyS.examples.from_indices import fast_posterior_mean_from_indices
 from MuyGPyS.examples.regress import _decide_and_make_regressor
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distance import fast_nn_update
+from MuyGPyS.gp.tensors import fast_nn_update
 from MuyGPyS.neighbors import NN_Wrapper
 
 

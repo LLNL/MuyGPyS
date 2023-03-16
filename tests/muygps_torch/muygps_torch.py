@@ -43,12 +43,7 @@ class RegressTest(parameterized.TestCase):
         super(RegressTest, cls).setUpClass()
 
     @parameterized.parameters(
-        (
-            (1000, 100, 40, 2, nn, bs, vm)
-            for nn in [30]
-            for bs in [500]
-            for vm in [None, "diagonal"]
-        )
+        ((1000, 100, 40, 2, nn, bs) for nn in [30] for bs in [500])
     )
     def test_regress(
         self,
@@ -58,19 +53,11 @@ class RegressTest(parameterized.TestCase):
         response_count,
         nn_count,
         batch_count,
-        variance_mode,
     ):
         target_mse = 3.0
         train, test = _make_gaussian_data(
             train_count, test_count, feature_count, response_count
         )
-
-        if variance_mode is None:
-            sigma_method = None
-            apply_sigma_sq = False
-        else:
-            sigma_method = "analytic"
-            apply_sigma_sq = True
 
         train_features = train["input"]
         train_responses = train["output"]
@@ -167,12 +154,7 @@ class MultivariateRegressTest(parameterized.TestCase):
         super(MultivariateRegressTest, cls).setUpClass()
 
     @parameterized.parameters(
-        (
-            (1000, 100, 40, 2, nn, bs, vm)
-            for nn in [30]
-            for bs in [500]
-            for vm in [None, "diagonal"]
-        )
+        ((1000, 100, 40, 2, nn, bs) for nn in [30] for bs in [500])
     )
     def test_regress(
         self,
@@ -182,19 +164,11 @@ class MultivariateRegressTest(parameterized.TestCase):
         response_count,
         nn_count,
         batch_count,
-        variance_mode,
     ):
         target_mse = 3.0
         train, test = _make_gaussian_data(
             train_count, test_count, feature_count, response_count
         )
-
-        if variance_mode is None:
-            sigma_method = None
-            apply_sigma_sq = False
-        else:
-            sigma_method = "analytic"
-            apply_sigma_sq = True
 
         train_features = train["input"]
         train_responses = train["output"]

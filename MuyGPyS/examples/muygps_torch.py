@@ -33,9 +33,9 @@ if config.state.backend != "torch":
 
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
-from MuyGPyS._src.gp.distance.torch import (
-    _pairwise_distances,
-    _crosswise_distances,
+from MuyGPyS._src.gp.tensors.torch import (
+    _pairwise_tensor,
+    _crosswise_tensor,
 )
 from MuyGPyS._src.gp.muygps.torch import (
     _muygps_posterior_mean,
@@ -61,9 +61,7 @@ def predict_single_model(
     train_features: torch.ndarray,
     train_responses: torch.ndarray,
     nbrs_lookup: NN_Wrapper,
-    nn_count: torch.int64,
-    variance_mode="diagonal",
-    apply_sigma_sq=True,
+    nn_count: int,
 ):
     """
     Generate predictions using a PyTorch model containing at least one
@@ -87,12 +85,6 @@ def predict_single_model(
             the training responses corresponding to each feature.
         nbrs_lookup:
             A NN_Wrapper nearest neighbor lookup data structure.
-        variance_mode:
-            Specifies the type of variance to return. Currently supports
-            `"diagonal"` and None. If None, report no variance term.
-        apply_sigma_sq:
-            Indicates whether to scale the posterior variance by `sigma_sq`.
-            Unused if `variance_mode is None` or if set to False`.
 
     Returns
     -------
@@ -100,15 +92,12 @@ def predict_single_model(
         A torch.ndarray of shape `(test_count, response_count)` whose rows are
         the predicted response for each of the given test feature.
     variances:
-        A torch.ndarray of shape `(batch_count,)` consisting of the diagonal
-        elements of the posterior variance, or a matrix of shape
-        `(batch_count, response_count)` for a multidimensional response.
-        Only returned where `variance_mode == "diagonal"`.
+        A torch.ndarray of shape `(batch_count,response_count)` shape consisting
+        of the diagonal elements of the posterior variance.
     sigma_sq:
         A scalar used to rescale the posterior variance if a univariate
         response or a torch.ndarray of shape `(response_count,)` for a
-        multidimensional response. Only returned where apply_sigma_sq is set to
-        True.
+        multidimensional response.
     """
     if model.embedding is None:
         raise NotImplementedError(f"MuyGPs PyTorch model requires embedding.")
@@ -126,25 +115,22 @@ def predict_single_model(
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
-    crosswise_dists = _crosswise_distances(
+    crosswise_diffs = _crosswise_tensor(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
         nn_indices_test,
-        metric="l2",
     )
 
-    pairwise_dists = _pairwise_distances(
-        train_features_embedded, nn_indices_test, metric="l2"
-    )
+    pairwise_diffs = _pairwise_tensor(train_features_embedded, nn_indices_test)
 
     Kcross = kernel_func(
-        crosswise_dists,
+        crosswise_diffs,
         nu=model.nu,
         length_scale=model.length_scale,
     )
     K = kernel_func(
-        pairwise_dists,
+        pairwise_diffs,
         nu=model.nu,
         length_scale=model.length_scale,
     )
@@ -157,21 +143,10 @@ def predict_single_model(
         _homoscedastic_perturb(K, model.eps), test_nn_targets
     )
 
-    if variance_mode is None:
-        return predictions
-    elif variance_mode == "diagonal":
-        variances = _muygps_diagonal_variance(
-            _homoscedastic_perturb(K, model.eps), Kcross
-        )
-        if apply_sigma_sq is True:
-            if len(sigma_sq) == 1:
-                variances *= sigma_sq
-            else:
-                variances = torch.outer(variances, sigma_sq)
-    else:
-        raise NotImplementedError(
-            f"Variance mode {variance_mode} is not implemented."
-        )
+    variances = _muygps_diagonal_variance(
+        _homoscedastic_perturb(K, model.eps), Kcross
+    )
+    variances = torch.outer(variances, sigma_sq)
 
     return predictions, variances, sigma_sq
 
@@ -184,8 +159,6 @@ def predict_multiple_model(
     train_responses: torch.ndarray,
     nbrs_lookup: NN_Wrapper,
     nn_count: int,
-    variance_mode="diagonal",
-    apply_sigma_sq=True,
 ):
     """
     Generate predictions using a PyTorch model containing a
@@ -211,12 +184,6 @@ def predict_multiple_model(
             the training responses corresponding to each feature.
         nbrs_lookup:
             A NN_Wrapper nearest neighbor lookup data structure.
-        variance_mode:
-            Specifies the type of variance to return. Currently supports
-            `"diagonal"` and None. If None, report no variance term.
-        apply_sigma_sq:
-            Indicates whether to scale the posterior variance by `sigma_sq`.
-            Unused if `variance_mode is None` or if set to False`.
 
     Returns
     -------
@@ -227,12 +194,10 @@ def predict_multiple_model(
         A torch.ndarray of shape `(batch_count,)` consisting of the diagonal
         elements of the posterior variance, or a matrix of shape
         `(batch_count, response_count)` for a multidimensional response.
-        Only returned where `variance_mode == "diagonal"`.
     sigma_sq:
         A scalar used to rescale the posterior variance if a univariate
         response or a torch.ndarray of shape `(response_count,)` for a
-        multidimensional response. Only returned where apply_sigma_sq is set to
-        True.
+        multidimensional response.
     """
     if model.embedding is None:
         raise NotImplementedError(f"MuyGPs PyTorch model requires embedding.")
@@ -253,17 +218,14 @@ def predict_multiple_model(
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
-    crosswise_dists = _crosswise_distances(
+    crosswise_diffs = _crosswise_tensor(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
         nn_indices_test,
-        metric="l2",
     )
 
-    pairwise_dists = _pairwise_distances(
-        train_features_embedded, nn_indices_test, metric="l2"
-    )
+    pairwise_diffs = _pairwise_tensor(train_features_embedded, nn_indices_test)
 
     (
         batch_count,
@@ -276,13 +238,13 @@ def predict_multiple_model(
 
     for i in range(num_responses):
         Kcross[:, :, i] = kernel_func(
-            crosswise_dists,
+            crosswise_diffs,
             nu=model.nu[i],
             length_scale=model.length_scale[i],
         )
 
         K[:, :, :, i] = kernel_func(
-            pairwise_dists,
+            pairwise_diffs,
             nu=model.nu[i],
             length_scale=model.length_scale[i],
         )
@@ -319,8 +281,6 @@ def predict_model(
     train_responses: torch.ndarray,
     nbrs_lookup: NN_Wrapper,
     nn_count: int,
-    variance_mode="diagonal",
-    apply_sigma_sq=True,
 ):
     """
     Generate predictions using a PyTorch model containing a
@@ -364,12 +324,6 @@ def predict_model(
             the training responses corresponding to each feature.
         nbrs_lookup:
             A NN_Wrapper nearest neighbor lookup data structure.
-        variance_mode:
-            Specifies the type of variance to return. Currently supports
-            `"diagonal"` and None. If None, report no variance term.
-        apply_sigma_sq:
-            Indicates whether to scale the posterior variance by `sigma_sq`.
-            Unused if `variance_mode is None` or if set to False`.
 
     Returns
     -------
@@ -380,12 +334,10 @@ def predict_model(
         A torch.ndarray of shape `(batch_count,)` consisting of the diagonal
         elements of the posterior variance, or a matrix of shape
         `(batch_count, response_count)` for a multidimensional response.
-        Only returned where `variance_mode == "diagonal"`.
     sigma_sq:
         A scalar used to rescale the posterior variance if a univariate
         response or a torch.ndarray of shape `(response_count,)` for a
-        multidimensional response. Only returned where apply_sigma_sq is set to
-        True.
+        multidimensional response.
     """
     if model.GP_layer is None:
         raise NotImplementedError(f"MuyGPs PyTorch model requires GP_layer.")
@@ -398,8 +350,6 @@ def predict_model(
             train_responses,
             nbrs_lookup,
             nn_count,
-            variance_mode="diagonal",
-            apply_sigma_sq=True,
         )
     else:
         return predict_single_model(
@@ -409,8 +359,6 @@ def predict_model(
             train_responses,
             nbrs_lookup,
             nn_count,
-            variance_mode="diagonal",
-            apply_sigma_sq=True,
         )
 
 
