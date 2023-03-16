@@ -23,7 +23,8 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
 )
 from MuyGPyS.gp.tensors import pairwise_tensor
-from MuyGPyS.gp.kernels import Hyperparameter, SigmaSq, RBF, Matern
+from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern
+from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
 
 
