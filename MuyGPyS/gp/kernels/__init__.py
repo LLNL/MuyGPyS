@@ -5,6 +5,7 @@
 
 from .hyperparameters import (
     _init_hyperparameter,
+    append_optim_params_lists,
     apply_hyperparameter,
     Hyperparameter,
 )

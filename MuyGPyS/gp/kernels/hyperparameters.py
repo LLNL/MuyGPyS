@@ -16,7 +16,7 @@ between the upper and lower bounds if specified).
 
 from collections.abc import Sequence
 from numbers import Number
-from typing import Callable, cast, Optional, Tuple, Type, Union
+from typing import Callable, cast, List, Optional, Tuple, Type, Union
 
 from MuyGPyS import config
 
@@ -329,3 +329,16 @@ def apply_hyperparameter(fn: Callable, param: Hyperparameter, name: str):
         return applied_fn
 
     return fn
+
+
+def append_optim_params_lists(
+    param: Hyperparameter,
+    name: str,
+    names: List[str],
+    params: List[float],
+    bounds: List[Tuple[float, float]],
+):
+    if not param.fixed():
+        names.append(name)
+        params.append(param())
+        bounds.append(param.get_bounds())

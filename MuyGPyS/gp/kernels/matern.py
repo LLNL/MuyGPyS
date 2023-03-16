@@ -45,12 +45,13 @@ from MuyGPyS._src.gp.kernels import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
-from MuyGPyS.gp.kernels.hyperparameters import (
+from MuyGPyS.gp.kernels import (
     _init_hyperparameter,
+    append_optim_params_lists,
     apply_hyperparameter,
     Hyperparameter,
+    KernelFn,
 )
-from MuyGPyS.gp.kernels.kernel_fn import KernelFn
 
 
 def _set_matern_fn(nu: Hyperparameter):
@@ -163,17 +164,13 @@ class Matern(KernelFn):
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        names = []
-        params = []
-        bounds = []
-        if not self.nu.fixed():
-            names.append("nu")
-            params.append(self.nu())
-            bounds.append(self.nu.get_bounds())
-        if not self.length_scale.fixed():
-            names.append("length_scale")
-            params.append(self.length_scale())
-            bounds.append(self.length_scale.get_bounds())
+        names: List[str] = []
+        params: List[float] = []
+        bounds: List[Tuple[float, float]] = []
+        append_optim_params_lists(self.nu, "nu", names, params, bounds)
+        append_optim_params_lists(
+            self.length_scale, "length_scale", names, params, bounds
+        )
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:

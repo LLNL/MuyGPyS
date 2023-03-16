@@ -40,11 +40,13 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import _rbf_fn
-from MuyGPyS.gp.kernels.hyperparameters import (
+from MuyGPyS.gp.kernels import (
     _init_hyperparameter,
+    append_optim_params_lists,
+    apply_hyperparameter,
     Hyperparameter,
+    KernelFn,
 )
-from MuyGPyS.gp.kernels import apply_hyperparameter, KernelFn
 
 
 class RBF(KernelFn):
@@ -119,13 +121,12 @@ class RBF(KernelFn):
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        names = []
-        params = []
-        bounds = []
-        if not self.length_scale.fixed():
-            names.append("length_scale")
-            params.append(self.length_scale())
-            bounds.append(self.length_scale.get_bounds())
+        names: List[str] = []
+        params: List[float] = []
+        bounds: List[Tuple[float, float]] = []
+        append_optim_params_lists(
+            self.length_scale, "length_scale", names, params, bounds
+        )
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:
