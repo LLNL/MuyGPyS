@@ -29,12 +29,8 @@ def tensors_from_indices(
     targets: np.ndarray,
     **kwargs,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if isinstance(muygps, MuyGPS):
-        metric = muygps.kernel.metric
-    else:
-        metric = muygps.metric
     crosswise_tensor, pairwise_tensor, batch_nn_targets = make_predict_tensors(
-        metric, indices, nn_indices, test, train, targets
+        indices, nn_indices, test, train, targets
     )
     if isinstance(muygps, MuyGPS):
         pairwise_tensor = muygps.kernel(pairwise_tensor)
@@ -209,7 +205,6 @@ def optimize_from_indices(
         batch_targets,
         batch_nn_targets,
     ) = make_train_tensors(
-        muygps.kernel.metric,
         batch_indices,
         batch_nn_indices,
         train_features,

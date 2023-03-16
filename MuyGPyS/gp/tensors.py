@@ -19,7 +19,10 @@ Example:
     >>> train_features = load_train_features()
     >>> nn_count = 10
     >>> nbrs_lookup = NN_Wrapper(
-    ...         train_features, nn_count, nn_method="exact", algorithm="ball_tree"
+    ...         train_features,
+    ...         nn_count,
+    ...         nn_method="exact",
+    ...         algorithm="ball_tree",
     ... )
     >>> train_count, _ = train_features.shape
     >>> batch_count = 50
@@ -27,14 +30,13 @@ Example:
     ...         nbrs_lookup, batch_count, train_count
     ... )
     >>> pairwise_diffs = pairwise_tensor(
-    ...         train_features, batch_nn_inidices, metric="l2"
+    ...         train_features, batch_nn_inidices
     ... )
     >>> crosswise_diffs = crosswise_tensor(
     ...         train_features,
     ...         train_features,
     ...         batch_indices,
     ...         batch_nn_indices,
-    ...         metric="l2",
     ... )
     )
 
@@ -55,14 +57,13 @@ Example:
     >>> indices = np.arange(test_count)
     >>> nn_indices, _ = nbrs_lookup.get_nns(test_features)
     >>> pairwise_diffs = pairwise_tensor(
-    ...         train_features, nn_inidices, metric="l2"
+    ...         train_features, nn_inidices
     ... )
     >>> crosswise_diffs = crosswise_tensor(
     ...         test_features,
     ...         train_features,
     ...         indices,
     ...         nn_indices,
-    ...         metric="l2"
     ... )
 
 The helper functions :func:`MuyGPyS.gp.tensors.make_predict_tensors`,
@@ -94,7 +95,6 @@ def fast_nn_update(
 
 
 def make_fast_predict_tensors(
-    metric: str,
     batch_nn_indices: mm.ndarray,
     train_features: mm.ndarray,
     train_targets: mm.ndarray,
@@ -106,8 +106,6 @@ def make_fast_predict_tensors(
     :func:`~MuyGPyS.gp.muygps.MuyGPS.fast_posterior_mean`.
 
     Args:
-        metric:
-            The metric to be used to compute difference.
         batch_nn_indices:
             A matrix of integers of shape `(batch_count, nn_count)` listing the
             nearest neighbor indices for all observations in the batch.
@@ -134,7 +132,6 @@ def make_fast_predict_tensors(
         element.
     """
     return _make_fast_predict_tensors(
-        metric,
         batch_nn_indices,
         train_features,
         train_targets,
@@ -142,7 +139,6 @@ def make_fast_predict_tensors(
 
 
 def make_predict_tensors(
-    metric: str,
     batch_indices: mm.ndarray,
     batch_nn_indices: mm.ndarray,
     test_features: Optional[mm.ndarray],
@@ -157,8 +153,6 @@ def make_predict_tensors(
     :func:`~MuyGPyS.gp.MuyGPS.posterior_variance`.
 
     Args:
-        metric:
-            The metric to be used to compute differences.
         batch_indices:
             A vector of integers of shape `(batch_count,)` identifying the
             training batch of observations to be approximated.
@@ -192,7 +186,6 @@ def make_predict_tensors(
         element.
     """
     return _make_predict_tensors(
-        metric,
         batch_indices,
         batch_nn_indices,
         test_features,
@@ -202,7 +195,6 @@ def make_predict_tensors(
 
 
 def make_train_tensors(
-    metric: str,
     batch_indices: mm.ndarray,
     batch_nn_indices: mm.ndarray,
     train_features: mm.ndarray,
@@ -216,8 +208,6 @@ def make_train_tensors(
     training data.
 
     Args:
-        metric:
-            The metric to be used to compute differences.
         batch_indices:
             A vector of integers of shape `(batch_count,)` identifying the
             training batch of observations to be approximated.
@@ -251,7 +241,7 @@ def make_train_tensors(
         element.
     """
     return _make_train_tensors(
-        metric, batch_indices, batch_nn_indices, train_features, train_targets
+        batch_indices, batch_nn_indices, train_features, train_targets
     )
 
 
@@ -260,7 +250,6 @@ def crosswise_tensor(
     nn_data: mm.ndarray,
     data_indices: mm.ndarray,
     nn_indices: mm.ndarray,
-    metric: str = "l2",
 ) -> mm.ndarray:
     """
     Compute a matrix of differences between data and their nearest neighbors.
@@ -294,15 +283,12 @@ def crosswise_tensor(
         two dimensions list the difference between each feature of each batch
         element element and its nearest neighbors.
     """
-    return _crosswise_tensor(
-        data, nn_data, data_indices, nn_indices, metric=metric
-    )
+    return _crosswise_tensor(data, nn_data, data_indices, nn_indices)
 
 
 def pairwise_tensor(
     data: mm.ndarray,
     nn_indices: mm.ndarray,
-    metric: str = "l2",
 ) -> mm.ndarray:
     """
     Compute a tensor of pairwise differences among sets of nearest neighbors.
@@ -325,4 +311,4 @@ def pairwise_tensor(
         nearest neighbor difference tensors corresponding to each of the
         batch elements.
     """
-    return _pairwise_tensor(data, nn_indices, metric=metric)
+    return _pairwise_tensor(data, nn_indices)

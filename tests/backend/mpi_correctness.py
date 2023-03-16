@@ -28,10 +28,14 @@ from MuyGPyS._test.utils import (
 from MuyGPyS._src.gp.tensors.numpy import (
     _make_predict_tensors as make_predict_tensors_n,
     _make_train_tensors as make_train_tensors_n,
+    _F2 as F2_n,
+    _l2 as l2_n,
 )
 from MuyGPyS._src.gp.tensors.mpi import (
     _make_predict_tensors as make_predict_tensors_m,
     _make_train_tensors as make_train_tensors_m,
+    _F2 as F2_m,
+    _l2 as l2_m,
 )
 from MuyGPyS._src.mpi_utils import _chunk_tensor
 
@@ -93,10 +97,25 @@ from MuyGPyS._src.optimize.chassis.mpi import (
     _bayes_opt_optimize as bayes_optimize_m,
 )
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.kernels.kernel_fn import apply_distortion
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import noise_perturb
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
+
+rbf_fn_n = apply_distortion(F2_n)(rbf_fn_n)
+matern_05_fn_n = apply_distortion(l2_n)(matern_05_fn_n)
+matern_15_fn_n = apply_distortion(l2_n)(matern_15_fn_n)
+matern_25_fn_n = apply_distortion(l2_n)(matern_25_fn_n)
+matern_inf_fn_n = apply_distortion(l2_n)(matern_inf_fn_n)
+matern_gen_fn_n = apply_distortion(l2_n)(matern_gen_fn_n)
+
+rbf_fn_m = apply_distortion(F2_m)(rbf_fn_m)
+matern_05_fn_m = apply_distortion(l2_m)(matern_05_fn_m)
+matern_15_fn_m = apply_distortion(l2_m)(matern_15_fn_m)
+matern_25_fn_m = apply_distortion(l2_m)(matern_25_fn_m)
+matern_inf_fn_m = apply_distortion(l2_m)(matern_inf_fn_m)
+matern_gen_fn_m = apply_distortion(l2_m)(matern_gen_fn_m)
 
 world = config.mpi_state.comm_world
 rank = world.Get_rank()
@@ -156,7 +175,6 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.batch_targets,
                 cls.batch_nn_targets,
             ) = make_train_tensors_n(
-                cls.muygps.kernel.metric,
                 batch_indices,
                 batch_nn_indices,
                 cls.train_features,
@@ -170,7 +188,6 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.test_pairwise_diffs,
                 cls.test_nn_targets,
             ) = make_predict_tensors_n(
-                cls.muygps.kernel.metric,
                 np.arange(cls.test_count),
                 test_nn_indices,
                 cls.test_features,
@@ -202,7 +219,6 @@ class TensorsTestCase(parameterized.TestCase):
             cls.batch_targets_chunk,
             cls.batch_nn_targets_chunk,
         ) = make_train_tensors_m(
-            cls.muygps.kernel.metric,
             batch_indices,
             batch_nn_indices,
             cls.train_features,
@@ -213,7 +229,6 @@ class TensorsTestCase(parameterized.TestCase):
             cls.test_pairwise_diffs_chunk,
             cls.test_nn_targets_chunk,
         ) = make_predict_tensors_m(
-            cls.muygps.kernel.metric,
             np.arange(cls.test_count),
             test_nn_indices,
             cls.test_features,

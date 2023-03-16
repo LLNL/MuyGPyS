@@ -38,6 +38,7 @@ Example:
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
+from MuyGPyS._src.gp.tensors import _l2
 from MuyGPyS._src.gp.kernels import (
     _matern_05_fn,
     _matern_15_fn,
@@ -48,6 +49,7 @@ from MuyGPyS._src.gp.kernels import (
 from MuyGPyS.gp.kernels import (
     _init_hyperparameter,
     append_optim_params_lists,
+    apply_distortion,
     apply_hyperparameter,
     Hyperparameter,
     KernelFn,
@@ -56,19 +58,17 @@ from MuyGPyS.gp.kernels import (
 
 def _set_matern_fn(nu: Hyperparameter):
     if nu.fixed() is True:
-        if nu == 0.5:
+        if nu() == 0.5:
             return _matern_05_fn
-        elif nu == 1.5:
+        elif nu() == 1.5:
             return _matern_15_fn
-        elif nu == 2.5:
+        elif nu() == 2.5:
             return _matern_25_fn
-        elif nu == mm.inf:
+        elif nu() == mm.inf:
             return _matern_inf_fn
         else:
 
-            def fixed_matern_fn(*args, **kwargs):
-                kwargs.setdefault("nu", nu())
-                return _matern_gen_fn(*args, **kwargs)
+            return _matern_gen_fn
 
     return _matern_gen_fn
 
@@ -121,13 +121,15 @@ class Matern(KernelFn):
         ] = dict(),
         metric: Optional[str] = "l2",
     ):
-        super().__init__()
+        super().__init__(metric=metric)
         self.nu = _init_hyperparameter(1.0, "fixed", **nu)
         self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
         self.hyperparameters["nu"] = self.nu
         self.hyperparameters["length_scale"] = self.length_scale
-        self.metric = metric
-        self._fn = _set_matern_fn(self.nu)
+        self._from_distances_fn = _set_matern_fn(self.nu)
+        self._fn = apply_distortion(self._distortion_fn)(
+            self._from_distances_fn
+        )
 
     def __call__(self, diffs):
         """
@@ -148,6 +150,13 @@ class Matern(KernelFn):
             dimensions are kernel matrices.
         """
         return self._fn(diffs, nu=self.nu(), length_scale=self.length_scale())
+
+    def from_distances(self, dists):
+        return self._from_distances_fn(
+            dists,
+            nu=self.nu(),
+            length_scale=self.length_scale(),
+        )
 
     def get_optim_params(
         self,

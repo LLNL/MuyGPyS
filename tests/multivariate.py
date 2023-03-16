@@ -143,9 +143,7 @@ class SigmaSqTest(parameterized.TestCase):
         indices = mm.arange(data_count)
         nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
         nn_targets = _consistent_chunk_tensor(data["output"][nn_indices, :])
-        pairwise_diffs = pairwise_tensor(
-            data["input"], nn_indices, metric=mmuygps.metric
-        )
+        pairwise_diffs = pairwise_tensor(data["input"], nn_indices)
 
         # fit sigmas
         mmuygps = mmuygps_sigma_sq_optim(
@@ -198,7 +196,6 @@ class OptimTest(parameterized.TestCase):
             for k_kwargs in (
                 (
                     "matern",
-                    "l2",
                     [0.38, 0.78],
                     [
                         {
@@ -235,7 +232,7 @@ class OptimTest(parameterized.TestCase):
                 f"Skipping."
             )
             return
-        kern, metric, target, args = k_kwargs
+        kern, target, args = k_kwargs
         loss_method, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
@@ -263,10 +260,9 @@ class OptimTest(parameterized.TestCase):
             mm.array(sim_train["input"]),
             batch_indices,
             batch_nn_indices,
-            metric=metric,
         )
         pairwise_diffs = pairwise_tensor(
-            mm.array(sim_train["input"]), batch_nn_indices, metric=metric
+            mm.array(sim_train["input"]), batch_nn_indices
         )
 
         gp_args = args.copy()

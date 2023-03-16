@@ -158,9 +158,9 @@ class BenchmarkSigmaSqTest(BenchmarkTestCase):
                 pairwise_dists = benchmark_pairwise_distances(
                     self.x, metric=model.kernel.metric
                 )
-                K = model.kernel(pairwise_dists) + model.eps() * np.eye(
-                    self.data_count
-                )
+                K = model.kernel.from_distances(
+                    pairwise_dists
+                ) + model.eps() * np.eye(self.data_count)
                 for k in range(self.its):
                     ss = get_analytic_sigma_sq(K, self.ys[i][j][k])
                     mrse += _sq_rel_err(sigma_sq, ss)
@@ -206,14 +206,12 @@ class BenchmarkOptimTestCase(BenchmarkTestCase):
                         cls.train_features,
                         cls.batch_indices_list[i][j],
                         cls.batch_nn_indices_list[i][j],
-                        metric=kwargs["metric"],
                     )
                 )
                 cls.pairwise_diffs_list[i].append(
                     pairwise_tensor(
                         cls.train_features,
                         cls.batch_nn_indices_list[i][j],
-                        metric=kwargs["metric"],
                     )
                 )
                 cls.batch_nn_targets_list[i].append(list())
@@ -237,24 +235,30 @@ class BenchmarkOptimTypesTest(BenchmarkOptimTestCase):
     def test_types(self):
         for i, kwargs in enumerate(self.k_kwargs):
             for j, sigma_sq in enumerate(self.sigma_sqs):
-                self._check_ndarray(self.batch_indices_list[i][j], mm.itype)
-                self._check_ndarray(self.batch_nn_indices_list[i][j], mm.itype)
-                self._check_ndarray(self.crosswise_diffs_list[i][j], mm.ftype)
-                self._check_ndarray(self.pairwise_diffs_list[i][j], mm.ftype)
-                self.assertEqual(
-                    self.batch_indices_list[i][j].shape, (self.batch_count,)
+                self._check_ndarray(
+                    self.batch_indices_list[i][j],
+                    mm.itype,
+                    shape=(self.batch_count,),
                 )
-                self.assertEqual(
-                    self.batch_nn_indices_list[i][j].shape,
-                    (self.batch_count, self.nn_count),
+                self._check_ndarray(
+                    self.batch_nn_indices_list[i][j],
+                    mm.itype,
+                    shape=(self.batch_count, self.nn_count),
                 )
-                self.assertEqual(
-                    self.crosswise_diffs_list[i][j].shape,
-                    (self.batch_count, self.nn_count),
+                self._check_ndarray(
+                    self.crosswise_diffs_list[i][j],
+                    mm.ftype,
+                    shape=(self.batch_count, self.nn_count, self.feature_count),
                 )
-                self.assertEqual(
-                    self.pairwise_diffs_list[i][j].shape,
-                    (self.batch_count, self.nn_count, self.nn_count),
+                self._check_ndarray(
+                    self.pairwise_diffs_list[i][j],
+                    mm.ftype,
+                    shape=(
+                        self.batch_count,
+                        self.nn_count,
+                        self.nn_count,
+                        self.feature_count,
+                    ),
                 )
                 for k in range(self.its):
                     self._check_ndarray(

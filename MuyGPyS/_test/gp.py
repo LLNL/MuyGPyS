@@ -225,14 +225,14 @@ class BenchmarkGP:
         pairwise_dists = benchmark_pairwise_distances(
             train, metric=self.kernel.metric
         )
-        Kcross = self.kernel(crosswise_dists)
-        K = self.kernel(pairwise_dists)
+        Kcross = self.kernel.from_distances(crosswise_dists)
+        K = self.kernel.from_distances(pairwise_dists)
         responses = Kcross @ np.linalg.solve(K, targets)
 
         test_pairwise_distances = benchmark_pairwise_distances(
             test, metric=self.kernel.metric
         )
-        Kstar = self.kernel(test_pairwise_distances)
+        Kstar = self.kernel.from_distances(test_pairwise_distances)
         variance = Kstar - Kcross @ np.linalg.solve(K, Kcross.T)
         return responses, variance
 
@@ -281,7 +281,7 @@ def benchmark_prepare_cholK(
     pairwise_dists = benchmark_pairwise_distances(data, metric=gp.kernel.metric)
     data_count, _ = data.shape
     Kfull = gp.sigma_sq()[0] * (
-        gp.kernel(pairwise_dists) + gp.eps() * np.eye(data_count)
+        gp.kernel.from_distances(pairwise_dists) + gp.eps() * np.eye(data_count)
     )
     return np.linalg.cholesky(Kfull)
 

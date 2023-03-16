@@ -38,6 +38,8 @@ from MuyGPyS._src.gp.tensors.numpy import (
     _make_train_tensors as make_train_tensors_n,
     _make_fast_predict_tensors as make_fast_predict_tensors_n,
     _fast_nn_update as fast_nn_update_n,
+    _F2 as F2_n,
+    _l2 as l2_n,
 )
 from MuyGPyS._src.gp.tensors.jax import (
     _pairwise_tensor as pairwise_tensor_j,
@@ -45,6 +47,8 @@ from MuyGPyS._src.gp.tensors.jax import (
     _make_train_tensors as make_train_tensors_j,
     _make_fast_predict_tensors as make_fast_predict_tensors_j,
     _fast_nn_update as fast_nn_update_j,
+    _F2 as F2_j,
+    _l2 as l2_j,
 )
 from MuyGPyS._src.gp.kernels.numpy import (
     _rbf_fn as rbf_fn_n,
@@ -107,12 +111,27 @@ from MuyGPyS._src.optimize.sigma_sq.jax import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.kernels.kernel_fn import apply_distortion
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import noise_perturb
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
+
+rbf_fn_n = apply_distortion(F2_n)(rbf_fn_n)
+matern_05_fn_n = apply_distortion(l2_n)(matern_05_fn_n)
+matern_15_fn_n = apply_distortion(l2_n)(matern_15_fn_n)
+matern_25_fn_n = apply_distortion(l2_n)(matern_25_fn_n)
+matern_inf_fn_n = apply_distortion(l2_n)(matern_inf_fn_n)
+matern_gen_fn_n = apply_distortion(l2_n)(matern_gen_fn_n)
+
+rbf_fn_j = apply_distortion(F2_j)(rbf_fn_j)
+matern_05_fn_j = apply_distortion(l2_j)(matern_05_fn_j)
+matern_15_fn_j = apply_distortion(l2_j)(matern_15_fn_j)
+matern_25_fn_j = apply_distortion(l2_j)(matern_25_fn_j)
+matern_inf_fn_j = apply_distortion(l2_j)(matern_inf_fn_j)
+matern_gen_fn_j = apply_distortion(l2_j)(matern_gen_fn_j)
 
 
 def allclose_gen(a: np.ndarray, b: np.ndarray) -> bool:
@@ -242,7 +261,6 @@ class TensorsTest(TensorsTestCase):
             batch_targets_n,
             batch_nn_targets_n,
         ) = make_train_tensors_n(
-            self.muygps.kernel.metric,
             self.batch_indices_n,
             self.batch_nn_indices_n,
             self.train_features_n,
@@ -254,7 +272,6 @@ class TensorsTest(TensorsTestCase):
             batch_targets_j,
             batch_nn_targets_j,
         ) = make_train_tensors_j(
-            self.muygps.kernel.metric,
             self.batch_indices_j,
             self.batch_nn_indices_j,
             self.train_features_j,
@@ -276,7 +293,6 @@ class KernelTestCase(TensorsTestCase):
             cls.batch_targets_n,
             cls.batch_nn_targets_n,
         ) = make_train_tensors_n(
-            cls.muygps.kernel.metric,
             cls.batch_indices_n,
             cls.batch_nn_indices_n,
             cls.train_features_n,
@@ -288,7 +304,6 @@ class KernelTestCase(TensorsTestCase):
             cls.batch_targets_j,
             cls.batch_nn_targets_j,
         ) = make_train_tensors_j(
-            cls.muygps.kernel.metric,
             cls.batch_indices_j,
             cls.batch_nn_indices_j,
             cls.train_features_j,
@@ -317,13 +332,18 @@ class KernelTest(KernelTestCase):
             crosswise_diffs,
             ftype,
             ctype=ctype,
-            shape=(self.batch_count, self.nn_count),
+            shape=(self.batch_count, self.nn_count, self.feature_count),
         )
         self._check_ndarray(
             pairwise_diffs,
             ftype,
             ctype=ctype,
-            shape=(self.batch_count, self.nn_count, self.nn_count),
+            shape=(
+                self.batch_count,
+                self.nn_count,
+                self.nn_count,
+                self.feature_count,
+            ),
         )
         self._check_ndarray(
             batch_targets,
@@ -571,14 +591,13 @@ class FastPredictTest(MuyGPSTestCase):
             cls.K_fast_n,
             cls.train_nn_targets_fast_n,
         ) = make_fast_predict_tensors_n(
-            cls.muygps.kernel.metric,
             cls.nn_indices_all_n,
             cls.train_features_n,
             cls.train_responses_n,
         )
 
         cls.homoscedastic_K_fast_n = homoscedastic_perturb_n(
-            cls.K_fast_n, cls.muygps.eps()
+            l2_n(cls.K_fast_n), cls.muygps.eps()
         )
         cls.fast_regress_coeffs_n = muygps_fast_posterior_mean_precompute_n(
             cls.homoscedastic_K_fast_n, cls.train_nn_targets_fast_n
@@ -613,14 +632,13 @@ class FastPredictTest(MuyGPSTestCase):
             cls.K_fast_j,
             cls.train_nn_targets_fast_j,
         ) = make_fast_predict_tensors_j(
-            cls.muygps.kernel.metric,
             cls.nn_indices_all_j,
             cls.train_features_j,
             cls.train_responses_j,
         )
 
         cls.homoscedastic_K_fast_j = homoscedastic_perturb_j(
-            cls.K_fast_j, cls.muygps.eps()
+            l2_j(cls.K_fast_j), cls.muygps.eps()
         )
 
         cls.fast_regress_coeffs_j = muygps_fast_posterior_mean_precompute_j(
@@ -750,14 +768,13 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             cls.K_fast_n,
             cls.train_nn_targets_fast_n,
         ) = make_fast_predict_tensors_n(
-            cls.muygps.metric,
             cls.nn_indices_all_n,
             cls.train_features_n,
             cls.train_responses_n,
         )
 
         cls.homoscedastic_K_fast_n = homoscedastic_perturb_n(
-            cls.K_fast_n, cls.eps
+            l2_n(cls.K_fast_n), cls.eps
         )
         cls.fast_regress_coeffs_n = muygps_fast_posterior_mean_precompute_n(
             cls.homoscedastic_K_fast_n, cls.train_nn_targets_fast_n
@@ -793,14 +810,13 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             cls.K_fast_j,
             cls.train_nn_targets_fast_j,
         ) = make_fast_predict_tensors_j(
-            cls.muygps.metric,
             cls.nn_indices_all_j,
             cls.train_features_j,
             cls.train_responses_j,
         )
 
         cls.homoscedastic_K_fast_j = homoscedastic_perturb_j(
-            cls.K_fast_j, cls.eps
+            l2_j(cls.K_fast_j), cls.eps
         )
         cls.fast_regress_coeffs_j = muygps_fast_posterior_mean_precompute_j(
             cls.homoscedastic_K_fast_j, cls.train_nn_targets_fast_j
@@ -873,10 +889,6 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_kernel_fn_n(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_05_fn_n,
-            matern_15_fn_n,
-            matern_25_fn_n,
-            matern_inf_fn_n,
             matern_gen_fn_n,
             self.muygps.kernel.nu,
             self.muygps.kernel.length_scale,
@@ -884,10 +896,6 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_kernel_fn_j(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_05_fn_j,
-            matern_15_fn_j,
-            matern_25_fn_j,
-            matern_inf_fn_j,
             matern_gen_fn_j,
             self.muygps.kernel.nu,
             self.muygps.kernel.length_scale,

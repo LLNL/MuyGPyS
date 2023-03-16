@@ -203,9 +203,7 @@ class MuyGPS:
         (
             pairwise_diffs_fast,
             train_nn_targets_fast,
-        ) = _make_fast_predict_tensors(
-            self.kernel.metric, nn_indices, train, targets
-        )
+        ) = _make_fast_predict_tensors(nn_indices, train, targets)
         K = self.kernel(pairwise_diffs_fast)
 
         return _muygps_fast_posterior_mean_precompute(
@@ -343,7 +341,9 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return _muygps_fast_posterior_mean(Kcross, coeffs_tensor)
+        return _muygps_fast_posterior_mean(
+            self.kernel._distortion_fn(Kcross), coeffs_tensor
+        )
 
     def get_opt_mean_fn(self) -> Callable:
         """

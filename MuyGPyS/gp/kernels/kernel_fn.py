@@ -40,6 +40,30 @@ Example:
 from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
+from MuyGPyS._src.gp.tensors import _F2, _l2
+
+
+def apply_distortion(distortion_fn):
+    def distortion_appier(fn):
+        def distorted_fn(diffs, *args, **kwargs):
+            return fn(distortion_fn(diffs), *args, **kwargs)
+
+        return distorted_fn
+
+    return distortion_appier
+
+
+class IsotropicDistortion:
+    def __init__(self, metric):
+        if metric == "l2":
+            self._dist_fn = _l2
+        elif metric == "F2":
+            self._dist_fn = _F2
+        else:
+            raise ValueError(f"Metric {metric} is not supported!")
+
+    def __call__(self, diffs):
+        return self._dist_fn(diffs)
 
 
 class KernelFn:
@@ -54,12 +78,13 @@ class KernelFn:
             Ignored (by this base class) keyword arguments.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, metric="l2", **kwargs):
         """
         Initialize dict holding hyperparameters.
         """
         self.hyperparameters = dict()
-        self.metric = ""
+        self.metric = metric
+        self._distortion_fn = IsotropicDistortion(self.metric)
 
     def set_params(self, **kwargs) -> None:
         """

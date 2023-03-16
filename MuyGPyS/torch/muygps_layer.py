@@ -12,8 +12,8 @@ from torch import nn
 from MuyGPyS._src.gp.tensors.torch import (
     _pairwise_tensor,
     _crosswise_tensor,
+    _l2,
 )
-
 from MuyGPyS._src.gp.muygps.torch import (
     _muygps_posterior_mean,
     _muygps_diagonal_variance,
@@ -139,10 +139,9 @@ class MuyGPs_layer(nn.Module):
             x,
             self.batch_indices,
             self.batch_nn_indices,
-            metric="l2",
         )
 
-        pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices, metric="l2")
+        pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices)
 
         Kcross = kernel_func(
             crosswise_diffs,
@@ -287,10 +286,9 @@ class MultivariateMuyGPs_layer(nn.Module):
             x,
             self.batch_indices,
             self.batch_nn_indices,
-            metric="l2",
         )
 
-        pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices, metric="l2")
+        pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices)
 
         batch_count, nn_count, response_count = self.batch_nn_targets.shape
 
@@ -358,15 +356,15 @@ def kernel_func(
         input values.
     """
     if nu == 1 / 2:
-        return _matern_05_fn(diff_tensor, length_scale=length_scale)
+        return _matern_05_fn(_l2(diff_tensor), length_scale=length_scale)
 
     if nu == 3 / 2:
-        return _matern_15_fn(diff_tensor, length_scale=length_scale)
+        return _matern_15_fn(_l2(diff_tensor), length_scale=length_scale)
 
     if nu == 5 / 2:
-        return _matern_25_fn(diff_tensor, length_scale=length_scale)
+        return _matern_25_fn(_l2(diff_tensor), length_scale=length_scale)
 
     if nu == torch.inf:
-        return _matern_inf_fn(diff_tensor, length_scale=length_scale)
+        return _matern_inf_fn(_l2(diff_tensor), length_scale=length_scale)
     else:
-        return _matern_gen_fn(diff_tensor, nu, length_scale=length_scale)
+        return _matern_gen_fn(_l2(diff_tensor), nu, length_scale=length_scale)

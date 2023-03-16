@@ -177,7 +177,6 @@ def make_regressor(
             batch_targets,
             batch_nn_targets,
         ) = make_train_tensors(
-            muygps.kernel.metric,
             batch_indices,
             batch_nn_indices,
             train_features,
@@ -384,7 +383,6 @@ def make_multivariate_regressor(
             batch_targets,
             batch_nn_targets,
         ) = make_train_tensors(
-            mmuygps.metric,
             batch_indices,
             batch_nn_indices,
             train_features,

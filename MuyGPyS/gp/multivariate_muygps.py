@@ -198,7 +198,7 @@ class MultivariateMuyGPS:
             A vector of shape `(batch_count, response_count)` consisting of the
             diagonal elements of the posterior variance for each model.
         """
-        batch_count, _ = crosswise_diffs.shape
+        batch_count, _, _ = crosswise_diffs.shape
         response_count = len(self.models)
         diagonal_variance = mm.zeros((batch_count, response_count))
         for i, model in enumerate(self.models):
@@ -258,7 +258,7 @@ class MultivariateMuyGPS:
         (
             pairwise_diffs_fast,
             train_nn_targets_fast,
-        ) = _make_fast_predict_tensors(self.metric, nn_indices, train, targets)
+        ) = _make_fast_predict_tensors(nn_indices, train, targets)
 
         train_count, nn_count, response_count = train_nn_targets_fast.shape
         coeffs_tensor = mm.zeros((train_count, nn_count, response_count))

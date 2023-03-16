@@ -10,10 +10,9 @@ from jax import jit
 
 import MuyGPyS._src.math.jax as jnp
 
-# from sklearn.metrics.pairwise import cosine_similarity
-@partial(jit, static_argnums=(0,))
+
+@jit
 def _make_fast_predict_tensors(
-    metric: str,
     batch_nn_indices: jnp.ndarray,
     train_features: jnp.ndarray,
     train_targets: jnp.ndarray,
@@ -28,15 +27,14 @@ def _make_fast_predict_tensors(
     )
 
     pairwise_diffs_fast = _pairwise_tensor(
-        train_features, batch_nn_indices_fast, metric=metric
+        train_features, batch_nn_indices_fast
     )
     batch_nn_targets_fast = train_targets[batch_nn_indices_fast, :]
     return pairwise_diffs_fast, batch_nn_targets_fast
 
 
-@partial(jit, static_argnums=(0,))
+@jit
 def _make_predict_tensors(
-    metric: str,
     batch_indices: jnp.ndarray,
     batch_nn_indices: jnp.ndarray,
     test_features: jnp.ndarray,
@@ -50,25 +48,20 @@ def _make_predict_tensors(
         train_features,
         batch_indices,
         batch_nn_indices,
-        metric=metric,
     )
-    pairwise_diffs = _pairwise_tensor(
-        train_features, batch_nn_indices, metric=metric
-    )
+    pairwise_diffs = _pairwise_tensor(train_features, batch_nn_indices)
     batch_nn_targets = train_targets[batch_nn_indices, :]
     return crosswise_diffs, pairwise_diffs, batch_nn_targets
 
 
-@partial(jit, static_argnums=(0,))
+@jit
 def _make_train_tensors(
-    metric: str,
     batch_indices: jnp.ndarray,
     batch_nn_indices: jnp.ndarray,
     train_features: jnp.ndarray,
     train_targets: jnp.ndarray,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     crosswise_diffs, pairwise_diffs, batch_nn_targets = _make_predict_tensors(
-        metric,
         batch_indices,
         batch_nn_indices,
         train_features,
@@ -79,28 +72,16 @@ def _make_train_tensors(
     return crosswise_diffs, pairwise_diffs, batch_targets, batch_nn_targets
 
 
-@partial(jit, static_argnums=(4,))
+@jit
 def _crosswise_tensor(
     data: jnp.ndarray,
     nn_data: jnp.ndarray,
     data_indices: jnp.ndarray,
     nn_indices: jnp.ndarray,
-    metric: str = "l2",
 ) -> jnp.ndarray:
     locations = data[data_indices]
     points = nn_data[nn_indices]
-    if metric == "l2":
-        diffs = _crosswise_diffs(locations, points)
-        return _l2(diffs)
-    elif metric == "F2":
-        diffs = _crosswise_diffs(locations, points)
-        return _F2(diffs)
-    # elif metric == "ip":
-    #     return _crosswise_prods(locations, points)
-    # elif metric == "cosine":
-    #     return _crosswise_cosine(locations, points)
-    else:
-        raise ValueError(f"Metric {metric} is not supported!")
+    return _crosswise_diffs(locations, points)
 
 
 @jit
@@ -110,25 +91,13 @@ def _crosswise_diffs(
     return locations[:, None, :] - points
 
 
-@partial(jit, static_argnums=(2,))
+@jit
 def _pairwise_tensor(
     data: jnp.ndarray,
     nn_indices: jnp.ndarray,
-    metric: str = "l2",
 ) -> jnp.ndarray:
     points = data[nn_indices]
-    if metric == "l2":
-        diffs = _diffs(points)
-        return _l2(diffs)
-    elif metric == "F2":
-        diffs = _diffs(points)
-        return _F2(diffs)
-    # elif metric == "ip":
-    #     return _prods(points)
-    # elif metric == "cosine":
-    #     return _cosine(points)
-    else:
-        raise ValueError(f"Metric {metric} is not supported!")
+    return _diffs(points)
 
 
 @jit

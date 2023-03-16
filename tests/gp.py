@@ -273,7 +273,6 @@ class GPTestCase(parameterized.TestCase):
             pairwise_diffs,
             batch_nn_targets,
         ) = make_predict_tensors(
-            muygps.kernel.metric,
             indices,
             test_nn_indices,
             test_features,
@@ -801,7 +800,6 @@ class GPSigmaSqTest(GPTestCase):
         indices = mm.arange(data_count)
         nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
         (_, pairwise_diffs, _, nn_targets) = make_train_tensors(
-            muygps.kernel.metric,
             indices,
             nn_indices,
             data["input"],

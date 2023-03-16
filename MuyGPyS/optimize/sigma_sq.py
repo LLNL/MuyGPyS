@@ -11,7 +11,7 @@ Currently only supports an analytic approximation, but will support other
 methods in the future.
 """
 
-from copy import copy
+from copy import deepcopy
 from typing import Callable, Optional
 
 import MuyGPyS._src.math as mm
@@ -173,18 +173,17 @@ def muygps_analytic_sigma_sq_optim(
     Returns:
         A new MuyGPs model whose sigma_sq parameter has been optimized.
     """
-    ret = copy(muygps)
-    if isinstance(muygps.eps, HomoscedasticNoise):
-        K = muygps.kernel(pairwise_diffs)
-        ret.sigma_sq._set(
-            _analytic_sigma_sq_optim(
-                _homoscedastic_perturb(K, muygps.eps()), nn_targets
-            )
+    ret = deepcopy(muygps)
+    if isinstance(ret.eps, HomoscedasticNoise):
+        K = ret.kernel(pairwise_diffs)
+        ss = _analytic_sigma_sq_optim(
+            _homoscedastic_perturb(K, ret.eps()), nn_targets
         )
+        ret.sigma_sq._set(ss)
         return ret
     else:
         raise TypeError(
-            f"Noise parameter type {type(muygps.eps)} is not supported for "
+            f"Noise parameter type {type(ret.eps)} is not supported for "
             f"optimization!"
         )
 
@@ -224,7 +223,7 @@ def mmuygps_analytic_sigma_sq_optim(
     Returns:
         A new MuyGPs model whose sigma_sq parameter has been optimized.
     """
-    ret = copy(mmuygps)
+    ret = deepcopy(mmuygps)
     batch_count, nn_count, response_count = nn_targets.shape
     if response_count != len(ret.models):
         raise ValueError(
@@ -232,7 +231,6 @@ def mmuygps_analytic_sigma_sq_optim(
             f"of models ({len(ret.models)})."
         )
 
-    K = mm.zeros((batch_count, nn_count, nn_count))
     sigma_sqs = mm.zeros((response_count,))
     for i, model in enumerate(ret.models):
         if isinstance(model.eps, HomoscedasticNoise):

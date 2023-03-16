@@ -120,12 +120,9 @@ def predict_single_model(
         train_features_embedded,
         torch.arange(test_count),
         nn_indices_test,
-        metric="l2",
     )
 
-    pairwise_diffs = _pairwise_tensor(
-        train_features_embedded, nn_indices_test, metric="l2"
-    )
+    pairwise_diffs = _pairwise_tensor(train_features_embedded, nn_indices_test)
 
     Kcross = kernel_func(
         crosswise_diffs,
@@ -226,12 +223,9 @@ def predict_multiple_model(
         train_features_embedded,
         torch.arange(test_count),
         nn_indices_test,
-        metric="l2",
     )
 
-    pairwise_diffs = _pairwise_tensor(
-        train_features_embedded, nn_indices_test, metric="l2"
-    )
+    pairwise_diffs = _pairwise_tensor(train_features_embedded, nn_indices_test)
 
     (
         batch_count,

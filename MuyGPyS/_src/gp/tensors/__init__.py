@@ -12,6 +12,8 @@ from MuyGPyS._src.util import _collect_implementation
     _crosswise_tensor,
     _pairwise_tensor,
     _fast_nn_update,
+    _F2,
+    _l2,
 ) = _collect_implementation(
     "MuyGPyS._src.gp.tensors",
     "_make_predict_tensors",
@@ -20,4 +22,6 @@ from MuyGPyS._src.util import _collect_implementation
     "_crosswise_tensor",
     "_pairwise_tensor",
     "_fast_nn_update",
+    "_F2",
+    "_l2",
 )
