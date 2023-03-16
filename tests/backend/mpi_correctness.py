@@ -676,10 +676,6 @@ class OptimTestCase(MuyGPSTestCase):
     # Numpy kernel functions
     def _get_kernel_fn_n(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_05_fn_n,
-            matern_15_fn_n,
-            matern_25_fn_n,
-            matern_inf_fn_n,
             matern_gen_fn_n,
             self.muygps.kernel.nu,
             self.muygps.kernel.length_scale,
@@ -688,10 +684,6 @@ class OptimTestCase(MuyGPSTestCase):
     # MPI kernel functions
     def _get_kernel_fn_m(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_05_fn_m,
-            matern_15_fn_m,
-            matern_25_fn_m,
-            matern_inf_fn_m,
             matern_gen_fn_m,
             self.muygps.kernel.nu,
             self.muygps.kernel.length_scale,
