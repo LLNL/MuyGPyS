@@ -9,3 +9,7 @@ import MuyGPyS._src.math.numpy as np
 def _homoscedastic_perturb(K: np.ndarray, eps: float) -> np.ndarray:
     _, nn_count, _ = K.shape
     return K + eps * np.eye(nn_count)
+
+
+def _heteroscedastic_perturb(K: np.ndarray, eps_tens: np.ndarray) -> np.ndarray:
+    return K + eps_tens

@@ -7,7 +7,7 @@
 MuyGPs PyTorch implementation
 """
 
-import torch
+import MuyGPyS._src.math.torch as torch
 from torch import nn
 from MuyGPyS._src.gp.tensors.torch import (
     _pairwise_tensor,
@@ -18,9 +18,14 @@ from MuyGPyS._src.gp.muygps.torch import (
     _muygps_posterior_mean,
     _muygps_diagonal_variance,
 )
+import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
 
-from MuyGPyS._src.gp.noise.torch import _homoscedastic_perturb
+from MuyGPyS._src.gp.noise.torch import (
+    _homoscedastic_perturb,
+    _heteroscedastic_perturb,
+)
+
 
 from MuyGPyS._src.gp.kernels.torch import (
     _matern_05_fn,
@@ -153,18 +158,46 @@ class MuyGPs_layer(nn.Module):
             nu=self.nu,
             length_scale=self.length_scale,
         )
-        predictions = _muygps_posterior_mean(
-            _homoscedastic_perturb(K, self.eps), Kcross, self.batch_nn_targets
+        nugget_tensor = torch.zeros(
+            self.batch_count, self.nn_count, self.nn_count
         )
+        if torch.size(self.eps, axis=0) == 1:
+            predictions = _muygps_posterior_mean(
+                _homoscedastic_perturb(K, self.eps),
+                Kcross,
+                self.batch_nn_targets,
+            )
 
-        sigma_sq = _analytic_sigma_sq_optim(
-            _homoscedastic_perturb(K, self.eps), self.batch_nn_targets
-        )
+            sigma_sq = _analytic_sigma_sq_optim(
+                _homoscedastic_perturb(K, self.eps), self.batch_nn_targets
+            )
 
-        variances = _muygps_diagonal_variance(
-            _homoscedastic_perturb(K, self.eps), Kcross
-        )
-        variances = torch.outer(variances, sigma_sq)
+            variances = _muygps_diagonal_variance(
+                _homoscedastic_perturb(K, self.eps), Kcross
+            )
+            variances = torch.outer(variances, sigma_sq)
+        elif torch.size(self.eps, axis=0) > 1:
+            nugget_tensor[
+                :, torch.arange(self.nn_count), torch.arange(self.nn_count)
+            ] = self.eps[self.batch_nn_indices]
+
+            predictions = _muygps_posterior_mean(
+                _heteroscedastic_perturb(K, nugget_tensor),
+                Kcross,
+                self.batch_nn_targets,
+            )
+
+            sigma_sq = _analytic_sigma_sq_optim(
+                _heteroscedastic_perturb(K, nugget_tensor),
+                self.batch_nn_targets,
+            )
+
+            variances = _muygps_diagonal_variance(
+                _heteroscedastic_perturb(K, nugget_tensor), Kcross
+            )
+            variances = torch.outer(variances, sigma_sq)
+        else:
+            raise ValueError(f"Noise model {type(self.eps)} is not supported")
 
         return predictions, variances, sigma_sq
 
@@ -313,25 +346,53 @@ class MultivariateMuyGPs_layer(nn.Module):
         sigma_sq = torch.zeros(
             response_count,
         )
-
+        nugget_tensor = torch.zeros(batch_count, nn_count, nn_count)
         for i in range(self.num_models):
-            predictions[:, i] = _muygps_posterior_mean(
-                _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
-                Kcross[:, :, i],
-                self.batch_nn_targets[:, :, i].reshape(
-                    batch_count, nn_count, 1
-                ),
-            ).reshape(batch_count)
-            variances[:, i] = _muygps_diagonal_variance(
-                _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
-                Kcross[:, :, i],
-            )
-            sigma_sq[i] = _analytic_sigma_sq_optim(
-                _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
-                self.batch_nn_targets[:, :, i].reshape(
-                    batch_count, nn_count, 1
-                ),
-            )
+            if torch.size(self.eps, axis=0) == 1:
+                predictions[:, i] = _muygps_posterior_mean(
+                    _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
+                    Kcross[:, :, i],
+                    self.batch_nn_targets[:, :, i].reshape(
+                        batch_count, nn_count, 1
+                    ),
+                ).reshape(batch_count)
+                variances[:, i] = _muygps_diagonal_variance(
+                    _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
+                    Kcross[:, :, i],
+                )
+                sigma_sq[i] = _analytic_sigma_sq_optim(
+                    _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
+                    self.batch_nn_targets[:, :, i].reshape(
+                        batch_count, nn_count, 1
+                    ),
+                )
+            elif torch.size(self.eps, axis=0) > 1:
+                nugget_tensor[
+                    :, torch.arange(nn_count), torch.arange(nn_count)
+                ] = self.eps[:, i][self.batch_nn_indices]
+
+                predictions[:, i] = _muygps_posterior_mean(
+                    _heteroscedastic_perturb(K[:, :, :, i], nugget_tensor),
+                    Kcross[:, :, i],
+                    self.batch_nn_targets[:, :, i].reshape(
+                        batch_count, nn_count, 1
+                    ),
+                ).reshape(batch_count)
+
+                variances[:, i] = _muygps_diagonal_variance(
+                    _heteroscedastic_perturb(K[:, :, :, i], nugget_tensor),
+                    Kcross[:, :, i],
+                )
+                sigma_sq[i] = _analytic_sigma_sq_optim(
+                    _heteroscedastic_perturb(K[:, :, :, i], nugget_tensor),
+                    self.batch_nn_targets[:, :, i].reshape(
+                        batch_count, nn_count, 1
+                    ),
+                )
+            else:
+                raise ValueError(
+                    f"Noise model {type(self.eps[i])} is not supported"
+                )
         return predictions, variances, sigma_sq
 
 

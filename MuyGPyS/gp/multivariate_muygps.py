@@ -13,9 +13,13 @@ from MuyGPyS._src.gp.muygps import (
     _muygps_fast_posterior_mean_precompute,
     _mmuygps_fast_posterior_mean,
 )
-from MuyGPyS._src.gp.noise import _homoscedastic_perturb
+from MuyGPyS._src.gp.noise import (
+    _homoscedastic_perturb,
+    _heteroscedastic_perturb,
+)
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 
 
 class MultivariateMuyGPS:
@@ -262,18 +266,40 @@ class MultivariateMuyGPS:
 
         train_count, nn_count, response_count = train_nn_targets_fast.shape
         coeffs_tensor = mm.zeros((train_count, nn_count, response_count))
+
         for i, model in enumerate(self.models):
             K = model.kernel(pairwise_diffs_fast)
-            mm.assign(
-                coeffs_tensor,
-                _muygps_fast_posterior_mean_precompute(
-                    _homoscedastic_perturb(K, model.eps()),
-                    train_nn_targets_fast[:, :, i],
-                ),
-                slice(None),
-                slice(None),
-                i,
-            )
+            if isinstance(model.eps(), HomoscedasticNoise):
+                mm.assign(
+                    coeffs_tensor,
+                    _muygps_fast_posterior_mean_precompute(
+                        _homoscedastic_perturb(K, model.eps()),
+                        train_nn_targets_fast[:, :, i],
+                    ),
+                    slice(None),
+                    slice(None),
+                    i,
+                )
+            if isinstance(model.eps(), HeteroscedasticNoise):
+                train_count, nn_count = nn_indices.shape
+                nugget_tens = mm.zeros((train_count, nn_count, nn_count))
+                mm.assign(
+                    nugget_tens,
+                    model.eps()[nn_indices],
+                    slice(None),
+                    mm.arange(nn_count),
+                    mm.arange(nn_count),
+                )
+                mm.assign(
+                    coeffs_tensor,
+                    _muygps_fast_posterior_mean_precompute(
+                        _heteroscedastic_perturb(K, nugget_tens),
+                        train_nn_targets_fast[:, :, i],
+                    ),
+                    slice(None),
+                    slice(None),
+                    i,
+                )
 
         return coeffs_tensor
 

@@ -34,6 +34,8 @@ from torch import (
     optim,
     outer,
     sqrt,
+    tensor,
+    Tensor,
     unique,
     unsqueeze,
     vstack,

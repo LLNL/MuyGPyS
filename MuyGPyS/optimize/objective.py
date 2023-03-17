@@ -97,7 +97,9 @@ def make_loo_crossval_fn(
     Returns:
         A Callable `objective_fn`, whose format depends on `opt_method`.
     """
-    kernels_fn = make_kernels_fn(kernel_fn, pairwise_diffs, crosswise_diffs)
+    kernels_fn = make_kernels_fn(
+        kernel_fn, pairwise_diffs, crosswise_diffs, eps_tensor
+    )
     predict_and_loss_fn = _switch_on_loss_method(
         loss_method,
         make_raw_predict_and_loss_fn,

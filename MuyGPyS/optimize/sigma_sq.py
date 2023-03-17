@@ -16,9 +16,12 @@ from typing import Callable, Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
-from MuyGPyS._src.gp.noise import _homoscedastic_perturb
+from MuyGPyS._src.gp.noise import (
+    _homoscedastic_perturb,
+    _heteroscedastic_perturb,
+)
 from MuyGPyS.optimize.utils import _switch_on_sigma_method
 
 
@@ -108,14 +111,26 @@ def mmuygps_sigma_sq_optim(
 def make_sigma_sq_optim(
     sigma_method: Optional[str], muygps: MuyGPS
 ) -> Callable:
-    return _switch_on_sigma_method(
-        sigma_method,
-        make_analytic_sigma_sq_optim,
-        make_none_sigma_sq_optim,
-        muygps,
-        _analytic_sigma_sq_optim,
-        _homoscedastic_perturb,
-    )
+    if isinstance(muygps.eps, HomoscedasticNoise):
+        return _switch_on_sigma_method(
+            sigma_method,
+            make_analytic_sigma_sq_optim,
+            make_none_sigma_sq_optim,
+            muygps,
+            _analytic_sigma_sq_optim,
+            _homoscedastic_perturb,
+        )
+    elif isinstance(muygps.eps, HeteroscedasticNoise):
+        return _switch_on_sigma_method(
+            sigma_method,
+            make_analytic_sigma_sq_optim,
+            make_none_sigma_sq_optim,
+            muygps,
+            _analytic_sigma_sq_optim,
+            _heteroscedastic_perturb,
+        )
+    else:
+        raise ValueError(f"Noise model {type(muygps.eps)} is not supported")
 
 
 def make_none_sigma_sq_optim(muygps: MuyGPS, *args) -> Callable:
@@ -181,6 +196,13 @@ def muygps_analytic_sigma_sq_optim(
         )
         ret.sigma_sq._set(ss)
         return ret
+    elif isinstance(ret.eps, HeteroscedasticNoise):
+        K = ret.kernel(pairwise_diffs)
+        ss = _analytic_sigma_sq_optim(
+            _heteroscedastic_perturb(K, ret.eps()), nn_targets
+        )
+        ret.sigma_sq._set(ss)
+        return ret
     else:
         raise TypeError(
             f"Noise parameter type {type(ret.eps)} is not supported for "
@@ -237,6 +259,14 @@ def mmuygps_analytic_sigma_sq_optim(
             K = model.kernel(pairwise_diffs)
             new_sigma_val = _analytic_sigma_sq_optim(
                 _homoscedastic_perturb(K, model.eps()),
+                nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+            )[0]
+            sigma_sqs = mm.assign(sigma_sqs, new_sigma_val, i)
+            model.sigma_sq._set(mm.atleast_1d(sigma_sqs[i]))
+        elif isinstance(model.eps, HeteroscedasticNoise):
+            K = model.kernel(pairwise_diffs)
+            new_sigma_val = _analytic_sigma_sq_optim(
+                _heteroscedastic_perturb(K, model.eps()),
                 nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
             )[0]
             sigma_sqs = mm.assign(sigma_sqs, new_sigma_val, i)

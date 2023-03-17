@@ -15,6 +15,7 @@ from MuyGPyS.gp.tensors import (
     crosswise_tensor,
     make_predict_tensors,
     make_train_tensors,
+    make_heteroscedastic_tensor,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize import optimize_from_tensors

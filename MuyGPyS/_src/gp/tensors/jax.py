@@ -12,6 +12,20 @@ import MuyGPyS._src.math.jax as jnp
 
 
 @jit
+def _make_heteroscedastic_tensor(
+    batch_nn_indices: jnp.ndarray,
+    measurement_noise: jnp.ndarray,
+) -> jnp.ndarray:
+    batch_count, nn_count = batch_nn_indices.shape
+    eps_tensor = jnp.zeros((batch_count, nn_count, nn_count))
+    eps_tensor[
+        :, jnp.arange(nn_count), jnp.arange(nn_count)
+    ] = measurement_noise[batch_nn_indices]
+
+    return eps_tensor
+
+
+@jit
 def _make_fast_predict_tensors(
     batch_nn_indices: jnp.ndarray,
     train_features: jnp.ndarray,

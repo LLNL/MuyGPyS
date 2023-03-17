@@ -85,7 +85,36 @@ from MuyGPyS._src.gp.tensors import (
     _crosswise_tensor,
     _pairwise_tensor,
     _fast_nn_update,
+    _make_heteroscedastic_tensor,
 )
+
+
+def make_heteroscedastic_tensor(
+    measurement_noise: mm.ndarray,
+    batch_nn_indices: mm.ndarray,
+) -> mm.ndarray:
+    """
+    Create the heteroscedastic noise tensor for nonuniform noise values.
+
+    Creates `eps_tensor` tensor required by heteroscedastic MuyGPs models.
+
+    Args:
+        measurement_noise:
+            A matrix of floats of shape `(batch_count)` providing the noise
+            corresponding to the response variable at each input value in the
+            data.
+        batch_nn_indices:
+            A matrix of integers of shape `(batch_count, nn_count)` listing the
+            nearest neighbor indices for all observations in the batch.
+
+    Returns
+    -------
+    eps_tensor:
+        A matrix of floats of shape `(batch_count, nn_count)` providing the
+        noise corresponding to the nearest neighbor responses for all
+        observations in the batch.
+    """
+    return _make_heteroscedastic_tensor(measurement_noise, batch_nn_indices)
 
 
 def fast_nn_update(

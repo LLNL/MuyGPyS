@@ -8,6 +8,19 @@ from typing import Tuple
 import MuyGPyS._src.math.torch as torch
 
 
+def _make_heteroscedastic_tensor(
+    batch_nn_indices: torch.ndarray,
+    measurement_noise: torch.ndarray,
+) -> torch.ndarray:
+    batch_count, nn_count = batch_nn_indices.shape
+    eps_tensor = torch.zeros((batch_count, nn_count, nn_count))
+    eps_tensor[
+        :, torch.arange(nn_count), torch.arange(nn_count)
+    ] = measurement_noise[batch_nn_indices]
+
+    return eps_tensor
+
+
 def _make_fast_predict_tensors(
     batch_nn_indices: torch.ndarray,
     train_features: torch.ndarray,

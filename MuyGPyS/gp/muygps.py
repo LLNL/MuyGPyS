@@ -10,12 +10,18 @@ MuyGPs implementation
 from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _make_fast_predict_tensors
+from MuyGPyS._src.gp.tensors import (
+    _make_fast_predict_tensors,
+    _make_heteroscedastic_tensor,
+)
 from MuyGPyS._src.gp.muygps import (
     _muygps_fast_posterior_mean,
     _muygps_fast_posterior_mean_precompute,
 )
-from MuyGPyS._src.gp.noise import _homoscedastic_perturb
+from MuyGPyS._src.gp.noise import (
+    _homoscedastic_perturb,
+    _heteroscedastic_perturb,
+)
 from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
@@ -24,7 +30,7 @@ from MuyGPyS.gp.kernels import (
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
-from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 
 
 class MuyGPS:
@@ -98,16 +104,24 @@ class MuyGPS:
     def __init__(
         self,
         kern: str = "matern",
-        eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
+        eps: Union[Dict[str, Union[float, Tuple[float, float]]], mm.ndarray] = {
+            "val": 0.0
+        },
         response_count: int = 1,
         **kwargs,
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.sigma_sq = SigmaSq(response_count)
-        self.eps = _init_hyperparameter(
-            1e-14, "fixed", HomoscedasticNoise, **eps
-        )
+        if isinstance(eps, HomoscedasticNoise):
+            self.eps = _init_hyperparameter(
+                1e-14, "fixed", HomoscedasticNoise, **eps
+            )
+        elif isinstance(eps, HeteroscedasticNoise):
+            self.eps = eps
+        else:
+            raise ValueError(f"Noise model {type(self.eps)} is not supported")
+
         self._mean_fn = PosteriorMean(self.eps)
         self._var_fn = PosteriorVariance(self.eps, self.sigma_sq)
 
@@ -180,7 +194,7 @@ class MuyGPS:
         test point and the `nn_count - 1` nearest neighbors of this nearest
         neighbor, :math:`K_{\\hat{\\theta}}` is the trained kernel functor
         specified by `self.kernel`, :math:`\\varepsilon I_k` is a diagonal
-        homoscedastic noise matrix whose diagonal is the value of the
+        noise matrix whose diagonal is the value of the
         `self.eps` hyperparameter, and :math:`Y(X_{N^*})` is the
         `(train_count,)` vector of responses corresponding to the
         training features indexed by $N^*$.
@@ -205,10 +219,18 @@ class MuyGPS:
             train_nn_targets_fast,
         ) = _make_fast_predict_tensors(nn_indices, train, targets)
         K = self.kernel(pairwise_diffs_fast)
-
-        return _muygps_fast_posterior_mean_precompute(
-            _homoscedastic_perturb(K, self.eps()), train_nn_targets_fast
-        )
+        if isinstance(self.eps, HomoscedasticNoise):
+            return _muygps_fast_posterior_mean_precompute(
+                _homoscedastic_perturb(K, self.eps()), train_nn_targets_fast
+            )
+        elif isinstance(self.eps, HeteroscedasticNoise):
+            nugget_tens = _make_heteroscedastic_tensor(nn_indices, self.eps())
+            return _muygps_fast_posterior_mean_precompute(
+                _heteroscedastic_perturb(K, nugget_tens),
+                train_nn_targets_fast,
+            )
+        else:
+            raise ValueError(f"Noise model {type(self.eps)} is not supported")
 
     def posterior_mean(
         self, K: mm.ndarray, Kcross: mm.ndarray, batch_nn_targets: mm.ndarray

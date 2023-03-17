@@ -7,20 +7,27 @@
 MuyGPs implementation
 """
 
-from typing import Callable
+from typing import Callable, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
-from MuyGPyS._src.gp.noise import _homoscedastic_perturb
+from MuyGPyS._src.gp.noise import (
+    _homoscedastic_perturb,
+    _heteroscedastic_perturb,
+)
 from MuyGPyS.gp.kernels import apply_hyperparameter
 from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
-from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb
+from MuyGPyS.gp.noise import (
+    HomoscedasticNoise,
+    HeteroscedasticNoise,
+    noise_perturb,
+)
 
 
 class PosteriorVariance:
     def __init__(
         self,
-        eps: HomoscedasticNoise,
+        eps: Union[HomoscedasticNoise, HeteroscedasticNoise],
         sigma_sq: SigmaSq,
         apply_sigma_sq=True,
         **kwargs,
@@ -30,6 +37,8 @@ class PosteriorVariance:
         self._fn = _muygps_diagonal_variance
         if isinstance(self.eps, HomoscedasticNoise):
             self._fn = noise_perturb(_homoscedastic_perturb)(self._fn)
+        elif isinstance(self.eps, HeteroscedasticNoise):
+            self._fn = noise_perturb(_heteroscedastic_perturb)(self._fn)
         else:
             raise ValueError(f"Noise model {type(self.eps)} is not supported")
         if apply_sigma_sq is True:
@@ -47,7 +56,9 @@ class PosteriorVariance:
 
     @staticmethod
     def _get_opt_fn(
-        var_fn: Callable, eps: HomoscedasticNoise, sigma_sq: SigmaSq
+        var_fn: Callable,
+        eps: Union[HomoscedasticNoise, HeteroscedasticNoise],
+        sigma_sq: SigmaSq,
     ) -> Callable:
         opt_fn = apply_hyperparameter(var_fn, eps, "eps")
         opt_fn = sigma_sq_apply(opt_fn, sigma_sq)

@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.tensors import make_train_tensors
+from MuyGPyS.gp.tensors import make_train_tensors, make_heteroscedastic_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
@@ -30,6 +30,7 @@ from MuyGPyS.optimize.sigma_sq import (
     muygps_sigma_sq_optim,
     mmuygps_sigma_sq_optim,
 )
+from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 
 
 def make_regressor(
@@ -182,17 +183,21 @@ def make_regressor(
             train_features,
             train_targets,
         )
+        if isinstance(muygps.eps, HeteroscedasticNoise):
+            eps_tensor = muygps.eps.val[batch_indices, :, :]
 
         time_tensor = perf_counter()
 
         if skip_opt is False:
             # maybe do something with these estimates?
+            print(eps_tensor.shape)
             muygps = optimize_from_tensors(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
                 crosswise_diffs,
                 pairwise_diffs,
+                eps_tensor,
                 loss_method=loss_method,
                 obj_method=obj_method,
                 opt_method=opt_method,
