@@ -9,6 +9,9 @@ Noise perturbation function wrapper
 
 from typing import Callable
 
+from MuyGPyS._src.gp.noise import _homoscedastic_perturb
+from MuyGPyS.gp.noise.homoscedastic import HomoscedasticNoise
+
 
 def noise_perturb(perturb_fn: Callable):
     def perturbed_version(fn):
@@ -18,3 +21,10 @@ def noise_perturb(perturb_fn: Callable):
         return fn_wrapper
 
     return perturbed_version
+
+
+def perturb_with_noise_model(fn: Callable, eps: HomoscedasticNoise):
+    if isinstance(eps, HomoscedasticNoise):
+        return noise_perturb(_homoscedastic_perturb)(fn)
+    else:
+        raise ValueError(f"Noise model {type(eps)} is not supported")

@@ -11,10 +11,9 @@ from typing import Callable
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
-from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS.gp.kernels import apply_hyperparameter
 from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
-from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb
+from MuyGPyS.gp.noise import HomoscedasticNoise, perturb_with_noise_model
 
 
 class PosteriorVariance:
@@ -28,10 +27,7 @@ class PosteriorVariance:
         self.eps = eps
         self.sigma_sq = sigma_sq
         self._fn = _muygps_diagonal_variance
-        if isinstance(self.eps, HomoscedasticNoise):
-            self._fn = noise_perturb(_homoscedastic_perturb)(self._fn)
-        else:
-            raise ValueError(f"Noise model {type(self.eps)} is not supported")
+        self._fn = perturb_with_noise_model(self._fn, self.eps)
         if apply_sigma_sq is True:
             self._fn = sigma_sq_scale(self._fn)
 

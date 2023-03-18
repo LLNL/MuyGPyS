@@ -11,19 +11,15 @@ from typing import Callable
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
-from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS.gp.kernels import apply_hyperparameter
-from MuyGPyS.gp.noise import HomoscedasticNoise, noise_perturb
+from MuyGPyS.gp.noise import HomoscedasticNoise, perturb_with_noise_model
 
 
 class PosteriorMean:
     def __init__(self, eps: HomoscedasticNoise, **kwargs):
         self.eps = eps
         self._fn = _muygps_posterior_mean
-        if isinstance(self.eps, HomoscedasticNoise):
-            self._fn = noise_perturb(_homoscedastic_perturb)(self._fn)
-        else:
-            raise ValueError(f"Noise model {type(self.eps)} is not supported")
+        self._fn = perturb_with_noise_model(self._fn, self.eps)
 
     def __call__(
         self,
