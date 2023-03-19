@@ -40,44 +40,7 @@ Example:
 from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _F2, _l2
-
-
-class IsotropicDistortion:
-    def __init__(self, metric):
-        if metric == "l2":
-            self._dist_fn = _l2
-        elif metric == "F2":
-            self._dist_fn = _F2
-        else:
-            raise ValueError(f"Metric {metric} is not supported!")
-
-    def __call__(self, diffs):
-        return self._dist_fn(diffs)
-
-
-class NullDistortion:
-    def __call__(self, *args, **kwargs):
-        raise NotImplementedError("NullDistortion cannot be called!")
-
-
-def apply_distortion(distortion_fn):
-    def distortion_appier(fn):
-        def distorted_fn(diffs, *args, **kwargs):
-            return fn(distortion_fn(diffs), *args, **kwargs)
-
-        return distorted_fn
-
-    return distortion_appier
-
-
-def embed_with_distortion_model(fn, distortion_fn):
-    if isinstance(distortion_fn, IsotropicDistortion):
-        return apply_distortion(distortion_fn)(fn)
-    elif isinstance(distortion_fn, NullDistortion):
-        return fn
-    else:
-        raise ValueError(f"Noise model {type(distortion_fn)} is not supported!")
+from MuyGPyS.gp.distortion import IsotropicDistortion, NullDistortion
 
 
 class KernelFn:

@@ -40,11 +40,11 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import _rbf_fn
+from MuyGPyS.gp.distortion import embed_with_distortion_model
 from MuyGPyS.gp.kernels import (
     _init_hyperparameter,
     append_optim_params_lists,
     apply_hyperparameter,
-    embed_with_distortion_model,
     Hyperparameter,
     KernelFn,
 )

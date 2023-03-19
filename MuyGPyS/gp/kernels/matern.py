@@ -45,11 +45,11 @@ from MuyGPyS._src.gp.kernels import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
+from MuyGPyS.gp.distortion import embed_with_distortion_model
 from MuyGPyS.gp.kernels import (
     _init_hyperparameter,
     append_optim_params_lists,
     apply_hyperparameter,
-    embed_with_distortion_model,
     Hyperparameter,
     KernelFn,
 )
