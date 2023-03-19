@@ -111,7 +111,7 @@ from MuyGPyS._src.optimize.sigma_sq.jax import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.kernels.kernel_fn import apply_distortion
+from MuyGPyS.gp.distortion import apply_distortion
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import noise_perturb
 from MuyGPyS.neighbors import NN_Wrapper

@@ -3,6 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .homoscedastic import HomoscedasticNoise
-from .null import NullNoise
-from .perturbation import noise_perturb, perturb_with_noise_model
+from .embed import apply_distortion, embed_with_distortion_model
+from .isotropic import IsotropicDistortion
+from .null import NullDistortion
