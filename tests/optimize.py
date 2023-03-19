@@ -156,11 +156,11 @@ class BenchmarkSigmaSqTest(BenchmarkTestCase):
             for j, sigma_sq in enumerate(self.sigma_sqs):
                 model = self.gps[i][j]
                 pairwise_dists = benchmark_pairwise_distances(
-                    self.x, metric=model.kernel.metric
+                    self.x, metric=model.metric
                 )
-                K = model.kernel.from_distances(
-                    pairwise_dists
-                ) + model.eps() * np.eye(self.data_count)
+                K = model.kernel(pairwise_dists) + model.eps() * np.eye(
+                    self.data_count
+                )
                 for k in range(self.its):
                     ss = get_analytic_sigma_sq(K, self.ys[i][j][k])
                     mrse += _sq_rel_err(sigma_sq, ss)

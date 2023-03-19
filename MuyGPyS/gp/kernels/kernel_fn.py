@@ -43,16 +43,6 @@ import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
 
 
-def apply_distortion(distortion_fn):
-    def distortion_appier(fn):
-        def distorted_fn(diffs, *args, **kwargs):
-            return fn(distortion_fn(diffs), *args, **kwargs)
-
-        return distorted_fn
-
-    return distortion_appier
-
-
 class IsotropicDistortion:
     def __init__(self, metric):
         if metric == "l2":
@@ -64,6 +54,30 @@ class IsotropicDistortion:
 
     def __call__(self, diffs):
         return self._dist_fn(diffs)
+
+
+class NullDistortion:
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError("NullDistortion cannot be called!")
+
+
+def apply_distortion(distortion_fn):
+    def distortion_appier(fn):
+        def distorted_fn(diffs, *args, **kwargs):
+            return fn(distortion_fn(diffs), *args, **kwargs)
+
+        return distorted_fn
+
+    return distortion_appier
+
+
+def embed_with_distortion_model(fn, distortion_fn):
+    if isinstance(distortion_fn, IsotropicDistortion):
+        return apply_distortion(distortion_fn)(fn)
+    elif isinstance(distortion_fn, NullDistortion):
+        return fn
+    else:
+        raise ValueError(f"Noise model {type(distortion_fn)} is not supported!")
 
 
 class KernelFn:
@@ -84,7 +98,10 @@ class KernelFn:
         """
         self.hyperparameters = dict()
         self.metric = metric
-        self._distortion_fn = IsotropicDistortion(self.metric)
+        if self.metric is None:
+            self._distortion_fn = NullDistortion()
+        else:
+            self._distortion_fn = IsotropicDistortion(self.metric)
 
     def set_params(self, **kwargs) -> None:
         """

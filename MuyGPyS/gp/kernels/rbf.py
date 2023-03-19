@@ -43,8 +43,8 @@ from MuyGPyS._src.gp.kernels import _rbf_fn
 from MuyGPyS.gp.kernels import (
     _init_hyperparameter,
     append_optim_params_lists,
-    apply_distortion,
     apply_hyperparameter,
+    embed_with_distortion_model,
     Hyperparameter,
     KernelFn,
 )
@@ -85,10 +85,8 @@ class RBF(KernelFn):
         super().__init__(metric=metric)
         self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
         self.hyperparameters["length_scale"] = self.length_scale
-        self._from_distances_fn = _rbf_fn
-        self._fn = apply_distortion(self._distortion_fn)(
-            self._from_distances_fn
-        )
+        self._fn = _rbf_fn
+        self._fn = embed_with_distortion_model(self._fn, self._distortion_fn)
 
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
         """
@@ -108,9 +106,6 @@ class RBF(KernelFn):
             dimensions are kernel matrices.
         """
         return self._fn(diffs, length_scale=self.length_scale())
-
-    def from_distances(self, dists):
-        return self._from_distances_fn(dists, length_scale=self.length_scale())
 
     def get_optim_params(
         self,
