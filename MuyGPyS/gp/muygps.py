@@ -7,7 +7,7 @@
 MuyGPs implementation
 """
 
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _make_fast_predict_tensors
@@ -24,7 +24,7 @@ from MuyGPyS.gp.kernels import (
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
-from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, NullNoise
 
 
 class MuyGPS:
@@ -98,16 +98,21 @@ class MuyGPS:
     def __init__(
         self,
         kern: str = "matern",
-        eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
+        eps: Optional[Dict[str, Union[float, Tuple[float, float]]]] = {
+            "val": 0.0
+        },
         response_count: int = 1,
         **kwargs,
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.sigma_sq = SigmaSq(response_count)
-        self.eps = _init_hyperparameter(
-            1e-14, "fixed", HomoscedasticNoise, **eps
-        )
+        if eps is not None:
+            self.eps = _init_hyperparameter(
+                1e-14, "fixed", HomoscedasticNoise, **eps
+            )
+        else:
+            self.eps = NullNoise()  # type: ignore
         self._mean_fn = PosteriorMean(self.eps)
         self._var_fn = PosteriorVariance(self.eps, self.sigma_sq)
 
