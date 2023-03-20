@@ -118,6 +118,10 @@ class BenchmarkGP:
         Initialize.
         """
         self.kern = kern.lower()
+        # this is pretty hacky, and should be changed to be more disciplined
+        kwargs.setdefault("metric", "l2")
+        self.metric = kwargs.get("metric")
+        kwargs["metric"] = None
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
         self.sigma_sq = SigmaSq()
@@ -220,19 +224,17 @@ class BenchmarkGP:
             elements of the posterior variance.
         """
         crosswise_dists = benchmark_crosswise_distances(
-            test, train, metric=self.kernel.metric
+            test, train, metric=self.metric
         )
-        pairwise_dists = benchmark_pairwise_distances(
-            train, metric=self.kernel.metric
-        )
-        Kcross = self.kernel.from_distances(crosswise_dists)
-        K = self.kernel.from_distances(pairwise_dists)
+        pairwise_dists = benchmark_pairwise_distances(train, metric=self.metric)
+        Kcross = self.kernel(crosswise_dists)
+        K = self.kernel(pairwise_dists)
         responses = Kcross @ np.linalg.solve(K, targets)
 
-        test_pairwise_distances = benchmark_pairwise_distances(
-            test, metric=self.kernel.metric
+        test_pairwise_dists = benchmark_pairwise_distances(
+            test, metric=self.metric
         )
-        Kstar = self.kernel.from_distances(test_pairwise_distances)
+        Kstar = self.kernel(test_pairwise_dists)
         variance = Kstar - Kcross @ np.linalg.solve(K, Kcross.T)
         return responses, variance
 
@@ -278,10 +280,10 @@ def benchmark_prepare_cholK(
     Returns:
         The Cholesky decomposition of a dense covariance matrix.
     """
-    pairwise_dists = benchmark_pairwise_distances(data, metric=gp.kernel.metric)
+    pairwise_dists = benchmark_pairwise_distances(data, metric=gp.metric)
     data_count, _ = data.shape
     Kfull = gp.sigma_sq()[0] * (
-        gp.kernel.from_distances(pairwise_dists) + gp.eps() * np.eye(data_count)
+        gp.kernel(pairwise_dists) + gp.eps() * np.eye(data_count)
     )
     return np.linalg.cholesky(Kfull)
 

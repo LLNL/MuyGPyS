@@ -9,7 +9,7 @@ from .hyperparameters import (
     apply_hyperparameter,
     Hyperparameter,
 )
-from .kernel_fn import apply_distortion, KernelFn
+from .kernel_fn import KernelFn
 from .matern import Matern
 from .rbf import RBF
 

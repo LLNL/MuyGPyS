@@ -7,7 +7,7 @@
 MuyGPs implementation
 """
 
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import (
@@ -31,6 +31,7 @@ from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, NullNoise
 
 
 class MuyGPS:
@@ -122,6 +123,12 @@ class MuyGPS:
         else:
             raise ValueError(f"Noise model {type(self.eps)} is not supported")
 
+        if eps is not None:
+            self.eps = _init_hyperparameter(
+                1e-14, "fixed", HomoscedasticNoise, **eps
+            )
+        else:
+            self.eps = NullNoise()  # type: ignore
         self._mean_fn = PosteriorMean(self.eps)
         self._var_fn = PosteriorVariance(self.eps, self.sigma_sq)
 

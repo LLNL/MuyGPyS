@@ -38,7 +38,6 @@ Example:
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _l2
 from MuyGPyS._src.gp.kernels import (
     _matern_05_fn,
     _matern_15_fn,
@@ -46,10 +45,10 @@ from MuyGPyS._src.gp.kernels import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
+from MuyGPyS.gp.distortion import embed_with_distortion_model
 from MuyGPyS.gp.kernels import (
     _init_hyperparameter,
     append_optim_params_lists,
-    apply_distortion,
     apply_hyperparameter,
     Hyperparameter,
     KernelFn,
@@ -126,10 +125,8 @@ class Matern(KernelFn):
         self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
         self.hyperparameters["nu"] = self.nu
         self.hyperparameters["length_scale"] = self.length_scale
-        self._from_distances_fn = _set_matern_fn(self.nu)
-        self._fn = apply_distortion(self._distortion_fn)(
-            self._from_distances_fn
-        )
+        self._fn = _set_matern_fn(self.nu)
+        self._fn = embed_with_distortion_model(self._fn, self._distortion_fn)
 
     def __call__(self, diffs):
         """
@@ -150,13 +147,6 @@ class Matern(KernelFn):
             dimensions are kernel matrices.
         """
         return self._fn(diffs, nu=self.nu(), length_scale=self.length_scale())
-
-    def from_distances(self, dists):
-        return self._from_distances_fn(
-            dists,
-            nu=self.nu(),
-            length_scale=self.length_scale(),
-        )
 
     def get_optim_params(
         self,

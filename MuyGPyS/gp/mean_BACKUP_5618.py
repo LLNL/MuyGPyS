@@ -10,60 +10,55 @@ MuyGPs implementation
 from typing import Callable, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
+from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
+<<<<<<< HEAD
 from MuyGPyS._src.gp.noise import (
     _homoscedastic_perturb,
     _heteroscedastic_perturb,
 )
 from MuyGPyS.gp.kernels import apply_hyperparameter
-from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
 from MuyGPyS.gp.noise import (
     HomoscedasticNoise,
     HeteroscedasticNoise,
     noise_perturb,
 )
+=======
 from MuyGPyS.gp.kernels import apply_hyperparameter
-from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
 from MuyGPyS.gp.noise import HomoscedasticNoise, perturb_with_noise_model
+>>>>>>> develop
 
 
-class PosteriorVariance:
+class PosteriorMean:
     def __init__(
-        self,
-        eps: Union[HomoscedasticNoise, HeteroscedasticNoise],
-        sigma_sq: SigmaSq,
-        apply_sigma_sq=True,
-        **kwargs,
+        self, eps: Union[HomoscedasticNoise, HeteroscedasticNoise], **kwargs
     ):
         self.eps = eps
-        self.sigma_sq = sigma_sq
-        self._fn = _muygps_diagonal_variance
+        self._fn = _muygps_posterior_mean
+<<<<<<< HEAD
         if isinstance(self.eps, HomoscedasticNoise):
             self._fn = noise_perturb(_homoscedastic_perturb)(self._fn)
         elif isinstance(self.eps, HeteroscedasticNoise):
             self._fn = noise_perturb(_heteroscedastic_perturb)(self._fn)
         else:
             raise ValueError(f"Noise model {type(self.eps)} is not supported")
+=======
         self._fn = perturb_with_noise_model(self._fn, self.eps)
-        if apply_sigma_sq is True:
-            self._fn = sigma_sq_scale(self._fn)
+>>>>>>> develop
 
     def __call__(
         self,
         K: mm.ndarray,
         Kcross: mm.ndarray,
+        batch_nn_targets: mm.ndarray,
     ) -> mm.ndarray:
-        return self._fn(K, Kcross, eps=self.eps(), sigma_sq=self.sigma_sq())
+        return self._fn(K, Kcross, batch_nn_targets, eps=self.eps())
 
     def get_opt_fn(self) -> Callable:
-        return self._get_opt_fn(self._fn, self.eps, self.sigma_sq)
+        return self._get_opt_fn(self._fn, self.eps)
 
     @staticmethod
     def _get_opt_fn(
-        var_fn: Callable,
-        eps: Union[HomoscedasticNoise, HeteroscedasticNoise],
-        sigma_sq: SigmaSq,
+        mean_fn: Callable, eps: Union[HomoscedasticNoise, HeteroscedasticNoise]
     ) -> Callable:
-        opt_fn = apply_hyperparameter(var_fn, eps, "eps")
-        opt_fn = sigma_sq_apply(opt_fn, sigma_sq)
+        opt_fn = apply_hyperparameter(mean_fn, eps, "eps")
         return opt_fn

@@ -7,36 +7,18 @@
 MuyGPs implementation
 """
 
-from typing import Callable, Union
+from typing import Callable
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
-from MuyGPyS._src.gp.noise import (
-    _homoscedastic_perturb,
-    _heteroscedastic_perturb,
-)
-from MuyGPyS.gp.kernels import apply_hyperparameter
-from MuyGPyS.gp.noise import (
-    HomoscedasticNoise,
-    HeteroscedasticNoise,
-    noise_perturb,
-)
 from MuyGPyS.gp.kernels import apply_hyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise, perturb_with_noise_model
 
 
 class PosteriorMean:
-    def __init__(
-        self, eps: Union[HomoscedasticNoise, HeteroscedasticNoise], **kwargs
-    ):
+    def __init__(self, eps: HomoscedasticNoise, **kwargs):
         self.eps = eps
         self._fn = _muygps_posterior_mean
-        if isinstance(self.eps, HomoscedasticNoise):
-            self._fn = noise_perturb(_homoscedastic_perturb)(self._fn)
-        elif isinstance(self.eps, HeteroscedasticNoise):
-            self._fn = noise_perturb(_heteroscedastic_perturb)(self._fn)
-        else:
-            raise ValueError(f"Noise model {type(self.eps)} is not supported")
         self._fn = perturb_with_noise_model(self._fn, self.eps)
 
     def __call__(
@@ -51,8 +33,6 @@ class PosteriorMean:
         return self._get_opt_fn(self._fn, self.eps)
 
     @staticmethod
-    def _get_opt_fn(
-        mean_fn: Callable, eps: Union[HomoscedasticNoise, HeteroscedasticNoise]
-    ) -> Callable:
+    def _get_opt_fn(mean_fn: Callable, eps: HomoscedasticNoise) -> Callable:
         opt_fn = apply_hyperparameter(mean_fn, eps, "eps")
         return opt_fn
