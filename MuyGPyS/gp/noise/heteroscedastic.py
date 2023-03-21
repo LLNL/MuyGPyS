@@ -38,12 +38,10 @@ class HeteroscedasticNoise(Hyperparameter):
     def __init__(
         self,
         val: mm.ndarray,
-        bounds: str,
+        bounds: str = "fixed",
     ):
         super(HeteroscedasticNoise, self).__init__(val, bounds)
-        self.bounds = "fixed"
-        self.val = val
-        if mm.sum(self.val < 0) > 0:
+        if mm.sum(self._val < 0) > 0:
             raise ValueError(
                 f"Heteroscedastic noise values are not strictly non-negative!"
             )

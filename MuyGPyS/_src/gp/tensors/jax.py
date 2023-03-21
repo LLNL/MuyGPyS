@@ -13,14 +13,17 @@ import MuyGPyS._src.math.jax as jnp
 
 @jit
 def _make_heteroscedastic_tensor(
-    batch_nn_indices: jnp.ndarray,
     measurement_noise: jnp.ndarray,
+    batch_nn_indices: jnp.ndarray,
 ) -> jnp.ndarray:
     batch_count, nn_count = batch_nn_indices.shape
     eps_tensor = jnp.zeros((batch_count, nn_count, nn_count))
-    eps_tensor[
-        :, jnp.arange(nn_count), jnp.arange(nn_count)
-    ] = measurement_noise[batch_nn_indices]
+    indices = (
+        jnp.repeat(range(batch_count), nn_count),
+        jnp.tile(jnp.arange(nn_count), batch_count),
+        jnp.tile(jnp.arange(nn_count), batch_count),
+    )
+    eps_tensor[indices] = measurement_noise[batch_nn_indices].flatten()
 
     return eps_tensor
 

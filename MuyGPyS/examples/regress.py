@@ -183,21 +183,16 @@ def make_regressor(
             train_features,
             train_targets,
         )
-        if isinstance(muygps.eps, HeteroscedasticNoise):
-            eps_tensor = muygps.eps.val[batch_indices, :, :]
-
         time_tensor = perf_counter()
 
         if skip_opt is False:
             # maybe do something with these estimates?
-            print(eps_tensor.shape)
             muygps = optimize_from_tensors(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
                 crosswise_diffs,
                 pairwise_diffs,
-                eps_tensor,
                 loss_method=loss_method,
                 obj_method=obj_method,
                 opt_method=opt_method,

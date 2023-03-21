@@ -74,7 +74,7 @@ case) the training targets of the training batch. These functions are convenient
 as the difference and target tensors are usually needed together.
 """
 
-
+from MuyGPyS.neighbors import NN_Wrapper
 from typing import Optional, Tuple
 
 import MuyGPyS._src.math as mm
@@ -87,6 +87,37 @@ from MuyGPyS._src.gp.tensors import (
     _fast_nn_update,
     _make_heteroscedastic_tensor,
 )
+
+
+def make_noise_tensor(
+    test: mm.ndarray, measurement_noise: mm.ndarray, nbrs_lookup: NN_Wrapper
+) -> mm.ndarray:
+    """
+    Create the heteroscedastic noise tensor for nonuniform noise values for
+    prediction of test data.
+
+    Creates `eps_tensor` tensor required by heteroscedastic MuyGPs models.
+
+    Args:
+        test:
+            A matrix of feature of shape `(test_count, feature_count)`
+            containing the test data.
+        measurement_noise:
+            A matrix of floats of shape `(train_count)` providing the noise
+            corresponding to the response variable at each input value in the
+            data.
+        nbrs_lookup:
+            A NN_Wrapper nearest neighbor lookup structure
+
+    Returns
+    -------
+    eps_tensor:
+        A matrix of floats of shape `(test_count, nn_count)` providing the
+        noise corresponding to the nearest neighbor responses for all
+        observations in the test set.
+    """
+    nn_indices, _ = nbrs_lookup.get_nns(test)
+    return _make_heteroscedastic_tensor(measurement_noise, nn_indices)
 
 
 def make_heteroscedastic_tensor(

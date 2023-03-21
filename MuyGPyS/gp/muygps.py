@@ -8,6 +8,7 @@ MuyGPs implementation
 """
 
 from typing import Callable, Dict, List, Optional, Tuple, Union
+from copy import deepcopy
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import (
@@ -30,8 +31,7 @@ from MuyGPyS.gp.kernels import (
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
-from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
-from MuyGPyS.gp.noise import HomoscedasticNoise, NullNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise, NullNoise
 
 
 class MuyGPS:
@@ -105,28 +105,29 @@ class MuyGPS:
     def __init__(
         self,
         kern: str = "matern",
-        eps: Union[Dict[str, Union[float, Tuple[float, float]]], mm.ndarray] = {
-            "val": 0.0
-        },
+        eps: Optional[
+            Union[
+                Dict[str, Union[float, Tuple[float, float]]],
+                Dict[str, mm.ndarray],
+            ]
+        ] = {"val": 0.0},
         response_count: int = 1,
         **kwargs,
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.sigma_sq = SigmaSq(response_count)
-        if isinstance(eps, HomoscedasticNoise):
-            self.eps = _init_hyperparameter(
-                1e-14, "fixed", HomoscedasticNoise, **eps
-            )
-        elif isinstance(eps, HeteroscedasticNoise):
-            self.eps = eps
-        else:
-            raise ValueError(f"Noise model {type(self.eps)} is not supported")
-
         if eps is not None:
-            self.eps = _init_hyperparameter(
-                1e-14, "fixed", HomoscedasticNoise, **eps
-            )
+            if isinstance(eps["val"], float):
+                self.eps = _init_hyperparameter(
+                    1e-14, "fixed", HomoscedasticNoise, **eps
+                )
+            elif isinstance(eps["val"], mm.ndarray):
+                self.eps = _init_hyperparameter(
+                    1e-14, "fixed", HeteroscedasticNoise, **eps
+                )
+            else:
+                raise TypeError(f"Noise model {type(eps)} is not supported")
         else:
             self.eps = NullNoise()  # type: ignore
         self._mean_fn = PosteriorMean(self.eps)
@@ -373,6 +374,24 @@ class MuyGPS:
         return _muygps_fast_posterior_mean(
             self.kernel._distortion_fn(Kcross), coeffs_tensor
         )
+
+    def apply_new_noise(self, new_noise):
+        """
+        Updates the heteroscedastic noise parameters of a MuyGPs model.
+
+        Args:
+            new_noise:
+                A matrix of shape `(test_count, nn_count, nn_count)` containing
+                the measurement noise corresponding to the nearest neighbors
+                of each test point.
+        Returns:
+            A MuyGPs model with updated heteroscedastic noise parameters.
+        """
+        ret = deepcopy(self)
+        ret.eps = HeteroscedasticNoise(new_noise, "fixed")
+        ret._mean_fn = PosteriorMean(ret.eps)
+        ret._var_fn = PosteriorVariance(ret.eps, ret.sigma_sq)
+        return ret
 
     def get_opt_mean_fn(self) -> Callable:
         """

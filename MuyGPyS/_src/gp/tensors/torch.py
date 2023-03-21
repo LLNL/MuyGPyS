@@ -9,14 +9,17 @@ import MuyGPyS._src.math.torch as torch
 
 
 def _make_heteroscedastic_tensor(
-    batch_nn_indices: torch.ndarray,
     measurement_noise: torch.ndarray,
+    batch_nn_indices: torch.ndarray,
 ) -> torch.ndarray:
     batch_count, nn_count = batch_nn_indices.shape
     eps_tensor = torch.zeros((batch_count, nn_count, nn_count))
-    eps_tensor[
-        :, torch.arange(nn_count), torch.arange(nn_count)
-    ] = measurement_noise[batch_nn_indices]
+    indices = (
+        torch.repeat(range(batch_count), nn_count),
+        torch.tile(torch.arange(nn_count), batch_count),
+        torch.tile(torch.arange(nn_count), batch_count),
+    )
+    eps_tensor[indices] = measurement_noise[batch_nn_indices].flatten()
 
     return eps_tensor
 
