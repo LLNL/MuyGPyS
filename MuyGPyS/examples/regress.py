@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.tensors import make_train_tensors, make_heteroscedastic_tensor
+from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
@@ -30,7 +30,6 @@ from MuyGPyS.optimize.sigma_sq import (
     muygps_sigma_sq_optim,
     mmuygps_sigma_sq_optim,
 )
-from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 
 
 def make_regressor(

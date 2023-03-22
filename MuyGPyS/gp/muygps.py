@@ -118,7 +118,7 @@ class MuyGPS:
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.sigma_sq = SigmaSq(response_count)
         if eps is not None:
-            if isinstance(eps["val"], float):
+            if isinstance(eps["val"], Union[float, str]):
                 self.eps = _init_hyperparameter(
                     1e-14, "fixed", HomoscedasticNoise, **eps
                 )
@@ -375,22 +375,27 @@ class MuyGPS:
             self.kernel._distortion_fn(Kcross), coeffs_tensor
         )
 
-    def apply_new_noise(self, new_noise):
+    def apply_new_noise(self, new_noise: Union[float, mm.ndarray]):
         """
-        Updates the heteroscedastic noise parameters of a MuyGPs model. To be
-        used when the MuyGPs model has been trained and needs to be used for
-        prediction, or if multiple batches are needed during training.
+        Updates the homo/heteroscedastic noise parameter(s) of a MuyGPs model.
+        To be used when the MuyGPs model has been trained and needs to be
+        used for prediction, or if multiple batches are needed during training
+        of a heteroscedastic model.
 
         Args:
             new_noise:
-                A matrix of shape `(test_count, nn_count, nn_count)` containing
-                the measurement noise corresponding to the nearest neighbors
-                of each test point.
+                If homoscedastic, a float to update the nugget parameter.
+                If heteroscedastic, a matrix of shape
+                `(test_count, nn_count, nn_count)` containing the measurement
+                noise corresponding to the nearest neighbors of each test point.
         Returns:
-            A MuyGPs model with updated heteroscedastic noise parameters.
+            A MuyGPs model with updated noise parameter(s).
         """
         ret = deepcopy(self)
-        ret.eps = HeteroscedasticNoise(new_noise, "fixed")
+        if isinstance(new_noise, float):
+            ret.eps = HomoscedasticNoise(new_noise, "fixed")
+        elif isinstance(new_noise, mm.ndarray):
+            ret.eps = HeteroscedasticNoise(new_noise, "fixed")
         ret._mean_fn = PosteriorMean(ret.eps)
         ret._var_fn = PosteriorVariance(ret.eps, ret.sigma_sq)
         return ret
