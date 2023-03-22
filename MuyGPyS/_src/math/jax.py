@@ -38,7 +38,6 @@ from jax.numpy import (
     ndarray,
     newaxis,
     outer,
-    random,
     repeat,
     sqrt,
     sum,

@@ -41,7 +41,6 @@ from numpy import (
     ndarray,
     number,
     outer,
-    random,
     repeat,
     sqrt,
     sum,
