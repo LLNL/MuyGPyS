@@ -118,7 +118,7 @@ class MuyGPS:
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.sigma_sq = SigmaSq(response_count)
         if eps is not None:
-            if isinstance(eps["val"], Union[float, str]):
+            if isinstance(eps["val"], float) or isinstance(eps["val"], str):
                 self.eps = _init_hyperparameter(
                     1e-14, "fixed", HomoscedasticNoise, **eps
                 )
