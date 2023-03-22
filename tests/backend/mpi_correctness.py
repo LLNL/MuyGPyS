@@ -65,9 +65,11 @@ from MuyGPyS._src.gp.muygps.mpi import (
 )
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb as homoscedastic_perturb_n,
+    _heteroscedastic_perturb as heteroscedastic_perturb_n,
 )
 from MuyGPyS._src.gp.noise.mpi import (
     _homoscedastic_perturb as homoscedastic_perturb_m,
+    _heteroscedastic_perturb as heteroscedastic_perturb_m,
 )
 from MuyGPyS._src.optimize.sigma_sq.numpy import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
@@ -147,6 +149,13 @@ class TensorsTestCase(parameterized.TestCase):
             "nu": cls.muygps.kernel.nu(),
             "length_scale": cls.muygps.kernel.length_scale(),
         }
+        cls.k_kwargs_heteroscedastic = {
+            "kern": "matern",
+            "length_scale": {"val": cls.length_scale},
+            "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+            "eps": {"val": cls.eps_heteroscedastic_n},
+        }
+        cls.muygps_heteroscedastic = MuyGPS(**cls.k_kwargs_heteroscedastic)
         if rank == 0:
             cls.train_features = _make_gaussian_matrix(
                 cls.train_count, cls.feature_count
@@ -597,8 +606,18 @@ class MuyGPSTestCase(KernelTestCase):
             cls.batch_homoscedastic_covariance_gen = homoscedastic_perturb_n(
                 cls.batch_covariance_gen, cls.muygps.eps()
             )
+            cls.batch_heteroscedastic_covariance_gen = (
+                heteroscedastic_perturb_n(
+                    cls.batch_covariance_gen, cls.muygps_heteroscedastic.eps()
+                )
+            )
             cls.batch_prediction = muygps_posterior_mean_n(
                 cls.batch_homoscedastic_covariance_gen,
+                cls.batch_crosscov_gen,
+                cls.batch_nn_targets,
+            )
+            cls.batch_prediction_heteroscedastic = muygps_posterior_mean_n(
+                cls.batch_heteroscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
                 cls.batch_nn_targets,
             )
@@ -606,21 +625,40 @@ class MuyGPSTestCase(KernelTestCase):
                 cls.batch_homoscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
             )
+            cls.batch_variance_heteroscedastic = muygps_diagonal_variance_n(
+                cls.batch_heteroscedastic_covariance_gen,
+                cls.batch_crosscov_gen,
+            )
         else:
             cls.batch_homoscedastic_covariance_gen = None
+            cls.batch_heteroscedastic_covariance_gen = None
             cls.batch_prediction = None
             cls.batch_variance = None
 
         cls.batch_homoscedastic_covariance_gen_chunk = homoscedastic_perturb_m(
             cls.batch_covariance_gen_chunk, cls.muygps.eps()
         )
+        cls.batch_heteroscedastic_covariance_gen_chunk = (
+            heteroscedastic_perturb_m(
+                cls.batch_covariance_gen_chunk, cls.muygps_heteroscedastic.eps()
+            )
+        )
         cls.batch_prediction_chunk = muygps_posterior_mean_m(
             cls.batch_homoscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
             cls.batch_nn_targets_chunk,
         )
+        cls.batch_heteroscedastic_prediction_chunk = muygps_posterior_mean_m(
+            cls.batch_heteroscedastic_covariance_gen_chunk,
+            cls.batch_crosscov_gen_chunk,
+            cls.batch_nn_targets_chunk,
+        )
         cls.batch_variance_chunk = muygps_diagonal_variance_m(
             cls.batch_homoscedastic_covariance_gen_chunk,
+            cls.batch_crosscov_gen_chunk,
+        )
+        cls.batch_heteroscedastic_variance_chunk = muygps_diagonal_variance_m(
+            cls.batch_heteroscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
         )
 
@@ -634,6 +672,12 @@ class MuyGPSTest(MuyGPSTestCase):
         self._compare_tensors(
             self.batch_homoscedastic_covariance_gen,
             self.batch_homoscedastic_covariance_gen_chunk,
+        )
+
+    def test_heteroscedastic_perturb(self):
+        self._compare_tensors(
+            self.batch_heteroscedastic_covariance_gen,
+            self.batch_heteroscedastic_covariance_gen_chunk,
         )
 
     def test_batch_posterior_mean(self):
@@ -653,6 +697,19 @@ class MuyGPSTest(MuyGPSTestCase):
         if rank == 0:
             serial_sigma_sq = analytic_sigma_sq_optim_n(
                 self.batch_homoscedastic_covariance_gen,
+                self.batch_nn_targets,
+            )
+            self.assertAlmostEqual(serial_sigma_sq[0], parallel_sigma_sq[0])
+
+    def test_sigma_sq_optim_heteroscedastic(self):
+        parallel_sigma_sq = analytic_sigma_sq_optim_m(
+            self.batch_heteroscedastic_covariance_gen_chunk,
+            self.batch_nn_targets_chunk,
+        )
+
+        if rank == 0:
+            serial_sigma_sq = analytic_sigma_sq_optim_n(
+                self.batch_heteroscedastic_covariance_gen,
                 self.batch_nn_targets,
             )
             self.assertAlmostEqual(serial_sigma_sq[0], parallel_sigma_sq[0])
@@ -696,6 +753,12 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps.eps,
         )
 
+    def _get_mean_fn_heteroscedastic_n(self):
+        return self.muygps_heteroscedastic._mean_fn._get_opt_fn(
+            noise_perturb(heteroscedastic_perturb_n)(muygps_posterior_mean_n),
+            self.muygps_heteroscedastic.eps,
+        )
+
     def _get_var_fn_n(self):
         return self.muygps._var_fn._get_opt_fn(
             sigma_sq_scale(
@@ -707,9 +770,27 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps.sigma_sq,
         )
 
+    def _get_var_fn_heteroscedastic_n(self):
+        return self.muygps_heteroscedastic._var_fn._get_opt_fn(
+            sigma_sq_scale(
+                noise_perturb(heteroscedastic_perturb_n)(
+                    muygps_diagonal_variance_n
+                )
+            ),
+            self.muygps_heteroscedastic.eps,
+            self.muygps_heteroscedastic.sigma_sq,
+        )
+
     def _get_sigma_sq_fn_n(self):
         return make_analytic_sigma_sq_optim(
             self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
+        )
+
+    def _get_sigma_sq_fn_n(self):
+        return make_analytic_sigma_sq_optim(
+            self.muygps_heteroscedastic,
+            analytic_sigma_sq_optim_n,
+            heteroscedastic_perturb_n,
         )
 
     # MPI predict functions
@@ -717,6 +798,12 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps._mean_fn._get_opt_fn(
             noise_perturb(homoscedastic_perturb_m)(muygps_posterior_mean_m),
             self.muygps.eps,
+        )
+
+    def _get_mean_fn_heteroscedastic_m(self):
+        return self.muygps_heteroscedastic._mean_fn._get_opt_fn(
+            noise_perturb(heteroscedastic_perturb_m)(muygps_posterior_mean_m),
+            self.muygps_heteroscedastic.eps,
         )
 
     def _get_var_fn_m(self):
@@ -730,9 +817,27 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps.sigma_sq,
         )
 
+    def _get_var_fn_heteroscedastic_m(self):
+        return self.muygps_heteroscedastic._var_fn._get_opt_fn(
+            sigma_sq_scale(
+                noise_perturb(heteroscedastic_perturb_m)(
+                    muygps_diagonal_variance_m
+                )
+            ),
+            self.muygps_heteroscedastic.eps,
+            self.muygps_heteroscedastic.sigma_sq,
+        )
+
     def _get_sigma_sq_fn_m(self):
         return make_analytic_sigma_sq_optim(
             self.muygps, analytic_sigma_sq_optim_m, homoscedastic_perturb_m
+        )
+
+    def _get_sigma_sq_fn_heteroscedastic_m(self):
+        return make_analytic_sigma_sq_optim(
+            self.muygps_heteroscedastic,
+            analytic_sigma_sq_optim_m,
+            heteroscedastic_perturb_m,
         )
 
     # Numpy objective functions
@@ -750,6 +855,20 @@ class OptimTestCase(MuyGPSTestCase):
             self.batch_targets,
         )
 
+    def _get_obj_fn_heteroscedastic_n(self):
+        return make_loo_crossval_fn(
+            "mse",
+            mse_fn_n,
+            self._get_kernel_n(),
+            self._get_mean_fn_heteroscedastic_n(),
+            self._get_var_fn_heteroscedastic_n(),
+            self._get_sigma_sq_fn_heteroscedastic_n(),
+            self.batch_pairwise_diffs,
+            self.batch_crosswise_diffs,
+            self.batch_nn_targets,
+            self.batch_targets,
+        )
+
     # MPI objective functions
     def _get_obj_fn_m(self):
         return make_loo_crossval_fn(
@@ -759,6 +878,20 @@ class OptimTestCase(MuyGPSTestCase):
             self._get_mean_fn_m(),
             self._get_var_fn_m(),
             self._get_sigma_sq_fn_m(),
+            self.batch_pairwise_diffs_chunk,
+            self.batch_crosswise_diffs_chunk,
+            self.batch_nn_targets_chunk,
+            self.batch_targets_chunk,
+        )
+
+    def _get_obj_fn_heteroscedastic_m(self):
+        return make_loo_crossval_fn(
+            "mse",
+            mse_fn_m,
+            self._get_kernel_fn_m(),
+            self._get_mean_fn_heteroscedastic_m(),
+            self._get_var_fn_heteroscedastic_m(),
+            self._get_sigma_sq_fn_heteroscedastic_m(),
             self.batch_pairwise_diffs_chunk,
             self.batch_crosswise_diffs_chunk,
             self.batch_nn_targets_chunk,
@@ -935,6 +1068,23 @@ class ScipyOptimTest(OptimTestCase):
             opt_n = scipy_optimize_n(self.muygps, obj_fn_n, **self.sopt_kwargs)
             self.assertAlmostEqual(opt_m.kernel.nu(), opt_n.kernel.nu())
 
+    def test_scipy_optimize_heteroscedastic(self):
+        obj_fn_heteroscedastic_m = self._get_obj_fn_heteroscedastic_m()
+        opt_m = scipy_optimize_m(
+            self.muygps_heteroscedastic,
+            obj_fn_heteroscedastic_m,
+            **self.sopt_kwargs,
+        )
+
+        if rank == 0:
+            obj_fn_heteroscedastic_n = self._get_obj_fn_heteroscedastic_n()
+            opt_n = scipy_optimize_n(
+                self.muygps_heteroscedastic,
+                obj_fn_heteroscedastic_n,
+                **self.sopt_kwargs,
+            )
+            self.assertAlmostEqual(opt_m.kernel.nu(), opt_n.kernel.nu())
+
 
 class BayesOptimTest(OptimTestCase):
     @classmethod
@@ -949,6 +1099,23 @@ class BayesOptimTest(OptimTestCase):
             obj_fn_n = self._get_obj_fn_n()
             model_n = bayes_optimize_n(
                 self.muygps, obj_fn_n, **self.bopt_kwargs
+            )
+            self.assertAlmostEqual(model_m.kernel.nu(), model_n.kernel.nu())
+
+    def test_bayes_optimize_heteroscedastic(self):
+        obj_fn_heteroscedastic_m = self._get_obj_fn_heteroscedastic_m()
+        model_m = bayes_optimize_m(
+            self.muygps_heteroscedastic,
+            obj_fn_heteroscedastic_m,
+            **self.bopt_kwargs,
+        )
+
+        if rank == 0:
+            obj_fn_heteroscedastic_n = self._get_obj_fn_heteroscedastic_n()
+            model_n = bayes_optimize_n(
+                self.muygps_heteroscedastic,
+                obj_fn_heteroscedastic_n,
+                **self.bopt_kwargs,
             )
             self.assertAlmostEqual(model_m.kernel.nu(), model_n.kernel.nu())
 

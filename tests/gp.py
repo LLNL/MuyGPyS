@@ -12,7 +12,10 @@ config.parse_flags_with_absl()  # Affords option setting from CLI
 
 import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
-from MuyGPyS._src.gp.noise import _homoscedastic_perturb
+from MuyGPyS._src.gp.noise import (
+    _homoscedastic_perturb,
+    _heteroscedastic_perturb,
+)
 from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
@@ -20,6 +23,7 @@ from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.tensors import (
     make_train_tensors,
     make_predict_tensors,
+    make_heteroscedastic_tensor,
 )
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
@@ -425,6 +429,73 @@ class HomoscedasticNoiseTest(GPTestCase):
         _check_ndarray(self.assertEqual, perturbed_K, mm.ftype)
 
         manual_K = K + muygps.eps() * mm.eye(nn_count)
+        self.assertTrue(mm.allclose(perturbed_K, manual_K))
+        return perturbed_K, Kcross
+
+
+class HeteroscedasticNoiseTest(GPTestCase):
+    @parameterized.parameters(
+        (
+            (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
+            for f in [100, 1]
+            for r in [5, 1]
+            for nn_kwargs in _basic_nn_kwarg_options
+            # for f in [1]
+            # for r in [1]
+            # for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for k_kwargs in (
+                {
+                    "kern": "matern",
+                    "metric": "l2",
+                    "eps": {"val": 1e-4},
+                    "nu": {"val": 1.5},
+                    "length_scale": {"val": 7.2},
+                },
+                {
+                    "kern": "rbf",
+                    "metric": "F2",
+                    "eps": {"val": 1e-4},
+                    "length_scale": {"val": 1.5},
+                },
+            )
+        )
+    )
+    def test_heteroscedastic_perturb(
+        self,
+        train_count,
+        test_count,
+        feature_count,
+        response_count,
+        nn_count,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        test_indices = (
+            np.repeat(range(test_count), nn_count),
+            np.tile(np.arange(nn_count), test_count),
+            np.tile(np.arange(nn_count), test_count),
+        )
+        eps_tensor = mm.zeros((test_count, nn_count, nn_count))
+        eps_tensor[test_indices] = (
+            1e-5 * np.random.rand(test_count, nn_count).flatten()
+        )
+        k_kwargs["eps"] = {"val": eps_tensor}
+        muygps = MuyGPS(**k_kwargs)
+
+        K, Kcross, _, _, _, _ = self._prepare_tensors(
+            muygps,
+            train_count,
+            test_count,
+            feature_count,
+            response_count,
+            nn_count,
+            nn_kwargs,
+        )
+
+        perturbed_K = _heteroscedastic_perturb(K, muygps.eps())
+        _check_ndarray(self.assertEqual, perturbed_K, mm.ftype)
+
+        manual_K = K + muygps.eps()
         self.assertTrue(mm.allclose(perturbed_K, manual_K))
         return perturbed_K, Kcross
 

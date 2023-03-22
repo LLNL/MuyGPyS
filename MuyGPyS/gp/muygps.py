@@ -377,7 +377,9 @@ class MuyGPS:
 
     def apply_new_noise(self, new_noise):
         """
-        Updates the heteroscedastic noise parameters of a MuyGPs model.
+        Updates the heteroscedastic noise parameters of a MuyGPs model. To be
+        used when the MuyGPs model has been trained and needs to be used for
+        prediction, or if multiple batches are needed during training.
 
         Args:
             new_noise:

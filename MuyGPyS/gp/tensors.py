@@ -94,7 +94,8 @@ def make_noise_tensor(
 ) -> mm.ndarray:
     """
     Create the heteroscedastic noise tensor for nonuniform noise values for
-    prediction of test data.
+    prediction of test data. Can also be used to produce the noise tensor
+    needed during batched training.
 
     Creates `eps_tensor` tensor required by heteroscedastic MuyGPs models.
 
@@ -107,7 +108,7 @@ def make_noise_tensor(
             corresponding to the response variable at each input value in the
             data.
         nbrs_lookup:
-            A NN_Wrapper nearest neighbor lookup structure
+            A NN_Wrapper nearest neighbor lookup structure.
 
     Returns
     -------
@@ -131,12 +132,13 @@ def make_heteroscedastic_tensor(
 
     Args:
         measurement_noise:
-            A matrix of floats of shape `(batch_count)` providing the noise
+            A matrix of floats of shape `(batch_count,)` providing the noise
             corresponding to the response variable at each input value in the
             data.
         batch_nn_indices:
-            A matrix of integers of shape `(batch_count, nn_count)` listing the
-            nearest neighbor indices for all observations in the batch.
+            A matrix of integers of shape `(batch_count, nn_count, nn_count)`
+            listing the measurement noise for the nearest neighbors for all
+            observations in the batch.
 
     Returns
     -------

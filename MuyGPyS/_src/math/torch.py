@@ -33,7 +33,6 @@ from torch import (
     norm,
     optim,
     outer,
-    repeat,
     sqrt,
     tensor,
     Tensor,
@@ -56,6 +55,7 @@ from torch import (
     argmax as torch_argmax,
     max as torch_max,
     min as torch_min,
+    repeat_interleave as repeat,
     sum as torch_sum,
 )
 from torch.linalg import cholesky

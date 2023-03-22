@@ -6,7 +6,7 @@
 """
 Multivariate MuyGPs implementation
 """
-
+from copy import deepcopy
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _make_fast_predict_tensors
 from MuyGPyS._src.gp.muygps import (
@@ -20,6 +20,9 @@ from MuyGPyS._src.gp.noise import (
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
+from MuyGPyS.gp.mean import PosteriorMean
+from MuyGPyS.gp.sigma_sq import SigmaSq
+from MuyGPyS.gp.variance import PosteriorVariance
 
 
 class MultivariateMuyGPS:
@@ -350,3 +353,25 @@ class MultivariateMuyGPS:
                 i,
             )
         return _mmuygps_fast_posterior_mean(Kcross, coeffs_tensor)
+
+    def apply_new_noise(self, new_noise):
+        """
+        Updates the heteroscedastic noise parameters of a MultivariateMuyGPs
+        model.
+
+        Args:
+            new_noise:
+                A matrix of shape
+                `(test_count, nn_count, nn_count, response_count)` containing
+                the measurement noise corresponding to the nearest neighbors
+                of each test point and each response.
+        Returns:
+            A MultivariateMuyGPs model with updated heteroscedastic noise
+            parameters.
+        """
+        ret = deepcopy(self)
+        for i, model in enumerate(ret.models):
+            model.eps = HeteroscedasticNoise(new_noise[:, :, :, i], "fixed")
+            model._mean_fn = PosteriorMean(model.eps)
+            model._var_fn = PosteriorVariance(model.eps, model.sigma_sq)
+        return ret

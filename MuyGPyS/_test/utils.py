@@ -387,3 +387,35 @@ def _consistent_assert(assert_fn, *args):
             assert_fn(*args)
     else:
         assert_fn(*args)
+
+
+def _make_heteroscedastic_test_nugget(
+    batch_count: int, nn_count: int, eps_mag: float
+):
+    """
+    Produces a test heteroscedastic 3D tensor parameter of shape
+    `(batch_count, nn_count, nn_count)`.
+
+    Args:
+        batch_count:
+            Number of points to be predicted.
+        nn_count:
+            Number of nearest neighbors in the kernel.
+        eps:
+            Maximum noise magnitude.
+
+
+    Return:
+        A `(batch_count, nn_count, nn_count)` shaped tensor for heteroscedastic
+        noise modeling.
+    """
+    test_indices = (
+        np.repeat(range(batch_count), nn_count),
+        np.tile(np.arange(nn_count), batch_count),
+        np.tile(np.arange(nn_count), batch_count),
+    )
+    eps_tensor = mm.zeros((batch_count, nn_count, nn_count))
+    eps_tensor[test_indices] = (
+        eps_mag * np.random.rand(batch_count, nn_count).flatten()
+    )
+    return eps_tensor
