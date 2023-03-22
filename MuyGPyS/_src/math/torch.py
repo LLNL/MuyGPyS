@@ -31,12 +31,11 @@ from torch import (
     mean,
     nn,
     norm,
+    numel,
     optim,
     outer,
+    rand,
     sqrt,
-    tensor,
-    Tensor,
-    tile,
     unique,
     unsqueeze,
     vstack,
@@ -48,6 +47,7 @@ from torch import (
     eye as _eye,
     full as _full,
     linspace as _linspace,
+    repeat_interleave as repeat,
     ones as _ones,
     zeros as _zeros,
 )
@@ -55,7 +55,6 @@ from torch import (
     argmax as torch_argmax,
     max as torch_max,
     min as torch_min,
-    repeat_interleave as repeat,
     sum as torch_sum,
 )
 from torch.linalg import cholesky

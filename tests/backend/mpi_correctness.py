@@ -37,6 +37,7 @@ from MuyGPyS._src.gp.tensors.mpi import (
     _make_train_tensors as make_train_tensors_m,
     _F2 as F2_m,
     _l2 as l2_m,
+    _make_heteroscedastic_tensor as make_heteroscedastic_tensor_m,
 )
 from MuyGPyS._src.mpi_utils import _chunk_tensor
 
@@ -139,12 +140,6 @@ class TensorsTestCase(parameterized.TestCase):
         cls.nu = 0.55
         cls.nu_bounds = (1e-1, 2)
         cls.eps = 1e-3
-        cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
-            cls.batch_count, cls.nn_count, cls.eps
-        )
-        cls.eps_heteroscedastic_train_n = _make_heteroscedastic_test_nugget(
-            cls.train_count, cls.nn_count, cls.eps
-        )
         cls.k_kwargs = {
             "kern": "matern",
             "length_scale": {"val": cls.length_scale},
@@ -156,13 +151,7 @@ class TensorsTestCase(parameterized.TestCase):
             "nu": cls.muygps.kernel.nu(),
             "length_scale": cls.muygps.kernel.length_scale(),
         }
-        cls.k_kwargs_heteroscedastic = {
-            "kern": "matern",
-            "length_scale": {"val": cls.length_scale},
-            "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps_heteroscedastic_n},
-        }
-        cls.muygps_heteroscedastic = MuyGPS(**cls.k_kwargs_heteroscedastic)
+
         if rank == 0:
             cls.train_features = _make_gaussian_matrix(
                 cls.train_count, cls.feature_count
@@ -211,6 +200,13 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.train_responses,
             )
 
+            cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
+                cls.batch_count, cls.nn_count, cls.eps
+            )
+            cls.eps_heteroscedastic_train_n = _make_heteroscedastic_test_nugget(
+                cls.train_count, cls.nn_count, cls.eps
+            )
+
         else:
             cls.train_features = None
             cls.train_responses = None
@@ -228,6 +224,21 @@ class TensorsTestCase(parameterized.TestCase):
             cls.test_crosswise_diffs = None
             cls.test_pairwise_diffs = None
             cls.test_nn_targets = None
+
+            cls.eps_heteroscedastic_n = None
+
+            cls.eps_heteroscedastic_train_n = None
+
+            cls.eps_heteroscedastic_n = _chunk_tensor(
+                _make_heteroscedastic_test_nugget(
+                    cls.batch_count, cls.nn_count, cls.eps
+                )
+            )
+            cls.eps_heteroscedastic_train_n = _chunk_tensor(
+                _make_heteroscedastic_test_nugget(
+                    cls.train_count, cls.nn_count, cls.eps
+                )
+            )
 
         (
             cls.batch_crosswise_diffs_chunk,
@@ -252,6 +263,24 @@ class TensorsTestCase(parameterized.TestCase):
             cls.train_responses,
         )
         cls.test_responses_chunk = _chunk_tensor(cls.test_responses)
+        cls.eps_heteroscedastic_n_chunk = _chunk_tensor(
+            _make_heteroscedastic_test_nugget(
+                cls.batch_count, cls.nn_count, cls.eps
+            )
+        )
+        cls.eps_heteroscedastic_train_n_chunk = _chunk_tensor(
+            _make_heteroscedastic_test_nugget(
+                cls.train_count, cls.nn_count, cls.eps
+            )
+        )
+
+        cls.k_kwargs_heteroscedastic = {
+            "kern": "matern",
+            "length_scale": {"val": cls.length_scale},
+            "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+            "eps": {"val": cls.eps_heteroscedastic_n},
+        }
+        cls.muygps_heteroscedastic = MuyGPS(**cls.k_kwargs_heteroscedastic)
 
     def _compare_tensors(self, tensor, tensor_chunks):
         recovered_tensor = world.gather(tensor_chunks, root=0)
@@ -647,7 +676,8 @@ class MuyGPSTestCase(KernelTestCase):
         )
         cls.batch_heteroscedastic_covariance_gen_chunk = (
             heteroscedastic_perturb_m(
-                cls.batch_covariance_gen_chunk, cls.muygps_heteroscedastic.eps()
+                cls.batch_covariance_gen_chunk,
+                cls.eps_heteroscedastic_n_chunk,
             )
         )
         cls.batch_prediction_chunk = muygps_posterior_mean_m(

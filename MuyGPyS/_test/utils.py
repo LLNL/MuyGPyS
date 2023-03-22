@@ -410,12 +410,12 @@ def _make_heteroscedastic_test_nugget(
         noise modeling.
     """
     test_indices = (
-        np.repeat(range(batch_count), nn_count),
-        np.tile(np.arange(nn_count), batch_count),
-        np.tile(np.arange(nn_count), batch_count),
+        mm.repeat(range(batch_count), nn_count),
+        mm.tile(np.arange(nn_count), batch_count),
+        mm.tile(np.arange(nn_count), batch_count),
     )
     eps_tensor = mm.zeros((batch_count, nn_count, nn_count))
     eps_tensor[test_indices] = (
-        eps_mag * np.random.rand(batch_count, nn_count).flatten()
+        eps_mag * mm.random.rand(batch_count, nn_count).flatten()
     )
     return eps_tensor

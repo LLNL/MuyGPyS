@@ -5,12 +5,8 @@
 
 from MuyGPyS._src.util import _collect_implementation
 
-(_homoscedastic_perturb,) = _collect_implementation(
+(_homoscedastic_perturb, _heteroscedastic_perturb) = _collect_implementation(
     "MuyGPyS._src.gp.noise",
     "_homoscedastic_perturb",
-)
-
-(_heteroscedastic_perturb,) = _collect_implementation(
-    "MuyGPyS._src.gp.noise",
     "_heteroscedastic_perturb",
 )

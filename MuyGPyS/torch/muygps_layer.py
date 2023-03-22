@@ -161,7 +161,7 @@ class MuyGPs_layer(nn.Module):
         )
         batch_count, nn_count, response_count = self.batch_nn_targets.shape
         nugget_tensor = torch.zeros(batch_count, nn_count, nn_count)
-        if self.eps.size(axis=0) == 1:
+        if isinstance(self.eps, float):
             predictions = _muygps_posterior_mean(
                 _homoscedastic_perturb(K, self.eps),
                 Kcross,
@@ -176,7 +176,7 @@ class MuyGPs_layer(nn.Module):
                 _homoscedastic_perturb(K, self.eps), Kcross
             )
             variances = torch.outer(variances, sigma_sq)
-        elif self.eps.size(axis=0) > 1:
+        elif isinstance(self.eps, torch.ndarray):
             nugget_tensor = _make_heteroscedastic_tensor(
                 self.eps, self.batch_nn_indices
             )
@@ -348,7 +348,7 @@ class MultivariateMuyGPs_layer(nn.Module):
         )
         nugget_tensor = torch.zeros(batch_count, nn_count, nn_count)
         for i in range(self.num_models):
-            if torch.size(self.eps, axis=0) == 1:
+            if torch.numel(self.eps) <= response_count:
                 predictions[:, i] = _muygps_posterior_mean(
                     _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
                     Kcross[:, :, i],
@@ -366,8 +366,9 @@ class MultivariateMuyGPs_layer(nn.Module):
                         batch_count, nn_count, 1
                     ),
                 )
-            elif torch.size(self.eps, axis=0) > 1:
-
+            elif torch.numel(self.eps) > response_count and isinstance(
+                self.eps, torch.ndarray
+            ):
                 nugget_tensor = _make_heteroscedastic_tensor(
                     self.eps, self.batch_nn_indices
                 )
