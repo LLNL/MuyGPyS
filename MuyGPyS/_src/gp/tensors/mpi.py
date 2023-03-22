@@ -22,8 +22,8 @@ from MuyGPyS._src.gp.tensors.numpy import (
 
 
 def _make_heteroscedastic_tensor(
-    batch_nn_indices: np.ndarray,
     measurement_noise: np.ndarray,
+    batch_nn_indices: np.ndarray,
 ) -> np.ndarray:
     return _chunk_function_tensor(
         _make_heteroscedatic_tensor_n(

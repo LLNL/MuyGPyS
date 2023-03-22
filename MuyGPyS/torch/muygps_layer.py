@@ -13,6 +13,7 @@ from MuyGPyS._src.gp.tensors.torch import (
     _pairwise_tensor,
     _crosswise_tensor,
     _l2,
+    _make_heteroscedastic_tensor,
 )
 from MuyGPyS._src.gp.muygps.torch import (
     _muygps_posterior_mean,
@@ -177,9 +178,9 @@ class MuyGPs_layer(nn.Module):
             )
             variances = torch.outer(variances, sigma_sq)
         elif torch.size(self.eps, axis=0) > 1:
-            nugget_tensor[
-                :, torch.arange(self.nn_count), torch.arange(self.nn_count)
-            ] = self.eps[self.batch_nn_indices]
+            nugget_tensor = _make_heteroscedastic_tensor(
+                self.eps, self.batch_nn_indices
+            )
 
             predictions = _muygps_posterior_mean(
                 _heteroscedastic_perturb(K, nugget_tensor),
@@ -367,10 +368,10 @@ class MultivariateMuyGPs_layer(nn.Module):
                     ),
                 )
             elif torch.size(self.eps, axis=0) > 1:
-                nugget_tensor[
-                    :, torch.arange(nn_count), torch.arange(nn_count)
-                ] = self.eps[:, i][self.batch_nn_indices]
 
+                nugget_tensor = _make_heteroscedastic_tensor(
+                    self.eps, self.batch_nn_indices
+                )
                 predictions[:, i] = _muygps_posterior_mean(
                     _heteroscedastic_perturb(K[:, :, :, i], nugget_tensor),
                     Kcross[:, :, i],
