@@ -24,6 +24,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_data,
     _exact_nn_kwarg_options,
+    _make_heteroscedastic_test_nugget,
 )
 from MuyGPyS._src.gp.tensors.numpy import (
     _make_predict_tensors as make_predict_tensors_n,
@@ -138,6 +139,12 @@ class TensorsTestCase(parameterized.TestCase):
         cls.nu = 0.55
         cls.nu_bounds = (1e-1, 2)
         cls.eps = 1e-3
+        cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
+            cls.batch_count, cls.nn_count, cls.eps
+        )
+        cls.eps_heteroscedastic_train_n = _make_heteroscedastic_test_nugget(
+            cls.train_count, cls.nn_count, cls.eps
+        )
         cls.k_kwargs = {
             "kern": "matern",
             "length_scale": {"val": cls.length_scale},

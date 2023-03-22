@@ -159,9 +159,8 @@ class MuyGPs_layer(nn.Module):
             nu=self.nu,
             length_scale=self.length_scale,
         )
-        nugget_tensor = torch.zeros(
-            self.batch_count, self.nn_count, self.nn_count
-        )
+        batch_count, nn_count, response_count = self.batch_nn_targets.shape
+        nugget_tensor = torch.zeros(batch_count, nn_count, nn_count)
         if torch.size(self.eps, axis=0) == 1:
             predictions = _muygps_posterior_mean(
                 _homoscedastic_perturb(K, self.eps),
