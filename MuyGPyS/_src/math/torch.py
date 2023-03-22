@@ -33,7 +33,6 @@ from torch import (
     norm,
     optim,
     outer,
-    size,
     sqrt,
     tensor,
     Tensor,

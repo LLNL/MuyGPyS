@@ -27,8 +27,8 @@ def _make_heteroscedastic_tensor(
 ) -> np.ndarray:
     return _chunk_function_tensor(
         _make_heteroscedatic_tensor_n(
-            batch_nn_indices,
             measurement_noise,
+            batch_nn_indices,
         )
     )
 
