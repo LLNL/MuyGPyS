@@ -37,6 +37,7 @@ def _muygps_diagonal_variance(
 def _muygps_fast_posterior_mean(
     Kcross: np.ndarray,
     coeffs_tensor: np.ndarray,
+    **kwargs,
 ) -> np.ndarray:
     return np.einsum("ij,ijk->ik", Kcross, coeffs_tensor)
 
@@ -44,6 +45,7 @@ def _muygps_fast_posterior_mean(
 def _mmuygps_fast_posterior_mean(
     Kcross: np.ndarray,
     coeffs_tensor: np.ndarray,
+    **kwargs,
 ) -> np.ndarray:
     return np.einsum("ijk,ijk->ik", Kcross, coeffs_tensor)
 
@@ -51,5 +53,6 @@ def _mmuygps_fast_posterior_mean(
 def _muygps_fast_posterior_mean_precompute(
     K: np.ndarray,
     train_nn_targets_fast: np.ndarray,
+    **kwargs,
 ) -> np.ndarray:
     return np.linalg.solve(K, train_nn_targets_fast)

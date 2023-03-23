@@ -415,6 +415,8 @@ def _make_heteroscedastic_test_nugget(
     Produces a test heteroscedastic 3D tensor parameter of shape
     `(batch_count, nn_count, nn_count)`.
 
+    NOTE[amd]: This function is only for testing purposes.
+
     Args:
         batch_count:
             Number of points to be predicted.
@@ -429,11 +431,11 @@ def _make_heteroscedastic_test_nugget(
         noise modeling.
     """
     test_indices = (
-        np.repeat(range(batch_count), nn_count),
-        np.tile(np.arange(nn_count), batch_count),
-        np.tile(np.arange(nn_count), batch_count),
+        mm.repeat(range(batch_count), nn_count),
+        mm.tile(mm.arange(nn_count), batch_count),
+        mm.tile(mm.arange(nn_count), batch_count),
     )
-    eps_tensor = np.zeros((batch_count, nn_count, nn_count))
+    eps_tensor = mm.zeros((batch_count, nn_count, nn_count))
     eps_tensor[test_indices] = (
         eps_mag * np.random.rand(batch_count, nn_count).flatten()
     )

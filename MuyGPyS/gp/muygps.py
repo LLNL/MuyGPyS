@@ -32,6 +32,8 @@ from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise, NullNoise
+from MuyGPyS.gp.fast_mean import FastPosteriorMean
+from MuyGPyS.gp.fast_precompute import FastPrecomputeCoefficients
 
 
 class MuyGPS:
@@ -132,6 +134,8 @@ class MuyGPS:
             self.eps = NullNoise()  # type: ignore
         self._mean_fn = PosteriorMean(self.eps)
         self._var_fn = PosteriorVariance(self.eps, self.sigma_sq)
+        self._fast_posterior_mean_fn = FastPosteriorMean()
+        self._fast_precompute_fn = FastPrecomputeCoefficients(self.eps)
 
     def set_eps(self, **eps) -> None:
         """
@@ -181,11 +185,10 @@ class MuyGPS:
         append_optim_params_lists(self.eps, "eps", names, params, bounds)
         return names, mm.array(params), mm.array(bounds)
 
-    def build_fast_posterior_mean_coeffs(
+    def fast_coefficients(
         self,
-        train: mm.ndarray,
-        nn_indices: mm.ndarray,
-        targets: mm.ndarray,
+        K: mm.ndarray,
+        train_nn_targets_fast: mm.ndarray,
     ) -> mm.ndarray:
         """
         Produces coefficient matrix for the fast posterior mean given in
@@ -208,37 +211,23 @@ class MuyGPS:
         training features indexed by $N^*$.
 
         Args:
-            train:
-                The full training data matrix of shape
-                `(train_count, feature_count)`.
-            nn_indices:
-                The nearest neighbors indices of each
-                training points of shape `(train_count, nn_count)`.
-            targets:
-                A matrix of shape `(train_count, response_count)` whose rows are
-                vector-valued responses for each training element.
+            K:
+                The full pairwise kernel tensor of shape
+                `(train_count, nn_count, nn_count)`.
+            train_nn_targets_fast:
+                The nearest neighbor response of each
+                training points of shape
+                `(train_count, nn_count, response_count)`.
         Returns:
             A matrix of shape `(train_count, nn_count)` whose rows are
             the precomputed coefficients for fast posterior mean inference.
 
         """
-        (
-            pairwise_diffs_fast,
+
+        return self._fast_precompute_fn(
+            K,
             train_nn_targets_fast,
-        ) = _make_fast_predict_tensors(nn_indices, train, targets)
-        K = self.kernel(pairwise_diffs_fast)
-        if isinstance(self.eps, HomoscedasticNoise):
-            return _muygps_fast_posterior_mean_precompute(
-                _homoscedastic_perturb(K, self.eps()), train_nn_targets_fast
-            )
-        elif isinstance(self.eps, HeteroscedasticNoise):
-            nugget_tens = _make_heteroscedastic_tensor(nn_indices, self.eps())
-            return _muygps_fast_posterior_mean_precompute(
-                _heteroscedastic_perturb(K, nugget_tens),
-                train_nn_targets_fast,
-            )
-        else:
-            raise ValueError(f"Noise model {type(self.eps)} is not supported")
+        )
 
     def posterior_mean(
         self, K: mm.ndarray, Kcross: mm.ndarray, batch_nn_targets: mm.ndarray
@@ -371,9 +360,7 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return _muygps_fast_posterior_mean(
-            self.kernel._distortion_fn(Kcross), coeffs_tensor
-        )
+        return self._fast_posterior_mean_fn(Kcross, coeffs_tensor)
 
     def apply_new_noise(self, new_noise: Union[float, mm.ndarray]):
         """

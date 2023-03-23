@@ -171,9 +171,6 @@ def make_fast_predict_tensors(
         batch_nn_indices:
             A matrix of integers of shape `(batch_count, nn_count)` listing the
             nearest neighbor indices for all observations in the batch.
-        test_features:
-            The full floating point testing data matrix of shape
-            `(test_count, feature_count)`.
         train_features:
             The full floating point training data matrix of shape
             `(train_count, feature_count)`.
