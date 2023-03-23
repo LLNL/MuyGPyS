@@ -25,12 +25,14 @@ from MuyGPyS._test.utils import (
     _make_gaussian_data,
     _exact_nn_kwarg_options,
     _make_heteroscedastic_test_nugget,
+    _make_uniform_matrix,
 )
 from MuyGPyS._src.gp.tensors.numpy import (
     _make_predict_tensors as make_predict_tensors_n,
     _make_train_tensors as make_train_tensors_n,
     _F2 as F2_n,
     _l2 as l2_n,
+    _make_heteroscedastic_tensor as make_heteroscedastic_tensor_n,
 )
 from MuyGPyS._src.gp.tensors.mpi import (
     _make_predict_tensors as make_predict_tensors_m,
@@ -151,12 +153,7 @@ class TensorsTestCase(parameterized.TestCase):
             "nu": cls.muygps.kernel.nu(),
             "length_scale": cls.muygps.kernel.length_scale(),
         }
-        cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
-            cls.batch_count, cls.nn_count, cls.eps
-        )
-        cls.eps_heteroscedastic_train_n = _make_heteroscedastic_test_nugget(
-            cls.train_count, cls.nn_count, cls.eps
-        )
+        cls.measurement_noise = _make_uniform_matrix(cls.train_count, 1)
 
         if rank == 0:
             cls.train_features = _make_gaussian_matrix(
@@ -179,6 +176,17 @@ class TensorsTestCase(parameterized.TestCase):
             batch_indices, batch_nn_indices = sample_batch(
                 nbrs_lookup, cls.batch_count, cls.train_count
             )
+            cls.eps_heteroscedastic = make_heteroscedastic_tensor_n(
+                cls.measurement_noise, batch_nn_indices
+            )
+
+            cls.k_kwargs_heteroscedastic = {
+                "kern": "matern",
+                "length_scale": {"val": cls.length_scale},
+                "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+                "eps": {"val": cls.eps_heteroscedastic},
+            }
+            cls.muygps_heteroscedastic = MuyGPS(**cls.k_kwargs_heteroscedastic)
 
             (
                 cls.batch_crosswise_diffs,
@@ -206,21 +214,6 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.train_responses,
             )
 
-            cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
-                cls.batch_count, cls.nn_count, cls.eps
-            )
-            cls.eps_heteroscedastic_train_n = _make_heteroscedastic_test_nugget(
-                cls.train_count, cls.nn_count, cls.eps
-            )
-
-            # cls.k_kwargs_heteroscedastic = {
-            #     "kern": "matern",
-            #     "length_scale": {"val": cls.length_scale},
-            #     "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            #     "eps": {"val": cls.eps_heteroscedastic_n},
-            # }
-            # cls.muygps_heteroscedastic = MuyGPS(**cls.k_kwargs_heteroscedastic)
-
         else:
             cls.train_features = None
             cls.train_responses = None
@@ -239,9 +232,7 @@ class TensorsTestCase(parameterized.TestCase):
             cls.test_pairwise_diffs = None
             cls.test_nn_targets = None
 
-            cls.eps_heteroscedastic_n = None
-
-            cls.eps_heteroscedastic_train_n = None
+            cls.eps_heteroscedastic = None
 
         (
             cls.batch_crosswise_diffs_chunk,
@@ -266,24 +257,20 @@ class TensorsTestCase(parameterized.TestCase):
             cls.train_responses,
         )
         cls.test_responses_chunk = _chunk_tensor(cls.test_responses)
-        cls.eps_heteroscedastic_n_chunk = _chunk_tensor(
-            _make_heteroscedastic_test_nugget(
-                cls.batch_count, cls.nn_count, cls.eps
-            )
-        )
-        cls.eps_heteroscedastic_train_n_chunk = _chunk_tensor(
-            _make_heteroscedastic_test_nugget(
-                cls.train_count, cls.nn_count, cls.eps
-            )
+
+        cls.eps_heteroscedastic_n_chunk = make_heteroscedastic_tensor_m(
+            cls.measurement_noise, batch_nn_indices
         )
 
-        cls.k_kwargs_heteroscedastic = {
+        cls.k_kwargs_heteroscedastic_chunk = {
             "kern": "matern",
             "length_scale": {"val": cls.length_scale},
             "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps_heteroscedastic_n},
+            "eps": {"val": cls.eps_heteroscedastic_n_chunk},
         }
-        cls.muygps_heteroscedastic = MuyGPS(**cls.k_kwargs_heteroscedastic)
+        cls.muygps_heteroscedastic_chunk = MuyGPS(
+            **cls.k_kwargs_heteroscedastic_chunk
+        )
 
     def _compare_tensors(self, tensor, tensor_chunks):
         recovered_tensor = world.gather(tensor_chunks, root=0)
@@ -828,7 +815,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_sigma_sq_fn_heteroscedastic_n(self):
         return make_analytic_sigma_sq_optim(
-            self.muygps_heteroscedastic,
+            self.muygps_heteroscedastic_chunk,
             analytic_sigma_sq_optim_n,
             heteroscedastic_perturb_n,
         )
@@ -841,9 +828,9 @@ class OptimTestCase(MuyGPSTestCase):
         )
 
     def _get_mean_fn_heteroscedastic_m(self):
-        return self.muygps_heteroscedastic._mean_fn._get_opt_fn(
+        return self.muygps_heteroscedastic_chunk._mean_fn._get_opt_fn(
             noise_perturb(heteroscedastic_perturb_m)(muygps_posterior_mean_m),
-            self.muygps_heteroscedastic.eps,
+            self.muygps_heteroscedastic_chunk.eps,
         )
 
     def _get_var_fn_m(self):
@@ -858,14 +845,14 @@ class OptimTestCase(MuyGPSTestCase):
         )
 
     def _get_var_fn_heteroscedastic_m(self):
-        return self.muygps_heteroscedastic._var_fn._get_opt_fn(
+        return self.muygps_heteroscedastic_chunk._var_fn._get_opt_fn(
             sigma_sq_scale(
                 noise_perturb(heteroscedastic_perturb_m)(
                     muygps_diagonal_variance_m
                 )
             ),
-            self.muygps_heteroscedastic.eps,
-            self.muygps_heteroscedastic.sigma_sq,
+            self.muygps_heteroscedastic_chunk.eps,
+            self.muygps_heteroscedastic_chunk.sigma_sq,
         )
 
     def _get_sigma_sq_fn_m(self):
@@ -875,7 +862,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_sigma_sq_fn_heteroscedastic_m(self):
         return make_analytic_sigma_sq_optim(
-            self.muygps_heteroscedastic,
+            self.muygps_heteroscedastic_chunk,
             analytic_sigma_sq_optim_m,
             heteroscedastic_perturb_m,
         )
@@ -1111,7 +1098,7 @@ class ScipyOptimTest(OptimTestCase):
     def test_scipy_optimize_heteroscedastic(self):
         obj_fn_heteroscedastic_m = self._get_obj_fn_heteroscedastic_m()
         opt_m = scipy_optimize_m(
-            self.muygps_heteroscedastic,
+            self.muygps_heteroscedastic_chunk,
             obj_fn_heteroscedastic_m,
             **self.sopt_kwargs,
         )
@@ -1145,7 +1132,7 @@ class BayesOptimTest(OptimTestCase):
     def test_bayes_optimize_heteroscedastic(self):
         obj_fn_heteroscedastic_m = self._get_obj_fn_heteroscedastic_m()
         model_m = bayes_optimize_m(
-            self.muygps_heteroscedastic,
+            self.muygps_heteroscedastic_chunk,
             obj_fn_heteroscedastic_m,
             **self.bopt_kwargs,
         )

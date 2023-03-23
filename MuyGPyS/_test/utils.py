@@ -93,6 +93,25 @@ def _make_gaussian_matrix(
     return mm.array(np.random.randn(data_count, feature_count))
 
 
+def _make_uniform_matrix(
+    data_count: int,
+    feature_count: int,
+) -> mm.ndarray:
+    """
+    Create a matrix of i.i.d. Uniform(0,1) datapoints.
+
+    Args:
+        data_count:
+            The number of data rows.
+        feature_count:
+            The number of data columns.
+
+    Returns:
+        An i.i.d. Gaussian matrix of shape `(data_count, feature_count)`.
+    """
+    return mm.array(np.random.rand(data_count, feature_count))
+
+
 def _make_gaussian_dict(
     data_count: int,
     feature_count: int,
