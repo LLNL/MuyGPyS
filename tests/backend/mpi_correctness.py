@@ -134,10 +134,10 @@ class TensorsTestCase(parameterized.TestCase):
         cls.test_count = 100
         cls.feature_count = 10
         cls.response_count = 1
-        cls.nn_count = 40
+        cls.nn_count = 10
         cls.batch_count = 500
         cls.length_scale = 1.0
-        cls.nu = 0.55
+        cls.nu = 0.5
         cls.nu_bounds = (1e-1, 2)
         cls.eps = 1e-3
         cls.k_kwargs = {
@@ -213,6 +213,14 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.train_count, cls.nn_count, cls.eps
             )
 
+            # cls.k_kwargs_heteroscedastic = {
+            #     "kern": "matern",
+            #     "length_scale": {"val": cls.length_scale},
+            #     "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+            #     "eps": {"val": cls.eps_heteroscedastic_n},
+            # }
+            # cls.muygps_heteroscedastic = MuyGPS(**cls.k_kwargs_heteroscedastic)
+
         else:
             cls.train_features = None
             cls.train_responses = None
@@ -234,17 +242,6 @@ class TensorsTestCase(parameterized.TestCase):
             cls.eps_heteroscedastic_n = None
 
             cls.eps_heteroscedastic_train_n = None
-
-            cls.eps_heteroscedastic_n = _chunk_tensor(
-                _make_heteroscedastic_test_nugget(
-                    cls.batch_count, cls.nn_count, cls.eps
-                )
-            )
-            cls.eps_heteroscedastic_train_n = _chunk_tensor(
-                _make_heteroscedastic_test_nugget(
-                    cls.train_count, cls.nn_count, cls.eps
-                )
-            )
 
         (
             cls.batch_crosswise_diffs_chunk,
@@ -829,7 +826,7 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
         )
 
-    def _get_sigma_sq_fn_n(self):
+    def _get_sigma_sq_fn_heteroscedastic_n(self):
         return make_analytic_sigma_sq_optim(
             self.muygps_heteroscedastic,
             analytic_sigma_sq_optim_n,
@@ -902,7 +899,7 @@ class OptimTestCase(MuyGPSTestCase):
         return make_loo_crossval_fn(
             "mse",
             mse_fn_n,
-            self._get_kernel_n(),
+            self._get_kernel_fn_n(),
             self._get_mean_fn_heteroscedastic_n(),
             self._get_var_fn_heteroscedastic_n(),
             self._get_sigma_sq_fn_heteroscedastic_n(),

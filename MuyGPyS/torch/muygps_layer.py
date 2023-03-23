@@ -123,7 +123,7 @@ class MuyGPs_layer(nn.Module):
     ):
         super().__init__()
 
-        self.length_scale = nn.Parameter(torch.tensor(length_scale))
+        self.length_scale = nn.Parameter(torch._array(length_scale))
         self.eps = kernel_eps
         self.nu = nu
         self.batch_indices = batch_indices
@@ -297,7 +297,7 @@ class MultivariateMuyGPs_layer(nn.Module):
     ):
         super().__init__()
         self.num_models = num_models
-        self.length_scale = nn.Parameter(torch.Tensor(length_scales))
+        self.length_scale = nn.Parameter(torch.ndarray(length_scales))
         # self.length_scale = length_scales
         self.eps = kernel_eps
         self.nu = nu_vals
@@ -398,8 +398,8 @@ class MultivariateMuyGPs_layer(nn.Module):
 
 
 def kernel_func(
-    diff_tensor: torch.Tensor, nu: float, length_scale: float
-) -> torch.Tensor:
+    diff_tensor: torch.ndarray, nu: float, length_scale: float
+) -> torch.ndarray:
     """
     Generate kernel tensors using the Matern kernel given an input difference
     tensor. Currently only supports the Matern kernel, but more kernels will
