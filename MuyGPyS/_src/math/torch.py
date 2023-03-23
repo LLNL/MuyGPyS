@@ -36,6 +36,7 @@ from torch import (
     outer,
     rand,
     sqrt,
+    tile,
     unique,
     unsqueeze,
     vstack,

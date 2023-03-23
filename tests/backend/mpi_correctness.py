@@ -151,6 +151,12 @@ class TensorsTestCase(parameterized.TestCase):
             "nu": cls.muygps.kernel.nu(),
             "length_scale": cls.muygps.kernel.length_scale(),
         }
+        cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
+            cls.batch_count, cls.nn_count, cls.eps
+        )
+        cls.eps_heteroscedastic_train_n = _make_heteroscedastic_test_nugget(
+            cls.train_count, cls.nn_count, cls.eps
+        )
 
         if rank == 0:
             cls.train_features = _make_gaussian_matrix(
