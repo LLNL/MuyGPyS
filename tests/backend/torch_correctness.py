@@ -782,7 +782,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
             l2_n(cls.K_fast_n), cls.eps
         )
         cls.heteroscedastic_K_fast_n = heteroscedastic_perturb_n(
-            l2_n(cls.K_fast_n), cls.eps
+            l2_n(cls.K_fast_n), cls.eps_heteroscedastic_train_n
         )
 
         cls.fast_regress_coeffs_n = muygps_fast_posterior_mean_precompute_n(

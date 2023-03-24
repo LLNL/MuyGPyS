@@ -16,8 +16,8 @@ def _homoscedastic_perturb(K: jnp.ndarray, eps: float) -> jnp.ndarray:
 
 @jit
 def _heteroscedastic_perturb(K: jnp.ndarray, eps: jnp.ndarray) -> jnp.ndarray:
-    ret = K.copy()
     batch_count, nn_count, _ = K.shape
+    ret = K.copy()
     indices = (
         jnp.repeat(jnp.arange(batch_count), nn_count),
         jnp.tile(jnp.arange(nn_count), batch_count),

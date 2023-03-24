@@ -14,10 +14,10 @@ def _homoscedastic_perturb(K: torch.ndarray, eps: float) -> torch.ndarray:
 def _heteroscedastic_perturb(
     K: torch.ndarray, eps: torch.ndarray
 ) -> torch.ndarray:
-    ret = K.copy()
+    ret = K.clone()
     batch_count, nn_count, _ = K.shape
     indices = (
-        torch.repeat(range(batch_count), nn_count),
+        torch.repeat(torch.arange(batch_count), nn_count),
         torch.arange(nn_count).repeat(batch_count),
         torch.arange(nn_count).repeat(batch_count),
     )
