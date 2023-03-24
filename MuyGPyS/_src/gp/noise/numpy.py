@@ -11,5 +11,13 @@ def _homoscedastic_perturb(K: np.ndarray, eps: float) -> np.ndarray:
     return K + eps * np.eye(nn_count)
 
 
-def _heteroscedastic_perturb(K: np.ndarray, eps_tens: np.ndarray) -> np.ndarray:
-    return K + eps_tens
+def _heteroscedastic_perturb(K: np.ndarray, eps: np.ndarray) -> np.ndarray:
+    ret = K.copy()
+    batch_count, nn_count, _ = K.shape
+    indices = (
+        np.repeat(range(batch_count), nn_count),
+        np.tile(np.arange(nn_count), batch_count),
+        np.tile(np.arange(nn_count), batch_count),
+    )
+    ret[indices] += eps.flatten()
+    return ret

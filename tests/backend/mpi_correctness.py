@@ -815,7 +815,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_sigma_sq_fn_heteroscedastic_n(self):
         return make_analytic_sigma_sq_optim(
-            self.muygps_heteroscedastic_chunk,
+            self.muygps_heteroscedastic,
             analytic_sigma_sq_optim_n,
             heteroscedastic_perturb_n,
         )

@@ -16,17 +16,7 @@ def _make_heteroscedastic_tensor(
     measurement_noise: jnp.ndarray,
     batch_nn_indices: jnp.ndarray,
 ) -> jnp.ndarray:
-    batch_count, nn_count = batch_nn_indices.shape
-    eps_tensor = jnp.zeros((batch_count, nn_count, nn_count))
-    indices = (
-        jnp.repeat(range(batch_count), nn_count),
-        jnp.tile(jnp.arange(nn_count), batch_count),
-        jnp.tile(jnp.arange(nn_count), batch_count),
-    )
-    eps_tensor = eps_tensor.at[indices].set(
-        measurement_noise[batch_nn_indices].flatten()
-    )
-
+    eps_tensor = measurement_noise[batch_nn_indices]
     return eps_tensor
 
 

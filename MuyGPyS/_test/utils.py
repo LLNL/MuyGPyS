@@ -430,13 +430,5 @@ def _make_heteroscedastic_test_nugget(
         A `(batch_count, nn_count, nn_count)` shaped tensor for heteroscedastic
         noise modeling.
     """
-    test_indices = (
-        mm.repeat(range(batch_count), nn_count),
-        mm.tile(mm.arange(nn_count), batch_count),
-        mm.tile(mm.arange(nn_count), batch_count),
-    )
-    eps_tensor = mm.zeros((batch_count, nn_count, nn_count))
-    eps_tensor[test_indices] = (
-        eps_mag * np.random.rand(batch_count, nn_count).flatten()
-    )
+    eps_tensor = eps_mag * np.random.rand(batch_count, nn_count)
     return eps_tensor

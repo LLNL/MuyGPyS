@@ -12,15 +12,7 @@ def _make_heteroscedastic_tensor(
     measurement_noise: torch.ndarray,
     batch_nn_indices: torch.ndarray,
 ) -> torch.ndarray:
-    batch_count, nn_count = batch_nn_indices.shape
-    eps_tensor = torch.zeros((batch_count, nn_count, nn_count))
-    indices = (
-        torch.repeat_interleave(torch.arange(batch_count), nn_count),
-        torch.arange(nn_count).repeat(batch_count),
-        torch.arange(nn_count).repeat(batch_count),
-    )
-    eps_tensor[indices] = measurement_noise[batch_nn_indices].flatten()
-
+    eps_tensor = measurement_noise[batch_nn_indices]
     return eps_tensor
 
 
