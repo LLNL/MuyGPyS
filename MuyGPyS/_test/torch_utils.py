@@ -45,8 +45,8 @@ class SVDKMuyGPs(nn.Module):
 
     def forward(self, x):
         predictions = self.embedding(x)
-        predictions, variances, sigma_sq = self.GP_layer(predictions)
-        return predictions, variances, sigma_sq
+        predictions, variances = self.GP_layer(predictions)
+        return predictions, variances
 
 
 class SVDKMultivariateMuyGPs(nn.Module):
@@ -91,5 +91,5 @@ class SVDKMultivariateMuyGPs(nn.Module):
 
     def forward(self, x):
         predictions = self.embedding(x)
-        predictions, variances, sigma_sq = self.GP_layer(predictions)
-        return predictions, variances, sigma_sq
+        predictions, variances = self.GP_layer(predictions)
+        return predictions, variances

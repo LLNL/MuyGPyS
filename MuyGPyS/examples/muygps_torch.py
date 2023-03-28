@@ -148,7 +148,7 @@ def predict_single_model(
     )
     variances = torch.outer(variances, sigma_sq)
 
-    return predictions, variances, sigma_sq
+    return predictions, variances
 
 
 def predict_multiple_model(
@@ -271,7 +271,7 @@ def predict_multiple_model(
             _homoscedastic_perturb(K[:, :, :, i], model.eps[i]),
             test_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
         )
-    return predictions, variances, sigma_sq
+    return predictions, variances
 
 
 def predict_model(
@@ -490,14 +490,14 @@ def train_deep_kernel_muygps(
     for i in range(training_iterations):
         model.train()
         optimizer.zero_grad()
-        predictions, variances, sigma_sq = model(train_features)
+        predictions, variances = model(train_features)
 
         if loss_function == "lool":
             loss = loss_func(
                 predictions.squeeze(),
                 batch_responses.squeeze(),
                 variances.squeeze(),
-                sigma_sq.squeeze(),
+                sigma_sq=1,
             )
         else:
             loss = loss_func(predictions, batch_responses)

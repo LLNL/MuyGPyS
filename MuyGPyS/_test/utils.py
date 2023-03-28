@@ -430,5 +430,5 @@ def _make_heteroscedastic_test_nugget(
         A `(batch_count, nn_count, nn_count)` shaped tensor for heteroscedastic
         noise modeling.
     """
-    eps_tensor = eps_mag * np.random.rand(batch_count, nn_count)
+    eps_tensor = eps_mag * mm.ones((batch_count, nn_count))
     return eps_tensor

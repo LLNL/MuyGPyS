@@ -172,7 +172,7 @@ class TensorsTestCase(parameterized.TestCase):
         cls.length_scale = 1.0
         cls.nu = 0.55
         cls.nu_bounds = (1e-1, 1e1)
-        cls.eps = 1e-3
+        cls.eps = 1e-6
         cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
             cls.batch_count, cls.nn_count, cls.eps
         )
@@ -554,6 +554,14 @@ class MuyGPSTestCase(KernelTestCase):
             cls.crosswise_diffs_n, nu=cls.nu, length_scale=cls.length_scale
         )
         cls.Kcross_j = jnp.array(cls.Kcross_n)
+
+    def test_heteroscedastic_eps(self):
+        self.assertTrue(
+            allclose_gen(self.eps_heteroscedastic_j, self.eps_heteroscedastic_n)
+        )
+
+    def test_heteroscedastic_kernel(self):
+        self.assertTrue(allclose_gen(self.K_j, self.K_n))
 
 
 class MuyGPSTest(MuyGPSTestCase):
