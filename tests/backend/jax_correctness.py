@@ -172,7 +172,7 @@ class TensorsTestCase(parameterized.TestCase):
         cls.length_scale = 1.0
         cls.nu = 0.55
         cls.nu_bounds = (1e-1, 1e1)
-        cls.eps = 1e-6
+        cls.eps = 1e-5
         cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
             cls.batch_count, cls.nn_count, cls.eps
         )
@@ -832,7 +832,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.length_scale = 1.0
         cls.nu = 0.55
         cls.nu_bounds = (1e-1, 1e1)
-        cls.eps = 1e-3
+        cls.eps = 1e-5
         cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
             cls.batch_count, cls.nn_count, cls.eps
         )
