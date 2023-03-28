@@ -23,8 +23,6 @@ def _heteroscedastic_perturb(K: jnp.ndarray, eps: jnp.ndarray) -> jnp.ndarray:
         jnp.tile(jnp.arange(nn_count), batch_count),
         jnp.tile(jnp.arange(nn_count), batch_count),
     )
-    eps_tens = jnp.zeros((batch_count, nn_count, nn_count))
+    ret = ret.at[indices].add(eps.flatten())
 
-    eps_tens.at[indices].set(eps.flatten())
-    ret += eps_tens
     return ret

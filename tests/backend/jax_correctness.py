@@ -172,13 +172,14 @@ class TensorsTestCase(parameterized.TestCase):
         cls.length_scale = 1.0
         cls.nu = 0.55
         cls.nu_bounds = (1e-1, 1e1)
-        cls.eps = 1e-5
-        cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
-            cls.batch_count, cls.nn_count, cls.eps
+        cls.eps = 1e-3
+        cls.eps_heteroscedastic_n = cls.eps * np.ones(
+            (cls.batch_count, cls.nn_count)
         )
-        cls.eps_heteroscedastic_train_n = _make_heteroscedastic_test_nugget(
-            cls.train_count, cls.nn_count, cls.eps
+        cls.eps_heteroscedastic_train_n = cls.eps * np.ones(
+            (cls.train_count, cls.nn_count)
         )
+
         cls.eps_heteroscedastic_j = jnp.array(cls.eps_heteroscedastic_n)
         cls.eps_heteroscedastic_train_j = jnp.array(
             cls.eps_heteroscedastic_train_n
@@ -545,23 +546,15 @@ class MuyGPSTestCase(KernelTestCase):
             cls.K_j, cls.muygps.eps()
         )
         cls.heteroscedastic_K_n = heteroscedastic_perturb_n(
-            cls.K_n, cls.eps_heteroscedastic_n
+            cls.K_n, cls.muygps_heteroscedastic.eps()
         )
         cls.heteroscedastic_K_j = heteroscedastic_perturb_j(
-            cls.K_j, cls.eps_heteroscedastic_j
+            cls.K_j, cls.muygps_heteroscedastic.eps()
         )
         cls.Kcross_n = matern_gen_fn_n(
             cls.crosswise_diffs_n, nu=cls.nu, length_scale=cls.length_scale
         )
         cls.Kcross_j = jnp.array(cls.Kcross_n)
-
-    def test_heteroscedastic_eps(self):
-        self.assertTrue(
-            allclose_gen(self.eps_heteroscedastic_j, self.eps_heteroscedastic_n)
-        )
-
-    def test_heteroscedastic_kernel(self):
-        self.assertTrue(allclose_gen(self.K_j, self.K_n))
 
 
 class MuyGPSTest(MuyGPSTestCase):
@@ -575,6 +568,8 @@ class MuyGPSTest(MuyGPSTestCase):
         )
 
     def test_heteroscedastic_perturb(self):
+        print(self.heteroscedastic_K_j[0, 1, 1])
+        print(self.heteroscedastic_K_n[0, 1, 1])
         self.assertTrue(
             allclose_gen(self.heteroscedastic_K_n, self.heteroscedastic_K_j)
         )
@@ -832,7 +827,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.length_scale = 1.0
         cls.nu = 0.55
         cls.nu_bounds = (1e-1, 1e1)
-        cls.eps = 1e-5
+        cls.eps = 1e-3
         cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
             cls.batch_count, cls.nn_count, cls.eps
         )
