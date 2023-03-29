@@ -39,8 +39,6 @@ def _muygps_fast_posterior_mean(
     coeffs_tensor: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    print(Kcross.shape)
-    print(coeffs_tensor.shape)
     return np.einsum("ij,ijk->ik", Kcross, coeffs_tensor)
 
 

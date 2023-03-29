@@ -16,6 +16,7 @@ from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
 from MuyGPyS.gp.noise import (
     HomoscedasticNoise,
     HeteroscedasticNoise,
+    NullNoise,
     perturb_with_noise_model,
 )
 
@@ -23,7 +24,7 @@ from MuyGPyS.gp.noise import (
 class PosteriorVariance:
     def __init__(
         self,
-        eps: Union[HomoscedasticNoise, HeteroscedasticNoise],
+        eps: Union[HomoscedasticNoise, HeteroscedasticNoise, NullNoise],
         sigma_sq: SigmaSq,
         apply_sigma_sq=True,
         **kwargs,
@@ -48,7 +49,7 @@ class PosteriorVariance:
     @staticmethod
     def _get_opt_fn(
         var_fn: Callable,
-        eps: Union[HomoscedasticNoise, HeteroscedasticNoise],
+        eps: Union[HomoscedasticNoise, HeteroscedasticNoise, NullNoise],
         sigma_sq: SigmaSq,
     ) -> Callable:
         opt_fn = apply_hyperparameter(var_fn, eps, "eps")

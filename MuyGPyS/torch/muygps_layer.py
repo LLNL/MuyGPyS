@@ -8,7 +8,7 @@ MuyGPs PyTorch implementation
 """
 
 import MuyGPyS._src.math.torch as torch
-from torch import nn
+from MuyGPyS._src.math.torch import nn
 from MuyGPyS._src.gp.tensors.torch import (
     _pairwise_tensor,
     _crosswise_tensor,
@@ -30,7 +30,6 @@ from MuyGPyS.optimize.sigma_sq import (
     muygps_sigma_sq_optim,
     mmuygps_sigma_sq_optim,
 )
-
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
 
@@ -41,6 +40,8 @@ from MuyGPyS._src.gp.kernels.torch import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
+
+from MuyGPyS.gp.sigma_sq import SigmaSq
 
 
 class MuyGPs_layer(nn.Module):
@@ -198,7 +199,8 @@ class MuyGPs_layer(nn.Module):
         else:
             raise ValueError(f"Noise model {type(self.eps)} is not supported")
 
-        variances = muygps_model.posterior_variance(K, Kcross) * sigma_sq
+        muygps_model.sigma_sq.val = sigma_sq
+        variances = muygps_model.posterior_variance(K, Kcross)
 
         return predictions, variances
 
@@ -385,7 +387,8 @@ class MultivariateMuyGPs_layer(nn.Module):
                     f"Noise model {type(self.eps)} is not supported"
                 )
 
-        variances = mmuygps_model.posterior_variance(K, Kcross) * sigma_sq
+        mmuygps_model.sigma_sq.val = sigma_sq
+        variances = mmuygps_model.posterior_variance(K, Kcross)
 
         predictions = mmuygps_model.posterior_mean(
             K, Kcross, self.batch_nn_targets
