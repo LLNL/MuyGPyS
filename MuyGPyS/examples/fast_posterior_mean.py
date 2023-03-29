@@ -70,7 +70,6 @@ def make_fast_regressor(
     nn_indices, _ = nbrs_lookup.get_batch_nns(
         mm.arange(0, num_training_samples)
     )
-    nn_indices = nn_indices
     nn_indices = fast_nn_update(nn_indices)
 
     train_nn_targets = train_targets[nn_indices]
@@ -120,7 +119,6 @@ def make_fast_multivariate_regressor(
     nn_indices, _ = nbrs_lookup.get_batch_nns(
         mm.arange(0, num_training_samples)
     )
-    nn_indices = nn_indices
 
     nn_indices = fast_nn_update(nn_indices)
     pairwise_diffs_fast = pairwise_tensor(train_features, nn_indices)
