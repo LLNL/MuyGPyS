@@ -10,10 +10,11 @@ Defines data structures and functors that handle noise priors for MuyGPs models.
 """
 import MuyGPyS._src.math as mm
 
-from MuyGPyS.gp.kernels import Hyperparameter
+from MuyGPyS.gp.kernels import TensorHyperparameter
+from typing import Type
 
 
-class HeteroscedasticNoise(Hyperparameter):
+class HeteroscedasticNoise(TensorHyperparameter):
     """
     A tensor :math:`\\eps` noise parameter.
 
@@ -25,11 +26,6 @@ class HeteroscedasticNoise(Hyperparameter):
         val:
             An ndarray of shape `(batch_count, nn_count, nn_count)`
             containing the heteroscedastic nugget matrix.
-        bounds:
-            Must be set to the string "fixed" for now. We do not support
-            the training of individual measurement noise values in the
-            current model.
-
     Raises:
         ValueError:
             Any strictly negative entry in the array will produce an error.
@@ -38,10 +34,18 @@ class HeteroscedasticNoise(Hyperparameter):
     def __init__(
         self,
         val: mm.ndarray,
-        bounds: str = "fixed",
     ):
-        super(HeteroscedasticNoise, self).__init__(val, bounds)
+        super(HeteroscedasticNoise, self).__init__(val)
         if mm.sum(self._val < 0) > 0:
             raise ValueError(
                 f"Heteroscedastic noise values are not strictly non-negative!"
             )
+
+    def fixed(self) -> bool:
+        """
+        Overloading fixed function to return True for heteroscedastic noise.
+
+        Returns:
+            `True` - we do not allowed
+        """
+        return True

@@ -476,10 +476,9 @@ class HeteroscedasticNoiseTest(GPTestCase):
             np.tile(np.arange(nn_count), test_count),
         )
         eps_tensor = mm.zeros((test_count, nn_count, nn_count))
-        eps_tensor[test_indices] = (
-            1e-5 * np.random.rand(test_count, nn_count).flatten()
-        )
-        k_kwargs["eps"] = {"val": eps_tensor}
+        eps_matrix = 1e-5 * np.random.rand(test_count, nn_count)
+        eps_tensor[test_indices] = eps_matrix.flatten()
+        k_kwargs["eps"] = {"val": eps_matrix}
         muygps = MuyGPS(**k_kwargs)
 
         K, Kcross, _, _, _, _ = self._prepare_tensors(
@@ -495,7 +494,7 @@ class HeteroscedasticNoiseTest(GPTestCase):
         perturbed_K = _heteroscedastic_perturb(K, muygps.eps())
         _check_ndarray(self.assertEqual, perturbed_K, mm.ftype)
 
-        manual_K = K + muygps.eps()
+        manual_K = K + eps_tensor
         self.assertTrue(mm.allclose(perturbed_K, manual_K))
         return perturbed_K, Kcross
 

@@ -27,6 +27,7 @@ from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
     append_optim_params_lists,
+    _init_tensor_hyperparameter,
 )
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
@@ -125,8 +126,8 @@ class MuyGPS:
                     1e-14, "fixed", HomoscedasticNoise, **eps
                 )
             elif isinstance(eps["val"], mm.ndarray):
-                self.eps = _init_hyperparameter(
-                    1e-14, "fixed", HeteroscedasticNoise, **eps
+                self.eps = _init_tensor_hyperparameter(
+                    1e-14, HeteroscedasticNoise, **eps
                 )
             else:
                 raise TypeError(f"Noise model {type(eps)} is not supported")
@@ -368,21 +369,20 @@ class MuyGPS:
         To be used when the MuyGPs model has been trained and needs to be
         used for prediction, or if multiple batches are needed during training
         of a heteroscedastic model.
-
         Args:
             new_noise:
                 If homoscedastic, a float to update the nugget parameter.
                 If heteroscedastic, a matrix of shape
-                `(test_count, nn_count, nn_count)` containing the measurement
+                `(test_count, nn_count)` containing the measurement
                 noise corresponding to the nearest neighbors of each test point.
         Returns:
             A MuyGPs model with updated noise parameter(s).
         """
         ret = deepcopy(self)
-        if isinstance(new_noise, float):
+        if isinstance(new_noise, HomoscedasticNoise):
             ret.eps = HomoscedasticNoise(new_noise, "fixed")
-        elif isinstance(new_noise, mm.ndarray):
-            ret.eps = HeteroscedasticNoise(new_noise, "fixed")
+        elif isinstance(new_noise, HeteroscedasticNoise):
+            ret.eps = HeteroscedasticNoise(new_noise)
         ret._mean_fn = PosteriorMean(ret.eps)
         ret._var_fn = PosteriorVariance(ret.eps, ret.sigma_sq)
         return ret

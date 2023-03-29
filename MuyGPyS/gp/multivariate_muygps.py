@@ -23,6 +23,7 @@ from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
+from MuyGPyS.gp.noise.perturbation import select_perturb_fn
 
 
 class MultivariateMuyGPS:
@@ -220,11 +221,10 @@ class MultivariateMuyGPS:
             )
         return diagonal_variance
 
-    def build_fast_posterior_mean_coeffs(
+    def fast_coefficients(
         self,
-        train: mm.ndarray,
-        nn_indices: mm.ndarray,
-        targets: mm.ndarray,
+        pairwise_diffs_fast: mm.ndarray,
+        train_nn_targets_fast: mm.ndarray,
     ) -> mm.ndarray:
         """
         Produces coefficient tensor for fast posterior mean inference given in
@@ -248,61 +248,38 @@ class MultivariateMuyGPS:
         by $N^*$.
 
         Args:
-            train:
-                The full training data matrix of shape
-                `(train_count, feature_count)`.
-            nn_indices:
-                The nearest neighbors indices of each
-                training points of shape `(train_count, nn_count)`.
-            targets:
-                A matrix of shape `(train_count, response_count)` whose rows are
-                vector-valued responses for each training element.
+            pairwise_diffs:
+                A tensor of shape
+                `(train_count, nn_count, nn_count, feature_count)` containing
+                the `(nn_count, nn_count, feature_count)`-shaped pairwise
+                nearest neighbor difference tensors corresponding to each of the
+                batch elements.
+            batch_nn_targets:
+                A tensor of shape `(train_count, nn_count, response_count)`
+                listing the vector-valued responses for the nearest neighbors
+                of each batch element.
         Returns:
             A tensor of shape `(batch_count, nn_count, response_count)`
             whose entries comprise the precomputed coefficients for fast
             posterior mean inference.
         """
-        (
-            pairwise_diffs_fast,
-            train_nn_targets_fast,
-        ) = _make_fast_predict_tensors(nn_indices, train, targets)
 
         train_count, nn_count, response_count = train_nn_targets_fast.shape
         coeffs_tensor = mm.zeros((train_count, nn_count, response_count))
 
         for i, model in enumerate(self.models):
             K = model.kernel(pairwise_diffs_fast)
-            if isinstance(model.eps(), HomoscedasticNoise):
-                mm.assign(
-                    coeffs_tensor,
-                    _muygps_fast_posterior_mean_precompute(
-                        _homoscedastic_perturb(K, model.eps()),
-                        train_nn_targets_fast[:, :, i],
-                    ),
-                    slice(None),
-                    slice(None),
-                    i,
-                )
-            if isinstance(model.eps(), HeteroscedasticNoise):
-                train_count, nn_count = nn_indices.shape
-                nugget_tens = mm.zeros((train_count, nn_count, nn_count))
-                mm.assign(
-                    nugget_tens,
-                    model.eps()[nn_indices],
-                    slice(None),
-                    mm.arange(nn_count),
-                    mm.arange(nn_count),
-                )
-                mm.assign(
-                    coeffs_tensor,
-                    _muygps_fast_posterior_mean_precompute(
-                        _heteroscedastic_perturb(K, nugget_tens),
-                        train_nn_targets_fast[:, :, i],
-                    ),
-                    slice(None),
-                    slice(None),
-                    i,
-                )
+            perturb_fn = select_perturb_fn(model.eps)
+            mm.assign(
+                coeffs_tensor,
+                model.fast_coefficients(
+                    perturb_fn(K, model.eps()),
+                    train_nn_targets_fast[:, :, i],
+                ),
+                slice(None),
+                slice(None),
+                i,
+            )
 
         return coeffs_tensor
 

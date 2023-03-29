@@ -74,7 +74,6 @@ case) the training targets of the training batch. These functions are convenient
 as the difference and target tensors are usually needed together.
 """
 
-from MuyGPyS.neighbors import NN_Wrapper
 from typing import Optional, Tuple
 
 import MuyGPyS._src.math as mm

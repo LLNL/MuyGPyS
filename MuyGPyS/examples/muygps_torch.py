@@ -42,7 +42,7 @@ from MuyGPyS._src.gp.muygps.torch import (
     _muygps_diagonal_variance,
 )
 from MuyGPyS._src.gp.noise.torch import _homoscedastic_perturb
-from MuyGPyS._src.optimize.loss.torch import _lool_fn as lool_fn
+from MuyGPyS._src.optimize.loss.torch import _lool_fn_unscaled as lool_fn
 from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.torch.muygps_layer import kernel_func
@@ -94,10 +94,6 @@ def predict_single_model(
     variances:
         A torch.ndarray of shape `(batch_count,response_count)` shape consisting
         of the diagonal elements of the posterior variance.
-    sigma_sq:
-        A scalar used to rescale the posterior variance if a univariate
-        response or a torch.ndarray of shape `(response_count,)` for a
-        multidimensional response.
     """
     if model.embedding is None:
         raise NotImplementedError(f"MuyGPs PyTorch model requires embedding.")
@@ -194,10 +190,6 @@ def predict_multiple_model(
         A torch.ndarray of shape `(batch_count,)` consisting of the diagonal
         elements of the posterior variance, or a matrix of shape
         `(batch_count, response_count)` for a multidimensional response.
-    sigma_sq:
-        A scalar used to rescale the posterior variance if a univariate
-        response or a torch.ndarray of shape `(response_count,)` for a
-        multidimensional response.
     """
     if model.embedding is None:
         raise NotImplementedError(f"MuyGPs PyTorch model requires embedding.")
@@ -299,7 +291,7 @@ def predict_model(
         >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
         >>> nn_count = 10
         >>> nbrs_lookup = NN_Wrapper(train['input'], nn_count, nn_method="hnsw")
-        >>> predictions, variances, sigma_sq = predict_model(
+        >>> predictions, variances = predict_model(
         ... model,
         ... torch.from_numpy(test['input']),
         ... torch.from_numpy(train['input']),
@@ -334,10 +326,6 @@ def predict_model(
         A torch.ndarray of shape `(batch_count,)` consisting of the diagonal
         elements of the posterior variance, or a matrix of shape
         `(batch_count, response_count)` for a multidimensional response.
-    sigma_sq:
-        A scalar used to rescale the posterior variance if a univariate
-        response or a torch.ndarray of shape `(response_count,)` for a
-        multidimensional response.
     """
     if model.GP_layer is None:
         raise NotImplementedError(f"MuyGPs PyTorch model requires GP_layer.")
@@ -497,7 +485,6 @@ def train_deep_kernel_muygps(
                 predictions.squeeze(),
                 batch_responses.squeeze(),
                 variances.squeeze(),
-                sigma_sq=1,
             )
         else:
             loss = loss_func(predictions, batch_responses)
@@ -509,7 +496,7 @@ def train_deep_kernel_muygps(
             if verbose == True:
                 print(
                     "Iter %d/%d - Loss: %.10f"
-                    % (i + 1, training_iterations, loss.item())
+                    % (i + 1, training_iterations, loss.sum().item())
                 )
             model.eval()
             nbrs_lookup = NN_Wrapper(

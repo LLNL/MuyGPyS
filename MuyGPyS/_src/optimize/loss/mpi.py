@@ -53,5 +53,13 @@ def _lool_fn(
     sigma_sq: np.ndarray,
 ) -> float:
     local_likelihoods = _lool_fn_n(predictions, targets, variances, sigma_sq)
-    global_squared_errors = world.allreduce(local_likelihoods, op=MPI.SUM)
-    return global_squared_errors
+    global_likelihood = world.allreduce(local_likelihoods, op=MPI.SUM)
+    return global_likelihood
+
+
+def _lool_fn_unscaled(
+    predictions: np.ndarray, targets: np.ndarray, variances: np.ndarray
+) -> float:
+    local_likelihoods = _lool_fn_unscaled(predictions, targets, variances)
+    global_likelihood = world.allreduce(local_likelihoods, op=MPI.SUM)
+    return global_likelihood

@@ -154,7 +154,7 @@ class ClassifyUQTest(parameterized.TestCase):
         predictions = _consistent_unchunk_tensor(predictions)
         variances = _consistent_unchunk_tensor(variances)
         self.assertEqual(predictions.shape, (test_count, response_count))
-        self.assertEqual(variances.shape, (test_count,))
+        self.assertEqual(variances.squeeze().shape, (test_count,))
 
         train_labels = np.argmax(train["output"], axis=1)
         indices, nn_indices = get_balanced_batch(

@@ -176,11 +176,7 @@ class Hyperparameter:
                 raise ValueError(
                     f"Unsupported string hyperparameter value {val}."
                 )
-        if (
-            isinstance(val, Sequence)
-            or hasattr(val, "__len__")
-            and not isinstance(val, mm.ndarray)
-        ):
+        if isinstance(val, Sequence) or hasattr(val, "__len__"):
             raise ValueError(
                 f"Nonscalar hyperparameter value {val} is not allowed."
             )

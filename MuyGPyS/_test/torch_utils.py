@@ -65,10 +65,10 @@ class SVDKMultivariateMuyGPs(nn.Module):
         self.embedding = nn.Sequential(
             nn.Linear(40, 30),
             nn.Dropout(0.5),
-            nn.PReLU(1),
+            nn.ELU(1),
             nn.Linear(30, 10),
             nn.Dropout(0.5),
-            nn.PReLU(1),
+            nn.ELU(1),
         )
         self.eps = kernel_eps
         self.nu = nu

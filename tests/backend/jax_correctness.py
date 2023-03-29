@@ -568,8 +568,6 @@ class MuyGPSTest(MuyGPSTestCase):
         )
 
     def test_heteroscedastic_perturb(self):
-        print(self.heteroscedastic_K_j[0, 1, 1])
-        print(self.heteroscedastic_K_n[0, 1, 1])
         self.assertTrue(
             allclose_gen(self.heteroscedastic_K_n, self.heteroscedastic_K_j)
         )

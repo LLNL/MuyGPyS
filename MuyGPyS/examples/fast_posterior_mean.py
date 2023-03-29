@@ -29,6 +29,7 @@ from MuyGPyS.examples.regress import _decide_and_make_regressor
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.tensors import fast_nn_update
 from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS._src.gp.tensors import _pairwise_tensor as pairwise_tensor
 
 
 def make_fast_regressor(
@@ -70,15 +71,20 @@ def make_fast_regressor(
         mm.arange(0, num_training_samples)
     )
     nn_indices = nn_indices.astype(int)
+    nn_indices = fast_nn_update(nn_indices)
 
-    precomputed_coefficients_matrix = muygps.build_fast_posterior_mean_coeffs(
-        train_features, nn_indices, train_targets
+    train_nn_targets = train_targets[nn_indices]
+    K = muygps.kernel(pairwise_tensor(train_features, nn_indices))
+
+    precomputed_coefficients_matrix = muygps.fast_coefficients(
+        K, train_nn_targets
     )
+
     return precomputed_coefficients_matrix, nn_indices
 
 
 def make_fast_multivariate_regressor(
-    muygps: MMuyGPS,
+    mmuygps: MMuyGPS,
     nbrs_lookup: NN_Wrapper,
     train_features: mm.ndarray,
     train_targets: mm.ndarray,
@@ -116,8 +122,11 @@ def make_fast_multivariate_regressor(
     )
     nn_indices = nn_indices.astype(int)
 
-    precomputed_coefficients_matrix = muygps.build_fast_posterior_mean_coeffs(
-        train_features, nn_indices, train_targets
+    nn_indices = fast_nn_update(nn_indices)
+    pairwise_diffs_fast = pairwise_tensor(train_features, nn_indices)
+    train_nn_targets = train_targets[nn_indices]
+    precomputed_coefficients_matrix = mmuygps.fast_coefficients(
+        pairwise_diffs_fast, train_nn_targets
     )
     return precomputed_coefficients_matrix, nn_indices
 

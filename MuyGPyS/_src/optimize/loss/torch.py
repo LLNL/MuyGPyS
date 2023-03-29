@@ -46,8 +46,15 @@ def _lool_fn(
     variances: torch.ndarray,
     sigma_sq: torch.ndarray,
 ) -> float:
-    scaled_variances = torch.unsqueeze(variances * sigma_sq, dim=1)
+    return _lool_fn_unscaled(
+        predictions, targets, torch.unsqueeze(variances * sigma_sq, dim=1)
+    )
+
+
+def _lool_fn_unscaled(
+    predictions: torch.ndarray, targets: torch.ndarray, variances: torch.ndarray
+) -> float:
     return torch.sum(
-        torch.div((predictions - targets) ** 2, scaled_variances)
-        + torch.log(scaled_variances)
+        torch.div((predictions - targets) ** 2, variances)
+        + torch.log(variances)
     )

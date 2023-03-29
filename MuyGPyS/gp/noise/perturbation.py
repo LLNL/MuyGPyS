@@ -7,7 +7,11 @@
 Noise perturbation function wrapper
 """
 
+import MuyGPyS._src.math as mm
 from typing import Callable, Union
+
+
+from copy import deepcopy
 
 from MuyGPyS._src.gp.noise import (
     _homoscedastic_perturb,
@@ -16,6 +20,24 @@ from MuyGPyS._src.gp.noise import (
 from MuyGPyS.gp.noise.homoscedastic import HomoscedasticNoise
 from MuyGPyS.gp.noise.heteroscedastic import HeteroscedasticNoise
 from MuyGPyS.gp.noise.null import NullNoise
+
+
+def select_perturb_fn(
+    eps: Union[HomoscedasticNoise, HeteroscedasticNoise, NullNoise]
+) -> Callable:
+    if isinstance(eps, HomoscedasticNoise):
+        return _homoscedastic_perturb
+    elif isinstance(eps, HeteroscedasticNoise):
+        return _heteroscedastic_perturb
+    elif isinstance(eps, NullNoise):
+
+        def _null_noise(K, *args, **kwargs):
+            return K
+
+        return _null_noise
+
+    else:
+        raise ValueError(f"Noise model {type(eps)} is not supported")
 
 
 def noise_perturb(perturb_fn: Callable):
@@ -31,12 +53,5 @@ def noise_perturb(perturb_fn: Callable):
 def perturb_with_noise_model(
     fn: Callable,
     eps: Union[HomoscedasticNoise, HeteroscedasticNoise, NullNoise],
-):
-    if isinstance(eps, HomoscedasticNoise):
-        return noise_perturb(_homoscedastic_perturb)(fn)
-    elif isinstance(eps, HeteroscedasticNoise):
-        return noise_perturb(_heteroscedastic_perturb)(fn)
-    elif isinstance(eps, NullNoise):
-        return fn
-    else:
-        raise ValueError(f"Noise model {type(eps)} is not supported")
+) -> Callable:
+    return noise_perturb(select_perturb_fn(eps))(fn)
