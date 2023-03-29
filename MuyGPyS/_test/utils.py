@@ -93,6 +93,25 @@ def _make_gaussian_matrix(
     return mm.array(np.random.randn(data_count, feature_count))
 
 
+def _make_uniform_matrix(
+    data_count: int,
+    feature_count: int,
+) -> mm.ndarray:
+    """
+    Create a matrix of i.i.d. Uniform(0,1) datapoints.
+
+    Args:
+        data_count:
+            The number of data rows.
+        feature_count:
+            The number of data columns.
+
+    Returns:
+        An i.i.d. Gaussian matrix of shape `(data_count, feature_count)`.
+    """
+    return mm.array(np.random.rand(data_count, feature_count))
+
+
 def _make_gaussian_dict(
     data_count: int,
     feature_count: int,
@@ -387,3 +406,29 @@ def _consistent_assert(assert_fn, *args):
             assert_fn(*args)
     else:
         assert_fn(*args)
+
+
+def _make_heteroscedastic_test_nugget(
+    batch_count: int, nn_count: int, eps_mag: float
+):
+    """
+    Produces a test heteroscedastic 3D tensor parameter of shape
+    `(batch_count, nn_count, nn_count)`.
+
+    NOTE[amd]: This function is only for testing purposes.
+
+    Args:
+        batch_count:
+            Number of points to be predicted.
+        nn_count:
+            Number of nearest neighbors in the kernel.
+        eps:
+            Maximum noise magnitude.
+
+
+    Return:
+        A `(batch_count, nn_count)` shaped tensor for heteroscedastic
+        noise modeling.
+    """
+    eps_tensor = eps_mag * mm.ones((batch_count, nn_count))
+    return eps_tensor

@@ -15,9 +15,21 @@ from MuyGPyS._src.gp.tensors.numpy import (
     _pairwise_tensor as _pairwise_tensor_n,
     _make_train_tensors as _make_train_tensors_n,
     _make_predict_tensors as _make_predict_tensors_n,
+    _make_heteroscedastic_tensor as _make_heteroscedatic_tensor_n,
     _F2,
     _l2,
 )
+
+
+def _make_heteroscedastic_tensor(
+    measurement_noise: np.ndarray,
+    batch_nn_indices: np.ndarray,
+) -> np.ndarray:
+    return _chunk_function_tensor(
+        _make_heteroscedatic_tensor_n,
+        measurement_noise,
+        batch_nn_indices,
+    )
 
 
 def _make_fast_predict_tensors(

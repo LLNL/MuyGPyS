@@ -43,7 +43,7 @@ class MakeFastRegressorTest(parameterized.TestCase):
             )
         )
     )
-    def test_make_fast_multivariate_regressor(
+    def test_make_fast_regressor(
         self,
         train_count,
         test_count,

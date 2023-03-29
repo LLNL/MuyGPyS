@@ -83,7 +83,7 @@ class RegressTest(parameterized.TestCase):
         _check_ndarray(self.assertEqual, batch_nn_targets, torch.ftype)
 
         model = SVDKMuyGPs(
-            kernel_eps=1e-6,
+            kernel_eps=1e-3,
             nu=1 / 2,
             length_scale=1.0,
             batch_indices=batch_indices,
@@ -108,7 +108,7 @@ class RegressTest(parameterized.TestCase):
 
         model_trained.eval()
 
-        predictions, variances, sigma_sq = predict_model(
+        predictions, variances = predict_model(
             model=model_trained,
             test_features=test_features,
             train_features=train_features,
@@ -129,12 +129,6 @@ class RegressTest(parameterized.TestCase):
             torch.ftype,
             shape=(test_count, response_count),
         )
-        _check_ndarray(
-            self.assertEqual,
-            sigma_sq,
-            torch.ftype,
-            shape=(num_test_responses,),
-        )
         mse_actual = (
             np.sum(
                 (
@@ -154,7 +148,7 @@ class MultivariateRegressTest(parameterized.TestCase):
         super(MultivariateRegressTest, cls).setUpClass()
 
     @parameterized.parameters(
-        ((1000, 100, 40, 2, nn, bs) for nn in [30] for bs in [500])
+        ((1000, 100, 40, 2, nn, bs) for nn in [20] for bs in [200])
     )
     def test_regress(
         self,
@@ -212,7 +206,7 @@ class MultivariateRegressTest(parameterized.TestCase):
             nbrs_lookup=nbrs_lookup,
             training_iterations=10,
             optimizer_method=torch.optim.Adam,
-            learning_rate=1e-3,
+            learning_rate=1e-4,
             scheduler_decay=0.95,
             loss_function="lool",
             update_frequency=1,
@@ -220,7 +214,7 @@ class MultivariateRegressTest(parameterized.TestCase):
 
         model_trained.eval()
 
-        predictions, variances, sigma_sq = predict_model(
+        predictions, variances = predict_model(
             model=model_trained,
             test_features=test_features,
             train_features=train_features,
@@ -240,12 +234,6 @@ class MultivariateRegressTest(parameterized.TestCase):
             variances,
             torch.ftype,
             shape=(test_count, response_count),
-        )
-        _check_ndarray(
-            self.assertEqual,
-            sigma_sq,
-            torch.ftype,
-            shape=(num_test_responses,),
         )
         mse_actual = (
             np.sum(

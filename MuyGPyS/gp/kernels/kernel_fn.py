@@ -29,7 +29,7 @@ second two dimensions contain square kernel matrices. Similarly, one uses a
 previously computed `crosswise_diffs` matrix (see
 :func:`MuyGPyS.gp.tensor.crosswise_diffs`) to compute a cross-covariance
 matrix. See the following example, which assumes that you have already
-constructed the difference `numpy.nparrays` and the kernel `kern` as shown
+constructed the difference `numpy.ndarrays` and the kernel `kern` as shown
 above.
 
 Example:

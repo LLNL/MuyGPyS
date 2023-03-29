@@ -7,19 +7,24 @@
 MuyGPs implementation
 """
 
-from typing import Callable
+from typing import Callable, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
 from MuyGPyS.gp.kernels import apply_hyperparameter
 from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
-from MuyGPyS.gp.noise import HomoscedasticNoise, perturb_with_noise_model
+from MuyGPyS.gp.noise import (
+    HomoscedasticNoise,
+    HeteroscedasticNoise,
+    NullNoise,
+    perturb_with_noise_model,
+)
 
 
 class PosteriorVariance:
     def __init__(
         self,
-        eps: HomoscedasticNoise,
+        eps: Union[HomoscedasticNoise, HeteroscedasticNoise, NullNoise],
         sigma_sq: SigmaSq,
         apply_sigma_sq=True,
         **kwargs,
@@ -43,7 +48,9 @@ class PosteriorVariance:
 
     @staticmethod
     def _get_opt_fn(
-        var_fn: Callable, eps: HomoscedasticNoise, sigma_sq: SigmaSq
+        var_fn: Callable,
+        eps: Union[HomoscedasticNoise, HeteroscedasticNoise, NullNoise],
+        sigma_sq: SigmaSq,
     ) -> Callable:
         opt_fn = apply_hyperparameter(var_fn, eps, "eps")
         opt_fn = sigma_sq_apply(opt_fn, sigma_sq)

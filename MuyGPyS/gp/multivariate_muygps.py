@@ -6,16 +6,24 @@
 """
 Multivariate MuyGPs implementation
 """
-
+from copy import deepcopy
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _make_fast_predict_tensors
 from MuyGPyS._src.gp.muygps import (
     _muygps_fast_posterior_mean_precompute,
     _mmuygps_fast_posterior_mean,
 )
-from MuyGPyS._src.gp.noise import _homoscedastic_perturb
+from MuyGPyS._src.gp.noise import (
+    _homoscedastic_perturb,
+    _heteroscedastic_perturb,
+)
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
+from MuyGPyS.gp.mean import PosteriorMean
+from MuyGPyS.gp.sigma_sq import SigmaSq
+from MuyGPyS.gp.variance import PosteriorVariance
+from MuyGPyS.gp.noise.perturbation import select_perturb_fn
 
 
 class MultivariateMuyGPS:
@@ -213,11 +221,10 @@ class MultivariateMuyGPS:
             )
         return diagonal_variance
 
-    def build_fast_posterior_mean_coeffs(
+    def fast_coefficients(
         self,
-        train: mm.ndarray,
-        nn_indices: mm.ndarray,
-        targets: mm.ndarray,
+        pairwise_diffs_fast: mm.ndarray,
+        train_nn_targets_fast: mm.ndarray,
     ) -> mm.ndarray:
         """
         Produces coefficient tensor for fast posterior mean inference given in
@@ -241,33 +248,32 @@ class MultivariateMuyGPS:
         by $N^*$.
 
         Args:
-            train:
-                The full training data matrix of shape
-                `(train_count, feature_count)`.
-            nn_indices:
-                The nearest neighbors indices of each
-                training points of shape `(train_count, nn_count)`.
-            targets:
-                A matrix of shape `(train_count, response_count)` whose rows are
-                vector-valued responses for each training element.
+            pairwise_diffs:
+                A tensor of shape
+                `(train_count, nn_count, nn_count, feature_count)` containing
+                the `(nn_count, nn_count, feature_count)`-shaped pairwise
+                nearest neighbor difference tensors corresponding to each of the
+                batch elements.
+            batch_nn_targets:
+                A tensor of shape `(train_count, nn_count, response_count)`
+                listing the vector-valued responses for the nearest neighbors
+                of each batch element.
         Returns:
             A tensor of shape `(batch_count, nn_count, response_count)`
             whose entries comprise the precomputed coefficients for fast
             posterior mean inference.
         """
-        (
-            pairwise_diffs_fast,
-            train_nn_targets_fast,
-        ) = _make_fast_predict_tensors(nn_indices, train, targets)
 
         train_count, nn_count, response_count = train_nn_targets_fast.shape
         coeffs_tensor = mm.zeros((train_count, nn_count, response_count))
+
         for i, model in enumerate(self.models):
             K = model.kernel(pairwise_diffs_fast)
+            perturb_fn = select_perturb_fn(model.eps)
             mm.assign(
                 coeffs_tensor,
-                _muygps_fast_posterior_mean_precompute(
-                    _homoscedastic_perturb(K, model.eps()),
+                model.fast_coefficients(
+                    perturb_fn(K, model.eps()),
                     train_nn_targets_fast[:, :, i],
                 ),
                 slice(None),
@@ -324,3 +330,25 @@ class MultivariateMuyGPS:
                 i,
             )
         return _mmuygps_fast_posterior_mean(Kcross, coeffs_tensor)
+
+    def apply_new_noise(self, new_noise):
+        """
+        Updates the heteroscedastic noise parameters of a MultivariateMuyGPs
+        model.
+
+        Args:
+            new_noise:
+                A matrix of shape
+                `(test_count, nn_count, nn_count, response_count)` containing
+                the measurement noise corresponding to the nearest neighbors
+                of each test point and each response.
+        Returns:
+            A MultivariateMuyGPs model with updated heteroscedastic noise
+            parameters.
+        """
+        ret = deepcopy(self)
+        for i, model in enumerate(ret.models):
+            model.eps = HeteroscedasticNoise(new_noise[:, :, :, i], "fixed")
+            model._mean_fn = PosteriorMean(model.eps)
+            model._var_fn = PosteriorVariance(model.eps, model.sigma_sq)
+        return ret

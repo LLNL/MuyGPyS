@@ -104,11 +104,17 @@ def fast_posterior_mean_from_indices(
         indices,
         nn_indices,
     )
-
-    return muygps.fast_posterior_mean(
-        crosswise_diffs,
-        coeffs_tensor[closest_index, :, :],
-    )
+    if isinstance(muygps, MuyGPS):
+        Kcross = muygps.kernel(crosswise_diffs)
+        return muygps.fast_posterior_mean(
+            Kcross,
+            coeffs_tensor[closest_index, :, :],
+        )
+    else:
+        return muygps.fast_posterior_mean(
+            crosswise_diffs,
+            coeffs_tensor[closest_index, :, :],
+        )
 
 
 def optimize_from_indices(

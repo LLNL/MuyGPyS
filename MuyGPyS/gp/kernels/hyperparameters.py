@@ -21,6 +21,7 @@ from typing import Callable, cast, List, Optional, Tuple, Type, Union
 from MuyGPyS import config
 
 import MuyGPyS._src.math.numpy as np
+import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
 
@@ -179,7 +180,9 @@ class Hyperparameter:
             raise ValueError(
                 f"Nonscalar hyperparameter value {val} is not allowed."
             )
-        val = float(val)
+        if not isinstance(val, mm.ndarray):
+            val = float(val)
+
         if self.fixed() is False:
             any_below = np.any(
                 np.choose(

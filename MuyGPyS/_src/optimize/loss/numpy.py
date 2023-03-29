@@ -38,14 +38,20 @@ def _mse_fn(
     )
 
 
+def _lool_fn_unscaled(
+    predictions: np.ndarray, targets: np.ndarray, variances: np.ndarray
+) -> float:
+    return np.sum(
+        np.divide((predictions - targets) ** 2, variances) + np.log(variances)
+    )
+
+
 def _lool_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
     sigma_sq: np.ndarray,
 ) -> float:
-    scaled_variances = np.outer(variances, sigma_sq)
-    return np.sum(
-        np.divide((predictions - targets) ** 2, scaled_variances)
-        + np.log(scaled_variances)
+    return _lool_fn_unscaled(
+        predictions, targets, np.outer(variances, sigma_sq)
     )

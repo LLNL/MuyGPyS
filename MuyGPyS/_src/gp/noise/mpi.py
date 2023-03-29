@@ -5,4 +5,5 @@
 
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb,
+    _heteroscedastic_perturb,
 )

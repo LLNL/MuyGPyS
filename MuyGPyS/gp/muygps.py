@@ -8,23 +8,33 @@ MuyGPs implementation
 """
 
 from typing import Callable, Dict, List, Optional, Tuple, Union
+from copy import deepcopy
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _make_fast_predict_tensors
+from MuyGPyS._src.gp.tensors import (
+    _make_fast_predict_tensors,
+    _make_heteroscedastic_tensor,
+)
 from MuyGPyS._src.gp.muygps import (
     _muygps_fast_posterior_mean,
     _muygps_fast_posterior_mean_precompute,
 )
-from MuyGPyS._src.gp.noise import _homoscedastic_perturb
+from MuyGPyS._src.gp.noise import (
+    _homoscedastic_perturb,
+    _heteroscedastic_perturb,
+)
 from MuyGPyS.gp.kernels import (
     _get_kernel,
     _init_hyperparameter,
     append_optim_params_lists,
+    _init_tensor_hyperparameter,
 )
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
-from MuyGPyS.gp.noise import HomoscedasticNoise, NullNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise, NullNoise
+from MuyGPyS.gp.fast_mean import FastPosteriorMean
+from MuyGPyS.gp.fast_precompute import FastPrecomputeCoefficients
 
 
 class MuyGPS:
@@ -98,9 +108,12 @@ class MuyGPS:
     def __init__(
         self,
         kern: str = "matern",
-        eps: Optional[Dict[str, Union[float, Tuple[float, float]]]] = {
-            "val": 0.0
-        },
+        eps: Optional[
+            Union[
+                Dict[str, Union[float, Tuple[float, float]]],
+                Dict[str, mm.ndarray],
+            ]
+        ] = {"val": 0.0},
         response_count: int = 1,
         **kwargs,
     ):
@@ -108,13 +121,22 @@ class MuyGPS:
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.sigma_sq = SigmaSq(response_count)
         if eps is not None:
-            self.eps = _init_hyperparameter(
-                1e-14, "fixed", HomoscedasticNoise, **eps
-            )
+            if isinstance(eps["val"], float) or isinstance(eps["val"], str):
+                self.eps = _init_hyperparameter(
+                    1e-14, "fixed", HomoscedasticNoise, **eps
+                )
+            elif isinstance(eps["val"], mm.ndarray):
+                self.eps = _init_tensor_hyperparameter(
+                    1e-14, HeteroscedasticNoise, **eps
+                )
+            else:
+                raise TypeError(f"Noise model {type(eps)} is not supported")
         else:
             self.eps = NullNoise()  # type: ignore
         self._mean_fn = PosteriorMean(self.eps)
         self._var_fn = PosteriorVariance(self.eps, self.sigma_sq)
+        self._fast_posterior_mean_fn = FastPosteriorMean()
+        self._fast_precompute_fn = FastPrecomputeCoefficients(self.eps)
 
     def set_eps(self, **eps) -> None:
         """
@@ -164,11 +186,10 @@ class MuyGPS:
         append_optim_params_lists(self.eps, "eps", names, params, bounds)
         return names, mm.array(params), mm.array(bounds)
 
-    def build_fast_posterior_mean_coeffs(
+    def fast_coefficients(
         self,
-        train: mm.ndarray,
-        nn_indices: mm.ndarray,
-        targets: mm.ndarray,
+        K: mm.ndarray,
+        train_nn_targets_fast: mm.ndarray,
     ) -> mm.ndarray:
         """
         Produces coefficient matrix for the fast posterior mean given in
@@ -185,34 +206,28 @@ class MuyGPS:
         test point and the `nn_count - 1` nearest neighbors of this nearest
         neighbor, :math:`K_{\\hat{\\theta}}` is the trained kernel functor
         specified by `self.kernel`, :math:`\\varepsilon I_k` is a diagonal
-        homoscedastic noise matrix whose diagonal is the value of the
+        noise matrix whose diagonal is the value of the
         `self.eps` hyperparameter, and :math:`Y(X_{N^*})` is the
         `(train_count,)` vector of responses corresponding to the
         training features indexed by $N^*$.
 
         Args:
-            train:
-                The full training data matrix of shape
-                `(train_count, feature_count)`.
-            nn_indices:
-                The nearest neighbors indices of each
-                training points of shape `(train_count, nn_count)`.
-            targets:
-                A matrix of shape `(train_count, response_count)` whose rows are
-                vector-valued responses for each training element.
+            K:
+                The full pairwise kernel tensor of shape
+                `(train_count, nn_count, nn_count)`.
+            train_nn_targets_fast:
+                The nearest neighbor response of each
+                training points of shape
+                `(train_count, nn_count, response_count)`.
         Returns:
             A matrix of shape `(train_count, nn_count)` whose rows are
             the precomputed coefficients for fast posterior mean inference.
 
         """
-        (
-            pairwise_diffs_fast,
-            train_nn_targets_fast,
-        ) = _make_fast_predict_tensors(nn_indices, train, targets)
-        K = self.kernel(pairwise_diffs_fast)
 
-        return _muygps_fast_posterior_mean_precompute(
-            _homoscedastic_perturb(K, self.eps()), train_nn_targets_fast
+        return self._fast_precompute_fn(
+            K,
+            train_nn_targets_fast,
         )
 
     def posterior_mean(
@@ -346,9 +361,31 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return _muygps_fast_posterior_mean(
-            self.kernel._distortion_fn(Kcross), coeffs_tensor
-        )
+        return self._fast_posterior_mean_fn(Kcross, coeffs_tensor)
+
+    def apply_new_noise(self, new_noise: Union[float, mm.ndarray]):
+        """
+        Updates the homo/heteroscedastic noise parameter(s) of a MuyGPs model.
+        To be used when the MuyGPs model has been trained and needs to be
+        used for prediction, or if multiple batches are needed during training
+        of a heteroscedastic model.
+        Args:
+            new_noise:
+                If homoscedastic, a float to update the nugget parameter.
+                If heteroscedastic, a matrix of shape
+                `(test_count, nn_count)` containing the measurement
+                noise corresponding to the nearest neighbors of each test point.
+        Returns:
+            A MuyGPs model with updated noise parameter(s).
+        """
+        ret = deepcopy(self)
+        if isinstance(new_noise, HomoscedasticNoise):
+            ret.eps = HomoscedasticNoise(new_noise, "fixed")
+        elif isinstance(new_noise, HeteroscedasticNoise):
+            ret.eps = HeteroscedasticNoise(new_noise)
+        ret._mean_fn = PosteriorMean(ret.eps)
+        ret._var_fn = PosteriorVariance(ret.eps, ret.sigma_sq)
+        return ret
 
     def get_opt_mean_fn(self) -> Callable:
         """

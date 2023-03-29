@@ -95,8 +95,8 @@ class SVDKMuyGPs(nn.Module):
 
     def forward(self, x):
         predictions = self.embedding(x)
-        predictions, variances, sigma_sq = self.GP_layer(predictions)
-        return predictions, variances, sigma_sq
+        predictions, variances = self.GP_layer(predictions)
+        return predictions, variances
 
 
 class MultivariateStargalRegressTest(RegressionAPITest):
@@ -167,7 +167,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
 
         model_trained.eval()
 
-        predictions, variances, sigma_sq = predict_model(
+        predictions, variances = predict_model(
             model=model_trained,
             test_features=test_features,
             train_features=train_features,
@@ -229,8 +229,8 @@ class SVDKMuyGPs_Heaton(nn.Module):
 
     def forward(self, x):
         predictions = self.embedding(x)
-        predictions, variances, sigma_sq = self.GP_layer(predictions)
-        return predictions, variances, sigma_sq
+        predictions, variances = self.GP_layer(predictions)
+        return predictions, variances
 
 
 class HeatonTest(RegressionAPITest):
@@ -296,7 +296,7 @@ class HeatonTest(RegressionAPITest):
 
         model_trained.eval()
 
-        predictions, variances, sigma_sq = predict_model(
+        predictions, variances = predict_model(
             model=model_trained,
             test_features=test_features,
             train_features=train_features,

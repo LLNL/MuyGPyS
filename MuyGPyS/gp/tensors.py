@@ -74,7 +74,6 @@ case) the training targets of the training batch. These functions are convenient
 as the difference and target tensors are usually needed together.
 """
 
-
 from typing import Optional, Tuple
 
 import MuyGPyS._src.math as mm
@@ -85,7 +84,67 @@ from MuyGPyS._src.gp.tensors import (
     _crosswise_tensor,
     _pairwise_tensor,
     _fast_nn_update,
+    _make_heteroscedastic_tensor,
 )
+
+
+def make_noise_tensor(
+    measurement_noise: mm.ndarray,
+    nn_indices: mm.ndarray,
+) -> mm.ndarray:
+    """
+    Create the heteroscedastic noise tensor for nonuniform noise values for
+    prediction of test data. Can also be used to produce the noise tensor
+    needed during batched training.
+
+    Creates `eps_tensor` tensor required by heteroscedastic MuyGPs models.
+
+    Args:
+        test:
+        measurement_noise:
+            A matrix of floats of shape `(train_count)` providing the noise
+            corresponding to the response variable at each input value in the
+            data.
+        nn_indices:
+            The indices of the nearest neighbors of the test points.
+
+    Returns
+    -------
+    eps_tensor:
+        A matrix of floats of shape `(test_count, nn_count)` providing the
+        noise corresponding to the nearest neighbor responses for all
+        observations in the test set.
+    """
+    return _make_heteroscedastic_tensor(measurement_noise, nn_indices)
+
+
+def make_heteroscedastic_tensor(
+    measurement_noise: mm.ndarray,
+    batch_nn_indices: mm.ndarray,
+) -> mm.ndarray:
+    """
+    Create the heteroscedastic noise tensor for nonuniform noise values.
+
+    Creates `eps_tensor` tensor required by heteroscedastic MuyGPs models.
+
+    Args:
+        measurement_noise:
+            A matrix of floats of shape `(batch_count,)` providing the noise
+            corresponding to the response variable at each input value in the
+            data.
+        batch_nn_indices:
+            A matrix of integers of shape `(batch_count, nn_count, nn_count)`
+            listing the measurement noise for the nearest neighbors for all
+            observations in the batch.
+
+    Returns
+    -------
+    eps_tensor:
+        A matrix of floats of shape `(batch_count, nn_count)` providing the
+        noise corresponding to the nearest neighbor responses for all
+        observations in the batch.
+    """
+    return _make_heteroscedastic_tensor(measurement_noise, batch_nn_indices)
 
 
 def fast_nn_update(
@@ -109,9 +168,6 @@ def make_fast_predict_tensors(
         batch_nn_indices:
             A matrix of integers of shape `(batch_count, nn_count)` listing the
             nearest neighbor indices for all observations in the batch.
-        test_features:
-            The full floating point testing data matrix of shape
-            `(test_count, feature_count)`.
         train_features:
             The full floating point training data matrix of shape
             `(train_count, feature_count)`.

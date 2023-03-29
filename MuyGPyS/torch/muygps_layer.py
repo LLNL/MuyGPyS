@@ -7,20 +7,31 @@
 MuyGPs PyTorch implementation
 """
 
-import torch
-from torch import nn
+import MuyGPyS._src.math.torch as torch
+from MuyGPyS._src.math.torch import nn
 from MuyGPyS._src.gp.tensors.torch import (
     _pairwise_tensor,
     _crosswise_tensor,
     _l2,
+    _make_heteroscedastic_tensor,
 )
 from MuyGPyS._src.gp.muygps.torch import (
     _muygps_posterior_mean,
     _muygps_diagonal_variance,
 )
+import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
 
-from MuyGPyS._src.gp.noise.torch import _homoscedastic_perturb
+from MuyGPyS._src.gp.noise.torch import (
+    _homoscedastic_perturb,
+    _heteroscedastic_perturb,
+)
+from MuyGPyS.optimize.sigma_sq import (
+    muygps_sigma_sq_optim,
+    mmuygps_sigma_sq_optim,
+)
+from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
 
 from MuyGPyS._src.gp.kernels.torch import (
     _matern_05_fn,
@@ -29,6 +40,8 @@ from MuyGPyS._src.gp.kernels.torch import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
+
+from MuyGPyS.gp.sigma_sq import SigmaSq
 
 
 class MuyGPs_layer(nn.Module):
@@ -117,8 +130,8 @@ class MuyGPs_layer(nn.Module):
     ):
         super().__init__()
 
-        self.length_scale = nn.Parameter(torch.tensor(length_scale))
-        self.eps = kernel_eps
+        self.length_scale = nn.Parameter(torch.array(length_scale))
+        self.eps = torch.array(kernel_eps)
         self.nu = nu
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
@@ -129,9 +142,14 @@ class MuyGPs_layer(nn.Module):
         """
         Produce the output of a MuyGPs custom PyTorch layer.
 
-        Returns:
-            A torch.Tensor of shape `(batch_count, response_count)` listing the
-            predicted response for each of the batch elements.
+        Returns
+        -------
+        predictions:
+            A torch.ndarray of shape `(batch_count, response_count)` whose rows
+            are the predicted response for each of the given batch feature.
+        variances:
+            A torch.ndarray of shape `(batch_count,response_count)`
+            consisting of the diagonal elements of the posterior variance.
         """
 
         crosswise_diffs = _crosswise_tensor(
@@ -153,20 +171,38 @@ class MuyGPs_layer(nn.Module):
             nu=self.nu,
             length_scale=self.length_scale,
         )
-        predictions = _muygps_posterior_mean(
-            _homoscedastic_perturb(K, self.eps), Kcross, self.batch_nn_targets
+
+        k_kwargs = {
+            "length_scale": {"val": float(self.length_scale)},
+            "nu": {"val": float(self.nu)},
+            "eps": {"val": self.eps},
+        }
+
+        muygps_model = MuyGPS(**k_kwargs)
+
+        predictions = muygps_model.posterior_mean(
+            K, Kcross, self.batch_nn_targets
         )
 
-        sigma_sq = _analytic_sigma_sq_optim(
-            _homoscedastic_perturb(K, self.eps), self.batch_nn_targets
-        )
+        if torch.numel(self.eps) == 1:
+            sigma_sq = _analytic_sigma_sq_optim(
+                _homoscedastic_perturb(K, self.eps), self.batch_nn_targets
+            )
+        elif torch.numel(self.eps) > 1:
+            nugget_tensor = _make_heteroscedastic_tensor(
+                self.eps, self.batch_nn_indices
+            )
+            sigma_sq = _analytic_sigma_sq_optim(
+                _heteroscedastic_perturb(K, nugget_tensor),
+                self.batch_nn_targets,
+            )
+        else:
+            raise ValueError(f"Noise model {type(self.eps)} is not supported")
 
-        variances = _muygps_diagonal_variance(
-            _homoscedastic_perturb(K, self.eps), Kcross
-        )
-        variances = torch.outer(variances, sigma_sq)
+        muygps_model.sigma_sq.val = sigma_sq
+        variances = muygps_model.posterior_variance(K, Kcross)
 
-        return predictions, variances, sigma_sq
+        return predictions, variances
 
 
 class MultivariateMuyGPs_layer(nn.Module):
@@ -264,8 +300,7 @@ class MultivariateMuyGPs_layer(nn.Module):
     ):
         super().__init__()
         self.num_models = num_models
-        self.length_scale = nn.Parameter(torch.Tensor(length_scales))
-        # self.length_scale = length_scales
+        self.length_scale = nn.Parameter(torch.array(length_scales))
         self.eps = kernel_eps
         self.nu = nu_vals
         self.batch_indices = batch_indices
@@ -277,9 +312,14 @@ class MultivariateMuyGPs_layer(nn.Module):
         """
         Produce the output of a MuyGPs custom PyTorch layer.
 
-        Returns:
-            A torch.Tensor of shape `(batch_count, response_count)` listing the
-            predicted response for each of the batch elements.
+        Returns
+        -------
+        predictions:
+            A torch.ndarray of shape `(batch_count, response_count)` whose rows
+            are the predicted response for each of the given batch feature.
+        variances:
+            A torch.ndarray of shape `(batch_count, response_count)`
+            consisting of the diagonal elements of the posterior variance.
         """
         crosswise_diffs = _crosswise_tensor(
             x,
@@ -295,6 +335,24 @@ class MultivariateMuyGPs_layer(nn.Module):
         Kcross = torch.zeros(batch_count, nn_count, response_count)
         K = torch.zeros(batch_count, nn_count, nn_count, response_count)
 
+        k_kwargs_list = []
+        for i in range(response_count):
+            k_kwargs_list.append(
+                {
+                    "length_scale": {"val": float(self.length_scale[i])},
+                    "nu": {"val": float(self.nu[i])},
+                    "eps": {"val": self.eps[i]},
+                }
+            )
+
+        k_kwargs_list = k_kwargs_list
+
+        mmuygps_model = MMuyGPS("matern", *k_kwargs_list)
+
+        sigma_sq = torch.zeros(
+            response_count,
+        )
+
         for i in range(self.num_models):
             Kcross[:, :, i] = kernel_func(
                 crosswise_diffs,
@@ -307,37 +365,41 @@ class MultivariateMuyGPs_layer(nn.Module):
                 nu=self.nu[i],
                 length_scale=self.length_scale[i],
             )
+            if self.eps.size(axis=0) == response_count:
+                sigma_sq[i] = _analytic_sigma_sq_optim(
+                    _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
+                    self.batch_nn_targets[:, :, i].reshape(
+                        batch_count, nn_count, 1
+                    ),
+                )
+            elif self.eps.size(axis=0) > response_count:
+                nugget_tensor = _make_heteroscedastic_tensor(
+                    self.eps, self.batch_nn_indices
+                )
+                sigma_sq[i] = _analytic_sigma_sq_optim(
+                    _heteroscedastic_perturb(K[:, :, :, i], nugget_tensor),
+                    self.batch_nn_targets[:, :, i].reshape(
+                        batch_count, nn_count, 1
+                    ),
+                )
+            else:
+                raise ValueError(
+                    f"Noise model {type(self.eps)} is not supported"
+                )
 
-        predictions = torch.zeros(batch_count, response_count)
-        variances = torch.zeros(batch_count, response_count)
-        sigma_sq = torch.zeros(
-            response_count,
+        mmuygps_model.sigma_sq.val = sigma_sq
+        variances = mmuygps_model.posterior_variance(K, Kcross)
+
+        predictions = mmuygps_model.posterior_mean(
+            K, Kcross, self.batch_nn_targets
         )
 
-        for i in range(self.num_models):
-            predictions[:, i] = _muygps_posterior_mean(
-                _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
-                Kcross[:, :, i],
-                self.batch_nn_targets[:, :, i].reshape(
-                    batch_count, nn_count, 1
-                ),
-            ).reshape(batch_count)
-            variances[:, i] = _muygps_diagonal_variance(
-                _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
-                Kcross[:, :, i],
-            )
-            sigma_sq[i] = _analytic_sigma_sq_optim(
-                _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
-                self.batch_nn_targets[:, :, i].reshape(
-                    batch_count, nn_count, 1
-                ),
-            )
-        return predictions, variances, sigma_sq
+        return predictions, variances
 
 
 def kernel_func(
-    diff_tensor: torch.Tensor, nu: float, length_scale: float
-) -> torch.Tensor:
+    diff_tensor: torch.ndarray, nu: float, length_scale: float
+) -> torch.ndarray:
     """
     Generate kernel tensors using the Matern kernel given an input difference
     tensor. Currently only supports the Matern kernel, but more kernels will

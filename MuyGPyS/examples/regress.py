@@ -182,7 +182,6 @@ def make_regressor(
             train_features,
             train_targets,
         )
-
         time_tensor = perf_counter()
 
         if skip_opt is False:
