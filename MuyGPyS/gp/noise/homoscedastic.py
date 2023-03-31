@@ -38,7 +38,7 @@ class HomoscedasticNoise(Hyperparameter):
     def __init__(
         self,
         val: Union[str, float],
-        bounds: Union[str, Tuple[float, float]],
+        bounds: Union[str, Tuple[float, float]] = "fixed",
     ):
         super(HomoscedasticNoise, self).__init__(val, bounds)
         if self.fixed() is False:

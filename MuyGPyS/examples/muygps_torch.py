@@ -132,15 +132,15 @@ def predict_single_model(
     )
 
     predictions = _muygps_posterior_mean(
-        _homoscedastic_perturb(K, model.eps), Kcross, test_nn_targets
+        _homoscedastic_perturb(K, model.eps()), Kcross, test_nn_targets
     )
 
     sigma_sq = _analytic_sigma_sq_optim(
-        _homoscedastic_perturb(K, model.eps), test_nn_targets
+        _homoscedastic_perturb(K, model.eps()), test_nn_targets
     )
 
     variances = _muygps_diagonal_variance(
-        _homoscedastic_perturb(K, model.eps), Kcross
+        _homoscedastic_perturb(K, model.eps()), Kcross
     )
     variances = torch.outer(variances, sigma_sq)
 
@@ -251,16 +251,16 @@ def predict_multiple_model(
 
     for i in range(model.num_models):
         predictions[:, i] = _muygps_posterior_mean(
-            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]),
+            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]()),
             Kcross[:, :, i],
             test_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
         ).reshape(batch_count)
         variances[:, i] = _muygps_diagonal_variance(
-            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]),
+            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]()),
             Kcross[:, :, i],
         )
         sigma_sq[i] = _analytic_sigma_sq_optim(
-            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]),
+            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]()),
             test_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
         )
     return predictions, variances

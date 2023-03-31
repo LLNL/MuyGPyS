@@ -25,6 +25,7 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
 )
+from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
 hardpath = "../data/"
@@ -79,12 +80,12 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                         {
                             "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
                             "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-3},
+                            "eps": HomoscedasticNoise(1e-3),
                         },
                         {
                             "nu": {"val": 0.5},
                             "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-3},
+                            "eps": HomoscedasticNoise(1e-3),
                         },
                     ],
                 ),
@@ -92,8 +93,14 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                     1.0,
                     "rbf",
                     [
-                        {"length_scale": {"val": 1.5}, "eps": {"val": 1e-3}},
-                        {"length_scale": {"val": 1.5}, "eps": {"val": 1e-3}},
+                        {
+                            "length_scale": {"val": 1.5},
+                            "eps": HomoscedasticNoise(1e-3),
+                        },
+                        {
+                            "length_scale": {"val": 1.5},
+                            "eps": HomoscedasticNoise(1e-3),
+                        },
                     ],
                 ),
             )
@@ -162,7 +169,7 @@ class HeatonTest(RegressionAPITest):
                         "metric": "l2",
                         "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
                         "length_scale": {"val": 1.5},
-                        "eps": {"val": 1e-3},
+                        "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
                 # (
@@ -171,7 +178,7 @@ class HeatonTest(RegressionAPITest):
                 #         "kern": "rbf",
                 #         "metric": "F2",
                 #         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
-                #         "eps": {"val": 1e-3},
+                #         "eps": HomoscedasticNoise(1e-3),
                 #     },
                 # ),
             )

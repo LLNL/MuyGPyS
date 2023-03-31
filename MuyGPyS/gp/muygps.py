@@ -7,32 +7,18 @@
 MuyGPs implementation
 """
 
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Tuple, Union
 from copy import deepcopy
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import (
-    _make_fast_predict_tensors,
-    _make_heteroscedastic_tensor,
-)
-from MuyGPyS._src.gp.muygps import (
-    _muygps_fast_posterior_mean,
-    _muygps_fast_posterior_mean_precompute,
-)
-from MuyGPyS._src.gp.noise import (
-    _homoscedastic_perturb,
-    _heteroscedastic_perturb,
-)
 from MuyGPyS.gp.kernels import (
     _get_kernel,
-    _init_hyperparameter,
     append_optim_params_lists,
-    _init_tensor_hyperparameter,
 )
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
-from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise, NullNoise
+from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.fast_mean import FastPosteriorMean
 from MuyGPyS.gp.fast_precompute import FastPrecomputeCoefficients
 
@@ -97,7 +83,7 @@ class MuyGPS:
             hyperparameters that can be specified in kwargs. Currently supports
             only `matern` and `rbf`.
         eps:
-            A hyperparameter dict.
+            A noise model.
         response_count:
             The number of response dimensions.
         kwargs:
@@ -108,31 +94,16 @@ class MuyGPS:
     def __init__(
         self,
         kern: str = "matern",
-        eps: Optional[
-            Union[
-                Dict[str, Union[float, Tuple[float, float]]],
-                Dict[str, mm.ndarray],
-            ]
-        ] = {"val": 0.0},
+        eps: Union[
+            NullNoise, HomoscedasticNoise, HeteroscedasticNoise
+        ] = HomoscedasticNoise(0.0, "fixed"),
         response_count: int = 1,
         **kwargs,
     ):
         self.kern = kern.lower()
         self.kernel = _get_kernel(self.kern, **kwargs)
         self.sigma_sq = SigmaSq(response_count)
-        if eps is not None:
-            if isinstance(eps["val"], float) or isinstance(eps["val"], str):
-                self.eps = _init_hyperparameter(
-                    1e-14, "fixed", HomoscedasticNoise, **eps
-                )
-            elif isinstance(eps["val"], mm.ndarray):
-                self.eps = _init_tensor_hyperparameter(
-                    1e-14, HeteroscedasticNoise, **eps
-                )
-            else:
-                raise TypeError(f"Noise model {type(eps)} is not supported")
-        else:
-            self.eps = NullNoise()  # type: ignore
+        self.eps = eps
         self._mean_fn = PosteriorMean(self.eps)
         self._var_fn = PosteriorVariance(self.eps, self.sigma_sq)
         self._fast_posterior_mean_fn = FastPosteriorMean()
@@ -363,7 +334,10 @@ class MuyGPS:
         """
         return self._fast_posterior_mean_fn(Kcross, coeffs_tensor)
 
-    def apply_new_noise(self, new_noise: Union[float, mm.ndarray]):
+    def apply_new_noise(
+        self,
+        new_noise: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
+    ):
         """
         Updates the homo/heteroscedastic noise parameter(s) of a MuyGPs model.
         To be used when the MuyGPs model has been trained and needs to be
@@ -379,10 +353,7 @@ class MuyGPS:
             A MuyGPs model with updated noise parameter(s).
         """
         ret = deepcopy(self)
-        if isinstance(new_noise, HomoscedasticNoise):
-            ret.eps = HomoscedasticNoise(new_noise, "fixed")
-        elif isinstance(new_noise, HeteroscedasticNoise):
-            ret.eps = HeteroscedasticNoise(new_noise)
+        ret.eps = new_noise
         ret._mean_fn = PosteriorMean(ret.eps)
         ret._var_fn = PosteriorVariance(ret.eps, ret.sigma_sq)
         return ret

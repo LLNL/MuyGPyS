@@ -33,6 +33,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
@@ -50,12 +51,12 @@ class InitTest(parameterized.TestCase):
                     {
                         "nu": {"val": 1.0},
                         "length_scale": {"val": 7.2},
-                        "eps": {"val": 1e-5},
+                        "eps": HomoscedasticNoise(1e-5),
                     },
                     {
                         "nu": {"val": 1.2},
                         "length_scale": {"val": 2.2},
-                        "eps": {"val": 1e-6},
+                        "eps": HomoscedasticNoise(1e-6),
                     },
                 ],
             ),
@@ -65,7 +66,7 @@ class InitTest(parameterized.TestCase):
                     {
                         "nu": {"val": 1.0},
                         "length_scale": {"val": 7.2},
-                        "eps": {"val": 1e-5},
+                        "eps": HomoscedasticNoise(1e-5),
                     },
                 ],
             ),
@@ -86,7 +87,7 @@ class InitTest(parameterized.TestCase):
                     muygps.kernel.hyperparameters[param](),
                 )
                 self.assertTrue(muygps.kernel.hyperparameters[param].fixed())
-            self.assertEqual(this_kwargs["eps"]["val"], muygps.eps())
+            self.assertEqual(this_kwargs["eps"](), muygps.eps())
             self.assertTrue(muygps.eps.fixed())
             self.assertFalse(muygps.sigma_sq.trained)
 
@@ -105,17 +106,17 @@ class SigmaSqTest(parameterized.TestCase):
                         {
                             "nu": {"val": 1.5},
                             "length_scale": {"val": 7.2},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                         {
                             "nu": {"val": 0.5},
                             "length_scale": {"val": 2.2},
-                            "eps": {"val": 1e-6},
+                            "eps": HomoscedasticNoise(1e-6),
                         },
                         {
                             "nu": {"val": mm.inf},
                             "length_scale": {"val": 12.4},
-                            "eps": {"val": 1e-6},
+                            "eps": HomoscedasticNoise(1e-6),
                         },
                     ],
                 ),
@@ -201,12 +202,12 @@ class OptimTest(parameterized.TestCase):
                         {
                             "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
                             "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                         {
                             "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
                             "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
                 ),
@@ -335,12 +336,12 @@ class ClassifyTest(parameterized.TestCase):
                         {
                             "nu": {"val": 0.38},
                             "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                         {
                             "nu": {"val": 0.79},
                             "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
                 ),
@@ -405,12 +406,12 @@ class RegressTest(parameterized.TestCase):
                         {
                             "nu": {"val": 1.5},
                             "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                         {
                             "nu": {"val": 0.5},
                             "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
                 ),
@@ -487,12 +488,12 @@ class MakeClassifierTest(parameterized.TestCase):
                         {
                             "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
                             "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                         {
                             "nu": {"val": 0.8},
                             "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
                 ),
@@ -548,7 +549,7 @@ class MakeClassifierTest(parameterized.TestCase):
         for i, muygps in enumerate(mmuygps.models):
             for key in args[i]:
                 if key == "eps":
-                    self.assertEqual(args[i][key]["val"], muygps.eps())
+                    self.assertEqual(args[i][key](), muygps.eps())
                 elif isinstance(args[i][key]["val"], str):
                     print(
                         f"optimized to find value "
@@ -589,12 +590,12 @@ class MakeRegressorTest(parameterized.TestCase):
                         {
                             "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
                             "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                         {
                             "nu": {"val": 0.8},
                             "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
                 ),
@@ -652,7 +653,7 @@ class MakeRegressorTest(parameterized.TestCase):
             print(f"For model {i}:")
             for key in args[i]:
                 if key == "eps":
-                    self.assertEqual(args[i][key]["val"], muygps.eps())
+                    self.assertEqual(args[i][key](), muygps.eps())
                 elif args[i][key]["val"] == "sample":
                     print(
                         f"\toptimized {key} to find value "

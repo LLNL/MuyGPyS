@@ -115,6 +115,7 @@ from MuyGPyS._src.optimize.sigma_sq.jax import (
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import apply_distortion
+from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import noise_perturb
 from MuyGPyS.neighbors import NN_Wrapper
@@ -188,13 +189,13 @@ class TensorsTestCase(parameterized.TestCase):
             "kern": "matern",
             "length_scale": {"val": cls.length_scale},
             "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps},
+            "eps": HomoscedasticNoise(cls.eps),
         }
         cls.k_kwargs_heteroscedastic = {
             "kern": "matern",
             "length_scale": {"val": cls.length_scale},
             "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps_heteroscedastic_n},
+            "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n),
         }
         cls.train_features_n = _make_gaussian_matrix(
             cls.train_count, cls.feature_count
@@ -539,17 +540,13 @@ class MuyGPSTestCase(KernelTestCase):
             cls.pairwise_diffs_n, nu=cls.nu, length_scale=cls.length_scale
         )
         cls.K_j = jnp.array(cls.K_n)
-        cls.homoscedastic_K_n = homoscedastic_perturb_n(
-            cls.K_n, cls.muygps.eps()
-        )
-        cls.homoscedastic_K_j = homoscedastic_perturb_j(
-            cls.K_j, cls.muygps.eps()
-        )
+        cls.homoscedastic_K_n = homoscedastic_perturb_n(cls.K_n, cls.eps)
+        cls.homoscedastic_K_j = homoscedastic_perturb_j(cls.K_j, cls.eps)
         cls.heteroscedastic_K_n = heteroscedastic_perturb_n(
-            cls.K_n, cls.muygps_heteroscedastic.eps()
+            cls.K_n, cls.eps_heteroscedastic_n
         )
         cls.heteroscedastic_K_j = heteroscedastic_perturb_j(
-            cls.K_j, cls.muygps_heteroscedastic.eps()
+            cls.K_j, cls.eps_heteroscedastic_j
         )
         cls.Kcross_n = matern_gen_fn_n(
             cls.crosswise_diffs_n, nu=cls.nu, length_scale=cls.length_scale
@@ -670,7 +667,7 @@ class FastPredictTest(MuyGPSTestCase):
         )
 
         cls.homoscedastic_K_fast_n = homoscedastic_perturb_n(
-            l2_n(cls.K_fast_n), cls.muygps.eps()
+            l2_n(cls.K_fast_n), cls.eps
         )
 
         cls.heteroscedastic_K_fast_n = heteroscedastic_perturb_n(
@@ -722,7 +719,7 @@ class FastPredictTest(MuyGPSTestCase):
         )
 
         cls.homoscedastic_K_fast_j = homoscedastic_perturb_j(
-            l2_j(cls.K_fast_j), cls.muygps.eps()
+            l2_j(cls.K_fast_j), cls.eps
         )
 
         cls.heteroscedastic_K_fast_j = heteroscedastic_perturb_j(
@@ -839,12 +836,12 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.k_kwargs_1 = {
             "length_scale": {"val": cls.length_scale},
             "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps_heteroscedastic_train_n},
+            "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs_2 = {
             "length_scale": {"val": cls.length_scale},
             "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps_heteroscedastic_train_n},
+            "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs = [cls.k_kwargs_1, cls.k_kwargs_2]
         cls.train_features_n = _make_gaussian_matrix(

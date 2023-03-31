@@ -29,6 +29,7 @@ from MuyGPyS._test.utils import (
     _sq_rel_err,
 )
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
@@ -61,14 +62,14 @@ class BenchmarkTestCase(parameterized.TestCase):
                 "metric": "l2",
                 "nu": {"val": 0.5},
                 "length_scale": {"val": 1e-2},
-                "eps": {"val": 1e-5},
+                "eps": HomoscedasticNoise(1e-5),
             },
             {
                 "kern": "matern",
                 "metric": "l2",
                 "nu": {"val": 1.5},
                 "length_scale": {"val": 1e-2},
-                "eps": {"val": 1e-5},
+                "eps": HomoscedasticNoise(1e-5),
             },
         )
         cls.k_kwargs_opt = {
@@ -76,7 +77,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             "metric": "l2",
             "nu": {"val": "sample", "bounds": (0.1, 5.0)},
             "length_scale": {"val": 1e-2},
-            "eps": {"val": 1e-5},
+            "eps": HomoscedasticNoise(1e-5),
         }
         cls.model_count = len(cls.k_kwargs)
         cls.ss_count = len(cls.sigma_sqs)

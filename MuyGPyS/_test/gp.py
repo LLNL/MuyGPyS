@@ -9,6 +9,7 @@ from sklearn.metrics import pairwise_distances as skl_pairwise_distances
 
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS.gp.kernels import _get_kernel, _init_hyperparameter, Hyperparameter
+from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.sigma_sq import SigmaSq
 
 
@@ -111,7 +112,9 @@ class BenchmarkGP:
     def __init__(
         self,
         kern: str = "matern",
-        eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
+        eps: Union[
+            HeteroscedasticNoise, HomoscedasticNoise, NullNoise
+        ] = HomoscedasticNoise(0.0),
         **kwargs,
     ):
         """
@@ -123,7 +126,7 @@ class BenchmarkGP:
         self.metric = kwargs.get("metric")
         kwargs["metric"] = None
         self.kernel = _get_kernel(self.kern, **kwargs)
-        self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
+        self.eps = eps
         self.sigma_sq = SigmaSq()
 
     def set_eps(self, **eps) -> None:

@@ -28,7 +28,7 @@ if config.state.backend != "torch":
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS._test.utils import _check_ndarray, _make_gaussian_data
-from MuyGPyS import config
+from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
 from MuyGPyS.examples.muygps_torch import predict_model
@@ -83,7 +83,7 @@ class RegressTest(parameterized.TestCase):
         _check_ndarray(self.assertEqual, batch_nn_targets, torch.ftype)
 
         model = SVDKMuyGPs(
-            kernel_eps=1e-3,
+            eps=HomoscedasticNoise(1e-3),
             nu=1 / 2,
             length_scale=1.0,
             batch_indices=batch_indices,
@@ -189,7 +189,7 @@ class MultivariateRegressTest(parameterized.TestCase):
 
         model = SVDKMultivariateMuyGPs(
             num_models=num_test_responses,
-            kernel_eps=1e-6 * torch.ones(num_test_responses),
+            eps=[HomoscedasticNoise(1e-6)] * num_test_responses,
             nu=1 / 2 * torch.ones(num_test_responses),
             length_scale=1.0 * torch.ones(num_test_responses),
             batch_indices=batch_indices,

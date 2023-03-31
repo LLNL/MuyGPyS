@@ -107,7 +107,11 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import apply_distortion
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
-from MuyGPyS.gp.noise import noise_perturb
+from MuyGPyS.gp.noise import (
+    HeteroscedasticNoise,
+    HomoscedasticNoise,
+    noise_perturb,
+)
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
@@ -162,19 +166,19 @@ class TensorsTestCase(parameterized.TestCase):
             "kern": "matern",
             "length_scale": {"val": cls.length_scale},
             "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps},
+            "eps": HomoscedasticNoise(cls.eps),
         }
         cls.k_kwargs_heteroscedastic = {
             "kern": "matern",
             "length_scale": {"val": cls.length_scale},
             "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps_heteroscedastic_n},
+            "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n),
         }
         cls.k_kwargs_heteroscedastic_train = {
             "kern": "matern",
             "length_scale": {"val": cls.length_scale},
             "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps_heteroscedastic_train_n},
+            "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.train_features_n = _make_gaussian_matrix(
             cls.train_count, cls.feature_count
@@ -733,12 +737,12 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         cls.k_kwargs_1 = {
             "length_scale": {"val": cls.length_scale},
             "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps_heteroscedastic_train_n},
+            "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs_2 = {
             "length_scale": {"val": cls.length_scale},
             "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
-            "eps": {"val": cls.eps_heteroscedastic_train_n},
+            "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs = [cls.k_kwargs_1, cls.k_kwargs_2]
         cls.train_features_n = _make_gaussian_matrix(

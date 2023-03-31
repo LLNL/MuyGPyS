@@ -23,6 +23,7 @@ from MuyGPyS import config
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
+from MuyGPyS.gp.kernels.tensor_hyperparameters import TensorHyperparameter
 
 
 class Hyperparameter:
@@ -322,7 +323,9 @@ def _init_hyperparameter(
     return type(val, bounds)
 
 
-def apply_hyperparameter(fn: Callable, param: Hyperparameter, name: str):
+def apply_hyperparameter(
+    fn: Callable, param: Union[TensorHyperparameter, Hyperparameter], name: str
+):
     if param.fixed():
 
         def applied_fn(*args, **kwargs):
@@ -335,7 +338,7 @@ def apply_hyperparameter(fn: Callable, param: Hyperparameter, name: str):
 
 
 def append_optim_params_lists(
-    param: Hyperparameter,
+    param: Union[TensorHyperparameter, Hyperparameter],
     name: str,
     names: List[str],
     params: List[float],
