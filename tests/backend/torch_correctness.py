@@ -106,6 +106,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import apply_distortion
+from MuyGPyS.gp.kernels import Hyperparameter
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import (
     HeteroscedasticNoise,
@@ -164,20 +165,20 @@ class TensorsTestCase(parameterized.TestCase):
         )
         cls.k_kwargs = {
             "kern": "matern",
-            "length_scale": {"val": cls.length_scale},
-            "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+            "length_scale": Hyperparameter(cls.length_scale),
+            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
             "eps": HomoscedasticNoise(cls.eps),
         }
         cls.k_kwargs_heteroscedastic = {
             "kern": "matern",
-            "length_scale": {"val": cls.length_scale},
-            "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+            "length_scale": Hyperparameter(cls.length_scale),
+            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n),
         }
         cls.k_kwargs_heteroscedastic_train = {
             "kern": "matern",
-            "length_scale": {"val": cls.length_scale},
-            "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+            "length_scale": Hyperparameter(cls.length_scale),
+            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.train_features_n = _make_gaussian_matrix(
@@ -735,13 +736,13 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
             cls.eps_heteroscedastic_train_n
         )
         cls.k_kwargs_1 = {
-            "length_scale": {"val": cls.length_scale},
-            "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+            "length_scale": Hyperparameter(cls.length_scale),
+            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs_2 = {
-            "length_scale": {"val": cls.length_scale},
-            "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+            "length_scale": Hyperparameter(cls.length_scale),
+            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs = [cls.k_kwargs_1, cls.k_kwargs_2]

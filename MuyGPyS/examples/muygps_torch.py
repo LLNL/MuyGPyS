@@ -122,13 +122,13 @@ def predict_single_model(
 
     Kcross = kernel_func(
         crosswise_diffs,
-        nu=model.nu,
-        length_scale=model.length_scale,
+        nu=model.nu(),
+        length_scale=model.length_scale(),
     )
     K = kernel_func(
         pairwise_diffs,
-        nu=model.nu,
-        length_scale=model.length_scale,
+        nu=model.nu(),
+        length_scale=model.length_scale(),
     )
 
     predictions = _muygps_posterior_mean(
@@ -231,14 +231,14 @@ def predict_multiple_model(
     for i in range(num_responses):
         Kcross[:, :, i] = kernel_func(
             crosswise_diffs,
-            nu=model.nu[i],
-            length_scale=model.length_scale[i],
+            nu=model.nu[i](),
+            length_scale=model.length_scale[i](),
         )
 
         K[:, :, :, i] = kernel_func(
             pairwise_diffs,
-            nu=model.nu[i],
-            length_scale=model.length_scale[i],
+            nu=model.nu[i](),
+            length_scale=model.length_scale[i](),
         )
 
     batch_count, nn_count, response_count = test_nn_targets.shape

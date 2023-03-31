@@ -35,7 +35,7 @@ Example:
     >>> Kcross = kern(crosswise_diffs)
 """
 
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import (
@@ -47,7 +47,6 @@ from MuyGPyS._src.gp.kernels import (
 )
 from MuyGPyS.gp.distortion import embed_with_distortion_model
 from MuyGPyS.gp.kernels import (
-    _init_hyperparameter,
     append_optim_params_lists,
     apply_hyperparameter,
     Hyperparameter,
@@ -114,15 +113,13 @@ class Matern(KernelFn):
 
     def __init__(
         self,
-        nu: Dict[str, Union[str, float, Tuple[float, float]]] = dict(),
-        length_scale: Dict[
-            str, Union[str, float, Tuple[float, float]]
-        ] = dict(),
+        nu: Hyperparameter = Hyperparameter(0.5),
+        length_scale: Hyperparameter = Hyperparameter(1.0),
         metric: Optional[str] = "l2",
     ):
         super().__init__(metric=metric)
-        self.nu = _init_hyperparameter(1.0, "fixed", **nu)
-        self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
+        self.nu = nu
+        self.length_scale = length_scale
         self.hyperparameters["nu"] = self.nu
         self.hyperparameters["length_scale"] = self.length_scale
         self._fn = _set_matern_fn(self.nu)

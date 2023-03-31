@@ -29,6 +29,7 @@ from MuyGPyS._test.utils import (
     _sq_rel_err,
 )
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.kernels import Hyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
@@ -60,23 +61,23 @@ class BenchmarkTestCase(parameterized.TestCase):
             {
                 "kern": "matern",
                 "metric": "l2",
-                "nu": {"val": 0.5},
-                "length_scale": {"val": 1e-2},
+                "nu": Hyperparameter(0.5),
+                "length_scale": Hyperparameter(1e-2),
                 "eps": HomoscedasticNoise(1e-5),
             },
             {
                 "kern": "matern",
                 "metric": "l2",
-                "nu": {"val": 1.5},
-                "length_scale": {"val": 1e-2},
+                "nu": Hyperparameter(1.5),
+                "length_scale": Hyperparameter(1e-2),
                 "eps": HomoscedasticNoise(1e-5),
             },
         )
         cls.k_kwargs_opt = {
             "kern": "matern",
             "metric": "l2",
-            "nu": {"val": "sample", "bounds": (0.1, 5.0)},
-            "length_scale": {"val": 1e-2},
+            "nu": Hyperparameter("sample", (0.1, 5.0)),
+            "length_scale": Hyperparameter(1e-2),
             "eps": HomoscedasticNoise(1e-5),
         }
         cls.model_count = len(cls.k_kwargs)
@@ -189,7 +190,7 @@ class BenchmarkOptimTestCase(BenchmarkTestCase):
         cls.pairwise_diffs_list = list()
         cls.batch_nn_targets_list = list()
         for i, kwargs in enumerate(cls.k_kwargs):
-            cls.nu_target_list.append(kwargs["nu"]["val"])
+            cls.nu_target_list.append(kwargs["nu"]())
             cls.batch_indices_list.append(list())
             cls.batch_nn_indices_list.append(list())
             cls.crosswise_diffs_list.append(list())

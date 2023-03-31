@@ -75,7 +75,7 @@ class KernelFn:
                 Hyperparameter kwargs.
         """
         for name in kwargs:
-            self.hyperparameters[name]._set(**kwargs[name])
+            self.hyperparameters[name]._set(kwargs[name])
 
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
         raise NotImplementedError(

@@ -19,6 +19,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_data,
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
+from MuyGPyS.gp.kernels import Hyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
@@ -36,9 +37,9 @@ class MakeFastRegressorTest(parameterized.TestCase):
                 {
                     "kern": "matern",
                     "metric": "l2",
-                    "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                    # "nu": {"val": 0.38},
-                    "length_scale": {"val": 1.5},
+                    "nu": Hyperparameter("sample", (1e-1, 1e0)),
+                    # "nu": Hyperparameter(0.38),
+                    "length_scale": Hyperparameter(1.5),
                     "eps": HomoscedasticNoise(1e-5),
                 },
             )
@@ -122,13 +123,13 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                     "matern",
                     [
                         {
-                            "nu": {"val": 0.5},
-                            "length_scale": {"val": 1.5},
+                            "nu": Hyperparameter(0.5),
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                         {
-                            "nu": {"val": 0.8},
-                            "length_scale": {"val": 0.7},
+                            "nu": Hyperparameter(0.8),
+                            "length_scale": Hyperparameter(0.7),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
@@ -195,14 +196,14 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
             for key in k_kwargs[i]:
                 if key == "eps":
                     self.assertEqual(k_kwargs[i][key](), muygps.eps())
-                elif k_kwargs[i][key]["val"] == "sample":
+                elif k_kwargs[i][key].fixed() is False:
                     print(
                         f"\toptimized {key} to find value "
                         f"{muygps.kernel.hyperparameters[key]()}"
                     )
                 else:
                     self.assertEqual(
-                        k_kwargs[i][key]["val"],
+                        k_kwargs[i][key](),
                         muygps.kernel.hyperparameters[key](),
                     )
             if sigma_method is None:

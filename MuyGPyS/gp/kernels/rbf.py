@@ -36,13 +36,12 @@ Example:
     >>> Kcross = kernel_fn(crosswise_diffs)
 """
 
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import _rbf_fn
 from MuyGPyS.gp.distortion import embed_with_distortion_model
 from MuyGPyS.gp.kernels import (
-    _init_hyperparameter,
     append_optim_params_lists,
     apply_hyperparameter,
     Hyperparameter,
@@ -77,13 +76,11 @@ class RBF(KernelFn):
 
     def __init__(
         self,
-        length_scale: Dict[
-            str, Union[str, float, Tuple[float, float]]
-        ] = dict(),
+        length_scale: Hyperparameter = Hyperparameter(1.0),
         metric: Optional[str] = "F2",
     ):
         super().__init__(metric=metric)
-        self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
+        self.length_scale = length_scale
         self.hyperparameters["length_scale"] = self.length_scale
         self._fn = _rbf_fn
         self._fn = embed_with_distortion_model(self._fn, self._distortion_fn)

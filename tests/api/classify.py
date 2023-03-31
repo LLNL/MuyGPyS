@@ -26,6 +26,7 @@ from MuyGPyS._test.utils import (
     _basic_opt_method_and_kwarg_options,
 )
 from MuyGPyS.examples.two_class_classify_uq import example_lambdas
+from MuyGPyS.gp.kernels import Hyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
@@ -87,8 +88,8 @@ class MNISTTest(ClassifyAPITest):
                     {
                         "kern": "matern",
                         "metric": "l2",
-                        "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
-                        "length_scale": {"val": 1.5},
+                        "nu": Hyperparameter(0.5, (1e-1, 1e0)),
+                        "length_scale": Hyperparameter(1.5),
                         "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
@@ -97,7 +98,7 @@ class MNISTTest(ClassifyAPITest):
                 #     {
                 #         "kern": "rbf",
                 #         "metric": "F2",
-                #         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                #         "length_scale": Hyperparameter(1.5, "bounds": (0.5, 1e1)},
                 #         "eps": HomoscedasticNoise(1e-3),
                 #     },
                 # ),
@@ -178,9 +179,9 @@ class StargalClassifyTest(StargalTest):
                     {
                         "kern": "matern",
                         "metric": "l2",
-                        # "nu": {"val": 0.75},
-                        "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
-                        "length_scale": {"val": 1.5},
+                        # "nu": Hyperparameter(0.75),
+                        "nu": Hyperparameter(0.5, (1e-1, 1e0)),
+                        "length_scale": Hyperparameter(1.5),
                         "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
@@ -189,7 +190,7 @@ class StargalClassifyTest(StargalTest):
                     {
                         "kern": "rbf",
                         "metric": "F2",
-                        "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                        "length_scale": Hyperparameter(1.5, (0.5, 1e1)),
                         "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
@@ -259,8 +260,8 @@ class StargalUQTest(StargalTest):
                     {
                         "kern": "matern",
                         "metric": "l2",
-                        "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
-                        "length_scale": {"val": 1.5},
+                        "nu": Hyperparameter(0.5, (1e-1, 1e0)),
+                        "length_scale": Hyperparameter(1.5),
                         "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
@@ -269,7 +270,7 @@ class StargalUQTest(StargalTest):
                     {
                         "kern": "rbf",
                         "metric": "F2",
-                        "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                        "length_scale": Hyperparameter(1.5, (0.5, 1e1)),
                         "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
@@ -331,13 +332,13 @@ class MultivariateStargalClassifyTest(StargalTest):
                     "matern",
                     [
                         {
-                            "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
-                            "length_scale": {"val": 1.5},
+                            "nu": Hyperparameter(0.5, (1e-1, 1e0)),
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                         {
-                            "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
-                            "length_scale": {"val": 1.5},
+                            "nu": Hyperparameter(0.5, (1e-1, 1e0)),
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                     ],
@@ -347,11 +348,11 @@ class MultivariateStargalClassifyTest(StargalTest):
                     "rbf",
                     [
                         {
-                            "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                            "length_scale": Hyperparameter(1.5, (0.5, 1e1)),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                         {
-                            "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                            "length_scale": Hyperparameter(1.5, (0.5, 1e1)),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                     ],

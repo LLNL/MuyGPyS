@@ -25,6 +25,7 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
 )
+from MuyGPyS.gp.kernels import Hyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
@@ -78,13 +79,13 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                     "matern",
                     [
                         {
-                            "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                            "length_scale": {"val": 1.5},
+                            "nu": Hyperparameter("sample", (1e-1, 1e0)),
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                         {
-                            "nu": {"val": 0.5},
-                            "length_scale": {"val": 1.5},
+                            "nu": Hyperparameter(0.5),
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                     ],
@@ -94,11 +95,11 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                     "rbf",
                     [
                         {
-                            "length_scale": {"val": 1.5},
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                         {
-                            "length_scale": {"val": 1.5},
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                     ],
@@ -167,8 +168,8 @@ class HeatonTest(RegressionAPITest):
                     {
                         "kern": "matern",
                         "metric": "l2",
-                        "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                        "length_scale": {"val": 1.5},
+                        "nu": Hyperparameter("sample", (1e-1, 1e0)),
+                        "length_scale": Hyperparameter(1.5),
                         "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
@@ -177,7 +178,7 @@ class HeatonTest(RegressionAPITest):
                 #     {
                 #         "kern": "rbf",
                 #         "metric": "F2",
-                #         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
+                #         "length_scale": Hyperparameter(1.5, "bounds": (0.5, 1e1)},
                 #         "eps": HomoscedasticNoise(1e-3),
                 #     },
                 # ),

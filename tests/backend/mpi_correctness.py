@@ -104,6 +104,7 @@ from MuyGPyS._src.optimize.chassis.mpi import (
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import apply_distortion
+from MuyGPyS.gp.kernels import Hyperparameter
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import noise_perturb
@@ -145,8 +146,8 @@ class TensorsTestCase(parameterized.TestCase):
         cls.eps = 1e-3
         cls.k_kwargs = {
             "kern": "matern",
-            "length_scale": {"val": cls.length_scale},
-            "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+            "length_scale": Hyperparameter(cls.length_scale),
+            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
             "eps": HomoscedasticNoise(cls.eps),
         }
         cls.muygps = MuyGPS(**cls.k_kwargs)
@@ -183,8 +184,8 @@ class TensorsTestCase(parameterized.TestCase):
 
             cls.k_kwargs_heteroscedastic = {
                 "kern": "matern",
-                "length_scale": {"val": cls.length_scale},
-                "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+                "length_scale": Hyperparameter(cls.length_scale),
+                "nu": Hyperparameter(cls.nu, cls.nu_bounds),
                 "eps": HeteroscedasticNoise(cls.eps_heteroscedastic),
             }
             cls.muygps_heteroscedastic = MuyGPS(**cls.k_kwargs_heteroscedastic)
@@ -265,8 +266,8 @@ class TensorsTestCase(parameterized.TestCase):
 
         cls.k_kwargs_heteroscedastic_chunk = {
             "kern": "matern",
-            "length_scale": {"val": cls.length_scale},
-            "nu": {"val": cls.nu, "bounds": cls.nu_bounds},
+            "length_scale": Hyperparameter(cls.length_scale),
+            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n_chunk),
         }
         cls.muygps_heteroscedastic_chunk = MuyGPS(

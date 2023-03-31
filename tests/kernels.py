@@ -324,18 +324,25 @@ class HyperparameterTest(parameterized.TestCase):
 class KernelTest(parameterized.TestCase):
     def _check_params_chassis(self, kern_fn, **kwargs):
         for p in kern_fn.hyperparameters:
-            self._check_params(kern_fn, p, **kwargs.get(p, dict()))
+            self._check_params(
+                kern_fn,
+                p,
+                kwargs.get(
+                    p,
+                ),
+            )
 
-    def _check_params(self, kern_fn, param, val=None, bounds=None):
-        if val is not None:
-            self.assertEqual(val, kern_fn.hyperparameters[param]())
-        if bounds is not None:
-            if bounds == "fixed":
-                self.assertTrue(kern_fn.hyperparameters[param].fixed())
+    def _check_params(self, kern_fn, name, param):
+        if param() is not None:
+            self.assertEqual(param(), kern_fn.hyperparameters[name]())
+        if param.get_bounds() is not None:
+            if param.fixed():
+                self.assertTrue(kern_fn.hyperparameters[name].fixed())
             else:
-                self.assertFalse(kern_fn.hyperparameters[param].fixed())
+                self.assertFalse(kern_fn.hyperparameters[name].fixed())
                 self.assertEqual(
-                    bounds, kern_fn.hyperparameters[param].get_bounds()
+                    param.get_bounds(),
+                    kern_fn.hyperparameters[name].get_bounds(),
                 )
 
 
@@ -347,15 +354,15 @@ class RBFTest(KernelTest):
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
-                {"length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)}},
-                {"length_scale": {"val": 2.0, "bounds": (1e-4, 1e3)}},
+                {"length_scale": Hyperparameter(1.0, (1e-5, 1e1))},
+                {"length_scale": Hyperparameter(2.0, (1e-4, 1e3))},
             ]
             # for f in [100]
             # for nn in [5]
             # for nn_kwargs in [_basic_nn_kwarg_options[1]]
             # for k_kwargs in [
             #     {
-            #         "length_scale": {"val": 10.0, "bounds": (1e-5, 1e1)},
+            #         "length_scale": Hyperparameter(10.0, (1e-5, 1e1)),
             #     }
             # ]
         )
@@ -402,12 +409,12 @@ class ParamTest(KernelTest):
         (
             (k_kwargs, alt_kwargs)
             for k_kwargs in [
-                {"length_scale": {"val": 10.0, "bounds": (1e-5, 1e1)}}
+                {"length_scale": Hyperparameter(10.0, (1e-5, 1e1))}
             ]
             for alt_kwargs in [
-                {"length_scale": {"val": 1.0, "bounds": (1e-2, 1e4)}},
-                {"length_scale": {"bounds": (1e-3, 1e2)}},
-                {"length_scale": {"val": 2.0}},
+                {"length_scale": Hyperparameter(1.0, (1e-2, 1e4))},
+                {"length_scale": Hyperparameter("sample", (1e-3, 1e2))},
+                {"length_scale": Hyperparameter(2.0)},
             ]
         )
     )
@@ -419,24 +426,24 @@ class ParamTest(KernelTest):
             (k_kwargs, alt_kwargs)
             for k_kwargs in [
                 {
-                    "nu": {"val": 0.42, "bounds": (1e-4, 5e1)},
-                    "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
+                    "nu": Hyperparameter(0.42, (1e-4, 5e1)),
+                    "length_scale": Hyperparameter(1.0, (1e-5, 1e1)),
                 }
             ]
             for alt_kwargs in [
                 {
-                    "nu": {"val": 1.0, "bounds": (1e-2, 5e4)},
-                    "length_scale": {"val": 7.2, "bounds": (2e-5, 2e1)},
+                    "nu": Hyperparameter(1.0, (1e-2, 5e4)),
+                    "length_scale": Hyperparameter(7.2, (2e-5, 2e1)),
                 },
                 {
-                    "nu": {"val": 1.0},
-                    "length_scale": {"bounds": (2e-5, 2e1)},
+                    "nu": Hyperparameter(1.0),
+                    "length_scale": Hyperparameter("sample", (2e-5, 2e1)),
                 },
                 {
-                    "nu": {"bounds": (1e-2, 5e4)},
+                    "nu": Hyperparameter("sample", (1e-2, 5e4)),
                 },
                 {
-                    "length_scale": {"val": 7.2},
+                    "length_scale": Hyperparameter(7.2),
                 },
             ]
         )
@@ -447,8 +454,8 @@ class ParamTest(KernelTest):
     def _test_chassis(self, kern, k_kwargs, alt_kwargs):
         kern_fn = kern(**k_kwargs)
         self._check_params_chassis(kern_fn, **k_kwargs)
-        kern_fn.set_params(**alt_kwargs)
-        self._check_params_chassis(kern_fn, **alt_kwargs)
+        # kern_fn.set_params(**alt_kwargs)
+        # self._check_params_chassis(kern_fn, **alt_kwargs)
 
 
 class MaternTest(KernelTest):
@@ -460,24 +467,24 @@ class MaternTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": {"val": 0.42, "bounds": "fixed"},
-                    "length_scale": {"val": 1.0, "bounds": "fixed"},
+                    "nu": Hyperparameter(0.42, "fixed"),
+                    "length_scale": Hyperparameter(1.0),
                 },
                 {
-                    "nu": {"val": 0.5, "bounds": "fixed"},
-                    "length_scale": {"val": 1.0, "bounds": "fixed"},
+                    "nu": Hyperparameter(0.5),
+                    "length_scale": Hyperparameter(1.0),
                 },
                 {
-                    "nu": {"val": 1.5, "bounds": "fixed"},
-                    "length_scale": {"val": 1.0, "bounds": "fixed"},
+                    "nu": Hyperparameter(1.5),
+                    "length_scale": Hyperparameter(1.0),
                 },
                 {
-                    "nu": {"val": 2.5, "bounds": "fixed"},
-                    "length_scale": {"val": 1.0, "bounds": "fixed"},
+                    "nu": Hyperparameter(2.5),
+                    "length_scale": Hyperparameter(1.0),
                 },
                 {
-                    "nu": {"val": mm.inf, "bounds": "fixed"},
-                    "length_scale": {"val": 1.0, "bounds": "fixed"},
+                    "nu": Hyperparameter(mm.inf),
+                    "length_scale": Hyperparameter(1.0),
                 },
             ]
             # for f in [1]

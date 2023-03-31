@@ -30,6 +30,7 @@ from MuyGPyS._src.gp.noise.torch import (
     _homoscedastic_perturb,
     _heteroscedastic_perturb,
 )
+from MuyGPyS.gp.kernels import Hyperparameter
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
@@ -116,15 +117,15 @@ class MuyGPs_layer(nn.Module):
         self,
         eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
         nu,
-        length_scale,
-        batch_indices,
+        length_scale: Hyperparameter,
+        batch_indices: Hyperparameter,
         batch_nn_indices,
         batch_targets,
         batch_nn_targets,
     ):
         super().__init__()
 
-        self.length_scale = nn.Parameter(torch.array(length_scale))
+        self.length_scale = length_scale
         self.eps = eps
         self.nu = nu
         self.batch_indices = batch_indices
@@ -157,18 +158,18 @@ class MuyGPs_layer(nn.Module):
 
         Kcross = kernel_func(
             crosswise_diffs,
-            nu=self.nu,
-            length_scale=self.length_scale,
+            nu=self.nu(),
+            length_scale=self.length_scale(),
         )
         K = kernel_func(
             pairwise_diffs,
-            nu=self.nu,
-            length_scale=self.length_scale,
+            nu=self.nu(),
+            length_scale=self.length_scale(),
         )
 
         k_kwargs = {
-            "length_scale": {"val": float(self.length_scale)},
-            "nu": {"val": float(self.nu)},
+            "length_scale": self.length_scale,
+            "nu": self.nu,
             "eps": self.eps,
         }
 
@@ -285,8 +286,8 @@ class MultivariateMuyGPs_layer(nn.Module):
         self,
         num_models,
         eps: List[Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise]],
-        nu_vals,
-        length_scales,
+        nu_vals: List[Hyperparameter],
+        length_scales: List[Hyperparameter],
         batch_indices,
         batch_nn_indices,
         batch_targets,
@@ -294,7 +295,7 @@ class MultivariateMuyGPs_layer(nn.Module):
     ):
         super().__init__()
         self.num_models = num_models
-        self.length_scale = nn.Parameter(torch.array(length_scales))
+        self.length_scale = length_scales
         self.eps = eps
         self.nu = nu_vals
         self.batch_indices = batch_indices
@@ -333,8 +334,8 @@ class MultivariateMuyGPs_layer(nn.Module):
         for i in range(response_count):
             k_kwargs_list.append(
                 {
-                    "length_scale": {"val": float(self.length_scale[i])},
-                    "nu": {"val": float(self.nu[i])},
+                    "length_scale": self.length_scale[i],
+                    "nu": self.nu[i],
                     "eps": self.eps[i],
                 }
             )
@@ -350,14 +351,14 @@ class MultivariateMuyGPs_layer(nn.Module):
         for i in range(self.num_models):
             Kcross[:, :, i] = kernel_func(
                 crosswise_diffs,
-                nu=self.nu[i],
-                length_scale=self.length_scale[i],
+                nu=self.nu[i](),
+                length_scale=self.length_scale[i](),
             )
 
             K[:, :, :, i] = kernel_func(
                 pairwise_diffs,
-                nu=self.nu[i],
-                length_scale=self.length_scale[i],
+                nu=self.nu[i](),
+                length_scale=self.length_scale[i](),
             )
             if isinstance(self.eps[i], HomoscedasticNoise):
                 sigma_sq[i] = _analytic_sigma_sq_optim(

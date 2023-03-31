@@ -24,6 +24,7 @@ from MuyGPyS.examples.two_class_classify_uq import (
     do_uq,
 )
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.kernels import Hyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import (
@@ -52,8 +53,8 @@ class ClassifyTest(parameterized.TestCase):
                 {
                     "kern": "matern",
                     "eps": HomoscedasticNoise(1e-5),
-                    "nu": {"val": 0.38},
-                    "length_scale": {"val": 1.5},
+                    "nu": Hyperparameter(0.38),
+                    "length_scale": Hyperparameter(1.5),
                 },
             )
         )
@@ -108,13 +109,13 @@ class ClassifyUQTest(parameterized.TestCase):
                 {
                     "kern": "matern",
                     "eps": HomoscedasticNoise(1e-5),
-                    "nu": {"val": 0.38},
-                    "length_scale": {"val": 1.5},
+                    "nu": Hyperparameter(0.38),
+                    "length_scale": Hyperparameter(1.5),
                 },
                 {
                     "kern": "rbf",
                     "eps": HomoscedasticNoise(1e-5),
-                    "length_scale": {"val": 1.5},
+                    "length_scale": Hyperparameter(1.5),
                 },
             )
         )

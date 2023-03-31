@@ -33,6 +33,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.kernels import Hyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
@@ -49,13 +50,13 @@ class InitTest(parameterized.TestCase):
                 "matern",
                 [
                     {
-                        "nu": {"val": 1.0},
-                        "length_scale": {"val": 7.2},
+                        "nu": Hyperparameter(1.0),
+                        "length_scale": Hyperparameter(7.2),
                         "eps": HomoscedasticNoise(1e-5),
                     },
                     {
-                        "nu": {"val": 1.2},
-                        "length_scale": {"val": 2.2},
+                        "nu": Hyperparameter(1.2),
+                        "length_scale": Hyperparameter(2.2),
                         "eps": HomoscedasticNoise(1e-6),
                     },
                 ],
@@ -64,8 +65,8 @@ class InitTest(parameterized.TestCase):
                 "matern",
                 [
                     {
-                        "nu": {"val": 1.0},
-                        "length_scale": {"val": 7.2},
+                        "nu": Hyperparameter(1.0),
+                        "length_scale": Hyperparameter(7.2),
                         "eps": HomoscedasticNoise(1e-5),
                     },
                 ],
@@ -83,7 +84,7 @@ class InitTest(parameterized.TestCase):
                 if param == "eps":
                     continue
                 self.assertEqual(
-                    this_kwargs[param]["val"],
+                    this_kwargs[param](),
                     muygps.kernel.hyperparameters[param](),
                 )
                 self.assertTrue(muygps.kernel.hyperparameters[param].fixed())
@@ -104,18 +105,18 @@ class SigmaSqTest(parameterized.TestCase):
                     "matern",
                     [
                         {
-                            "nu": {"val": 1.5},
-                            "length_scale": {"val": 7.2},
+                            "nu": Hyperparameter(1.5),
+                            "length_scale": Hyperparameter(7.2),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                         {
-                            "nu": {"val": 0.5},
-                            "length_scale": {"val": 2.2},
+                            "nu": Hyperparameter(0.5),
+                            "length_scale": Hyperparameter(2.2),
                             "eps": HomoscedasticNoise(1e-6),
                         },
                         {
-                            "nu": {"val": mm.inf},
-                            "length_scale": {"val": 12.4},
+                            "nu": Hyperparameter(mm.inf),
+                            "length_scale": Hyperparameter(12.4),
                             "eps": HomoscedasticNoise(1e-6),
                         },
                     ],
@@ -200,13 +201,13 @@ class OptimTest(parameterized.TestCase):
                     [0.38, 0.78],
                     [
                         {
-                            "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
-                            "length_scale": {"val": 1.5},
+                            "nu": Hyperparameter("sample", (1e-2, 1e0)),
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                         {
-                            "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
-                            "length_scale": {"val": 0.7},
+                            "nu": Hyperparameter("sample", (1e-2, 1e0)),
+                            "length_scale": Hyperparameter(0.7),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
@@ -268,7 +269,7 @@ class OptimTest(parameterized.TestCase):
 
         gp_args = args.copy()
         for i, m in enumerate(gp_args):
-            m["nu"]["val"] = target[i]
+            m["nu"]._val = target[i]
         gps = [BenchmarkGP(kern=kern, **a) for a in gp_args]
         cholKs = [
             benchmark_prepare_cholK(
@@ -334,13 +335,13 @@ class ClassifyTest(parameterized.TestCase):
                     # [0.38, 0.78],
                     [
                         {
-                            "nu": {"val": 0.38},
-                            "length_scale": {"val": 1.5},
+                            "nu": Hyperparameter(0.38),
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                         {
-                            "nu": {"val": 0.79},
-                            "length_scale": {"val": 0.7},
+                            "nu": Hyperparameter(0.79),
+                            "length_scale": Hyperparameter(0.7),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
@@ -404,13 +405,13 @@ class RegressTest(parameterized.TestCase):
                     "matern",
                     [
                         {
-                            "nu": {"val": 1.5},
-                            "length_scale": {"val": 1.5},
+                            "nu": Hyperparameter(1.5),
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                         {
-                            "nu": {"val": 0.5},
-                            "length_scale": {"val": 0.7},
+                            "nu": Hyperparameter(0.5),
+                            "length_scale": Hyperparameter(0.7),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
@@ -486,13 +487,13 @@ class MakeClassifierTest(parameterized.TestCase):
                     "matern",
                     [
                         {
-                            "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                            "length_scale": {"val": 1.5},
+                            "nu": Hyperparameter("sample", (1e-1, 1e0)),
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                         {
-                            "nu": {"val": 0.8},
-                            "length_scale": {"val": 0.7},
+                            "nu": Hyperparameter(0.8),
+                            "length_scale": Hyperparameter(0.7),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
@@ -550,14 +551,14 @@ class MakeClassifierTest(parameterized.TestCase):
             for key in args[i]:
                 if key == "eps":
                     self.assertEqual(args[i][key](), muygps.eps())
-                elif isinstance(args[i][key]["val"], str):
+                elif args[i][key].fixed() is False:
                     print(
                         f"optimized to find value "
                         f"{muygps.kernel.hyperparameters[key]()}"
                     )
                 else:
                     self.assertEqual(
-                        args[i][key]["val"],
+                        args[i][key](),
                         muygps.kernel.hyperparameters[key](),
                     )
 
@@ -588,13 +589,13 @@ class MakeRegressorTest(parameterized.TestCase):
                     "matern",
                     [
                         {
-                            "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                            "length_scale": {"val": 1.5},
+                            "nu": Hyperparameter("sample", (1e-1, 1e0)),
+                            "length_scale": Hyperparameter(1.5),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                         {
-                            "nu": {"val": 0.8},
-                            "length_scale": {"val": 0.7},
+                            "nu": Hyperparameter(0.8),
+                            "length_scale": Hyperparameter(0.7),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
@@ -654,14 +655,14 @@ class MakeRegressorTest(parameterized.TestCase):
             for key in args[i]:
                 if key == "eps":
                     self.assertEqual(args[i][key](), muygps.eps())
-                elif args[i][key]["val"] == "sample":
+                elif args[i][key].fixed() is False:
                     print(
                         f"\toptimized {key} to find value "
                         f"{muygps.kernel.hyperparameters[key]()}"
                     )
                 else:
                     self.assertEqual(
-                        args[i][key]["val"],
+                        args[i][key](),
                         muygps.kernel.hyperparameters[key](),
                     )
             if sigma_method is None:
