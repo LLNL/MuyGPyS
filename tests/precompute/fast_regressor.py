@@ -19,7 +19,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_data,
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
-from MuyGPyS.gp.kernels import Hyperparameter
+from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
@@ -35,11 +35,10 @@ class MakeFastRegressorTest(parameterized.TestCase):
             # for rt in [True]
             for k_kwargs in (
                 {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "nu": Hyperparameter("sample", (1e-1, 1e0)),
-                    # "nu": Hyperparameter(0.38),
-                    "length_scale": Hyperparameter(1.5),
+                    "kernel": Matern(
+                        nu=Hyperparameter("sample", (1e-1, 1e0)),
+                        length_scale=Hyperparameter(1.5),
+                    ),
                     "eps": HomoscedasticNoise(1e-5),
                 },
             )
@@ -120,19 +119,20 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
             for ssm in ["analytic", None]
             for k_kwargs in (
                 (
-                    "matern",
-                    [
-                        {
-                            "nu": Hyperparameter(0.5),
-                            "length_scale": Hyperparameter(1.5),
-                            "eps": HomoscedasticNoise(1e-5),
-                        },
-                        {
-                            "nu": Hyperparameter(0.8),
-                            "length_scale": Hyperparameter(0.7),
-                            "eps": HomoscedasticNoise(1e-5),
-                        },
-                    ],
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter(0.5),
+                            length_scale=Hyperparameter(1.5),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter(0.8),
+                            length_scale=Hyperparameter(0.7),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
                 ),
             )
         )
@@ -151,7 +151,6 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
         k_kwargs,
     ):
         # skip if we are using the MPI implementation
-        kern, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(k_kwargs)
 
@@ -179,7 +178,6 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
             loss_method=loss_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
-            kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
@@ -192,19 +190,18 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
         self.assertEqual(predictions.shape, (test_count, response_count))
 
         for i, muygps in enumerate(mmuygps.models):
-            print(f"For model {i}:")
-            for key in k_kwargs[i]:
-                if key == "eps":
-                    self.assertEqual(k_kwargs[i][key](), muygps.eps())
-                elif k_kwargs[i][key].fixed() is False:
+            print(f"For model{i}:")
+            self.assertEqual(k_kwargs[i]["eps"](), muygps.eps())
+            for name, param in k_kwargs[i]["kernel"].hyperparameters.items():
+                if param.fixed() is False:
                     print(
-                        f"\toptimized {key} to find value "
-                        f"{muygps.kernel.hyperparameters[key]()}"
+                        f"optimized to find value "
+                        f"{muygps.kernel.hyperparameters[name]()}"
                     )
                 else:
                     self.assertEqual(
-                        k_kwargs[i][key](),
-                        muygps.kernel.hyperparameters[key](),
+                        param(),
+                        muygps.kernel.hyperparameters[name](),
                     )
             if sigma_method is None:
                 self.assertFalse(muygps.sigma_sq.trained)

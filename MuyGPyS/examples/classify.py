@@ -200,7 +200,6 @@ def make_multivariate_classifier(
     loss_method: str = "mse",
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
-    kern: str = "matern",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -237,7 +236,6 @@ def make_multivariate_classifier(
         ...         loss_method="mse",
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
-        ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -250,7 +248,6 @@ def make_multivariate_classifier(
         ...         loss_method="mse",
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
-        ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -278,9 +275,6 @@ def make_multivariate_classifier(
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
-        kern:
-            The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
-            details.
         k_args:
             A list of `response_count` dicts containing kernel initialization
             keyword arguments. Each dict specifies parameters for the kernel,
@@ -321,7 +315,7 @@ def make_multivariate_classifier(
     )
     time_nn = perf_counter()
 
-    mmuygps = MMuyGPS(kern, *k_args)
+    mmuygps = MMuyGPS(*k_args)
     if mmuygps.fixed() is False:
         # collect batch
         batch_indices, batch_nn_indices = get_balanced_batch(
@@ -381,13 +375,12 @@ def _decide_and_make_classifier(
     loss_method: str = "log",
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
-    kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
     verbose: bool = False,
 ) -> Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper]:
-    if kern is not None and isinstance(k_kwargs, list):
+    if isinstance(k_kwargs, list):
         return make_multivariate_classifier(
             train_features,
             train_labels,
@@ -396,7 +389,6 @@ def _decide_and_make_classifier(
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
-            kern=kern,
             k_args=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
@@ -434,7 +426,6 @@ def do_classify(
     loss_method: str = "log",
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
-    kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -520,10 +511,6 @@ def do_classify(
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
-        kern:
-            The kernel function to be used. Only relevant for multivariate case
-            where `k_kwargs` is a list of hyperparameter dicts. Currently
-            supports only `"matern"` and `"rbf"`.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
             metric, epsilon and sigma hyperparameter specifications, and
@@ -562,7 +549,6 @@ def do_classify(
         loss_method=loss_method,
         obj_method=obj_method,
         opt_method=opt_method,
-        kern=kern,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,

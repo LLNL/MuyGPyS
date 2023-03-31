@@ -29,7 +29,7 @@ from MuyGPyS._test.utils import (
     _sq_rel_err,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.kernels import Hyperparameter
+from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
@@ -59,25 +59,41 @@ class BenchmarkTestCase(parameterized.TestCase):
 
         cls.k_kwargs = (
             {
-                "kern": "matern",
-                "metric": "l2",
-                "nu": Hyperparameter(0.5),
-                "length_scale": Hyperparameter(1e-2),
+                "kernel": Matern(
+                    nu=Hyperparameter(0.5), length_scale=Hyperparameter(1e-2)
+                ),
                 "eps": HomoscedasticNoise(1e-5),
             },
             {
-                "kern": "matern",
-                "metric": "l2",
-                "nu": Hyperparameter(1.5),
-                "length_scale": Hyperparameter(1e-2),
+                "kernel": Matern(
+                    nu=Hyperparameter(1.5), length_scale=Hyperparameter(1e-2)
+                ),
+                "eps": HomoscedasticNoise(1e-5),
+            },
+        )
+        cls.sim_kwargs = (
+            {
+                "kernel": Matern(
+                    nu=Hyperparameter(0.5),
+                    length_scale=Hyperparameter(1e-2),
+                    metric=None,
+                ),
+                "eps": HomoscedasticNoise(1e-5),
+            },
+            {
+                "kernel": Matern(
+                    nu=Hyperparameter(1.5),
+                    length_scale=Hyperparameter(1e-2),
+                    metric=None,
+                ),
                 "eps": HomoscedasticNoise(1e-5),
             },
         )
         cls.k_kwargs_opt = {
-            "kern": "matern",
-            "metric": "l2",
-            "nu": Hyperparameter("sample", (0.1, 5.0)),
-            "length_scale": Hyperparameter(1e-2),
+            "kernel": Matern(
+                nu=Hyperparameter("sample", (0.1, 5.0)),
+                length_scale=Hyperparameter(1e-2),
+            ),
             "eps": HomoscedasticNoise(1e-5),
         }
         cls.model_count = len(cls.k_kwargs)
@@ -86,7 +102,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.ys = list()
         cls.train_targets_list = list()
         cls.test_targets_list = list()
-        for i, kwargs in enumerate(cls.k_kwargs):
+        for i, kwargs in enumerate(cls.sim_kwargs):
             cls.gps.append(list())
             cls.ys.append(list())
             cls.test_targets_list.append(list())
@@ -190,7 +206,7 @@ class BenchmarkOptimTestCase(BenchmarkTestCase):
         cls.pairwise_diffs_list = list()
         cls.batch_nn_targets_list = list()
         for i, kwargs in enumerate(cls.k_kwargs):
-            cls.nu_target_list.append(kwargs["nu"]())
+            cls.nu_target_list.append(kwargs["kernel"].nu())
             cls.batch_indices_list.append(list())
             cls.batch_nn_indices_list.append(list())
             cls.crosswise_diffs_list.append(list())

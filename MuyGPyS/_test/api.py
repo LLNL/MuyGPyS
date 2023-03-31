@@ -19,6 +19,7 @@ from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq
 from MuyGPyS.examples.regress import do_regress
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.loss import mse_fn
 
@@ -42,7 +43,6 @@ class ClassifyAPITest(APITestCase):
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
-        kern: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
         (
@@ -59,14 +59,13 @@ class ClassifyAPITest(APITestCase):
             obj_method,
             opt_method,
             nn_kwargs,
-            kern,
             k_kwargs,
             opt_kwargs,
             verbose=verbose,
         )
         self.assertEqual(surrogate_predictions.shape, test["output"].shape)
         self.assertEqual(predicted_labels.shape, (test["output"].shape[0],))
-        if kern is None:
+        if isinstance(k_kwargs, dict):
             self.assertSequenceAlmostEqual(
                 np.sum(surrogate_predictions, axis=1),
                 np.zeros(surrogate_predictions.shape[0]),
@@ -106,7 +105,6 @@ class ClassifyAPITest(APITestCase):
         obj_method: str,
         opt_method: str,
         nn_kwargs: Dict,
-        kern: Optional[str],
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
         verbose: bool = False,
@@ -120,7 +118,6 @@ class ClassifyAPITest(APITestCase):
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
-            kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
@@ -221,7 +218,7 @@ class ClassifyAPITest(APITestCase):
         # What about the first dimension `np.sum(mask)`, which records the
         # number of "ambiguous" prediction locations?
         # print(uq)
-        if muygps.kern == "matern":
+        if isinstance(muygps.kernel, Matern):
             for i in range(uq.shape[0] - 1):
                 self.assertLessEqual(uq[i, 1], acc)
                 self.assertGreaterEqual(uq[i, 2], acc)
@@ -283,7 +280,6 @@ class RegressionAPITest(parameterized.TestCase):
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
-        kern: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
         regressor, predictions, mse, variance = self._do_regress(
@@ -298,7 +294,6 @@ class RegressionAPITest(parameterized.TestCase):
             nn_kwargs,
             k_kwargs,
             opt_kwargs,
-            kern=kern,
             verbose=verbose,
         )
         self.assertEqual(predictions.shape, test["output"].shape)
@@ -348,7 +343,6 @@ class RegressionAPITest(parameterized.TestCase):
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
-        kern: Optional[str] = None,
         verbose: bool = False,
     ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, float, np.ndarray,]:
         # print("gets here")
@@ -362,7 +356,6 @@ class RegressionAPITest(parameterized.TestCase):
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
-            kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
@@ -389,7 +382,6 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
-        kern: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
         regressor, predictions, mse = self._do_fast_posterior_mean(
@@ -403,7 +395,6 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             opt_kwargs=opt_kwargs,
-            kern=kern,
             verbose=verbose,
         )
         self.assertEqual(predictions.shape, test["output"].shape)
@@ -433,7 +424,6 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
-        kern: Optional[str] = None,
         verbose: bool = False,
     ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, float]:
         (
@@ -451,7 +441,6 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
             loss_method=loss_method,
             obj_method=obj_method,
             opt_method=opt_method,
-            kern=kern,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,

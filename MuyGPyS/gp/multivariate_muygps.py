@@ -65,10 +65,6 @@ class MultivariateMuyGPS:
         >>>         # do something with K and Kcross...
 
     Args
-        kern:
-            The kernel to be used. Each kernel supports different
-            hyperparameters that can be specified in kwargs. Currently supports
-            only `matern` and `rbf`.
         model_args:
             Dictionaries defining each internal
             :class:`MuyGPyS.gp.muygps.MuyGPS` instance.
@@ -76,12 +72,9 @@ class MultivariateMuyGPS:
 
     def __init__(
         self,
-        kern: str,
         *model_args,
     ):
-        self.kern = kern.lower()
-        self.models = [MuyGPS(kern, **args) for args in model_args]
-        self.metric = self.models[0].kernel.metric  # this is brittle
+        self.models = [MuyGPS(**args) for args in model_args]
         self.sigma_sq = SigmaSq(len(self.models))
 
     def fixed(self) -> bool:

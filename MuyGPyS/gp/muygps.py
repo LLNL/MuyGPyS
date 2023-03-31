@@ -12,8 +12,9 @@ from copy import deepcopy
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.gp.kernels import (
-    _get_kernel,
     append_optim_params_lists,
+    Matern,
+    RBF,
 )
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
@@ -78,30 +79,23 @@ class MuyGPS:
 
 
     Args:
-        kern:
-            The kernel to be used. Each kernel supports different
-            hyperparameters that can be specified in kwargs. Currently supports
-            only `matern` and `rbf`.
+        kernel:
+            The kernel to be used.
         eps:
             A noise model.
         response_count:
             The number of response dimensions.
-        kwargs:
-            Addition parameters to be passed to the kernel, possibly including
-            additional hyperparameter dicts and a metric keyword.
     """
 
     def __init__(
         self,
-        kern: str = "matern",
+        kernel: Union[Matern, RBF],
         eps: Union[
             NullNoise, HomoscedasticNoise, HeteroscedasticNoise
         ] = HomoscedasticNoise(0.0, "fixed"),
         response_count: int = 1,
-        **kwargs,
     ):
-        self.kern = kern.lower()
-        self.kernel = _get_kernel(self.kern, **kwargs)
+        self.kernel = kernel
         self.sigma_sq = SigmaSq(response_count)
         self.eps = eps
         self._mean_fn = PosteriorMean(self.eps)

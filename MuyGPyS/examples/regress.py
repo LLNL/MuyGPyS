@@ -231,7 +231,6 @@ def make_multivariate_regressor(
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
-    kern: str = "matern",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -269,7 +268,6 @@ def make_multivariate_regressor(
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         sigma_method="analytic",
-        ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -283,7 +281,6 @@ def make_multivariate_regressor(
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         sigma_method="analytic",
-        ...         kern="rbf",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -319,9 +316,6 @@ def make_multivariate_regressor(
             `sigma_sq` member whose value, invoked via `mmuygps.sigma_sq()`, is
             a `(response_count,)` vector to be used for scaling posterior
             variances.
-        kern:
-            The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
-            details.
         k_args:
             A list of `response_count` dicts containing kernel initialization
             keyword arguments. Each dict specifies parameters for the kernel,
@@ -364,7 +358,7 @@ def make_multivariate_regressor(
     time_nn = perf_counter()
 
     # create MuyGPs object
-    mmuygps = MMuyGPS(kern, *k_args)
+    mmuygps = MMuyGPS(*k_args)
 
     skip_opt = mmuygps.fixed()
     if skip_opt is False or sigma_method is not None:
@@ -474,15 +468,12 @@ def _decide_and_make_regressor(
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
-    kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
     verbose: bool = False,
 ) -> Tuple[Union[MuyGPS, MMuyGPS], NN_Wrapper]:
-    if kern is not None and (
-        isinstance(k_kwargs, list) or isinstance(k_kwargs, tuple)
-    ):
+    if isinstance(k_kwargs, list) or isinstance(k_kwargs, tuple):
         return make_multivariate_regressor(
             train_features,
             train_targets,
@@ -492,7 +483,6 @@ def _decide_and_make_regressor(
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
-            kern=kern,
             k_args=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
@@ -532,7 +522,6 @@ def do_regress(
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
-    kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -546,8 +535,7 @@ def do_regress(
     appropriate functions for specifics.
 
     Also supports workflows relying upon multivariate models. In order to create
-    a multivariate model, specify the `kern` argument and pass a list of
-    hyperparameter dicts to `k_kwargs`.
+    a multivariate model, pass a list of hyperparameter dicts to `k_kwargs`.
 
     Example:
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
@@ -624,10 +612,6 @@ def do_regress(
             member whose value, invoked via `muygps.sigma_sq()`, is a
             `(response_count,)` vector to be used for scaling posterior
             variances.
-        kern:
-            The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
-            details. Only used in the multivariate case. If `None`, assume
-            that we are not using a multivariate model.
         k_kwargs:
             If given a list or tuple of length `response_count`, assume that the
             elements are dicts containing kernel initialization keyword
@@ -668,7 +652,6 @@ def do_regress(
         obj_method=obj_method,
         opt_method=opt_method,
         sigma_method=sigma_method,
-        kern=kern,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,

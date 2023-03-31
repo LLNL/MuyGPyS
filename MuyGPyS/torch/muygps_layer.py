@@ -30,7 +30,7 @@ from MuyGPyS._src.gp.noise.torch import (
     _homoscedastic_perturb,
     _heteroscedastic_perturb,
 )
-from MuyGPyS.gp.kernels import Hyperparameter
+from MuyGPyS.gp.kernels import Hyperparameter, Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
@@ -167,13 +167,9 @@ class MuyGPs_layer(nn.Module):
             length_scale=self.length_scale(),
         )
 
-        k_kwargs = {
-            "length_scale": self.length_scale,
-            "nu": self.nu,
-            "eps": self.eps,
-        }
-
-        muygps_model = MuyGPS(**k_kwargs)
+        muygps_model = MuyGPS(
+            Matern(nu=self.nu, length_scale=self.length_scale), eps=self.eps
+        )
 
         predictions = muygps_model.posterior_mean(
             K, Kcross, self.batch_nn_targets
@@ -334,15 +330,14 @@ class MultivariateMuyGPs_layer(nn.Module):
         for i in range(response_count):
             k_kwargs_list.append(
                 {
-                    "length_scale": self.length_scale[i],
-                    "nu": self.nu[i],
+                    "kernel": Matern(
+                        nu=self.nu[i], length_scale=self.length_scale[i]
+                    ),
                     "eps": self.eps[i],
                 }
             )
 
-        k_kwargs_list = k_kwargs_list
-
-        mmuygps_model = MMuyGPS("matern", *k_kwargs_list)
+        mmuygps_model = MMuyGPS(*k_kwargs_list)
 
         sigma_sq = torch.zeros(
             response_count,
