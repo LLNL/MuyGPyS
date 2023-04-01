@@ -9,6 +9,7 @@ from MuyGPyS._src.gp.tensors import _F2, _l2
 
 class IsotropicDistortion:
     def __init__(self, metric: str):
+        self.metric = metric
         if metric == "l2":
             self._dist_fn = _l2
         elif metric == "F2":

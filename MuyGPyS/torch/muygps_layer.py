@@ -7,31 +7,10 @@
 MuyGPs PyTorch implementation
 """
 
+from typing import List, Union
+
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS._src.math.torch import nn
-from MuyGPyS._src.gp.tensors.torch import (
-    _pairwise_tensor,
-    _crosswise_tensor,
-    _l2,
-    _make_heteroscedastic_tensor,
-)
-from MuyGPyS._src.gp.muygps.torch import (
-    _muygps_posterior_mean,
-    _muygps_diagonal_variance,
-)
-import MuyGPyS._src.math as mm
-from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
-
-from MuyGPyS._src.gp.noise.torch import (
-    _homoscedastic_perturb,
-    _heteroscedastic_perturb,
-)
-from MuyGPyS.optimize.sigma_sq import (
-    muygps_sigma_sq_optim,
-    mmuygps_sigma_sq_optim,
-)
-from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
 
 from MuyGPyS._src.gp.kernels.torch import (
     _matern_05_fn,
@@ -40,6 +19,22 @@ from MuyGPyS._src.gp.kernels.torch import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
+from MuyGPyS._src.gp.tensors.torch import (
+    _pairwise_tensor,
+    _crosswise_tensor,
+    _l2,
+    _make_heteroscedastic_tensor,
+)
+from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
+from MuyGPyS._src.gp.noise.torch import (
+    _homoscedastic_perturb,
+    _heteroscedastic_perturb,
+)
+from MuyGPyS.gp.kernels import Hyperparameter, Matern
+from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
+from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
+
 
 from MuyGPyS.gp.sigma_sq import SigmaSq
 
@@ -90,7 +85,7 @@ class MuyGPs_layer(nn.Module):
 
 
     Args:
-        kernel_eps:
+        eps:
             A hyperparameter corresponding to the aleatoric uncertainty in the
             data.
         nu:
@@ -120,18 +115,18 @@ class MuyGPs_layer(nn.Module):
 
     def __init__(
         self,
-        kernel_eps,
+        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
         nu,
-        length_scale,
-        batch_indices,
+        length_scale: Hyperparameter,
+        batch_indices: Hyperparameter,
         batch_nn_indices,
         batch_targets,
         batch_nn_targets,
     ):
         super().__init__()
 
-        self.length_scale = nn.Parameter(torch.array(length_scale))
-        self.eps = torch.array(kernel_eps)
+        self.length_scale = length_scale
+        self.eps = eps
         self.nu = nu
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
@@ -163,34 +158,30 @@ class MuyGPs_layer(nn.Module):
 
         Kcross = kernel_func(
             crosswise_diffs,
-            nu=self.nu,
-            length_scale=self.length_scale,
+            nu=self.nu(),
+            length_scale=self.length_scale(),
         )
         K = kernel_func(
             pairwise_diffs,
-            nu=self.nu,
-            length_scale=self.length_scale,
+            nu=self.nu(),
+            length_scale=self.length_scale(),
         )
 
-        k_kwargs = {
-            "length_scale": {"val": float(self.length_scale)},
-            "nu": {"val": float(self.nu)},
-            "eps": {"val": self.eps},
-        }
-
-        muygps_model = MuyGPS(**k_kwargs)
+        muygps_model = MuyGPS(
+            Matern(nu=self.nu, length_scale=self.length_scale), eps=self.eps
+        )
 
         predictions = muygps_model.posterior_mean(
             K, Kcross, self.batch_nn_targets
         )
 
-        if torch.numel(self.eps) == 1:
+        if isinstance(self.eps, HomoscedasticNoise):
             sigma_sq = _analytic_sigma_sq_optim(
-                _homoscedastic_perturb(K, self.eps), self.batch_nn_targets
+                _homoscedastic_perturb(K, self.eps()), self.batch_nn_targets
             )
-        elif torch.numel(self.eps) > 1:
+        elif isinstance(self.eps, HeteroscedasticNoise):
             nugget_tensor = _make_heteroscedastic_tensor(
-                self.eps, self.batch_nn_indices
+                self.eps(), self.batch_nn_indices
             )
             sigma_sq = _analytic_sigma_sq_optim(
                 _heteroscedastic_perturb(K, nugget_tensor),
@@ -256,9 +247,9 @@ class MultivariateMuyGPs_layer(nn.Module):
     Args:
         num_models:
             The number of MuyGPs models to be used in the layer.
-        kernel_eps:
-            A torch.Tensor of shape `(num_models,)` containing the hyperparameter
-            corresponding to the aleatoric uncertainty in the
+        eps:
+            A torch.Tensor of shape `(num_models,)` containing the
+            hyperparameter corresponding to the aleatoric uncertainty in the
             data for each model.
         nu:
             A torch.Tensor of shape `(num_models,)` containing the smoothness
@@ -290,9 +281,9 @@ class MultivariateMuyGPs_layer(nn.Module):
     def __init__(
         self,
         num_models,
-        kernel_eps,
-        nu_vals,
-        length_scales,
+        eps: List[Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise]],
+        nu_vals: List[Hyperparameter],
+        length_scales: List[Hyperparameter],
         batch_indices,
         batch_nn_indices,
         batch_targets,
@@ -300,8 +291,8 @@ class MultivariateMuyGPs_layer(nn.Module):
     ):
         super().__init__()
         self.num_models = num_models
-        self.length_scale = nn.Parameter(torch.array(length_scales))
-        self.eps = kernel_eps
+        self.length_scale = length_scales
+        self.eps = eps
         self.nu = nu_vals
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
@@ -339,15 +330,14 @@ class MultivariateMuyGPs_layer(nn.Module):
         for i in range(response_count):
             k_kwargs_list.append(
                 {
-                    "length_scale": {"val": float(self.length_scale[i])},
-                    "nu": {"val": float(self.nu[i])},
-                    "eps": {"val": self.eps[i]},
+                    "kernel": Matern(
+                        nu=self.nu[i], length_scale=self.length_scale[i]
+                    ),
+                    "eps": self.eps[i],
                 }
             )
 
-        k_kwargs_list = k_kwargs_list
-
-        mmuygps_model = MMuyGPS("matern", *k_kwargs_list)
+        mmuygps_model = MMuyGPS(*k_kwargs_list)
 
         sigma_sq = torch.zeros(
             response_count,
@@ -356,25 +346,25 @@ class MultivariateMuyGPs_layer(nn.Module):
         for i in range(self.num_models):
             Kcross[:, :, i] = kernel_func(
                 crosswise_diffs,
-                nu=self.nu[i],
-                length_scale=self.length_scale[i],
+                nu=self.nu[i](),
+                length_scale=self.length_scale[i](),
             )
 
             K[:, :, :, i] = kernel_func(
                 pairwise_diffs,
-                nu=self.nu[i],
-                length_scale=self.length_scale[i],
+                nu=self.nu[i](),
+                length_scale=self.length_scale[i](),
             )
-            if self.eps.size(axis=0) == response_count:
+            if isinstance(self.eps[i], HomoscedasticNoise):
                 sigma_sq[i] = _analytic_sigma_sq_optim(
-                    _homoscedastic_perturb(K[:, :, :, i], self.eps[i]),
+                    _homoscedastic_perturb(K[:, :, :, i], self.eps[i]()),
                     self.batch_nn_targets[:, :, i].reshape(
                         batch_count, nn_count, 1
                     ),
                 )
-            elif self.eps.size(axis=0) > response_count:
+            elif isinstance(self.eps[i], HeteroscedasticNoise):
                 nugget_tensor = _make_heteroscedastic_tensor(
-                    self.eps, self.batch_nn_indices
+                    self.eps[i](), self.batch_nn_indices
                 )
                 sigma_sq[i] = _analytic_sigma_sq_optim(
                     _heteroscedastic_perturb(K[:, :, :, i], nugget_tensor),
@@ -384,7 +374,7 @@ class MultivariateMuyGPs_layer(nn.Module):
                 )
             else:
                 raise ValueError(
-                    f"Noise model {type(self.eps)} is not supported"
+                    f"Noise model {type(self.eps[i])} is not supported"
                 )
 
         mmuygps_model.sigma_sq.val = sigma_sq

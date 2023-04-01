@@ -35,11 +35,13 @@ from MuyGPyS._test.api import RegressionAPITest
 from MuyGPyS._test.utils import _balanced_subsample
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
 from MuyGPyS.examples.muygps_torch import predict_model
+from MuyGPyS.gp.kernels import Hyperparameter
+from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
 
-hardpath = "../../data/"
+hardpath = "../data/"
 
 stargal_dir = "star-gal/"
 
@@ -57,7 +59,7 @@ class SVDKMuyGPs(nn.Module):
     def __init__(
         self,
         num_models,
-        kernel_eps,
+        eps,
         nu,
         length_scale,
         batch_indices,
@@ -74,7 +76,7 @@ class SVDKMuyGPs(nn.Module):
             nn.Dropout(0.5),
             nn.PReLU(1),
         )
-        self.eps = kernel_eps
+        self.eps = eps
         self.nu = nu
         self.length_scale = length_scale
         self.batch_indices = batch_indices
@@ -142,9 +144,9 @@ class MultivariateStargalRegressTest(RegressionAPITest):
 
         model = SVDKMuyGPs(
             num_models=num_test_responses,
-            kernel_eps=1e-6 * torch.ones(num_test_responses),
-            nu=1 / 2 * torch.ones(num_test_responses),
-            length_scale=1.0 * torch.ones(num_test_responses),
+            eps=[HomoscedasticNoise(1e-6)] * num_test_responses,
+            nu=[Hyperparameter(0.5)] * num_test_responses,
+            length_scale=[Hyperparameter(1.0)] * num_test_responses,
             batch_indices=batch_indices,
             batch_nn_indices=batch_nn_indices,
             batch_targets=batch_targets,
@@ -193,7 +195,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
 class SVDKMuyGPs_Heaton(nn.Module):
     def __init__(
         self,
-        kernel_eps,
+        eps,
         nu,
         length_scale,
         batch_indices,
@@ -210,7 +212,7 @@ class SVDKMuyGPs_Heaton(nn.Module):
             nn.Dropout(0.5),
             nn.PReLU(1),
         )
-        self.eps = kernel_eps
+        self.eps = eps
         self.nu = nu
         self.length_scale = length_scale
         self.batch_indices = batch_indices
@@ -271,9 +273,9 @@ class HeatonTest(RegressionAPITest):
         batch_nn_targets = train_responses[batch_nn_indices, :]
 
         model = SVDKMuyGPs_Heaton(
-            kernel_eps=1e-3,
-            nu=1 / 2,
-            length_scale=1.0,
+            eps=HomoscedasticNoise(1e-3),
+            nu=Hyperparameter(0.5),
+            length_scale=Hyperparameter(1.0),
             batch_indices=batch_indices,
             batch_nn_indices=batch_nn_indices,
             batch_targets=batch_targets,

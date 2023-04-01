@@ -35,7 +35,7 @@ Example:
     >>> Kcross = kern(crosswise_diffs)
 """
 
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import (
@@ -45,9 +45,12 @@ from MuyGPyS._src.gp.kernels import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
-from MuyGPyS.gp.distortion import embed_with_distortion_model
+from MuyGPyS.gp.distortion import (
+    embed_with_distortion_model,
+    IsotropicDistortion,
+    NullDistortion,
+)
 from MuyGPyS.gp.kernels import (
-    _init_hyperparameter,
     append_optim_params_lists,
     apply_hyperparameter,
     Hyperparameter,
@@ -109,20 +112,20 @@ class Matern(KernelFn):
         length_scale:
             A hyperparameter dict defining the length_scale parameter.
         metric:
-            The distance function to be used. Defaults to `"l2"`.
+            The distance function to be used.
     """
 
     def __init__(
         self,
-        nu: Dict[str, Union[str, float, Tuple[float, float]]] = dict(),
-        length_scale: Dict[
-            str, Union[str, float, Tuple[float, float]]
-        ] = dict(),
-        metric: Optional[str] = "l2",
+        nu: Hyperparameter = Hyperparameter(0.5),
+        length_scale: Hyperparameter = Hyperparameter(1.0),
+        metric: Union[
+            IsotropicDistortion, NullDistortion
+        ] = IsotropicDistortion("l2"),
     ):
         super().__init__(metric=metric)
-        self.nu = _init_hyperparameter(1.0, "fixed", **nu)
-        self.length_scale = _init_hyperparameter(1.0, "fixed", **length_scale)
+        self.nu = nu
+        self.length_scale = length_scale
         self.hyperparameters["nu"] = self.nu
         self.hyperparameters["length_scale"] = self.length_scale
         self._fn = _set_matern_fn(self.nu)

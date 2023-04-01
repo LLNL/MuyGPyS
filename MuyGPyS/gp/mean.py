@@ -13,15 +13,18 @@ import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
 from MuyGPyS.gp.kernels import apply_hyperparameter
 from MuyGPyS.gp.noise import (
-    HomoscedasticNoise,
     HeteroscedasticNoise,
+    HomoscedasticNoise,
+    NullNoise,
     perturb_with_noise_model,
 )
 
 
 class PosteriorMean:
     def __init__(
-        self, eps: Union[HomoscedasticNoise, HeteroscedasticNoise], **kwargs
+        self,
+        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
+        **kwargs
     ):
         self.eps = eps
         self._fn = _muygps_posterior_mean
@@ -40,7 +43,8 @@ class PosteriorMean:
 
     @staticmethod
     def _get_opt_fn(
-        mean_fn: Callable, eps: Union[HomoscedasticNoise, HeteroscedasticNoise]
+        mean_fn: Callable,
+        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
     ) -> Callable:
         opt_fn = apply_hyperparameter(mean_fn, eps, "eps")
         return opt_fn

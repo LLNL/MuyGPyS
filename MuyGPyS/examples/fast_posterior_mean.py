@@ -165,7 +165,6 @@ def do_fast_posterior_mean(
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
-    kern: Optional[str] = None,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -242,10 +241,6 @@ def do_fast_posterior_mean(
             member whose value, invoked via `muygps.sigma_sq()`, is a
             `(response_count,)` vector to be used for scaling posterior
             variances.
-        kern:
-            The kernel function to be used. See :ref:`MuyGPyS-gp-kernels` for
-            details. Only used in the multivariate case. If `None`, assume
-            that we are not using a multivariate model.
         k_kwargs:
             If given a list or tuple of length `response_count`, assume that the
             elements are dicts containing kernel initialization keyword
@@ -290,7 +285,6 @@ def do_fast_posterior_mean(
         obj_method=obj_method,
         opt_method=opt_method,
         sigma_method=sigma_method,
-        kern=kern,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,

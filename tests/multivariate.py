@@ -33,6 +33,9 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.distortion import NullDistortion
+from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
@@ -42,51 +45,45 @@ from MuyGPyS.optimize.sigma_sq import mmuygps_sigma_sq_optim
 
 class InitTest(parameterized.TestCase):
     @parameterized.parameters(
-        (model_args)
+        (model_args,)
         for model_args in (
-            (
-                "matern",
-                [
-                    {
-                        "nu": {"val": 1.0},
-                        "length_scale": {"val": 7.2},
-                        "eps": {"val": 1e-5},
-                    },
-                    {
-                        "nu": {"val": 1.2},
-                        "length_scale": {"val": 2.2},
-                        "eps": {"val": 1e-6},
-                    },
-                ],
-            ),
-            (
-                "matern",
-                [
-                    {
-                        "nu": {"val": 1.0},
-                        "length_scale": {"val": 7.2},
-                        "eps": {"val": 1e-5},
-                    },
-                ],
-            ),
+            [
+                {
+                    "kernel": Matern(
+                        nu=Hyperparameter(1.0),
+                        length_scale=Hyperparameter(7.2),
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
+                },
+                {
+                    "kernel": Matern(
+                        nu=Hyperparameter(1.2), length_scale=Hyperparameter(2.2)
+                    ),
+                    "eps": HomoscedasticNoise(1e-6),
+                },
+            ],
+            [
+                {
+                    "kernel": Matern(
+                        nu=Hyperparameter(1.0), length_scale=Hyperparameter(7.2)
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
+                },
+            ],
         )
     )
-    def test_bounds_defaults_init(self, kern, model_args):
-        # kern, kwargs = k_kwargs
-        mmuygps = MMuyGPS(kern, *model_args)
+    def test_bounds_defaults_init(self, model_args):
+        mmuygps = MMuyGPS(*model_args)
         self.assertEqual(len(mmuygps.models), len(model_args))
-        self.assertEqual(mmuygps.kern, kern)
         for i, muygps in enumerate(mmuygps.models):
             this_kwargs = model_args[i]
-            for param in this_kwargs:
-                if param == "eps":
-                    continue
+            for name, param in this_kwargs["kernel"].hyperparameters.items():
                 self.assertEqual(
-                    this_kwargs[param]["val"],
-                    muygps.kernel.hyperparameters[param](),
+                    param(),
+                    muygps.kernel.hyperparameters[name](),
                 )
-                self.assertTrue(muygps.kernel.hyperparameters[param].fixed())
-            self.assertEqual(this_kwargs["eps"]["val"], muygps.eps())
+                self.assertTrue(muygps.kernel.hyperparameters[name].fixed())
+            self.assertEqual(this_kwargs["eps"](), muygps.eps())
             self.assertTrue(muygps.eps.fixed())
             self.assertFalse(muygps.sigma_sq.trained)
 
@@ -99,26 +96,29 @@ class SigmaSqTest(parameterized.TestCase):
             for f in [100]
             for sm in ["analytic"]
             for model_args in (
-                (
-                    "matern",
-                    [
-                        {
-                            "nu": {"val": 1.5},
-                            "length_scale": {"val": 7.2},
-                            "eps": {"val": 1e-5},
-                        },
-                        {
-                            "nu": {"val": 0.5},
-                            "length_scale": {"val": 2.2},
-                            "eps": {"val": 1e-6},
-                        },
-                        {
-                            "nu": {"val": mm.inf},
-                            "length_scale": {"val": 12.4},
-                            "eps": {"val": 1e-6},
-                        },
-                    ],
-                ),
+                [
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter(1.5),
+                            length_scale=Hyperparameter(7.2),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter(0.5),
+                            length_scale=Hyperparameter(2.2),
+                        ),
+                        "eps": HomoscedasticNoise(1e-6),
+                    },
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter(mm.inf),
+                            length_scale=Hyperparameter(12.4),
+                        ),
+                        "eps": HomoscedasticNoise(1e-6),
+                    },
+                ],
             )
         )
     )
@@ -131,9 +131,8 @@ class SigmaSqTest(parameterized.TestCase):
         nn_kwargs,
         model_args,
     ):
-        kern, args = model_args
-        response_count = len(args)
-        mmuygps = MMuyGPS(kern, *args)
+        response_count = len(model_args)
+        mmuygps = MMuyGPS(*model_args)
 
         # prepare data
         data = _make_gaussian_dict(data_count, feature_count, response_count)
@@ -195,18 +194,21 @@ class OptimTest(parameterized.TestCase):
             ]
             for k_kwargs in (
                 (
-                    "matern",
                     [0.38, 0.78],
                     [
                         {
-                            "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
-                            "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
+                            "kernel": Matern(
+                                nu=Hyperparameter("sample", (1e-2, 1e0)),
+                                length_scale=Hyperparameter(1.5),
+                            ),
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                         {
-                            "nu": {"val": "sample", "bounds": (1e-2, 1e0)},
-                            "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
+                            "kernel": Matern(
+                                nu=Hyperparameter("sample", (1e-2, 1e0)),
+                                length_scale=Hyperparameter(0.7),
+                            ),
+                            "eps": HomoscedasticNoise(1e-5),
                         },
                     ],
                 ),
@@ -232,7 +234,7 @@ class OptimTest(parameterized.TestCase):
                 f"Skipping."
             )
             return
-        kern, target, args = k_kwargs
+        target, args = k_kwargs
         loss_method, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
@@ -265,10 +267,28 @@ class OptimTest(parameterized.TestCase):
             mm.array(sim_train["input"]), batch_nn_indices
         )
 
-        gp_args = args.copy()
-        for i, m in enumerate(gp_args):
-            m["nu"]["val"] = target[i]
-        gps = [BenchmarkGP(kern=kern, **a) for a in gp_args]
+        # this is needed because the benchmarkGP uses a different distortion
+        # model
+        gp_args = (
+            {
+                "kernel": Matern(
+                    nu=Hyperparameter(target[0]),
+                    length_scale=Hyperparameter(1.5),
+                    metric=NullDistortion("l2"),
+                ),
+                "eps": HomoscedasticNoise(1e-5),
+            },
+            {
+                "kernel": Matern(
+                    nu=Hyperparameter(target[1]),
+                    length_scale=Hyperparameter(0.7),
+                    metric=NullDistortion("l2"),
+                ),
+                "eps": HomoscedasticNoise(1e-5),
+            },
+        )
+
+        gps = [BenchmarkGP(**a) for a in gp_args]
         cholKs = [
             benchmark_prepare_cholK(
                 gp, np.vstack((sim_test["input"], sim_train["input"]))
@@ -284,7 +304,7 @@ class OptimTest(parameterized.TestCase):
                 sim_test["output"][:, i] = y[:test_count, 0]
                 sim_train["output"][:, i] = y[test_count:, 0]
 
-            mmuygps = MMuyGPS(kern, *args)
+            mmuygps = MMuyGPS(*args)
 
             batch_targets = sim_train["output"][batch_indices, :]
             batch_nn_targets = sim_train["output"][
@@ -320,29 +340,29 @@ class OptimTest(parameterized.TestCase):
 class ClassifyTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 200, f, nn, nn_kwargs, k_kwargs)
+            (1000, 200, f, nn, nn_kwargs, args)
             for f in [100, 10, 2]
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [10]
             # for nn in [5]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for k_kwargs in (
+            for args in (
                 (
-                    "matern",
-                    # [0.38, 0.78],
-                    [
-                        {
-                            "nu": {"val": 0.38},
-                            "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
-                        },
-                        {
-                            "nu": {"val": 0.79},
-                            "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
-                        },
-                    ],
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter(0.38),
+                            length_scale=Hyperparameter(1.5),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter(0.79),
+                            length_scale=Hyperparameter(0.7),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
                 ),
             )
         )
@@ -354,7 +374,7 @@ class ClassifyTest(parameterized.TestCase):
         feature_count,
         nn_count,
         nn_kwargs,
-        k_kwargs,
+        args,
     ):
         if config.state.backend != "numpy":
             _warn0(
@@ -363,10 +383,9 @@ class ClassifyTest(parameterized.TestCase):
             )
             return
 
-        kern, args = k_kwargs
         response_count = len(args)
 
-        mmuygps = MMuyGPS(kern, *args)
+        mmuygps = MMuyGPS(*args)
 
         train, test = _make_gaussian_data(
             train_count,
@@ -391,28 +410,29 @@ class ClassifyTest(parameterized.TestCase):
 class RegressTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 200, f, nn, nn_kwargs, k_kwargs)
+            (1000, 200, f, nn, nn_kwargs, args)
             for f in [100, 2]
             for nn in [5, 10]
             # for f in [2]
             # for nn in [5]
             # for vm in ["diagonal"]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for k_kwargs in (
+            for args in (
                 (
-                    "matern",
-                    [
-                        {
-                            "nu": {"val": 1.5},
-                            "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
-                        },
-                        {
-                            "nu": {"val": 0.5},
-                            "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
-                        },
-                    ],
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter(1.5),
+                            length_scale=Hyperparameter(1.5),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
+                    {
+                        "kernel": Matern(
+                            Hyperparameter(0.5),
+                            length_scale=Hyperparameter(0.7),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
                 ),
             )
         )
@@ -424,7 +444,7 @@ class RegressTest(parameterized.TestCase):
         feature_count,
         nn_count,
         nn_kwargs,
-        k_kwargs,
+        args,
     ):
         if config.state.backend != "numpy":
             _warn0(
@@ -432,10 +452,9 @@ class RegressTest(parameterized.TestCase):
                 f"backend. Skipping."
             )
             return
-        kern, args = k_kwargs
         response_count = len(args)
 
-        mmuygps = MMuyGPS(kern, *args)
+        mmuygps = MMuyGPS(*args)
 
         train, test = _make_gaussian_data(
             train_count,
@@ -473,28 +492,29 @@ class MakeClassifierTest(parameterized.TestCase):
                 nn_kwargs,
                 lm,
                 opt_method_and_kwargs,
-                k_kwargs,
+                args,
             )
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
-            for k_kwargs in (
+            for args in (
                 (
-                    "matern",
-                    [
-                        {
-                            "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                            "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
-                        },
-                        {
-                            "nu": {"val": 0.8},
-                            "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
-                        },
-                    ],
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter("sample", (1e-1, 1e0)),
+                            length_scale=Hyperparameter(1.5),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter(0.8),
+                            length_scale=Hyperparameter(0.7),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
                 ),
             )
         )
@@ -509,7 +529,7 @@ class MakeClassifierTest(parameterized.TestCase):
         nn_kwargs,
         loss_method,
         opt_method_and_kwargs,
-        k_kwargs,
+        args,
     ):
         # skip if we are using the MPI implementation
         if config.state.backend == "torch":
@@ -519,7 +539,6 @@ class MakeClassifierTest(parameterized.TestCase):
             _warn0(f"optimization does not support torch. skipping.")
             return
 
-        kern, args = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
@@ -540,24 +559,22 @@ class MakeClassifierTest(parameterized.TestCase):
             loss_method=loss_method,
             opt_method=opt_method,
             nn_kwargs=nn_kwargs,
-            kern=kern,
             k_args=args,
             opt_kwargs=opt_kwargs,
         )
 
         for i, muygps in enumerate(mmuygps.models):
-            for key in args[i]:
-                if key == "eps":
-                    self.assertEqual(args[i][key]["val"], muygps.eps())
-                elif isinstance(args[i][key]["val"], str):
+            self.assertEqual(args[i]["eps"](), muygps.eps())
+            for name, param in args[i]["kernel"].hyperparameters.items():
+                if param.fixed() is False:
                     print(
                         f"optimized to find value "
-                        f"{muygps.kernel.hyperparameters[key]()}"
+                        f"{muygps.kernel.hyperparameters[name]()}"
                     )
                 else:
                     self.assertEqual(
-                        args[i][key]["val"],
-                        muygps.kernel.hyperparameters[key](),
+                        param(),
+                        muygps.kernel.hyperparameters[name](),
                     )
 
 
@@ -574,7 +591,7 @@ class MakeRegressorTest(parameterized.TestCase):
                 lm,
                 opt_method_and_kwargs,
                 ssm,
-                k_kwargs,
+                args,
             )
             for b in [250]
             for n in [10]
@@ -582,21 +599,22 @@ class MakeRegressorTest(parameterized.TestCase):
             for lm in ["mse"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for ssm in ["analytic", None]
-            for k_kwargs in (
+            for args in (
                 (
-                    "matern",
-                    [
-                        {
-                            "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                            "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-5},
-                        },
-                        {
-                            "nu": {"val": 0.8},
-                            "length_scale": {"val": 0.7},
-                            "eps": {"val": 1e-5},
-                        },
-                    ],
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter("sample", (1e-1, 1e0)),
+                            length_scale=Hyperparameter(1.5),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
+                    {
+                        "kernel": Matern(
+                            nu=Hyperparameter(0.8),
+                            length_scale=Hyperparameter(0.7),
+                        ),
+                        "eps": HomoscedasticNoise(1e-5),
+                    },
                 ),
             )
         )
@@ -612,7 +630,7 @@ class MakeRegressorTest(parameterized.TestCase):
         loss_method,
         opt_method_and_kwargs,
         sigma_method,
-        k_kwargs,
+        args,
     ):
         if config.state.backend == "mpi":
             _warn0(f"optimization does not support mpi. skipping.")
@@ -621,7 +639,6 @@ class MakeRegressorTest(parameterized.TestCase):
             _warn0(f"optimization does not support torch. skipping.")
             return
         # skip if we are using the MPI implementation
-        kern, args = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
@@ -644,24 +661,22 @@ class MakeRegressorTest(parameterized.TestCase):
             sigma_method=sigma_method,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
-            kern=kern,
             k_args=args,
         )
 
         for i, muygps in enumerate(mmuygps.models):
-            print(f"For model {i}:")
-            for key in args[i]:
-                if key == "eps":
-                    self.assertEqual(args[i][key]["val"], muygps.eps())
-                elif args[i][key]["val"] == "sample":
+            print(f"For model{i}:")
+            self.assertEqual(args[i]["eps"](), muygps.eps())
+            for name, param in args[i]["kernel"].hyperparameters.items():
+                if param.fixed() is False:
                     print(
-                        f"\toptimized {key} to find value "
-                        f"{muygps.kernel.hyperparameters[key]()}"
+                        f"optimized to find value "
+                        f"{muygps.kernel.hyperparameters[name]()}"
                     )
                 else:
                     self.assertEqual(
-                        args[i][key]["val"],
-                        muygps.kernel.hyperparameters[key](),
+                        param(),
+                        muygps.kernel.hyperparameters[name](),
                     )
             if sigma_method is None:
                 self.assertFalse(muygps.sigma_sq.trained)

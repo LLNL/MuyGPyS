@@ -24,6 +24,8 @@ from MuyGPyS.examples.two_class_classify_uq import (
     do_uq,
 )
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import (
     get_balanced_batch,
@@ -49,10 +51,11 @@ class ClassifyTest(parameterized.TestCase):
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for k_kwargs in (
                 {
-                    "kern": "matern",
-                    "eps": {"val": 1e-5},
-                    "nu": {"val": 0.38},
-                    "length_scale": {"val": 1.5},
+                    "kernel": Matern(
+                        nu=Hyperparameter(0.38),
+                        length_scale=Hyperparameter(1.5),
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -105,15 +108,15 @@ class ClassifyUQTest(parameterized.TestCase):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in (
                 {
-                    "kern": "matern",
-                    "eps": {"val": 1e-5},
-                    "nu": {"val": 0.38},
-                    "length_scale": {"val": 1.5},
+                    "kernel": Matern(
+                        nu=Hyperparameter(0.38),
+                        length_scale=Hyperparameter(1.5),
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
                 {
-                    "kern": "rbf",
-                    "eps": {"val": 1e-5},
-                    "length_scale": {"val": 1.5},
+                    "kernel": RBF(length_scale=Hyperparameter(1.5)),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
             )
         )

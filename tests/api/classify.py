@@ -26,6 +26,8 @@ from MuyGPyS._test.utils import (
     _basic_opt_method_and_kwarg_options,
 )
 from MuyGPyS.examples.two_class_classify_uq import example_lambdas
+from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
 hardpath = "../data/"
@@ -84,11 +86,11 @@ class MNISTTest(ClassifyAPITest):
                 (
                     0.85,
                     {
-                        "kern": "matern",
-                        "metric": "l2",
-                        "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
-                        "length_scale": {"val": 1.5},
-                        "eps": {"val": 1e-3},
+                        "kernel": Matern(
+                            nu=Hyperparameter(0.5, (1e-1, 1e0)),
+                            length_scale=Hyperparameter(1.5),
+                        ),
+                        "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
                 # (
@@ -96,8 +98,8 @@ class MNISTTest(ClassifyAPITest):
                 #     {
                 #         "kern": "rbf",
                 #         "metric": "F2",
-                #         "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
-                #         "eps": {"val": 1e-3},
+                #         "length_scale": Hyperparameter(1.5, "bounds": (0.5, 1e1)},
+                #         "eps": HomoscedasticNoise(1e-3),
                 #     },
                 # ),
             )
@@ -175,21 +177,20 @@ class StargalClassifyTest(StargalTest):
                 (
                     0.92,
                     {
-                        "kern": "matern",
-                        "metric": "l2",
-                        # "nu": {"val": 0.75},
-                        "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
-                        "length_scale": {"val": 1.5},
-                        "eps": {"val": 1e-3},
+                        "kernel": Matern(
+                            nu=Hyperparameter(0.5, (1e-1, 1e0)),
+                            length_scale=Hyperparameter(1.5),
+                        ),
+                        "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
                 (
                     0.9,
                     {
-                        "kern": "rbf",
-                        "metric": "F2",
-                        "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
-                        "eps": {"val": 1e-3},
+                        "kernel": RBF(
+                            length_scale=Hyperparameter(1.5, (0.5, 1e1))
+                        ),
+                        "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
             )
@@ -256,20 +257,20 @@ class StargalUQTest(StargalTest):
                 (
                     0.92,
                     {
-                        "kern": "matern",
-                        "metric": "l2",
-                        "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
-                        "length_scale": {"val": 1.5},
-                        "eps": {"val": 1e-3},
+                        "kernel": Matern(
+                            nu=Hyperparameter(0.5, (1e-1, 1e0)),
+                            length_scale=Hyperparameter(1.5),
+                        ),
+                        "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
                 (
                     0.9,
                     {
-                        "kern": "rbf",
-                        "metric": "F2",
-                        "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
-                        "eps": {"val": 1e-3},
+                        "kernel": RBF(
+                            length_scale=Hyperparameter(1.5, (0.5, 1e1))
+                        ),
+                        "eps": HomoscedasticNoise(1e-3),
                     },
                 ),
             )
@@ -327,17 +328,20 @@ class MultivariateStargalClassifyTest(StargalTest):
             for k_kwargs in (
                 (
                     0.92,
-                    "matern",
                     [
                         {
-                            "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
-                            "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-3},
+                            "kernel": Matern(
+                                nu=Hyperparameter(0.5, (1e-1, 1e0)),
+                                length_scale=Hyperparameter(1.5),
+                            ),
+                            "eps": HomoscedasticNoise(1e-3),
                         },
                         {
-                            "nu": {"val": 0.5, "bounds": (1e-1, 1e0)},
-                            "length_scale": {"val": 1.5},
-                            "eps": {"val": 1e-3},
+                            "kernel": Matern(
+                                nu=Hyperparameter(0.5, (1e-1, 1e0)),
+                                length_scale=Hyperparameter(1.5),
+                            ),
+                            "eps": HomoscedasticNoise(1e-3),
                         },
                     ],
                 ),
@@ -346,12 +350,16 @@ class MultivariateStargalClassifyTest(StargalTest):
                     "rbf",
                     [
                         {
-                            "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
-                            "eps": {"val": 1e-3},
+                            "kernel": RBF(
+                                length_scale=Hyperparameter(1.5, (0.5, 1e1))
+                            ),
+                            "eps": HomoscedasticNoise(1e-3),
                         },
                         {
-                            "length_scale": {"val": 1.5, "bounds": (0.5, 1e1)},
-                            "eps": {"val": 1e-3},
+                            "kernel": RBF(
+                                length_scale=Hyperparameter(1.5, (0.5, 1e1))
+                            ),
+                            "eps": HomoscedasticNoise(1e-3),
                         },
                     ],
                 ),

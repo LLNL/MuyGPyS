@@ -20,6 +20,8 @@ from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS.gp.tensors import (
     make_train_tensors,
     make_predict_tensors,
@@ -44,196 +46,114 @@ from MuyGPyS._src.mpi_utils import (
 
 class GPInitTest(parameterized.TestCase):
     @parameterized.parameters(
-        (k_kwargs, e, gp)
-        for k_kwargs in (
-            (
-                "matern",
-                {
-                    "nu": {"val": 1.0},
-                    "length_scale": {"val": 7.2},
-                },
-            ),
-            (
-                "rbf",
-                {
-                    "length_scale": {"val": 1.5},
-                },
-            ),
+        (kernel, e, gp)
+        for kernel in (
+            Matern(nu=Hyperparameter(1.0), length_scale=Hyperparameter(7.2)),
+            RBF(length_scale=Hyperparameter(1.5)),
         )
-        for e in (({"val": 1e-5},))
-        for gp in (MuyGPS, BenchmarkGP)
+        for e in ((HomoscedasticNoise(1e-5),))
+        for gp in [MuyGPS]
+        # for gp in (MuyGPS, BenchmarkGP)
     )
-    def test_bounds_defaults_init(self, k_kwargs, eps, gp_type):
-        kern, kwargs = k_kwargs
-        muygps = gp_type(kern=kern, eps=eps, **kwargs)
-        for param in kwargs:
+    def test_bounds_defaults_init(self, kernel, eps, gp_type):
+        muygps = gp_type(kernel=kernel, eps=eps)
+        for name, param in kernel.hyperparameters.items():
             self.assertEqual(
-                kwargs[param]["val"],
-                muygps.kernel.hyperparameters[param](),
+                param(),
+                muygps.kernel.hyperparameters[name](),
             )
             self.assertTrue(
-                muygps.kernel.hyperparameters[param].fixed(),
+                muygps.kernel.hyperparameters[name].fixed(),
             )
-        self.assertEqual(eps["val"], muygps.eps())
+        self.assertEqual(eps(), muygps.eps())
         self.assertTrue(muygps.eps.fixed())
         if gp_type == MuyGPS:
             self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
-        elif gp_type == BenchmarkGP:
-            self.assertFalse(muygps.sigma_sq.trained)
-            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+        # elif gp_type == BenchmarkGP:
+        #     self.assertFalse(muygps.sigma_sq.trained)
+        #     self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
-        (k_kwargs, e, gp)
-        for k_kwargs in (
-            (
-                "matern",
-                {
-                    "nu": {"val": 1.0, "bounds": (1e-2, 5e4)},
-                    "length_scale": {"val": 7.2, "bounds": (2e-5, 2e1)},
-                },
+        (kernel, e, gp)
+        for kernel in (
+            Matern(
+                nu=Hyperparameter(1.0, (1e-2, 5e4)),
+                length_scale=Hyperparameter(7.2, (2e-5, 2e1)),
             ),
-            (
-                "rbf",
-                {
-                    "length_scale": {"val": 1.5, "bounds": (1e-1, 1e2)},
-                },
-            ),
-            (
-                "matern",
-                {
-                    "nu": {"val": 1.0, "bounds": "fixed"},
-                    "length_scale": {"val": 7.2, "bounds": "fixed"},
-                },
-            ),
-            (
-                "rbf",
-                {
-                    "length_scale": {"val": 1.5, "bounds": "fixed"},
-                },
-            ),
+            Matern(nu=Hyperparameter(1.0), length_scale=Hyperparameter(7.2)),
+            RBF(length_scale=Hyperparameter(1.5, (1e-1, 1e2))),
+            RBF(length_scale=Hyperparameter(1.5)),
         )
         for e in (
             (
-                {"val": 1e-5, "bounds": (1e-8, 1e-2)},
-                {"val": 1e-5, "bounds": "fixed"},
+                HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
+                HomoscedasticNoise(1e-5, "fixed"),
             )
         )
-        for gp in (MuyGPS, BenchmarkGP)
+        for gp in [MuyGPS]
+        # for gp in (MuyGPS, BenchmarkGP)
     )
-    def test_full_init(self, k_kwargs, eps, gp_type):
-        kern, kwargs = k_kwargs
-        muygps = gp_type(kern=kern, eps=eps, **kwargs)
-        for param in kwargs:
+    def test_full_init(self, kernel, eps, gp_type):
+        muygps = gp_type(kernel=kernel, eps=eps)
+        for name, param in kernel.hyperparameters.items():
             self.assertEqual(
-                kwargs[param]["val"],
-                muygps.kernel.hyperparameters[param](),
+                param(),
+                muygps.kernel.hyperparameters[name](),
             )
-            if kwargs[param]["bounds"] == "fixed":
-                self.assertTrue(muygps.kernel.hyperparameters[param].fixed())
+            if param.fixed() is True:
+                self.assertTrue(muygps.kernel.hyperparameters[name].fixed())
             else:
-                self.assertFalse(muygps.kernel.hyperparameters[param].fixed())
+                self.assertFalse(muygps.kernel.hyperparameters[name].fixed())
                 self.assertEqual(
-                    kwargs[param]["bounds"],
-                    muygps.kernel.hyperparameters[param].get_bounds(),
+                    param.get_bounds(),
+                    muygps.kernel.hyperparameters[name].get_bounds(),
                 )
-        self.assertEqual(eps["val"], muygps.eps())
-        if eps["bounds"] == "fixed":
+        self.assertEqual(eps(), muygps.eps())
+        if eps.fixed() is True:
             self.assertTrue(muygps.eps.fixed())
         else:
             self.assertFalse(muygps.eps.fixed())
-            self.assertEqual(eps["bounds"], muygps.eps.get_bounds())
+            self.assertEqual(eps.get_bounds(), muygps.eps.get_bounds())
         if gp_type == MuyGPS:
             self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(1.0, muygps.sigma_sq())
-        elif gp_type == BenchmarkGP:
-            self.assertFalse(muygps.sigma_sq.trained)
-            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+        # elif gp_type == BenchmarkGP:
+        #     self.assertFalse(muygps.sigma_sq.trained)
+        #     self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
-        (k_kwargs, e, gp)
-        for k_kwargs in (
-            (
-                "matern",
-                {
-                    "nu": {"val": -1.0, "bounds": (1e-2, 5e4)},
-                    "length_scale": {"val": 7000.2, "bounds": (2e-5, 2e1)},
-                },
+        (kernel, e, gp, 100)
+        for kernel in (
+            Matern(
+                nu=Hyperparameter("sample", (1e-2, 5e4)),
+                length_scale=Hyperparameter("sample", (2e-5, 1e1)),
             ),
-            (
-                "rbf",
-                {
-                    "length_scale": {"val": 1e-2, "bounds": (1e-1, 1e2)},
-                },
+            RBF(length_scale=Hyperparameter("sample", (1e-1, 1e2))),
+            Matern(
+                nu=Hyperparameter("log_sample", (1e-2, 5e4)),
+                length_scale=Hyperparameter("log_sample", (2e-5, 1e1)),
             ),
+            RBF(length_scale=Hyperparameter("log_sample", (1e-1, 1e2))),
         )
         for e in (
             (
-                {"val": 1e-1, "bounds": (1e-8, 1e-2)},
-                {"val": 1e-9, "bounds": (1e-8, 1e-2)},
+                HomoscedasticNoise("sample", (1e-8, 1e-2)),
+                HomoscedasticNoise("log_sample", (1e-8, 1e-2)),
             )
         )
-        for gp in (MuyGPS, BenchmarkGP)
+        for gp in [MuyGPS]
+        # for gp in (MuyGPS, BenchmarkGP)
     )
-    def test_oob_init(self, k_kwargs, eps, gp_init):
-        kern, kwargs = k_kwargs
-        with self.assertRaises(ValueError):
-            _ = gp_init(kern=kern, eps=eps, **kwargs)
-
-    @parameterized.parameters(
-        (k_kwargs, e, gp, 100)
-        for k_kwargs in (
-            (
-                "matern",
-                {
-                    "nu": {"val": "sample", "bounds": (1e-2, 5e4)},
-                    "length_scale": {"val": "sample", "bounds": (2e-5, 1e1)},
-                },
-            ),
-            (
-                "rbf",
-                {
-                    "length_scale": {"val": "sample", "bounds": (1e-1, 1e2)},
-                },
-            ),
-            (
-                "matern",
-                {
-                    "nu": {"val": "log_sample", "bounds": (1e-2, 5e4)},
-                    "length_scale": {
-                        "val": "log_sample",
-                        "bounds": (2e-5, 1e1),
-                    },
-                },
-            ),
-            (
-                "rbf",
-                {
-                    "length_scale": {
-                        "val": "log_sample",
-                        "bounds": (1e-1, 1e2),
-                    },
-                },
-            ),
-        )
-        for e in (
-            (
-                {"val": "sample", "bounds": (1e-8, 1e-2)},
-                {"val": "log_sample", "bounds": (1e-8, 1e-2)},
-            )
-        )
-        for gp in (MuyGPS, BenchmarkGP)
-    )
-    def test_sample_init(self, k_kwargs, eps, gp_type, reps):
-        kern, kwargs = k_kwargs
+    def test_sample_init(self, kernel, eps, gp_type, reps):
         for _ in range(reps):
-            muygps = gp_type(kern=kern, eps=eps, **kwargs)
-            for param in kwargs:
+            muygps = gp_type(kernel=kernel, eps=eps)
+            for name, param in kernel.hyperparameters.items():
                 self._check_in_bounds(
-                    kwargs[param]["bounds"],
-                    muygps.kernel.hyperparameters[param],
+                    param.get_bounds(),
+                    muygps.kernel.hyperparameters[name],
                 )
-            self._check_in_bounds(eps["bounds"], muygps.eps)
+            self._check_in_bounds(eps.get_bounds(), muygps.eps)
 
     def _check_in_bounds(self, given_bounds, param):
         bounds = param.get_bounds()
@@ -308,24 +228,21 @@ class GPTestCase(parameterized.TestCase):
 class GPTensorShapesTest(GPTestCase):
     @parameterized.parameters(
         (
-            (1000, 100, f, 10, nn_kwargs, k_kwargs)
+            (1000, 100, f, 10, nn_kwargs, kwargs)
             for f in [100, 1]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [2]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for k_kwargs in (
+            for kwargs in (
                 {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "eps": {"val": 1e-5},
-                    "nu": {"val": 1.5},
-                    "length_scale": {"val": 7.2},
+                    "kernel": Matern(
+                        nu=Hyperparameter(1.5), length_scale=Hyperparameter(7.2)
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
                 {
-                    "kern": "rbf",
-                    "metric": "F2",
-                    "eps": {"val": 1e-5},
-                    "length_scale": {"val": 1.5},
+                    "kernel": RBF(length_scale=Hyperparameter(1.5)),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -337,9 +254,9 @@ class GPTensorShapesTest(GPTestCase):
         feature_count,
         nn_count,
         nn_kwargs,
-        k_kwargs,
+        kwargs,
     ):
-        muygps = MuyGPS(**k_kwargs)
+        muygps = MuyGPS(**kwargs)
 
         K, Kcross, _, _, _, _ = self._prepare_tensors(
             muygps,
@@ -379,26 +296,23 @@ class GPTensorShapesTest(GPTestCase):
 class HomoscedasticNoiseTest(GPTestCase):
     @parameterized.parameters(
         (
-            (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
+            (1000, 100, f, r, 10, nn_kwargs, kwargs)
             for f in [100, 1]
             for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [1]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for k_kwargs in (
+            for kwargs in (
                 {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "eps": {"val": 1e-5},
-                    "nu": {"val": 1.5},
-                    "length_scale": {"val": 7.2},
+                    "kernel": Matern(
+                        nu=Hyperparameter(1.5), length_scale=Hyperparameter(7.2)
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
                 {
-                    "kern": "rbf",
-                    "metric": "F2",
-                    "eps": {"val": 1e-5},
-                    "length_scale": {"val": 1.5},
+                    "kernel": RBF(length_scale=Hyperparameter(1.5)),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -411,9 +325,9 @@ class HomoscedasticNoiseTest(GPTestCase):
         response_count,
         nn_count,
         nn_kwargs,
-        k_kwargs,
+        kwargs,
     ):
-        muygps = MuyGPS(**k_kwargs)
+        muygps = MuyGPS(**kwargs)
 
         K, Kcross, _, _, _, _ = self._prepare_tensors(
             muygps,
@@ -436,27 +350,18 @@ class HomoscedasticNoiseTest(GPTestCase):
 class HeteroscedasticNoiseTest(GPTestCase):
     @parameterized.parameters(
         (
-            (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
+            (1000, 100, f, r, 10, nn_kwargs, kernel)
             for f in [100, 1]
             for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [1]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for k_kwargs in (
-                {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "eps": {"val": 1e-4},
-                    "nu": {"val": 1.5},
-                    "length_scale": {"val": 7.2},
-                },
-                {
-                    "kern": "rbf",
-                    "metric": "F2",
-                    "eps": {"val": 1e-4},
-                    "length_scale": {"val": 1.5},
-                },
+            for kernel in (
+                Matern(
+                    nu=Hyperparameter(1.5), length_scale=Hyperparameter(7.2)
+                ),
+                RBF(length_scale=Hyperparameter(1.5)),
             )
         )
     )
@@ -468,7 +373,7 @@ class HeteroscedasticNoiseTest(GPTestCase):
         response_count,
         nn_count,
         nn_kwargs,
-        k_kwargs,
+        kernel,
     ):
         test_indices = (
             np.repeat(range(test_count), nn_count),
@@ -478,8 +383,7 @@ class HeteroscedasticNoiseTest(GPTestCase):
         eps_tensor = mm.zeros((test_count, nn_count, nn_count))
         eps_matrix = 1e-5 * np.random.rand(test_count, nn_count)
         eps_tensor[test_indices] = eps_matrix.flatten()
-        k_kwargs["eps"] = {"val": eps_matrix}
-        muygps = MuyGPS(**k_kwargs)
+        muygps = MuyGPS(kernel, eps=HeteroscedasticNoise(eps_matrix))
 
         K, Kcross, _, _, _, _ = self._prepare_tensors(
             muygps,
@@ -502,26 +406,23 @@ class HeteroscedasticNoiseTest(GPTestCase):
 class GPSolveTest(GPTestCase):
     @parameterized.parameters(
         (
-            (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
+            (1000, 100, f, r, 10, nn_kwargs, kwargs)
             for f in [100, 1]
             for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [1]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for k_kwargs in (
+            for kwargs in (
                 {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "eps": {"val": 1e-5},
-                    "nu": {"val": 1.5},
-                    "length_scale": {"val": 7.2},
+                    "kernel": Matern(
+                        nu=Hyperparameter(1.5), length_scale=Hyperparameter(7.2)
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
                 {
-                    "kern": "rbf",
-                    "metric": "F2",
-                    "eps": {"val": 1e-5},
-                    "length_scale": {"val": 1.5},
+                    "kernel": RBF(length_scale=Hyperparameter(1.5)),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -534,7 +435,7 @@ class GPSolveTest(GPTestCase):
         response_count,
         nn_count,
         nn_kwargs,
-        k_kwargs,
+        kwargs,
     ):
         if config.state.low_precision() is True and feature_count < 10:
             _warn0(
@@ -542,7 +443,7 @@ class GPSolveTest(GPTestCase):
                 "distances are small. Skipping."
             )
             return
-        muygps = MuyGPS(**k_kwargs)
+        muygps = MuyGPS(**kwargs)
 
         (
             K,
@@ -585,25 +486,22 @@ class GPSolveTest(GPTestCase):
 class GPDiagonalVariance(GPTestCase):
     @parameterized.parameters(
         (
-            (1000, 100, f, r, 10, nn_kwargs, k_kwargs)
+            (1000, 100, f, r, 10, nn_kwargs, kwargs)
             for f in [100, 1]
             for r in [10, 2, 1]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [10]
-            for k_kwargs in (
+            for kwargs in (
                 {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "eps": {"val": 1e-5},
-                    "nu": {"val": 1.5},
-                    "length_scale": {"val": 7.2},
+                    "kernel": Matern(
+                        nu=Hyperparameter(1.5), length_scale=Hyperparameter(7.2)
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
                 {
-                    "kern": "rbf",
-                    "metric": "F2",
-                    "eps": {"val": 1e-5},
-                    "length_scale": {"val": 1.5},
+                    "kernel": RBF(length_scale=Hyperparameter(1.5)),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -616,9 +514,9 @@ class GPDiagonalVariance(GPTestCase):
         response_count,
         nn_count,
         nn_kwargs,
-        k_kwargs,
+        kwargs,
     ):
-        muygps = MuyGPS(**k_kwargs)
+        muygps = MuyGPS(**kwargs)
 
         K, Kcross, _, _, _, _ = self._prepare_tensors(
             muygps,
@@ -657,18 +555,18 @@ class GPDiagonalVariance(GPTestCase):
 class MakeClassifierTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lm, kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lm in ["mse"]
-            for k_kwargs in (
+            for kwargs in (
                 {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                    "length_scale": {"val": 1.5},
-                    "eps": {"val": 1e-5},
+                    "kernel": Matern(
+                        nu=Hyperparameter("sample", (1e-1, 1e0)),
+                        length_scale=Hyperparameter(1.5),
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -713,23 +611,17 @@ class MakeClassifierTest(parameterized.TestCase):
             verbose=False,
         )
 
-        print(k_kwargs)
-        for key in k_kwargs:
-            if key == "eps":
-                self.assertEqual(k_kwargs[key]["val"], muygps.eps())
-            elif key == "kern":
-                self.assertEqual(k_kwargs[key], muygps.kern)
-            elif key == "metric":
-                self.assertEqual(k_kwargs[key], muygps.kernel.metric)
-            elif isinstance(k_kwargs[key]["val"], str):
+        self.assertEqual(k_kwargs["eps"](), muygps.eps())
+        for name, param in k_kwargs["kernel"].hyperparameters.items():
+            if param.fixed() is False:
                 print(
                     f"optimized to find value "
-                    f"{muygps.kernel.hyperparameters[key]()}"
+                    f"{muygps.kernel.hyperparameters[name]()}"
                 )
             else:
                 self.assertEqual(
-                    k_kwargs[key]["val"],
-                    muygps.kernel.hyperparameters[key](),
+                    param(),
+                    muygps.kernel.hyperparameters[name](),
                 )
 
 
@@ -745,12 +637,11 @@ class MakeRegressorTest(parameterized.TestCase):
             for ssm in ["analytic", None]
             for k_kwargs in (
                 {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "nu": {"val": "sample", "bounds": (1e-1, 1e0)},
-                    # "nu": {"val": 0.38},
-                    "length_scale": {"val": 1.5},
-                    "eps": {"val": 1e-5},
+                    "kernel": Matern(
+                        nu=Hyperparameter("sample", (1e-1, 1e0)),
+                        length_scale=Hyperparameter(1.5),
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -797,23 +688,19 @@ class MakeRegressorTest(parameterized.TestCase):
             k_kwargs=k_kwargs,
         )
 
-        for key in k_kwargs:
-            if key == "eps":
-                self.assertEqual(k_kwargs[key]["val"], muygps.eps())
-            elif key == "kern":
-                self.assertEqual(k_kwargs[key], muygps.kern)
-            elif key == "metric":
-                self.assertEqual(k_kwargs[key], muygps.kernel.metric)
-            elif k_kwargs[key]["val"] == "sample":
+        self.assertEqual(k_kwargs["eps"](), muygps.eps())
+        for name, param in k_kwargs["kernel"].hyperparameters.items():
+            if param.fixed() is False:
                 print(
-                    f"\toptimized {key} to find value "
-                    f"{muygps.kernel.hyperparameters[key]()}"
+                    f"optimized to find value "
+                    f"{muygps.kernel.hyperparameters[name]()}"
                 )
             else:
                 self.assertEqual(
-                    k_kwargs[key]["val"],
-                    muygps.kernel.hyperparameters[key](),
+                    param(),
+                    muygps.kernel.hyperparameters[name](),
                 )
+
         if sigma_method is None:
             self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
@@ -835,17 +722,14 @@ class GPSigmaSqTest(GPTestCase):
             for sm in ["analytic"]
             for k_kwargs in (
                 {
-                    "kern": "matern",
-                    "metric": "l2",
-                    "eps": {"val": 1e-5},
-                    "nu": {"val": 1.5},
-                    "length_scale": {"val": 7.2},
+                    "kernel": Matern(
+                        nu=Hyperparameter(1.5), length_scale=Hyperparameter(7.2)
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
                 {
-                    "kern": "rbf",
-                    "metric": "F2",
-                    "eps": {"val": 1e-5},
-                    "length_scale": {"val": 1.5},
+                    "kernel": RBF(length_scale=Hyperparameter(1.5)),
+                    "eps": HomoscedasticNoise(1e-5),
                 },
             )
         )

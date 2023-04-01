@@ -2,14 +2,18 @@
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
-from torch import nn
+
+from typing import List, Union
+
+from MuyGPyS._src.math.torch import nn
+from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
 
 
 class SVDKMuyGPs(nn.Module):
     def __init__(
         self,
-        kernel_eps,
+        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
         nu,
         length_scale,
         batch_indices,
@@ -26,7 +30,7 @@ class SVDKMuyGPs(nn.Module):
             nn.Dropout(0.5),
             nn.PReLU(1),
         )
-        self.eps = kernel_eps
+        self.eps = eps
         self.nu = nu
         self.length_scale = length_scale
         self.batch_indices = batch_indices
@@ -53,7 +57,7 @@ class SVDKMultivariateMuyGPs(nn.Module):
     def __init__(
         self,
         num_models,
-        kernel_eps,
+        eps: List[Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise]],
         nu,
         length_scale,
         batch_indices,
@@ -70,7 +74,7 @@ class SVDKMultivariateMuyGPs(nn.Module):
             nn.Dropout(0.5),
             nn.ELU(1),
         )
-        self.eps = kernel_eps
+        self.eps = eps
         self.nu = nu
         self.length_scale = length_scale
         self.batch_indices = batch_indices

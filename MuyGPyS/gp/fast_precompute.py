@@ -17,13 +17,16 @@ from MuyGPyS.gp.kernels import apply_hyperparameter
 from MuyGPyS.gp.noise import (
     HomoscedasticNoise,
     HeteroscedasticNoise,
+    NullNoise,
     perturb_with_noise_model,
 )
 
 
 class FastPrecomputeCoefficients:
     def __init__(
-        self, eps: Union[HomoscedasticNoise, HeteroscedasticNoise], **kwargs
+        self,
+        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
+        **kwargs
     ):
         self.eps = eps
         self._fn = _muygps_fast_posterior_mean_precompute

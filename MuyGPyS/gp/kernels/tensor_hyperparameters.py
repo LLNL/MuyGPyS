@@ -10,13 +10,9 @@ TensorHyperparameters specifications are expected to be provided in `Dict` form 
 the key `"val"`. `"val"` is either an mm.ndarray value.
 """
 
-from typing import Callable, cast, List, Optional, Type
+from typing import Callable, List, Optional, Tuple, Type
 
-from MuyGPyS import config
-
-import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
 
 class TensorHyperparameter:
@@ -101,6 +97,11 @@ class TensorHyperparameter:
             `True`.
         """
         return True
+
+    def get_bounds(self) -> Tuple[float, float]:
+        raise NotImplementedError(
+            "TensorHyperparameter does not support optimization bounds!"
+        )
 
 
 def _init_tensor_hyperparameter(

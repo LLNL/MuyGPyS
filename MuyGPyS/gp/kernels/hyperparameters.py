@@ -23,6 +23,7 @@ from MuyGPyS import config
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
+from MuyGPyS.gp.kernels.tensor_hyperparameters import TensorHyperparameter
 
 
 class Hyperparameter:
@@ -73,7 +74,7 @@ class Hyperparameter:
     def __init__(
         self,
         val: Union[str, float],
-        bounds: Union[str, Tuple[float, float]],
+        bounds: Union[str, Tuple[float, float]] = "fixed",
     ):
         """
         Initialize a hyperparameter.
@@ -81,20 +82,13 @@ class Hyperparameter:
         self._set_bounds(bounds)
         self._set_val(val)
 
-    def _set(
-        self,
-        val: Optional[Union[str, float]] = None,
-        bounds: Optional[Union[str, Tuple[float, float]]] = None,
-    ) -> None:
+    def _set(self, rhs) -> None:
         """
         Reset hyperparameter value and/or bounds using keyword arguments.
 
         Args:
-            val:
-                A valid value or `"sample"` or `"log_sample"`.
-            bounds:
-                Iterable container of len 2 containing lower and upper bounds
-                (in that order), or the string `"fixed"`.
+            rhs:
+                Another hyperparameter.
         Raises:
             ValueError:
                 Any `bounds` string other than `"fixed"` will produce an error.
@@ -119,10 +113,9 @@ class Hyperparameter:
                 A `val` outside of the range specified by `self._bounds` will
                 produce an error.
         """
-        if bounds is not None:
-            self._set_bounds(bounds)
-        if val is not None:
-            self._set_val(val)
+        self._val = rhs._val
+        self._bounds = rhs._bounds
+        self._fixed = rhs._fixed
 
     def _set_val(self, val: Union[str, float]) -> None:
         """
@@ -322,7 +315,9 @@ def _init_hyperparameter(
     return type(val, bounds)
 
 
-def apply_hyperparameter(fn: Callable, param: Hyperparameter, name: str):
+def apply_hyperparameter(
+    fn: Callable, param: Union[TensorHyperparameter, Hyperparameter], name: str
+):
     if param.fixed():
 
         def applied_fn(*args, **kwargs):
@@ -335,7 +330,7 @@ def apply_hyperparameter(fn: Callable, param: Hyperparameter, name: str):
 
 
 def append_optim_params_lists(
-    param: Hyperparameter,
+    param: Union[TensorHyperparameter, Hyperparameter],
     name: str,
     names: List[str],
     params: List[float],

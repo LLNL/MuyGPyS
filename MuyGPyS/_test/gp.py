@@ -3,12 +3,15 @@
 #
 # SPDX-License-Identifier: MIT
 
+from copy import deepcopy
 from typing import Dict, Tuple, Union
 
 from sklearn.metrics import pairwise_distances as skl_pairwise_distances
 
 import MuyGPyS._src.math.numpy as np
-from MuyGPyS.gp.kernels import _get_kernel, _init_hyperparameter, Hyperparameter
+from MuyGPyS.gp.distortion import NullDistortion
+from MuyGPyS.gp.kernels import Hyperparameter, Matern
+from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.sigma_sq import SigmaSq
 
 
@@ -94,36 +97,31 @@ class BenchmarkGP:
     Performs GP inference and simulation by way of analytic computations.
 
     Args:
-        kern:
-            The kernel to be used. Each kernel supports different
-            hyperparameters that can be specified in kwargs.
-            NOTE[bwp] Currently supports `matern` and `rbf`.
-        variance_mode:
-            Specifies the type of variance to return. Currently supports
-            `diagonal` and None. If None, report no variance term.
-        apply_sigma_sq:
-            Indicates whether to scale the posterior variance by `sigma_sq`.
-            Unused if `variance_mode is None` or `sigma_sq == "unlearned"`.
-        kwargs:
-            Kernel parameters. See :ref:`MuyGPyS-gp-kernels`.
+        kernel:
+            The kernel to be used. Only supports Matern.
+        eps:
+            The noise model.
     """
 
     def __init__(
         self,
-        kern: str = "matern",
-        eps: Dict[str, Union[float, Tuple[float, float]]] = {"val": 0.0},
-        **kwargs,
+        kernel: Matern,
+        eps: Union[
+            HeteroscedasticNoise, HomoscedasticNoise, NullNoise
+        ] = HomoscedasticNoise(0.0),
     ):
         """
         Initialize.
         """
-        self.kern = kern.lower()
-        # this is pretty hacky, and should be changed to be more disciplined
-        kwargs.setdefault("metric", "l2")
-        self.metric = kwargs.get("metric")
-        kwargs["metric"] = None
-        self.kernel = _get_kernel(self.kern, **kwargs)
-        self.eps = _init_hyperparameter(1e-14, "fixed", **eps)
+        self.kernel = kernel
+        if not isinstance(self.kernel._distortion_fn, NullDistortion):
+            raise ValueError(
+                f"BenchmarkGP must use NullDistortion, not "
+                f"{type(self.kernel._distortion_fn)}"
+            )
+        # only supporting l2/Matern
+        self.metric = self.kernel._distortion_fn.metric
+        self.eps = eps
         self.sigma_sq = SigmaSq()
 
     def set_eps(self, **eps) -> None:
