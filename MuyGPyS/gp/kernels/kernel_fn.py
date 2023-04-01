@@ -37,7 +37,7 @@ Example:
     >>> Kcross = kern(crosswise_diffs)
 """
 
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.gp.distortion import IsotropicDistortion, NullDistortion
@@ -55,16 +55,12 @@ class KernelFn:
             Ignored (by this base class) keyword arguments.
     """
 
-    def __init__(self, metric="l2", **kwargs):
+    def __init__(self, metric: Union[IsotropicDistortion, NullDistortion]):
         """
         Initialize dict holding hyperparameters.
         """
         self.hyperparameters = dict()
-        self.metric = metric
-        if self.metric is None:
-            self._distortion_fn = NullDistortion()
-        else:
-            self._distortion_fn = IsotropicDistortion(self.metric)
+        self._distortion_fn = metric
 
     def set_params(self, **kwargs) -> None:
         """

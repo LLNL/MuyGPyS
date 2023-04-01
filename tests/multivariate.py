@@ -33,6 +33,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.distortion import NullDistortion
 from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
@@ -273,7 +274,7 @@ class OptimTest(parameterized.TestCase):
                 "kernel": Matern(
                     nu=Hyperparameter(target[0]),
                     length_scale=Hyperparameter(1.5),
-                    metric=None,
+                    metric=NullDistortion("l2"),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },
@@ -281,7 +282,7 @@ class OptimTest(parameterized.TestCase):
                 "kernel": Matern(
                     nu=Hyperparameter(target[1]),
                     length_scale=Hyperparameter(0.7),
-                    metric=None,
+                    metric=NullDistortion("l2"),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },

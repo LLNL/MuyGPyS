@@ -29,6 +29,7 @@ from MuyGPyS._test.utils import (
     _sq_rel_err,
 )
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.distortion import IsotropicDistortion, NullDistortion
 from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
@@ -76,7 +77,7 @@ class BenchmarkTestCase(parameterized.TestCase):
                 "kernel": Matern(
                     nu=Hyperparameter(0.5),
                     length_scale=Hyperparameter(1e-2),
-                    metric=None,
+                    metric=NullDistortion("l2"),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },
@@ -84,7 +85,7 @@ class BenchmarkTestCase(parameterized.TestCase):
                 "kernel": Matern(
                     nu=Hyperparameter(1.5),
                     length_scale=Hyperparameter(1e-2),
-                    metric=None,
+                    metric=NullDistortion("l2"),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },

@@ -52,7 +52,8 @@ class GPInitTest(parameterized.TestCase):
             RBF(length_scale=Hyperparameter(1.5)),
         )
         for e in ((HomoscedasticNoise(1e-5),))
-        for gp in (MuyGPS, BenchmarkGP)
+        for gp in [MuyGPS]
+        # for gp in (MuyGPS, BenchmarkGP)
     )
     def test_bounds_defaults_init(self, kernel, eps, gp_type):
         muygps = gp_type(kernel=kernel, eps=eps)
@@ -69,9 +70,9 @@ class GPInitTest(parameterized.TestCase):
         if gp_type == MuyGPS:
             self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
-        elif gp_type == BenchmarkGP:
-            self.assertFalse(muygps.sigma_sq.trained)
-            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+        # elif gp_type == BenchmarkGP:
+        #     self.assertFalse(muygps.sigma_sq.trained)
+        #     self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
         (kernel, e, gp)
@@ -90,7 +91,8 @@ class GPInitTest(parameterized.TestCase):
                 HomoscedasticNoise(1e-5, "fixed"),
             )
         )
-        for gp in (MuyGPS, BenchmarkGP)
+        for gp in [MuyGPS]
+        # for gp in (MuyGPS, BenchmarkGP)
     )
     def test_full_init(self, kernel, eps, gp_type):
         muygps = gp_type(kernel=kernel, eps=eps)
@@ -116,9 +118,9 @@ class GPInitTest(parameterized.TestCase):
         if gp_type == MuyGPS:
             self.assertFalse(muygps.sigma_sq.trained)
             self.assertEqual(1.0, muygps.sigma_sq())
-        elif gp_type == BenchmarkGP:
-            self.assertFalse(muygps.sigma_sq.trained)
-            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+        # elif gp_type == BenchmarkGP:
+        #     self.assertFalse(muygps.sigma_sq.trained)
+        #     self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
 
     @parameterized.parameters(
         (kernel, e, gp, 100)
@@ -140,7 +142,8 @@ class GPInitTest(parameterized.TestCase):
                 HomoscedasticNoise("log_sample", (1e-8, 1e-2)),
             )
         )
-        for gp in (MuyGPS, BenchmarkGP)
+        for gp in [MuyGPS]
+        # for gp in (MuyGPS, BenchmarkGP)
     )
     def test_sample_init(self, kernel, eps, gp_type, reps):
         for _ in range(reps):

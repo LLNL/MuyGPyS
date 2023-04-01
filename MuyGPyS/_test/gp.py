@@ -9,12 +9,8 @@ from typing import Dict, Tuple, Union
 from sklearn.metrics import pairwise_distances as skl_pairwise_distances
 
 import MuyGPyS._src.math.numpy as np
-from MuyGPyS.gp.kernels import (
-    _get_kernel,
-    Hyperparameter,
-    Matern,
-    RBF,
-)
+from MuyGPyS.gp.distortion import NullDistortion
+from MuyGPyS.gp.kernels import Hyperparameter, Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.sigma_sq import SigmaSq
 
@@ -118,8 +114,13 @@ class BenchmarkGP:
         Initialize.
         """
         self.kernel = kernel
+        if not isinstance(self.kernel._distortion_fn, NullDistortion):
+            raise ValueError(
+                f"BenchmarkGP must use NullDistortion, not "
+                f"{type(self.kernel._distortion_fn)}"
+            )
         # only supporting l2/Matern
-        self.metric = "l2"
+        self.metric = self.kernel._distortion_fn.metric
         self.eps = eps
         self.sigma_sq = SigmaSq()
 

@@ -35,7 +35,7 @@ Example:
     >>> Kcross = kern(crosswise_diffs)
 """
 
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import (
@@ -45,7 +45,11 @@ from MuyGPyS._src.gp.kernels import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
-from MuyGPyS.gp.distortion import embed_with_distortion_model
+from MuyGPyS.gp.distortion import (
+    embed_with_distortion_model,
+    IsotropicDistortion,
+    NullDistortion,
+)
 from MuyGPyS.gp.kernels import (
     append_optim_params_lists,
     apply_hyperparameter,
@@ -108,14 +112,16 @@ class Matern(KernelFn):
         length_scale:
             A hyperparameter dict defining the length_scale parameter.
         metric:
-            The distance function to be used. Defaults to `"l2"`.
+            The distance function to be used.
     """
 
     def __init__(
         self,
         nu: Hyperparameter = Hyperparameter(0.5),
         length_scale: Hyperparameter = Hyperparameter(1.0),
-        metric: Optional[str] = "l2",
+        metric: Union[
+            IsotropicDistortion, NullDistortion
+        ] = IsotropicDistortion("l2"),
     ):
         super().__init__(metric=metric)
         self.nu = nu
