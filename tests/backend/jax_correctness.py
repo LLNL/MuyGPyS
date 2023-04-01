@@ -115,8 +115,8 @@ from MuyGPyS._src.optimize.sigma_sq.jax import (
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import apply_distortion
-from MuyGPyS.gp.kernels import Hyperparameter
-from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
+from MuyGPyS.gp.kernels import Hyperparameter, Matern
+from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import noise_perturb
 from MuyGPyS.neighbors import NN_Wrapper
@@ -187,15 +187,17 @@ class TensorsTestCase(parameterized.TestCase):
             cls.eps_heteroscedastic_train_n
         )
         cls.k_kwargs = {
-            "kern": "matern",
-            "length_scale": Hyperparameter(cls.length_scale),
-            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
+            "kernel": Matern(
+                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                length_scale=Hyperparameter(cls.length_scale),
+            ),
             "eps": HomoscedasticNoise(cls.eps),
         }
         cls.k_kwargs_heteroscedastic = {
-            "kern": "matern",
-            "length_scale": Hyperparameter(cls.length_scale),
-            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
+            "kernel": Matern(
+                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                length_scale=Hyperparameter(cls.length_scale),
+            ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n),
         }
         cls.train_features_n = _make_gaussian_matrix(
@@ -835,13 +837,17 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             cls.eps_heteroscedastic_train_n
         )
         cls.k_kwargs_1 = {
-            "length_scale": Hyperparameter(cls.length_scale),
-            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
+            "kernel": Matern(
+                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                length_scale=Hyperparameter(cls.length_scale),
+            ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs_2 = {
-            "length_scale": Hyperparameter(cls.length_scale),
-            "nu": Hyperparameter(cls.nu, cls.nu_bounds),
+            "kernel": Matern(
+                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                length_scale=Hyperparameter(cls.length_scale),
+            ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs = [cls.k_kwargs_1, cls.k_kwargs_2]
@@ -864,7 +870,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.nbrs_lookup = NN_Wrapper(
             cls.train_features_n, cls.nn_count, **_exact_nn_kwarg_options[0]
         )
-        cls.muygps = MMuyGPS("matern", *cls.k_kwargs)
+        cls.muygps = MMuyGPS(*cls.k_kwargs)
         cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
             cls.nbrs_lookup, cls.batch_count, cls.train_count
         )
