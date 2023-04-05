@@ -25,6 +25,7 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
 )
+from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.examples.two_class_classify_uq import example_lambdas
 from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -88,7 +89,10 @@ class MNISTTest(ClassifyAPITest):
                     {
                         "kernel": Matern(
                             nu=Hyperparameter(0.5, (1e-1, 1e0)),
-                            length_scale=Hyperparameter(1.5),
+                            metric=IsotropicDistortion(
+                                "l2",
+                                length_scale=Hyperparameter(1.5),
+                            ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
                     },
@@ -179,7 +183,10 @@ class StargalClassifyTest(StargalTest):
                     {
                         "kernel": Matern(
                             nu=Hyperparameter(0.5, (1e-1, 1e0)),
-                            length_scale=Hyperparameter(1.5),
+                            metric=IsotropicDistortion(
+                                "l2",
+                                length_scale=Hyperparameter(1.5),
+                            ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
                     },
@@ -188,7 +195,10 @@ class StargalClassifyTest(StargalTest):
                     0.9,
                     {
                         "kernel": RBF(
-                            length_scale=Hyperparameter(1.5, (0.5, 1e1))
+                            metric=IsotropicDistortion(
+                                "F2",
+                                length_scale=Hyperparameter(1.5, (0.5, 1e1)),
+                            )
                         ),
                         "eps": HomoscedasticNoise(1e-3),
                     },
@@ -259,7 +269,10 @@ class StargalUQTest(StargalTest):
                     {
                         "kernel": Matern(
                             nu=Hyperparameter(0.5, (1e-1, 1e0)),
-                            length_scale=Hyperparameter(1.5),
+                            metric=IsotropicDistortion(
+                                "l2",
+                                length_scale=Hyperparameter(1.5),
+                            ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
                     },
@@ -268,7 +281,10 @@ class StargalUQTest(StargalTest):
                     0.9,
                     {
                         "kernel": RBF(
-                            length_scale=Hyperparameter(1.5, (0.5, 1e1))
+                            metric=IsotropicDistortion(
+                                "F2",
+                                length_scale=Hyperparameter(1.5),
+                            )
                         ),
                         "eps": HomoscedasticNoise(1e-3),
                     },
@@ -332,14 +348,20 @@ class MultivariateStargalClassifyTest(StargalTest):
                         {
                             "kernel": Matern(
                                 nu=Hyperparameter(0.5, (1e-1, 1e0)),
-                                length_scale=Hyperparameter(1.5),
+                                metric=IsotropicDistortion(
+                                    "l2",
+                                    length_scale=Hyperparameter(1.5),
+                                ),
                             ),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": Matern(
                                 nu=Hyperparameter(0.5, (1e-1, 1e0)),
-                                length_scale=Hyperparameter(1.5),
+                                metric=IsotropicDistortion(
+                                    "l2",
+                                    length_scale=Hyperparameter(1.5),
+                                ),
                             ),
                             "eps": HomoscedasticNoise(1e-3),
                         },
@@ -347,17 +369,26 @@ class MultivariateStargalClassifyTest(StargalTest):
                 ),
                 (
                     0.85,
-                    "rbf",
                     [
                         {
                             "kernel": RBF(
-                                length_scale=Hyperparameter(1.5, (0.5, 1e1))
+                                metric=IsotropicDistortion(
+                                    "F2",
+                                    length_scale=Hyperparameter(
+                                        1.5, (0.5, 1e1)
+                                    ),
+                                )
                             ),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": RBF(
-                                length_scale=Hyperparameter(1.5, (0.5, 1e1))
+                                metric=IsotropicDistortion(
+                                    "F2",
+                                    length_scale=Hyperparameter(
+                                        1.5, (0.5, 1e1)
+                                    ),
+                                )
                             ),
                             "eps": HomoscedasticNoise(1e-3),
                         },
@@ -376,7 +407,7 @@ class MultivariateStargalClassifyTest(StargalTest):
         nn_kwargs,
         k_kwargs,
     ):
-        target_accuracy, kern, k_kwargs = k_kwargs
+        target_accuracy, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 5000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
@@ -390,7 +421,6 @@ class MultivariateStargalClassifyTest(StargalTest):
             obj_method=obj_method,
             opt_method=opt_method,
             nn_kwargs=nn_kwargs,
-            kern=kern,
             k_kwargs=k_kwargs,
             opt_kwargs=opt_kwargs,
             verbose=False,

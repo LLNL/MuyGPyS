@@ -11,51 +11,35 @@ import MuyGPyS._src.math.jax as jnp
 
 
 @jit
-def _rbf_fn(
-    squared_dists: jnp.ndarray, length_scale: float, **kwargs
-) -> jnp.ndarray:
+def _rbf_fn(squared_dists: jnp.ndarray, **kwargs) -> jnp.ndarray:
     return jnp.exp(-squared_dists / (2 * length_scale**2))
 
 
 @jit
-def _matern_05_fn(
-    dists: jnp.ndarray, length_scale: float, **kwargs
-) -> jnp.ndarray:
-    dists = dists / length_scale
+def _matern_05_fn(dists: jnp.ndarray, **kwargs) -> jnp.ndarray:
     return jnp.exp(-dists)
 
 
 @jit
-def _matern_15_fn(
-    dists: jnp.ndarray, length_scale: float, **kwargs
-) -> jnp.ndarray:
-    dists = dists / length_scale
+def _matern_15_fn(dists: jnp.ndarray, **kwargs) -> jnp.ndarray:
     K = dists * jnp.sqrt(3)
     return (1.0 + K) * jnp.exp(-K)
 
 
 @jit
-def _matern_25_fn(
-    dists: jnp.ndarray, length_scale: float, **kwargs
-) -> jnp.ndarray:
-    dists = dists / length_scale
+def _matern_25_fn(dists: jnp.ndarray, **kwargs) -> jnp.ndarray:
     K = dists * jnp.sqrt(5)
     return (1.0 + K + K**2 / 3.0) * jnp.exp(-K)
 
 
 @jit
-def _matern_inf_fn(
-    dists: jnp.ndarray, length_scale: float, **kwargs
-) -> jnp.ndarray:
-    dists = dists / length_scale
+def _matern_inf_fn(dists: jnp.ndarray, **kwargs) -> jnp.ndarray:
     return jnp.exp(-(dists**2) / 2.0)
 
 
 @jit
-def _matern_gen_fn(
-    dists: jnp.ndarray, nu: float, length_scale: float, **kwargs
-) -> jnp.ndarray:
-    K = dists / length_scale
+def _matern_gen_fn(dists: jnp.ndarray, nu: float, **kwargs) -> jnp.ndarray:
+    K = dists
     diag_indices = jnp.arange(K.shape[1])
     if len(K.shape) == 3:
         K = K.at[:, diag_indices, diag_indices].set(1.0)

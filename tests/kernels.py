@@ -25,6 +25,10 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp.tensors import crosswise_tensor, pairwise_tensor
 from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern
+from MuyGPyS.gp.distortion import (
+    IsotropicDistortion,
+    NullDistortion,
+)
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
 
@@ -333,6 +337,7 @@ class KernelTest(parameterized.TestCase):
             )
 
     def _check_params(self, kern_fn, name, param):
+        print(name)
         if param() is not None:
             self.assertEqual(param(), kern_fn.hyperparameters[name]())
         if param.get_bounds() is not None:
@@ -357,14 +362,6 @@ class RBFTest(KernelTest):
                 {"length_scale": Hyperparameter(1.0, (1e-5, 1e1))},
                 {"length_scale": Hyperparameter(2.0, (1e-4, 1e3))},
             ]
-            # for f in [100]
-            # for nn in [5]
-            # for nn_kwargs in [_basic_nn_kwarg_options[1]]
-            # for k_kwargs in [
-            #     {
-            #         "length_scale": Hyperparameter(10.0, (1e-5, 1e1)),
-            #     }
-            # ]
         )
     )
     def test_rbf(
@@ -381,7 +378,8 @@ class RBFTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, _ = nbrs_lookup.get_nns(test)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        rbf = RBF(**k_kwargs)
+        dist_model = IsotropicDistortion("F2", **k_kwargs)
+        rbf = RBF(metric=dist_model)
         self._check_params_chassis(rbf, **k_kwargs)
         kern = _consistent_unchunk_tensor(rbf(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
@@ -419,7 +417,8 @@ class ParamTest(KernelTest):
         )
     )
     def test_rbf(self, k_kwargs, alt_kwargs):
-        self._test_chassis(RBF, k_kwargs, alt_kwargs)
+        dist_model = IsotropicDistortion("F2", k_kwargs["length_scale"])
+        self._test_chassis(RBF(dist_model), k_kwargs, alt_kwargs)
 
     @parameterized.parameters(
         (
@@ -442,17 +441,15 @@ class ParamTest(KernelTest):
                 {
                     "nu": Hyperparameter("sample", (1e-2, 5e4)),
                 },
-                {
-                    "length_scale": Hyperparameter(7.2),
-                },
             ]
         )
     )
     def test_matern(self, k_kwargs, alt_kwargs):
-        self._test_chassis(Matern, k_kwargs, alt_kwargs)
+        dist_model = IsotropicDistortion("l2", k_kwargs["length_scale"])
+        kern_fn = Matern(metric=dist_model, nu=k_kwargs["nu"])
+        self._test_chassis(kern_fn, k_kwargs, alt_kwargs)
 
-    def _test_chassis(self, kern, k_kwargs, alt_kwargs):
-        kern_fn = kern(**k_kwargs)
+    def _test_chassis(self, kern_fn, k_kwargs, alt_kwargs):
         self._check_params_chassis(kern_fn, **k_kwargs)
         # kern_fn.set_params(**alt_kwargs)
         # self._check_params_chassis(kern_fn, **alt_kwargs)
@@ -524,7 +521,9 @@ class MaternTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        mtn = Matern(**k_kwargs)
+        dist_model = IsotropicDistortion("l2", k_kwargs["length_scale"])
+        mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
+        # mtn = Matern(**k_kwargs)
         self._check_params_chassis(mtn, **k_kwargs)
         kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))

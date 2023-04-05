@@ -80,7 +80,7 @@ class Matern(KernelFn):
     The Màtern kernel.
 
     The Màtern kernel includes a length scale parameter :math:`\\ell>0` and an
-    additional smoothness parameter :math:`\\nu>0`. :math:`\\nu` is inversely
+    additional smoothness parameter :math:`\\nu>0`. :math:`\\nu` is
     proportional to the smoothness of the resulting function. The Màtern kernel
     also depends upon a distance function :math:`d(\\cdot, \\cdot)`.
     As :math:`\\nu\\rightarrow\\infty`, the kernel becomes equivalent to
@@ -109,25 +109,21 @@ class Matern(KernelFn):
     Args:
         nu:
             A hyperparameter dict defining the length_scale parameter.
-        length_scale:
-            A hyperparameter dict defining the length_scale parameter.
         metric:
-            The distance function to be used.
+            The distance function to be used. Includes length_scale
+            hyperparameter information via the MuyGPyS.gp.distortion module.
     """
 
     def __init__(
         self,
         nu: Hyperparameter = Hyperparameter(0.5),
-        length_scale: Hyperparameter = Hyperparameter(1.0),
         metric: Union[
             IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion("l2"),
+        ] = IsotropicDistortion("l2", length_scale=Hyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
         self.nu = nu
-        self.length_scale = length_scale
         self.hyperparameters["nu"] = self.nu
-        self.hyperparameters["length_scale"] = self.length_scale
         self._fn = _set_matern_fn(self.nu)
         self._fn = embed_with_distortion_model(self._fn, self._distortion_fn)
 
@@ -149,7 +145,7 @@ class Matern(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self._fn(diffs, nu=self.nu(), length_scale=self.length_scale())
+        return self._fn(diffs, nu=self.nu(), length_scale=1.0)
 
     def get_optim_params(
         self,

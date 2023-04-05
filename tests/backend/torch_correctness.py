@@ -105,7 +105,7 @@ from MuyGPyS._test.utils import (
     _make_heteroscedastic_test_nugget,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distortion import apply_distortion
+from MuyGPyS.gp.distortion import apply_distortion, IsotropicDistortion
 from MuyGPyS.gp.kernels import Hyperparameter, Matern
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import (
@@ -166,21 +166,27 @@ class TensorsTestCase(parameterized.TestCase):
         cls.k_kwargs = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HomoscedasticNoise(cls.eps),
         }
         cls.k_kwargs_heteroscedastic = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n),
         }
         cls.k_kwargs_heteroscedastic_train = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
@@ -741,14 +747,18 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         cls.k_kwargs_1 = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs_2 = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }

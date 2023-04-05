@@ -40,7 +40,10 @@ Example:
 from typing import Callable, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.gp.distortion import IsotropicDistortion, NullDistortion
+from MuyGPyS.gp.distortion import (
+    IsotropicDistortion,
+    NullDistortion,
+)
 
 
 class KernelFn:
@@ -55,12 +58,17 @@ class KernelFn:
             Ignored (by this base class) keyword arguments.
     """
 
-    def __init__(self, metric: Union[IsotropicDistortion, NullDistortion]):
+    def __init__(
+        self,
+        metric: Union[IsotropicDistortion, NullDistortion],
+    ):
         """
         Initialize dict holding hyperparameters.
         """
         self.hyperparameters = dict()
         self._distortion_fn = metric
+        self.length_scale = metric.length_scale
+        self.hyperparameters["length_scale"] = self.length_scale
 
     def set_params(self, **kwargs) -> None:
         """

@@ -24,6 +24,7 @@ from MuyGPyS.examples.two_class_classify_uq import (
     do_uq,
 )
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
@@ -53,7 +54,9 @@ class ClassifyTest(parameterized.TestCase):
                 {
                     "kernel": Matern(
                         nu=Hyperparameter(0.38),
-                        length_scale=Hyperparameter(1.5),
+                        metric=IsotropicDistortion(
+                            "l2", length_scale=Hyperparameter(1.5)
+                        ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
                 },
@@ -110,12 +113,18 @@ class ClassifyUQTest(parameterized.TestCase):
                 {
                     "kernel": Matern(
                         nu=Hyperparameter(0.38),
-                        length_scale=Hyperparameter(1.5),
+                        metric=IsotropicDistortion(
+                            "l2", length_scale=Hyperparameter(1.5)
+                        ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
                 },
                 {
-                    "kernel": RBF(length_scale=Hyperparameter(1.5)),
+                    "kernel": RBF(
+                        metric=IsotropicDistortion(
+                            "l2", length_scale=Hyperparameter(1.5)
+                        )
+                    ),
                     "eps": HomoscedasticNoise(1e-5),
                 },
             )

@@ -30,6 +30,7 @@ from MuyGPyS._src.gp.noise.torch import (
     _homoscedastic_perturb,
     _heteroscedastic_perturb,
 )
+from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.kernels import Hyperparameter, Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.muygps import MuyGPS
@@ -168,7 +169,13 @@ class MuyGPs_layer(nn.Module):
         )
 
         muygps_model = MuyGPS(
-            Matern(nu=self.nu, length_scale=self.length_scale), eps=self.eps
+            Matern(
+                nu=self.nu,
+                metric=IsotropicDistortion(
+                    "l2", length_scale=self.length_scale
+                ),
+            ),
+            eps=self.eps,
         )
 
         predictions = muygps_model.posterior_mean(
@@ -331,7 +338,10 @@ class MultivariateMuyGPs_layer(nn.Module):
             k_kwargs_list.append(
                 {
                     "kernel": Matern(
-                        nu=self.nu[i], length_scale=self.length_scale[i]
+                        nu=self.nu[i],
+                        metric=IsotropicDistortion(
+                            "l2", length_scale=self.length_scale[i]
+                        ),
                     ),
                     "eps": self.eps[i],
                 }

@@ -10,7 +10,7 @@ TensorHyperparameters specifications are expected to be provided in `Dict` form 
 the key `"val"`. `"val"` is either an mm.ndarray value.
 """
 
-from typing import Callable, List, Optional, Tuple, Type
+from typing import Callable, List, Optional, Tuple, Type, Union
 
 import MuyGPyS._src.math as mm
 
@@ -29,7 +29,7 @@ class TensorHyperparameter:
 
     def __init__(
         self,
-        val: mm.ndarray,
+        val: Union[List, mm.ndarray],
     ):
         """
         Initialize a tensor hyperparameter.
@@ -69,7 +69,7 @@ class TensorHyperparameter:
             raise ValueError(
                 f"TensorHyperparameter class does not support strings."
             )
-        if not isinstance(val, mm.ndarray):
+        if not isinstance(val, Union[mm.ndarray, List]):
             raise ValueError(
                 f"Non-array tensor hyperparameter value {val} is not allowed."
             )
