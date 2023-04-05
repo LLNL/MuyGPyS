@@ -29,7 +29,7 @@ class TensorHyperparameter:
 
     def __init__(
         self,
-        val: Union[List, mm.ndarray],
+        val: mm.ndarray,
     ):
         """
         Initialize a tensor hyperparameter.
