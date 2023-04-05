@@ -383,7 +383,7 @@ class RBFTest(KernelTest):
         kern = _consistent_unchunk_tensor(rbf(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
-        sk_rbf = sk_RBF(length_scale=rbf.length_scale())
+        sk_rbf = sk_RBF(length_scale=dist_model.length_scale())
         sk_kern = mm.array(np.array([sk_rbf(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
@@ -527,7 +527,7 @@ class MaternTest(KernelTest):
         kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
-        sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=mtn.length_scale())
+        sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=dist_model.length_scale())
         sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))

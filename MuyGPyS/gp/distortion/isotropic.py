@@ -67,3 +67,7 @@ class IsotropicDistortion:
         """
         opt_fn = apply_hyperparameter(fn, self.length_scale, "length_scale")
         return opt_fn
+
+    def populate_length_scale(self, hyperparameters: dict()) -> dict():
+        hyperparameters["length_scale"] = self.length_scale
+        return hyperparameters

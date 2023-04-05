@@ -67,6 +67,9 @@ class KernelFn:
         """
         self.hyperparameters = dict()
         self._distortion_fn = metric
+        self.hyperparameters = self._distortion_fn.populate_length_scale(
+            self.hyperparameters
+        )
 
     def set_params(self, **kwargs) -> None:
         """
@@ -100,9 +103,6 @@ class KernelFn:
                 A list of unfixed hyperparameter bound tuples.
         """
         return self._distortion_fn.get_optim_params()
-
-    def get_opt_fn(self, fn) -> Callable:
-        return self._get_opt_fn(fn, self._distortion_fn)
 
     @staticmethod
     def _get_opt_fn(

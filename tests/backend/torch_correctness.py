@@ -933,15 +933,19 @@ class OptimTestCase(MuyGPSTestCase):
     def _get_kernel_fn_n(self):
         return self.muygps.kernel._get_opt_fn(
             matern_05_fn_n,
-            self.muygps.kernel.nu,
-            self.muygps.kernel.length_scale,
+            IsotropicDistortion(
+                "l2", length_scale=Hyperparameter(self.length_scale)
+            ),
+            nu=self.muygps.kernel.nu,
         )
 
     def _get_kernel_fn_t(self):
         return self.muygps.kernel._get_opt_fn(
             matern_05_fn_t,
-            self.muygps.kernel.nu,
-            self.muygps.kernel.length_scale,
+            IsotropicDistortion(
+                "l2", length_scale=Hyperparameter(self.length_scale)
+            ),
+            nu=self.muygps.kernel.nu,
         )
 
     def _get_mean_fn_n(self):

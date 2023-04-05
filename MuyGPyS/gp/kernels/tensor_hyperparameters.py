@@ -69,7 +69,7 @@ class TensorHyperparameter:
             raise ValueError(
                 f"TensorHyperparameter class does not support strings."
             )
-        if not isinstance(val, mm.ndarray) and not isinstance(val, List):
+        if not isinstance(val, mm.ndarray):
             raise ValueError(
                 f"Non-array tensor hyperparameter value {val} is not allowed."
             )

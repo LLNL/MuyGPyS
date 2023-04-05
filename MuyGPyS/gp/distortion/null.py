@@ -19,3 +19,8 @@ class NullDistortion:
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError("NullDistortion cannot be called!")
+
+    def populate_length_scale(
+        self, hyperparameters: dict(), *args, **kwargs
+    ) -> dict():
+        return hyperparameters

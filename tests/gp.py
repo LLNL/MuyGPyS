@@ -410,7 +410,7 @@ class HeteroscedasticNoiseTest(GPTestCase):
         eps_matrix = _make_heteroscedastic_test_nugget(
             test_count, nn_count, 1e-5
         )
-        mm.assign(eps_tensor, eps_matrix.flatten(), *test_indices)
+        eps_tensor = mm.assign(eps_tensor, eps_matrix.flatten(), *test_indices)
         muygps = MuyGPS(kernel, eps=HeteroscedasticNoise(eps_matrix))
 
         K, Kcross, _, _, _, _ = self._prepare_tensors(
