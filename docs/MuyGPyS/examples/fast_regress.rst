@@ -1,8 +1,8 @@
-.. _MuyGPyS-examples-fast_regress:
+.. _MuyGPyS-examples-fast_posterior_mean:
 
-fast_regress
+fast_posterior_mean
 ===========================
 
 .. default-role:: code
-.. automodule:: MuyGPyS.examples.fast_regress
+.. automodule:: MuyGPyS.examples.fast_posterior_mean
   :members:

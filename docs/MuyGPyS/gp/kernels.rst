@@ -8,10 +8,6 @@ kernels
   :members:
 
 .. default-role:: code
-.. autoclass:: MuyGPyS.gp.kernels.sigma_sq
-  :members:
-
-.. default-role:: code
 .. automodule:: MuyGPyS.gp.kernels.kernel_fn
   :members:
   :special-members: __call__

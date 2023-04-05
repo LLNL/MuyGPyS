@@ -12,7 +12,7 @@ import MuyGPyS._src.math.jax as jnp
 
 @jit
 def _rbf_fn(squared_dists: jnp.ndarray, **kwargs) -> jnp.ndarray:
-    return jnp.exp(-squared_dists / (2 * length_scale**2))
+    return jnp.exp(-squared_dists / 2)
 
 
 @jit
