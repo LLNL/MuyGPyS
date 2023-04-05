@@ -599,9 +599,7 @@ class FastPredictTestCase(MuyGPSTestCase):
         )
 
         kernel_func_n = matern_05_fn_n
-        cls.Kcross_fast_n = kernel_func_n(
-            cls.crosswise_diffs_fast_n, cls.length_scale
-        )
+        cls.Kcross_fast_n = kernel_func_n(cls.crosswise_diffs_fast_n)
 
         cls.nn_indices_all_t, _ = cls.nbrs_lookup.get_batch_nns(
             torch.arange(0, cls.train_count)
@@ -645,9 +643,7 @@ class FastPredictTestCase(MuyGPSTestCase):
         )
 
         kernel_func_t = matern_05_fn_t
-        cls.Kcross_fast_t = kernel_func_t(
-            cls.crosswise_diffs_fast_t, cls.length_scale
-        )
+        cls.Kcross_fast_t = kernel_func_t(cls.crosswise_diffs_fast_t)
 
     def test_fast_nn_update(self):
         self.assertTrue(
@@ -830,9 +826,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         )
         kernel_func_n = matern_05_fn_n
         for i, model in enumerate(cls.muygps.models):
-            Kcross_fast_n[:, :, i] = kernel_func_n(
-                cls.crosswise_diffs_fast_n, cls.length_scale
-            )
+            Kcross_fast_n[:, :, i] = kernel_func_n(cls.crosswise_diffs_fast_n)
         cls.Kcross_fast_n = Kcross_fast_n
 
         cls.nn_indices_all_t, _ = cls.nbrs_lookup.get_batch_nns(

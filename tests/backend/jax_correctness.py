@@ -429,12 +429,8 @@ class KernelTest(KernelTestCase):
     def test_crosswise_matern(self):
         self.assertTrue(
             allclose_gen(
-                matern_05_fn_n(
-                    self.crosswise_diffs_n, length_scale=self.length_scale
-                ),
-                matern_05_fn_j(
-                    self.crosswise_diffs_j, length_scale=self.length_scale
-                ),
+                matern_05_fn_n(self.crosswise_diffs_n),
+                matern_05_fn_j(self.crosswise_diffs_j),
             )
         )
         self.assertTrue(
@@ -485,12 +481,8 @@ class KernelTest(KernelTestCase):
     def test_pairwise_matern(self):
         self.assertTrue(
             allclose_gen(
-                matern_05_fn_n(
-                    self.pairwise_diffs_n, length_scale=self.length_scale
-                ),
-                matern_05_fn_j(
-                    self.pairwise_diffs_j, length_scale=self.length_scale
-                ),
+                matern_05_fn_n(self.pairwise_diffs_n),
+                matern_05_fn_j(self.pairwise_diffs_j),
             )
         )
         self.assertTrue(
