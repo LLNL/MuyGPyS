@@ -121,9 +121,6 @@ class RBF(KernelFn):
         names: List[str] = []
         params: List[float] = []
         bounds: List[Tuple[float, float]] = []
-        append_optim_params_lists(
-            self.length_scale, "length_scale", names, params, bounds
-        )
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:
@@ -139,9 +136,11 @@ class RBF(KernelFn):
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._get_opt_fn(self._fn, self.length_scale)
+        return self._get_opt_fn(self._fn, self._distortion_fn)
 
     @staticmethod
-    def _get_opt_fn(rbf_fn: Callable, length_scale: Hyperparameter) -> Callable:
-        opt_fn = apply_hyperparameter(rbf_fn, length_scale, "length_scale")
-        return opt_fn
+    def _get_opt_fn(
+        rbf_fn: KernelFn,
+        distortion_fn: Union[IsotropicDistortion, NullDistortion],
+    ) -> Callable:
+        return super()._get_opt_fn(rbf_fn, distortion_fn)

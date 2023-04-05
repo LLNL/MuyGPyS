@@ -162,13 +162,8 @@ class Matern(KernelFn):
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        names: List[str] = []
-        params: List[float] = []
-        bounds: List[Tuple[float, float]] = []
+        names, params, bounds = super().get_optim_params()
         append_optim_params_lists(self.nu, "nu", names, params, bounds)
-        append_optim_params_lists(
-            self.length_scale, "length_scale", names, params, bounds
-        )
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:
@@ -184,12 +179,14 @@ class Matern(KernelFn):
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._get_opt_fn(self._fn, self.nu, self.length_scale)
+        return self._get_opt_fn(self._fn, self._distortion_fn, self.nu)
 
     @staticmethod
     def _get_opt_fn(
-        matern_fn: Callable, nu: Hyperparameter, length_scale: Hyperparameter
+        matern_fn: KernelFn,
+        distortion_fn: Union[IsotropicDistortion, NullDistortion],
+        nu: float,
     ) -> Callable:
-        opt_fn = apply_hyperparameter(matern_fn, length_scale, "length_scale")
+        opt_fn = distortion_fn.get_opt_fn(matern_fn)
         opt_fn = apply_hyperparameter(opt_fn, nu, "nu")
         return opt_fn

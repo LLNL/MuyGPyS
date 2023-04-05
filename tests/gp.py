@@ -41,6 +41,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_dict,
     _make_gaussian_data,
     _precision_assert,
+    _make_heteroscedastic_test_nugget,
 )
 from MuyGPyS._src.mpi_utils import (
     _consistent_unchunk_tensor,
@@ -406,8 +407,10 @@ class HeteroscedasticNoiseTest(GPTestCase):
             np.tile(np.arange(nn_count), test_count),
         )
         eps_tensor = mm.zeros((test_count, nn_count, nn_count))
-        eps_matrix = 1e-5 * np.random.rand(test_count, nn_count)
-        eps_tensor[test_indices] = eps_matrix.flatten()
+        eps_matrix = _make_heteroscedastic_test_nugget(
+            test_count, nn_count, 1e-5
+        )
+        mm.assign(eps_tensor, eps_matrix.flatten(), *test_indices)
         muygps = MuyGPS(kernel, eps=HeteroscedasticNoise(eps_matrix))
 
         K, Kcross, _, _, _, _ = self._prepare_tensors(

@@ -87,14 +87,28 @@ class KernelFn:
     def get_optim_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
-        raise NotImplementedError(
-            f"get_optim_params is not implemented for base KernelFn"
-        )
+        """
+        Report lists of unfixed hyperparameter names, values, and bounds.
 
-    def get_opt_fn(self) -> Callable:
-        raise NotImplementedError(
-            f"get_opt_fn is not implemented for base KernelFn"
-        )
+        Returns
+        -------
+            names:
+                A list of unfixed hyperparameter names.
+            params:
+                A list of unfixed hyperparameter values.
+            bounds:
+                A list of unfixed hyperparameter bound tuples.
+        """
+        return self._distortion_fn.get_optim_params()
+
+    def get_opt_fn(self, fn) -> Callable:
+        return self._get_opt_fn(fn, self._distortion_fn)
+
+    @staticmethod
+    def _get_opt_fn(
+        kernel_fn, distortion_fn: Union[IsotropicDistortion, NullDistortion]
+    ) -> Callable:
+        return distortion_fn.get_opt_fn(kernel_fn)
 
     def __str__(self) -> str:
         """

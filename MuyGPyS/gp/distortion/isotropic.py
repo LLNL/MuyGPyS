@@ -52,7 +52,7 @@ class IsotropicDistortion:
         )
         return names, params, bounds
 
-    def get_opt_fn(self) -> Callable:
+    def get_opt_fn(self, fn) -> Callable:
         """
         Return a kernel function with fixed parameters set.
 
@@ -65,11 +65,5 @@ class IsotropicDistortion:
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._get_opt_fn(self._dist_fn, self.length_scale)
-
-    @staticmethod
-    def _get_opt_fn(
-        dist_fn: Callable, length_scale: Hyperparameter
-    ) -> Callable:
-        opt_fn = apply_hyperparameter(dist_fn, length_scale, "length_scale")
+        opt_fn = apply_hyperparameter(fn, self.length_scale, "length_scale")
         return opt_fn
