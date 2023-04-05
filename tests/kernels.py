@@ -337,7 +337,6 @@ class KernelTest(parameterized.TestCase):
             )
 
     def _check_params(self, kern_fn, name, param):
-        print(name)
         if param() is not None:
             self.assertEqual(param(), kern_fn.hyperparameters[name]())
         if param.get_bounds() is not None:

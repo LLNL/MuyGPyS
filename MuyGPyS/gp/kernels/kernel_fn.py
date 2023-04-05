@@ -67,8 +67,6 @@ class KernelFn:
         """
         self.hyperparameters = dict()
         self._distortion_fn = metric
-        self.length_scale = metric.length_scale
-        self.hyperparameters["length_scale"] = self.length_scale
 
     def set_params(self, **kwargs) -> None:
         """

@@ -101,7 +101,7 @@ class RBF(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self._fn(diffs, length_scale=1.0)
+        return self._fn(diffs)
 
     def get_optim_params(
         self,
