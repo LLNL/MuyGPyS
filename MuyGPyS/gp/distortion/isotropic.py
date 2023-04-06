@@ -69,5 +69,16 @@ class IsotropicDistortion:
         return opt_fn
 
     def populate_length_scale(self, hyperparameters: dict()) -> dict():
+        """
+        Populates the hyperparameter dictionary of a KernelFn object with
+        `self.length_scale` of the IsotropicDistortion object.
+
+        Args:
+        hyperparameters:
+            A dict containing the hyperparameters of a KernelFn object.
+
+        Returns:
+            An updated hyperparameter dictionary.
+        """
         hyperparameters["length_scale"] = self.length_scale
         return hyperparameters

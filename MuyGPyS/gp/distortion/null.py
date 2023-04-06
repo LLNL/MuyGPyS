@@ -23,4 +23,7 @@ class NullDistortion:
     def populate_length_scale(
         self, hyperparameters: dict(), *args, **kwargs
     ) -> dict():
+        """
+        A no-op placeholder function for NullDistortion objects.
+        """
         return hyperparameters
