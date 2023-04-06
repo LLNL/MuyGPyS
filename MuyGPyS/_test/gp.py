@@ -123,6 +123,7 @@ class BenchmarkGP:
         self.metric = self.kernel._distortion_fn.metric
         self.eps = eps
         self.sigma_sq = SigmaSq()
+        self.length_scale = self.kernel._distortion_fn.length_scale
 
     def set_eps(self, **eps) -> None:
         """
@@ -222,15 +223,19 @@ class BenchmarkGP:
             elements of the posterior variance.
         """
         crosswise_dists = benchmark_crosswise_distances(
-            test, train, metric=self.metric
+            test / self.length_scale,
+            train / self.length_scale,
+            metric=self.metric,
         )
-        pairwise_dists = benchmark_pairwise_distances(train, metric=self.metric)
+        pairwise_dists = benchmark_pairwise_distances(
+            train / self.length_scale, metric=self.metric
+        )
         Kcross = self.kernel(crosswise_dists)
         K = self.kernel(pairwise_dists)
         responses = Kcross @ np.linalg.solve(K, targets)
 
         test_pairwise_dists = benchmark_pairwise_distances(
-            test, metric=self.metric
+            test / self.length_scale, metric=self.metric
         )
         Kstar = self.kernel(test_pairwise_dists)
         variance = Kstar - Kcross @ np.linalg.solve(K, Kcross.T)
@@ -241,6 +246,7 @@ def benchmark_sample_full(
     gp: BenchmarkGP,
     test: np.ndarray,
     train: np.ndarray,
+    length_scale: float,
 ) -> np.ndarray:
     """
     Sample from a GP prior for a dataset separated into train and test.
@@ -258,12 +264,13 @@ def benchmark_sample_full(
     Returns:
         A sample from the GP prior for a train/test split.
     """
-    return benchmark_sample(gp, np.vstack((test, train)))
+    return benchmark_sample(gp, np.vstack((test, train)), length_scale)
 
 
 def benchmark_prepare_cholK(
     gp: BenchmarkGP,
     data: np.ndarray,
+    length_scale: float,
 ) -> np.ndarray:
     """
     Sample from a GP prior for a dataset.
@@ -278,7 +285,9 @@ def benchmark_prepare_cholK(
     Returns:
         The Cholesky decomposition of a dense covariance matrix.
     """
-    pairwise_dists = benchmark_pairwise_distances(data, metric=gp.metric)
+    pairwise_dists = benchmark_pairwise_distances(
+        data / length_scale, metric=gp.metric
+    )
     data_count, _ = data.shape
     Kfull = gp.sigma_sq()[0] * (
         gp.kernel(pairwise_dists) + gp.eps() * np.eye(data_count)
@@ -289,6 +298,7 @@ def benchmark_prepare_cholK(
 def benchmark_sample(
     gp: BenchmarkGP,
     data: np.ndarray,
+    length_scale: float,
 ) -> np.ndarray:
     """
     Sample from a GP prior for a dataset.
@@ -300,7 +310,7 @@ def benchmark_sample(
             The full training data matrix of shape
             `(train_count, feature_count)`.
     """
-    cholK = benchmark_prepare_cholK(gp, data)
+    cholK = benchmark_prepare_cholK(gp, data, length_scale)
     return benchmark_sample_from_cholK(cholK)
 
 

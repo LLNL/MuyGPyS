@@ -57,17 +57,26 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.test_count, _ = cls.test_features.shape
         cls.feature_count = 1
         cls.response_count = 1
+        cls.length_scale = 1e-2
 
         cls.k_kwargs = (
             {
                 "kernel": Matern(
-                    nu=Hyperparameter(0.5), length_scale=Hyperparameter(1e-2)
+                    nu=Hyperparameter(0.5),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=Hyperparameter(cls.length_scale),
+                    ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },
             {
                 "kernel": Matern(
-                    nu=Hyperparameter(1.5), length_scale=Hyperparameter(1e-2)
+                    nu=Hyperparameter(1.5),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=Hyperparameter(cls.length_scale),
+                    ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },
@@ -76,16 +85,18 @@ class BenchmarkTestCase(parameterized.TestCase):
             {
                 "kernel": Matern(
                     nu=Hyperparameter(0.5),
-                    length_scale=Hyperparameter(1e-2),
-                    metric=NullDistortion("l2"),
+                    metric=NullDistortion(
+                        "l2", length_scale=Hyperparameter(cls.length_scale)
+                    ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },
             {
                 "kernel": Matern(
                     nu=Hyperparameter(1.5),
-                    length_scale=Hyperparameter(1e-2),
-                    metric=NullDistortion("l2"),
+                    metric=NullDistortion(
+                        "l2", length_scale=Hyperparameter(cls.length_scale)
+                    ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },
@@ -93,7 +104,10 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.k_kwargs_opt = {
             "kernel": Matern(
                 nu=Hyperparameter("sample", (0.1, 5.0)),
-                length_scale=Hyperparameter(1e-2),
+                metric=IsotropicDistortion(
+                    metric="l2",
+                    length_scale=Hyperparameter(cls.length_scale),
+                ),
             ),
             "eps": HomoscedasticNoise(1e-5),
         }
@@ -119,7 +133,10 @@ class BenchmarkTestCase(parameterized.TestCase):
                     cls.test_targets_list[i][j].append(list())
                     cls.train_targets_list[i][j].append(list())
                     cls.ys[i][j][k] = benchmark_sample_full(
-                        cls.gps[i][j], cls.train_features, cls.test_features
+                        cls.gps[i][j],
+                        cls.train_features,
+                        cls.test_features,
+                        length_scale=cls.length_scale,
                     )
                     cls.test_targets_list[i][j][k] = cls.ys[i][j][k][
                         : cls.test_count
@@ -175,7 +192,7 @@ class BenchmarkSigmaSqTest(BenchmarkTestCase):
             for j, sigma_sq in enumerate(self.sigma_sqs):
                 model = self.gps[i][j]
                 pairwise_dists = benchmark_pairwise_distances(
-                    self.x, metric=model.metric
+                    self.x / self.length_scale, metric=model.metric
                 )
                 K = model.kernel(pairwise_dists) + model.eps() * np.eye(
                     self.data_count

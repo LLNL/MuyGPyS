@@ -17,10 +17,7 @@ hyperparameters.
 
 Example:
     >>> from MuyGPyS.gp.kernels import RBF
-    >>> kernel_fn = RBF(
-    ...         length_scale = {"val": 7.2, , "bounds": (0.1, 2.5)}},
-    ...         metric = "l2",
-    ... }
+    >>> kernel_fn = RBF(metric = "l2")
 
 One uses a previously computed `pairwise_diffs` tensor (see
 :func:`MuyGPyS.gp.tensors.pairwise_tensor`) to compute a kernel tensor whose
@@ -72,22 +69,18 @@ class RBF(KernelFn):
     or second frequency moment of the difference of the operands.
 
     Args:
-        length_scale:
-            A hyperparameter dict defining the length_scale parameter.
         metric:
-            The distance function to be used.
+            The distance function to be used. Includes length_scale
+            hyperparameter information via the MuyGPyS.gp.distortion module
     """
 
     def __init__(
         self,
-        length_scale: Hyperparameter = Hyperparameter(1.0),
         metric: Union[
             IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion("F2"),
+        ] = IsotropicDistortion("F2", length_scale=Hyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
-        self.length_scale = length_scale
-        self.hyperparameters["length_scale"] = self.length_scale
         self._fn = _rbf_fn
         self._fn = embed_with_distortion_model(self._fn, self._distortion_fn)
 
@@ -108,7 +101,7 @@ class RBF(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self._fn(diffs, length_scale=self.length_scale())
+        return self._fn(diffs)
 
     def get_optim_params(
         self,
@@ -125,12 +118,7 @@ class RBF(KernelFn):
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        names: List[str] = []
-        params: List[float] = []
-        bounds: List[Tuple[float, float]] = []
-        append_optim_params_lists(
-            self.length_scale, "length_scale", names, params, bounds
-        )
+        names, params, bounds = super().get_optim_params()
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:
@@ -146,9 +134,4 @@ class RBF(KernelFn):
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._get_opt_fn(self._fn, self.length_scale)
-
-    @staticmethod
-    def _get_opt_fn(rbf_fn: Callable, length_scale: Hyperparameter) -> Callable:
-        opt_fn = apply_hyperparameter(rbf_fn, length_scale, "length_scale")
-        return opt_fn
+        return super()._get_opt_fn(self._fn, self._distortion_fn)

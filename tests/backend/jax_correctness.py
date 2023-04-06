@@ -114,7 +114,7 @@ from MuyGPyS._src.optimize.sigma_sq.jax import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distortion import apply_distortion
+from MuyGPyS.gp.distortion import apply_distortion, IsotropicDistortion
 from MuyGPyS.gp.kernels import Hyperparameter, Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
@@ -189,14 +189,18 @@ class TensorsTestCase(parameterized.TestCase):
         cls.k_kwargs = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HomoscedasticNoise(cls.eps),
         }
         cls.k_kwargs_heteroscedastic = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n),
         }
@@ -425,12 +429,8 @@ class KernelTest(KernelTestCase):
     def test_crosswise_matern(self):
         self.assertTrue(
             allclose_gen(
-                matern_05_fn_n(
-                    self.crosswise_diffs_n, length_scale=self.length_scale
-                ),
-                matern_05_fn_j(
-                    self.crosswise_diffs_j, length_scale=self.length_scale
-                ),
+                matern_05_fn_n(self.crosswise_diffs_n),
+                matern_05_fn_j(self.crosswise_diffs_j),
             )
         )
         self.assertTrue(
@@ -481,12 +481,8 @@ class KernelTest(KernelTestCase):
     def test_pairwise_matern(self):
         self.assertTrue(
             allclose_gen(
-                matern_05_fn_n(
-                    self.pairwise_diffs_n, length_scale=self.length_scale
-                ),
-                matern_05_fn_j(
-                    self.pairwise_diffs_j, length_scale=self.length_scale
-                ),
+                matern_05_fn_n(self.pairwise_diffs_n),
+                matern_05_fn_j(self.pairwise_diffs_j),
             )
         )
         self.assertTrue(
@@ -839,14 +835,18 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.k_kwargs_1 = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs_2 = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
@@ -1060,15 +1060,19 @@ class OptimTestCase(MuyGPSTestCase):
     def _get_kernel_fn_n(self):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_fn_n,
+            IsotropicDistortion(
+                "l2", length_scale=Hyperparameter(self.length_scale)
+            ),
             self.muygps.kernel.nu,
-            self.muygps.kernel.length_scale,
         )
 
     def _get_kernel_fn_j(self):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_fn_j,
+            IsotropicDistortion(
+                "l2", length_scale=Hyperparameter(self.length_scale)
+            ),
             self.muygps.kernel.nu,
-            self.muygps.kernel.length_scale,
         )
 
     def _get_mean_fn_n(self):

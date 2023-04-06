@@ -10,7 +10,7 @@ TensorHyperparameters specifications are expected to be provided in `Dict` form 
 the key `"val"`. `"val"` is either an mm.ndarray value.
 """
 
-from typing import Callable, List, Optional, Tuple, Type
+from typing import Callable, List, Optional, Tuple, Type, Union
 
 import MuyGPyS._src.math as mm
 

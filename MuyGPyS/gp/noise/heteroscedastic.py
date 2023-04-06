@@ -24,7 +24,7 @@ class HeteroscedasticNoise(TensorHyperparameter):
 
     Args:
         val:
-            An ndarray of shape `(batch_count, nn_count, nn_count)`
+            An ndarray of shape `(batch_count, nn_count)`
             containing the heteroscedastic nugget matrix.
     Raises:
         ValueError:
@@ -36,7 +36,7 @@ class HeteroscedasticNoise(TensorHyperparameter):
         val: mm.ndarray,
     ):
         super(HeteroscedasticNoise, self).__init__(val)
-        if mm.sum(self._val < 0) > 0:
+        if mm.sum(self._val.flatten() < 0) > 0:
             raise ValueError(
                 f"Heteroscedastic noise values are not strictly non-negative!"
             )

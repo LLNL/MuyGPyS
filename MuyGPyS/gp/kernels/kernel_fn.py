@@ -40,7 +40,10 @@ Example:
 from typing import Callable, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.gp.distortion import IsotropicDistortion, NullDistortion
+from MuyGPyS.gp.distortion import (
+    IsotropicDistortion,
+    NullDistortion,
+)
 
 
 class KernelFn:
@@ -55,12 +58,18 @@ class KernelFn:
             Ignored (by this base class) keyword arguments.
     """
 
-    def __init__(self, metric: Union[IsotropicDistortion, NullDistortion]):
+    def __init__(
+        self,
+        metric: Union[IsotropicDistortion, NullDistortion],
+    ):
         """
         Initialize dict holding hyperparameters.
         """
         self.hyperparameters = dict()
         self._distortion_fn = metric
+        self.hyperparameters = self._distortion_fn.populate_length_scale(
+            self.hyperparameters
+        )
 
     def set_params(self, **kwargs) -> None:
         """
@@ -81,14 +90,25 @@ class KernelFn:
     def get_optim_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
-        raise NotImplementedError(
-            f"get_optim_params is not implemented for base KernelFn"
-        )
+        """
+        Report lists of unfixed hyperparameter names, values, and bounds.
 
-    def get_opt_fn(self) -> Callable:
-        raise NotImplementedError(
-            f"get_opt_fn is not implemented for base KernelFn"
-        )
+        Returns
+        -------
+            names:
+                A list of unfixed hyperparameter names.
+            params:
+                A list of unfixed hyperparameter values.
+            bounds:
+                A list of unfixed hyperparameter bound tuples.
+        """
+        return self._distortion_fn.get_optim_params()
+
+    @staticmethod
+    def _get_opt_fn(
+        kernel_fn, distortion_fn: Union[IsotropicDistortion, NullDistortion]
+    ) -> Callable:
+        return distortion_fn.get_opt_fn(kernel_fn)
 
     def __str__(self) -> str:
         """

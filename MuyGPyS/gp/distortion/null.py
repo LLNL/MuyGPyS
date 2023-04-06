@@ -7,7 +7,8 @@ from MuyGPyS._src.gp.tensors import _F2, _l2
 
 
 class NullDistortion:
-    def __init__(self, metric: str):
+    def __init__(self, metric: str, length_scale: float):
+        self.length_scale = length_scale
         self.metric = metric
         if metric == "l2":
             self._dist_fn = _l2
@@ -18,3 +19,11 @@ class NullDistortion:
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError("NullDistortion cannot be called!")
+
+    def populate_length_scale(
+        self, hyperparameters: dict(), *args, **kwargs
+    ) -> dict():
+        """
+        A no-op placeholder function for NullDistortion objects.
+        """
+        return hyperparameters

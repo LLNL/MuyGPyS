@@ -103,7 +103,7 @@ from MuyGPyS._src.optimize.chassis.mpi import (
     _bayes_opt_optimize as bayes_optimize_m,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import apply_distortion
+from MuyGPyS.gp.distortion import apply_distortion, IsotropicDistortion
 from MuyGPyS.gp.kernels import Hyperparameter, Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
@@ -147,15 +147,14 @@ class TensorsTestCase(parameterized.TestCase):
         cls.k_kwargs = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HomoscedasticNoise(cls.eps),
         }
         cls.muygps = MuyGPS(**cls.k_kwargs)
-        cls.kernel_kwargs = {
-            "nu": cls.muygps.kernel.nu(),
-            "length_scale": cls.muygps.kernel.length_scale(),
-        }
+        cls.kernel_kwargs = {"nu": cls.muygps.kernel.nu()}
         cls.measurement_noise = _make_uniform_matrix(cls.train_count, 1)
 
         if rank == 0:
@@ -186,7 +185,9 @@ class TensorsTestCase(parameterized.TestCase):
             cls.k_kwargs_heteroscedastic = {
                 "kernel": Matern(
                     nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                    length_scale=Hyperparameter(cls.length_scale),
+                    metric=IsotropicDistortion(
+                        "l2", length_scale=Hyperparameter(cls.length_scale)
+                    ),
                 ),
                 "eps": HeteroscedasticNoise(cls.eps_heteroscedastic),
             }
@@ -269,7 +270,9 @@ class TensorsTestCase(parameterized.TestCase):
         cls.k_kwargs_heteroscedastic_chunk = {
             "kernel": Matern(
                 nu=Hyperparameter(cls.nu, cls.nu_bounds),
-                length_scale=Hyperparameter(cls.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n_chunk),
         }
@@ -329,77 +332,36 @@ class KernelTestCase(TensorsTestCase):
     @classmethod
     def setUpClass(cls):
         super(KernelTestCase, cls).setUpClass()
-        ls = cls.kernel_kwargs["length_scale"]
         if rank == 0:
-            cls.batch_covariance_rbf = rbf_fn_n(
-                cls.batch_pairwise_diffs, length_scale=ls
-            )
-            cls.batch_covariance_05 = matern_05_fn_n(
-                cls.batch_pairwise_diffs, length_scale=ls
-            )
-            cls.batch_covariance_15 = matern_15_fn_n(
-                cls.batch_pairwise_diffs, length_scale=ls
-            )
-            cls.batch_covariance_25 = matern_25_fn_n(
-                cls.batch_pairwise_diffs, length_scale=ls
-            )
-            cls.batch_covariance_inf = matern_inf_fn_n(
-                cls.batch_pairwise_diffs, length_scale=ls
-            )
+            cls.batch_covariance_rbf = rbf_fn_n(cls.batch_pairwise_diffs)
+            cls.batch_covariance_05 = matern_05_fn_n(cls.batch_pairwise_diffs)
+            cls.batch_covariance_15 = matern_15_fn_n(cls.batch_pairwise_diffs)
+            cls.batch_covariance_25 = matern_25_fn_n(cls.batch_pairwise_diffs)
+            cls.batch_covariance_inf = matern_inf_fn_n(cls.batch_pairwise_diffs)
             cls.batch_covariance_gen = matern_gen_fn_n(
                 cls.batch_pairwise_diffs, **cls.kernel_kwargs
             )
-            cls.batch_crosscov_rbf = rbf_fn_n(
-                cls.batch_crosswise_diffs, length_scale=ls
-            )
-            cls.batch_crosscov_05 = matern_05_fn_n(
-                cls.batch_crosswise_diffs, length_scale=ls
-            )
-            cls.batch_crosscov_15 = matern_15_fn_n(
-                cls.batch_crosswise_diffs, length_scale=ls
-            )
-            cls.batch_crosscov_25 = matern_25_fn_n(
-                cls.batch_crosswise_diffs, length_scale=ls
-            )
-            cls.batch_crosscov_inf = matern_inf_fn_n(
-                cls.batch_crosswise_diffs, length_scale=ls
-            )
+            cls.batch_crosscov_rbf = rbf_fn_n(cls.batch_crosswise_diffs)
+            cls.batch_crosscov_05 = matern_05_fn_n(cls.batch_crosswise_diffs)
+            cls.batch_crosscov_15 = matern_15_fn_n(cls.batch_crosswise_diffs)
+            cls.batch_crosscov_25 = matern_25_fn_n(cls.batch_crosswise_diffs)
+            cls.batch_crosscov_inf = matern_inf_fn_n(cls.batch_crosswise_diffs)
             cls.batch_crosscov_gen = matern_gen_fn_n(
                 cls.batch_crosswise_diffs, **cls.kernel_kwargs
             )
-            cls.test_covariance_rbf = rbf_fn_n(
-                cls.test_pairwise_diffs, length_scale=ls
-            )
-            cls.test_covariance_05 = matern_05_fn_n(
-                cls.test_pairwise_diffs, length_scale=ls
-            )
-            cls.test_covariance_15 = matern_15_fn_n(
-                cls.test_pairwise_diffs, length_scale=ls
-            )
-            cls.test_covariance_25 = matern_25_fn_n(
-                cls.test_pairwise_diffs, length_scale=ls
-            )
-            cls.test_covariance_inf = matern_inf_fn_n(
-                cls.test_pairwise_diffs, length_scale=ls
-            )
+            cls.test_covariance_rbf = rbf_fn_n(cls.test_pairwise_diffs)
+            cls.test_covariance_05 = matern_05_fn_n(cls.test_pairwise_diffs)
+            cls.test_covariance_15 = matern_15_fn_n(cls.test_pairwise_diffs)
+            cls.test_covariance_25 = matern_25_fn_n(cls.test_pairwise_diffs)
+            cls.test_covariance_inf = matern_inf_fn_n(cls.test_pairwise_diffs)
             cls.test_covariance_gen = matern_gen_fn_n(
                 cls.test_pairwise_diffs, **cls.kernel_kwargs
             )
-            cls.test_crosscov_rbf = rbf_fn_n(
-                cls.test_crosswise_diffs, length_scale=ls
-            )
-            cls.test_crosscov_05 = matern_05_fn_n(
-                cls.test_crosswise_diffs, length_scale=ls
-            )
-            cls.test_crosscov_15 = matern_15_fn_n(
-                cls.test_crosswise_diffs, length_scale=ls
-            )
-            cls.test_crosscov_25 = matern_25_fn_n(
-                cls.test_crosswise_diffs, length_scale=ls
-            )
-            cls.test_crosscov_inf = matern_inf_fn_n(
-                cls.test_crosswise_diffs, length_scale=ls
-            )
+            cls.test_crosscov_rbf = rbf_fn_n(cls.test_crosswise_diffs)
+            cls.test_crosscov_05 = matern_05_fn_n(cls.test_crosswise_diffs)
+            cls.test_crosscov_15 = matern_15_fn_n(cls.test_crosswise_diffs)
+            cls.test_crosscov_25 = matern_25_fn_n(cls.test_crosswise_diffs)
+            cls.test_crosscov_inf = matern_inf_fn_n(cls.test_crosswise_diffs)
             cls.test_crosscov_gen = matern_gen_fn_n(
                 cls.test_crosswise_diffs, **cls.kernel_kwargs
             )
@@ -430,73 +392,67 @@ class KernelTestCase(TensorsTestCase):
             cls.test_crosscov_gen = None
 
         cls.batch_covariance_rbf_chunk = rbf_fn_m(
-            cls.batch_pairwise_diffs_chunk, length_scale=ls
+            cls.batch_pairwise_diffs_chunk
         )
         cls.batch_covariance_05_chunk = matern_05_fn_m(
-            cls.batch_pairwise_diffs_chunk, length_scale=ls
+            cls.batch_pairwise_diffs_chunk
         )
         cls.batch_covariance_15_chunk = matern_15_fn_m(
-            cls.batch_pairwise_diffs_chunk, length_scale=ls
+            cls.batch_pairwise_diffs_chunk
         )
         cls.batch_covariance_25_chunk = matern_25_fn_m(
-            cls.batch_pairwise_diffs_chunk, length_scale=ls
+            cls.batch_pairwise_diffs_chunk
         )
         cls.batch_covariance_inf_chunk = matern_inf_fn_m(
-            cls.batch_pairwise_diffs_chunk, length_scale=ls
+            cls.batch_pairwise_diffs_chunk
         )
         cls.batch_covariance_gen_chunk = matern_gen_fn_m(
             cls.batch_pairwise_diffs_chunk, **cls.kernel_kwargs
         )
-        cls.batch_crosscov_rbf_chunk = rbf_fn_m(
-            cls.batch_crosswise_diffs_chunk, length_scale=ls
-        )
+        cls.batch_crosscov_rbf_chunk = rbf_fn_m(cls.batch_crosswise_diffs_chunk)
         cls.batch_crosscov_05_chunk = matern_05_fn_n(
-            cls.batch_crosswise_diffs_chunk, length_scale=ls
+            cls.batch_crosswise_diffs_chunk
         )
         cls.batch_crosscov_15_chunk = matern_15_fn_n(
-            cls.batch_crosswise_diffs_chunk, length_scale=ls
+            cls.batch_crosswise_diffs_chunk
         )
         cls.batch_crosscov_25_chunk = matern_25_fn_n(
-            cls.batch_crosswise_diffs_chunk, length_scale=ls
+            cls.batch_crosswise_diffs_chunk
         )
         cls.batch_crosscov_inf_chunk = matern_inf_fn_n(
-            cls.batch_crosswise_diffs_chunk, length_scale=ls
+            cls.batch_crosswise_diffs_chunk
         )
         cls.batch_crosscov_gen_chunk = matern_gen_fn_n(
             cls.batch_crosswise_diffs_chunk, **cls.kernel_kwargs
         )
-        cls.test_covariance_rbf_chunk = rbf_fn_m(
-            cls.test_pairwise_diffs_chunk, length_scale=ls
-        )
+        cls.test_covariance_rbf_chunk = rbf_fn_m(cls.test_pairwise_diffs_chunk)
         cls.test_covariance_05_chunk = matern_05_fn_m(
-            cls.test_pairwise_diffs_chunk, length_scale=ls
+            cls.test_pairwise_diffs_chunk
         )
         cls.test_covariance_15_chunk = matern_15_fn_m(
-            cls.test_pairwise_diffs_chunk, length_scale=ls
+            cls.test_pairwise_diffs_chunk
         )
         cls.test_covariance_25_chunk = matern_25_fn_m(
-            cls.test_pairwise_diffs_chunk, length_scale=ls
+            cls.test_pairwise_diffs_chunk
         )
         cls.test_covariance_inf_chunk = matern_inf_fn_m(
-            cls.test_pairwise_diffs_chunk, length_scale=ls
+            cls.test_pairwise_diffs_chunk
         )
         cls.test_covariance_gen_chunk = matern_gen_fn_m(
             cls.test_pairwise_diffs_chunk, **cls.kernel_kwargs
         )
-        cls.test_crosscov_rbf_chunk = rbf_fn_m(
-            cls.test_crosswise_diffs_chunk, length_scale=ls
-        )
+        cls.test_crosscov_rbf_chunk = rbf_fn_m(cls.test_crosswise_diffs_chunk)
         cls.test_crosscov_05_chunk = matern_05_fn_n(
-            cls.test_crosswise_diffs_chunk, length_scale=ls
+            cls.test_crosswise_diffs_chunk
         )
         cls.test_crosscov_15_chunk = matern_15_fn_n(
-            cls.test_crosswise_diffs_chunk, length_scale=ls
+            cls.test_crosswise_diffs_chunk
         )
         cls.test_crosscov_25_chunk = matern_25_fn_n(
-            cls.test_crosswise_diffs_chunk, length_scale=ls
+            cls.test_crosswise_diffs_chunk
         )
         cls.test_crosscov_inf_chunk = matern_inf_fn_n(
-            cls.test_crosswise_diffs_chunk, length_scale=ls
+            cls.test_crosswise_diffs_chunk
         )
         cls.test_crosscov_gen_chunk = matern_gen_fn_n(
             cls.test_crosswise_diffs_chunk, **cls.kernel_kwargs
@@ -766,16 +722,20 @@ class OptimTestCase(MuyGPSTestCase):
     def _get_kernel_fn_n(self):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_fn_n,
+            IsotropicDistortion(
+                "l2", length_scale=Hyperparameter(self.length_scale)
+            ),
             self.muygps.kernel.nu,
-            self.muygps.kernel.length_scale,
         )
 
     # MPI kernel functions
     def _get_kernel_fn_m(self):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_fn_m,
+            IsotropicDistortion(
+                "l2", length_scale=Hyperparameter(self.length_scale)
+            ),
             self.muygps.kernel.nu,
-            self.muygps.kernel.length_scale,
         )
 
     # Numpy predict functions
