@@ -118,9 +118,6 @@ class RBF(KernelFn):
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        names: List[str] = []
-        params: List[float] = []
-        bounds: List[Tuple[float, float]] = []
         names, params, bounds = super().get_optim_params()
         return names, params, bounds
 
