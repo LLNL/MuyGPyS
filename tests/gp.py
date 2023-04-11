@@ -21,6 +21,7 @@ from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import (
+    AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
 )
@@ -94,14 +95,43 @@ class GPInitTest(parameterized.TestCase):
                     "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
+            Matern(
+                nu=Hyperparameter(1.0, (1e-2, 5e4)),
+                metric=AnisotropicDistortion(
+                    "l2",
+                    length_scales={
+                        "length_scale0": Hyperparameter(2.0, (0.0, 3.0)),
+                        "length_scale1": Hyperparameter(2.0, (0.0, 3.0)),
+                    },
+                ),
+            ),
+            Matern(
+                nu=Hyperparameter(1.0),
+                metric=AnisotropicDistortion(
+                    "l2",
+                    length_scales={
+                        "length_scale0": Hyperparameter(2.0, (0.0, 3.0)),
+                        "length_scale1": Hyperparameter(2.0, (0.0, 3.0)),
+                    },
+                ),
+            ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "F2", length_scale=Hyperparameter(1.0)
                 )
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "F2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                )
+            ),
+            RBF(
+                metric=AnisotropicDistortion(
+                    "F2",
+                    length_scales={
+                        "length_scale0": Hyperparameter(2.0, (0.0, 3.0)),
+                        "length_scale1": Hyperparameter(2.0, (0.0, 3.0)),
+                    },
                 )
             ),
         )
@@ -153,7 +183,7 @@ class GPInitTest(parameterized.TestCase):
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "F2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             Matern(
@@ -164,7 +194,26 @@ class GPInitTest(parameterized.TestCase):
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "F2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                )
+            ),
+            Matern(
+                nu=Hyperparameter("log_sample", (1e-2, 5e4)),
+                metric=AnisotropicDistortion(
+                    "l2",
+                    length_scales={
+                        "length_scale0": Hyperparameter(2.0, (0.0, 3.0)),
+                        "length_scale1": Hyperparameter(2.0, (0.0, 3.0)),
+                    },
+                ),
+            ),
+            RBF(
+                metric=AnisotropicDistortion(
+                    "F2",
+                    length_scales={
+                        "length_scale0": Hyperparameter(2.0, (0.0, 3.0)),
+                        "length_scale1": Hyperparameter(2.0, (0.0, 3.0)),
+                    },
                 )
             ),
         )

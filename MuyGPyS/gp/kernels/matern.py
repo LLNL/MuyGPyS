@@ -47,6 +47,7 @@ from MuyGPyS._src.gp.kernels import (
 )
 from MuyGPyS.gp.distortion import (
     embed_with_distortion_model,
+    AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
 )
@@ -118,7 +119,7 @@ class Matern(KernelFn):
         self,
         nu: Hyperparameter = Hyperparameter(0.5),
         metric: Union[
-            IsotropicDistortion, NullDistortion
+            AnisotropicDistortion, IsotropicDistortion, NullDistortion
         ] = IsotropicDistortion("l2", length_scale=Hyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
@@ -184,7 +185,9 @@ class Matern(KernelFn):
     @staticmethod
     def _get_opt_fn(
         matern_fn: KernelFn,
-        distortion_fn: Union[IsotropicDistortion, NullDistortion],
+        distortion_fn: Union[
+            AnisotropicDistortion, IsotropicDistortion, NullDistortion
+        ],
         nu: float,
     ) -> Callable:
         opt_fn = KernelFn._get_opt_fn(matern_fn, distortion_fn)

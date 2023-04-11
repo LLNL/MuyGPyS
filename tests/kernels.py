@@ -26,6 +26,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.gp.tensors import crosswise_tensor, pairwise_tensor
 from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern
 from MuyGPyS.gp.distortion import (
+    AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
 )
@@ -541,6 +542,156 @@ class MaternTest(KernelTest):
                 [sk_mtn(vec, mat) for vec, mat in zip(test, points)]
             ).reshape(test_count, nn_count)
         )
+        self.assertEqual(Kcross.shape, (test_count, nn_count))
+        self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
+        _check_ndarray(self.assertEqual, Kcross, mm.ftype)
+        self.assertTrue(mm.allclose(Kcross, sk_Kcross))
+
+
+class AnisotropicTest(KernelTest):
+    @parameterized.parameters(
+        (
+            (1000, f, nn, 10, nn_kwargs, k_kwargs)
+            for f in [2]
+            for nn in [5, 10, 100]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for k_kwargs in [
+                {
+                    "nu": Hyperparameter(0.42, "fixed"),
+                    "length_scales": {
+                        "length_scale0": Hyperparameter(1.0),
+                        "length_scale1": Hyperparameter(2.0),
+                    },
+                },
+                {
+                    "nu": Hyperparameter(0.5),
+                    "length_scales": {
+                        "length_scale0": Hyperparameter(1.0),
+                        "length_scale1": Hyperparameter(2.0),
+                    },
+                },
+                {
+                    "nu": Hyperparameter(1.5),
+                    "length_scales": {
+                        "length_scale0": Hyperparameter(1.0),
+                        "length_scale1": Hyperparameter(2.0),
+                    },
+                },
+                {
+                    "nu": Hyperparameter(2.5),
+                    "length_scales": {
+                        "length_scale0": Hyperparameter(1.0),
+                        "length_scale1": Hyperparameter(2.0),
+                    },
+                },
+                {
+                    "nu": Hyperparameter(mm.inf),
+                    "length_scales": {
+                        "length_scale0": Hyperparameter(1.0),
+                        "length_scale1": Hyperparameter(2.0),
+                    },
+                },
+            ]
+            # for f in [1]
+            # for nn in [5]
+            # for nn_kwargs in [_basic_nn_kwarg_options[1]]
+            # for k_kwargs in [
+            #     {
+            #         "nu": {"val": mm.inf, "bounds": "fixed"},
+            #         "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
+            #     }
+            # ]
+        )
+    )
+    def test_anisotropic(
+        self,
+        train_count,
+        feature_count,
+        nn_count,
+        test_count,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
+            0.5,
+            1.5,
+            2.5,
+            mm.inf,
+        ]:
+            bad_nu = k_kwargs["nu"]["val"]
+            _warn0(
+                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+            )
+            return
+        train = _make_gaussian_matrix(train_count, feature_count)
+        test = _make_gaussian_matrix(test_count, feature_count)
+        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+        nn_dists = mm.sqrt(nn_dists)
+        pairwise_diffs = pairwise_tensor(train, nn_indices)
+        dist_model = AnisotropicDistortion(
+            metric="l2", length_scales=k_kwargs["length_scales"]
+        )
+        mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
+        # mtn = Matern(**k_kwargs)
+        self._check_params_chassis(
+            mtn,
+            **{
+                "nu": k_kwargs["nu"],
+                "length_scale0": k_kwargs["length_scales"]["length_scale0"],
+                "length_scale1": k_kwargs["length_scales"]["length_scale1"],
+            },
+        )
+        kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
+        self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
+        points = train[nn_indices]
+        sk_mtn = sk_Matern(
+            nu=mtn.nu(), length_scale=dist_model.length_scale_array
+        )
+        sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
+        self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
+        _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
+        crosswise_diffs = crosswise_tensor(
+            test, train, np.arange(test_count), nn_indices
+        )
+        Kcross = mtn(crosswise_diffs)
+        self.assertEqual(Kcross.shape, (test_count, nn_count))
+        sk_Kcross = mm.array(
+            np.array(
+                [sk_mtn(vec, mat) for vec, mat in zip(test, points)]
+            ).reshape(test_count, nn_count)
+        )
+        self.assertEqual(Kcross.shape, (test_count, nn_count))
+        self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
+        _check_ndarray(self.assertEqual, Kcross, mm.ftype)
+        self.assertTrue(mm.allclose(Kcross, sk_Kcross))
+
+        dist_model = AnisotropicDistortion(
+            metric="F2", length_scales=k_kwargs["length_scales"]
+        )
+        rbf = RBF(metric=dist_model)
+        self._check_params_chassis(
+            rbf,
+            **{
+                "length_scale0": k_kwargs["length_scales"]["length_scale0"],
+                "length_scale1": k_kwargs["length_scales"]["length_scale1"],
+            },
+        )
+        kern = _consistent_unchunk_tensor(rbf(pairwise_diffs))
+        self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
+        points = train[nn_indices]
+        sk_rbf = sk_RBF(length_scale=dist_model.length_scale_array)
+        sk_kern = mm.array(np.array([sk_rbf(mat) for mat in points]))
+        self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
+        _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
+        crosswise_diffs = crosswise_tensor(
+            test, train, np.arange(test_count), nn_indices
+        )
+        Kcross = rbf(crosswise_diffs)
+        self.assertEqual(Kcross.shape, (test_count, nn_count))
+        sk_Kcross = mm.array(
+            np.array([sk_rbf(vec, mat) for vec, mat in zip(test, points)])
+        ).reshape(test_count, nn_count)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
         self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
         _check_ndarray(self.assertEqual, Kcross, mm.ftype)

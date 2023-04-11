@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from typing import Callable, Union
-
+from MuyGPyS.gp.distortion.anisotropic import AnisotropicDistortion
 from MuyGPyS.gp.distortion.isotropic import IsotropicDistortion
 from MuyGPyS.gp.distortion.null import NullDistortion
 
@@ -20,7 +20,9 @@ def apply_distortion(distortion_fn: Callable):
 
 
 def embed_with_distortion_model(fn: Callable, distortion_fn: Callable):
-    if isinstance(distortion_fn, IsotropicDistortion):
+    if isinstance(
+        distortion_fn, Union[AnisotropicDistortion, IsotropicDistortion]
+    ):
         return apply_distortion(distortion_fn)(fn)
     elif isinstance(distortion_fn, NullDistortion):
         return fn
