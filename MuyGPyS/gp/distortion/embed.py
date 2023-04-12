@@ -9,11 +9,9 @@ from MuyGPyS.gp.distortion.isotropic import IsotropicDistortion
 from MuyGPyS.gp.distortion.null import NullDistortion
 
 
-def apply_distortion(distortion_fn: Callable):
+def apply_distortion(distortion_fn: Callable, length_scale: float):
     def distortion_applier(fn: Callable):
-        def distorted_fn(
-            diffs, *args, length_scale=distortion_fn.length_scale(), **kwargs
-        ):
+        def distorted_fn(diffs, *args, length_scale=length_scale, **kwargs):
             return fn(distortion_fn(diffs, length_scale), *args, **kwargs)
 
         return distorted_fn
@@ -21,9 +19,11 @@ def apply_distortion(distortion_fn: Callable):
     return distortion_applier
 
 
-def embed_with_distortion_model(fn: Callable, distortion_fn: Callable):
+def embed_with_distortion_model(
+    fn: Callable, distortion_fn: Callable, length_scale: float
+):
     if isinstance(distortion_fn, IsotropicDistortion):
-        return apply_distortion(distortion_fn)(fn)
+        return apply_distortion(distortion_fn, length_scale)(fn)
     elif isinstance(distortion_fn, NullDistortion):
         return fn
     else:
