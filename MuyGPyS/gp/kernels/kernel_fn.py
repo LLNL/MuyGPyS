@@ -37,7 +37,7 @@ Example:
     >>> Kcross = kern(crosswise_diffs)
 """
 
-from typing import Callable, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.gp.distortion import (
@@ -65,7 +65,7 @@ class KernelFn:
         """
         Initialize dict holding hyperparameters.
         """
-        self.hyperparameters = dict()
+        self.hyperparameters: Dict = dict()
         self._distortion_fn = metric
         self.hyperparameters = self._distortion_fn.populate_length_scale(
             self.hyperparameters

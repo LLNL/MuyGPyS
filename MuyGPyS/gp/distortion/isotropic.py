@@ -3,11 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
+
+from typing import Callable, Dict, List, Tuple
+
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
-
-from typing import List, Tuple, Callable
-
 from MuyGPyS.gp.kernels import (
     append_optim_params_lists,
     apply_hyperparameter,
@@ -26,8 +26,8 @@ class IsotropicDistortion:
         else:
             raise ValueError(f"Metric {metric} is not supported!")
 
-    def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
-        return self._dist_fn(diffs / self.length_scale())
+    def __call__(self, diffs: mm.ndarray, length_scale: float) -> mm.ndarray:
+        return self._dist_fn(diffs / length_scale)
 
     def get_optim_params(
         self,
@@ -68,7 +68,7 @@ class IsotropicDistortion:
         opt_fn = apply_hyperparameter(fn, self.length_scale, "length_scale")
         return opt_fn
 
-    def populate_length_scale(self, hyperparameters: dict()) -> dict():
+    def populate_length_scale(self, hyperparameters: Dict) -> Dict:
         """
         Populates the hyperparameter dictionary of a KernelFn object with
         `self.length_scale` of the IsotropicDistortion object.

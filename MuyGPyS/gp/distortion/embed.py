@@ -11,8 +11,10 @@ from MuyGPyS.gp.distortion.null import NullDistortion
 
 def apply_distortion(distortion_fn: Callable):
     def distortion_applier(fn: Callable):
-        def distorted_fn(diffs, *args, **kwargs):
-            return fn(distortion_fn(diffs), *args, **kwargs)
+        def distorted_fn(
+            diffs, *args, length_scale=distortion_fn.length_scale(), **kwargs
+        ):
+            return fn(distortion_fn(diffs, length_scale), *args, **kwargs)
 
         return distorted_fn
 

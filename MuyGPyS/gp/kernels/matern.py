@@ -185,7 +185,7 @@ class Matern(KernelFn):
     def _get_opt_fn(
         matern_fn: KernelFn,
         distortion_fn: Union[IsotropicDistortion, NullDistortion],
-        nu: float,
+        nu: Hyperparameter,
     ) -> Callable:
         opt_fn = KernelFn._get_opt_fn(matern_fn, distortion_fn)
         opt_fn = apply_hyperparameter(opt_fn, nu, "nu")
