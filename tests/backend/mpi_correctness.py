@@ -111,19 +111,36 @@ from MuyGPyS.gp.noise import noise_perturb
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 
-rbf_fn_n = apply_distortion(F2_n)(rbf_fn_n)
-matern_05_fn_n = apply_distortion(l2_n)(matern_05_fn_n)
-matern_15_fn_n = apply_distortion(l2_n)(matern_15_fn_n)
-matern_25_fn_n = apply_distortion(l2_n)(matern_25_fn_n)
-matern_inf_fn_n = apply_distortion(l2_n)(matern_inf_fn_n)
-matern_gen_fn_n = apply_distortion(l2_n)(matern_gen_fn_n)
 
-rbf_fn_m = apply_distortion(F2_m)(rbf_fn_m)
-matern_05_fn_m = apply_distortion(l2_m)(matern_05_fn_m)
-matern_15_fn_m = apply_distortion(l2_m)(matern_15_fn_m)
-matern_25_fn_m = apply_distortion(l2_m)(matern_25_fn_m)
-matern_inf_fn_m = apply_distortion(l2_m)(matern_inf_fn_m)
-matern_gen_fn_m = apply_distortion(l2_m)(matern_gen_fn_m)
+def isotropic_F2_n(diffs, length_scale):
+    return F2_n(diffs / length_scale)
+
+
+def isotropic_l2_n(diffs, length_scale):
+    return l2_n(diffs / length_scale)
+
+
+def isotropic_F2_m(diffs, length_scale):
+    return F2_m(diffs / length_scale)
+
+
+def isotropic_l2_m(diffs, length_scale):
+    return l2_m(diffs / length_scale)
+
+
+rbf_fn_n = apply_distortion(isotropic_F2_n, 1.0)(rbf_fn_n)
+matern_05_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_05_fn_n)
+matern_15_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_15_fn_n)
+matern_25_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_25_fn_n)
+matern_inf_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_inf_fn_n)
+matern_gen_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_gen_fn_n)
+
+rbf_fn_m = apply_distortion(isotropic_F2_m, 1.0)(rbf_fn_m)
+matern_05_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_05_fn_m)
+matern_15_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_15_fn_m)
+matern_25_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_25_fn_m)
+matern_inf_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_inf_fn_m)
+matern_gen_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_gen_fn_m)
 
 world = config.mpi_state.comm_world
 rank = world.Get_rank()

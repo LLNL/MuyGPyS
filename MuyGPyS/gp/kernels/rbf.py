@@ -43,12 +43,7 @@ from MuyGPyS.gp.distortion import (
     IsotropicDistortion,
     NullDistortion,
 )
-from MuyGPyS.gp.kernels import (
-    append_optim_params_lists,
-    apply_hyperparameter,
-    Hyperparameter,
-    KernelFn,
-)
+from MuyGPyS.gp.kernels import Hyperparameter, KernelFn
 
 
 class RBF(KernelFn):
@@ -83,7 +78,9 @@ class RBF(KernelFn):
     ):
         super().__init__(metric=metric)
         self._fn = _rbf_fn
-        self._fn = embed_with_distortion_model(self._fn, self._distortion_fn)
+        self._fn = embed_with_distortion_model(
+            self._fn, self._distortion_fn, self._distortion_fn.length_scale()
+        )
 
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
         """

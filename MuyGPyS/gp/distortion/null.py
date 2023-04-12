@@ -3,11 +3,14 @@
 #
 # SPDX-License-Identifier: MIT
 
+from typing import Dict
+
 from MuyGPyS._src.gp.tensors import _F2, _l2
+from MuyGPyS.gp.kernels import Hyperparameter
 
 
 class NullDistortion:
-    def __init__(self, metric: str, length_scale: float):
+    def __init__(self, metric: str, length_scale: Hyperparameter):
         self.length_scale = length_scale
         self.metric = metric
         if metric == "l2":
@@ -21,9 +24,19 @@ class NullDistortion:
         raise NotImplementedError("NullDistortion cannot be called!")
 
     def populate_length_scale(
-        self, hyperparameters: dict(), *args, **kwargs
-    ) -> dict():
+        self, hyperparameters: Dict, *args, **kwargs
+    ) -> Dict:
         """
         A no-op placeholder function for NullDistortion objects.
         """
         return hyperparameters
+
+    def get_opt_fn(self, *args, **kwargs):
+        raise NotImplementedError(
+            f"NullDistortion cannot be used in optimization!"
+        )
+
+    def get_optim_params(self, *args, **kwargs):
+        raise NotImplementedError(
+            f"NullDistortion cannot be used in optimization!"
+        )

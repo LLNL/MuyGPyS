@@ -388,7 +388,6 @@ class MuyGPS:
         if isinstance(rhs, self.__class__):
             return all(
                 (
-                    self.kern == rhs.kern,
                     all(
                         self.kernel.hyperparameters[h]()
                         == rhs.kernel.hyperparameters[h]()

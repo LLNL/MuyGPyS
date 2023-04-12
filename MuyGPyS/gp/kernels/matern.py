@@ -47,7 +47,6 @@ from MuyGPyS._src.gp.kernels import (
 )
 from MuyGPyS.gp.distortion import (
     embed_with_distortion_model,
-    AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
 )
@@ -79,7 +78,6 @@ def _set_matern_fn(nu: Hyperparameter):
 class Matern(KernelFn):
     """
     The Màtern kernel.
-
     The Màtern kernel includes a length scale parameter :math:`\\ell>0` and an
     additional smoothness parameter :math:`\\nu>0`. :math:`\\nu` is
     proportional to the smoothness of the resulting function. The Màtern kernel
@@ -92,21 +90,16 @@ class Matern(KernelFn):
     and :math:`\\nu=2.5` (twice differentiable functions).
     NOTE[bwp] We currently assume that the kernel is isotropic, so
     :math:`|\\ell| = 1`.
-
     The kernel is defined by
-
     .. math::
          k(x_i, x_j) =  \\frac{1}{\\Gamma(\\nu)2^{\\nu-1}}\\Bigg(
          \\frac{\\sqrt{2\\nu}}{l} d(x_i , x_j )
          \\Bigg)^\\nu K_\\nu\\Bigg(
          \\frac{\\sqrt{2\\nu}}{l} d(x_i , x_j )\\Bigg),
-
     where :math:`K_{\\nu}(\\cdot)` is a modified Bessel function and
     :math:`\\Gamma(\\cdot)` is the gamma function.
-
     Typically, :math:`d(\\cdot,\\cdot)` is the Euclidean distance or
     :math:`\\ell_2` norm of the difference of the operands.
-
     Args:
         nu:
             A hyperparameter dict defining the length_scale parameter.
@@ -119,28 +112,27 @@ class Matern(KernelFn):
         self,
         nu: Hyperparameter = Hyperparameter(0.5),
         metric: Union[
-            AnisotropicDistortion, IsotropicDistortion, NullDistortion
+            IsotropicDistortion, NullDistortion
         ] = IsotropicDistortion("l2", length_scale=Hyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
         self.nu = nu
         self.hyperparameters["nu"] = self.nu
         self._fn = _set_matern_fn(self.nu)
-        self._fn = embed_with_distortion_model(self._fn, self._distortion_fn)
+        self._fn = embed_with_distortion_model(
+            self._fn, self._distortion_fn, self._distortion_fn.length_scale()
+        )
 
     def __call__(self, diffs):
         """
         Compute Matern kernels from distance tensor.
-
         Takes inspiration from
         [scikit-learn](https://github.com/scikit-learn/scikit-learn/blob/95119c13a/sklearn/gaussian_process/kernels.py#L1529)
-
         Args:
             diffs:
                 A tensor of pairwise differences of shape
                 `(data_count, nn_count, nn_count, feature_count)`. It is assumed
                 that the vectors along the diagonals diffs[i, j, j, :] == 0.
-
         Returns:
             A cross-covariance matrix of shape `(data_count, nn_count)` or a
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
@@ -153,7 +145,6 @@ class Matern(KernelFn):
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         """
         Report lists of unfixed hyperparameter names, values, and bounds.
-
         Returns
         -------
             names:
@@ -170,11 +161,9 @@ class Matern(KernelFn):
     def get_opt_fn(self) -> Callable:
         """
         Return a kernel function with fixed parameters set.
-
         This function is designed for use with
         :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
         that optimization parameters will be passed as keyword arguments.
-
         Returns:
             A function implementing the kernel where all fixed parameters are
             set. The function expects keyword arguments corresponding to current
@@ -185,10 +174,8 @@ class Matern(KernelFn):
     @staticmethod
     def _get_opt_fn(
         matern_fn: KernelFn,
-        distortion_fn: Union[
-            AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ],
-        nu: float,
+        distortion_fn: Union[IsotropicDistortion, NullDistortion],
+        nu: Hyperparameter,
     ) -> Callable:
         opt_fn = KernelFn._get_opt_fn(matern_fn, distortion_fn)
         opt_fn = apply_hyperparameter(opt_fn, nu, "nu")
