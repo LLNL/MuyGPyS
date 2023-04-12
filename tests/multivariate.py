@@ -313,7 +313,9 @@ class OptimTest(parameterized.TestCase):
         gps = [BenchmarkGP(**a) for a in gp_args]
         cholKs = [
             benchmark_prepare_cholK(
-                gp, np.vstack((sim_test["input"], sim_train["input"]))
+                gp,
+                np.vstack((sim_test["input"], sim_train["input"])),
+                gp.kernel._distortion_fn.length_scale(),
             )
             for gp in gps
         ]

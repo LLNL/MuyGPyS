@@ -125,19 +125,36 @@ from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
 from MuyGPyS.gp.noise import HeteroscedasticNoise
 
-rbf_fn_n = apply_distortion(F2_n)(rbf_fn_n)
-matern_05_fn_n = apply_distortion(l2_n)(matern_05_fn_n)
-matern_15_fn_n = apply_distortion(l2_n)(matern_15_fn_n)
-matern_25_fn_n = apply_distortion(l2_n)(matern_25_fn_n)
-matern_inf_fn_n = apply_distortion(l2_n)(matern_inf_fn_n)
-matern_gen_fn_n = apply_distortion(l2_n)(matern_gen_fn_n)
 
-rbf_fn_j = apply_distortion(F2_j)(rbf_fn_j)
-matern_05_fn_j = apply_distortion(l2_j)(matern_05_fn_j)
-matern_15_fn_j = apply_distortion(l2_j)(matern_15_fn_j)
-matern_25_fn_j = apply_distortion(l2_j)(matern_25_fn_j)
-matern_inf_fn_j = apply_distortion(l2_j)(matern_inf_fn_j)
-matern_gen_fn_j = apply_distortion(l2_j)(matern_gen_fn_j)
+def isotropic_F2_n(diffs, length_scale):
+    return F2_n(diffs / length_scale)
+
+
+def isotropic_l2_n(diffs, length_scale):
+    return l2_n(diffs / length_scale)
+
+
+def isotropic_F2_j(diffs, length_scale):
+    return F2_j(diffs / length_scale)
+
+
+def isotropic_l2_j(diffs, length_scale):
+    return l2_j(diffs / length_scale)
+
+
+rbf_fn_n = apply_distortion(isotropic_F2_n, 1.0)(rbf_fn_n)
+matern_05_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_05_fn_n)
+matern_15_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_15_fn_n)
+matern_25_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_25_fn_n)
+matern_inf_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_inf_fn_n)
+matern_gen_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_gen_fn_n)
+
+rbf_fn_j = apply_distortion(isotropic_F2_j, 1.0)(rbf_fn_j)
+matern_05_fn_j = apply_distortion(isotropic_l2_j, 1.0)(matern_05_fn_j)
+matern_15_fn_j = apply_distortion(isotropic_l2_j, 1.0)(matern_15_fn_j)
+matern_25_fn_j = apply_distortion(isotropic_l2_j, 1.0)(matern_25_fn_j)
+matern_inf_fn_j = apply_distortion(isotropic_l2_j, 1.0)(matern_inf_fn_j)
+matern_gen_fn_j = apply_distortion(isotropic_l2_j, 1.0)(matern_gen_fn_j)
 
 
 def allclose_gen(a: np.ndarray, b: np.ndarray) -> bool:

@@ -125,7 +125,9 @@ class Matern(KernelFn):
         self.nu = nu
         self.hyperparameters["nu"] = self.nu
         self._fn = _set_matern_fn(self.nu)
-        self._fn = embed_with_distortion_model(self._fn, self._distortion_fn)
+        self._fn = embed_with_distortion_model(
+            self._fn, self._distortion_fn, self._distortion_fn.length_scale()
+        )
 
     def __call__(self, diffs):
         """
@@ -185,7 +187,7 @@ class Matern(KernelFn):
     def _get_opt_fn(
         matern_fn: KernelFn,
         distortion_fn: Union[IsotropicDistortion, NullDistortion],
-        nu: float,
+        nu: Hyperparameter,
     ) -> Callable:
         opt_fn = KernelFn._get_opt_fn(matern_fn, distortion_fn)
         opt_fn = apply_hyperparameter(opt_fn, nu, "nu")
