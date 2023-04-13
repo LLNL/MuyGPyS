@@ -50,15 +50,17 @@ from MuyGPyS.gp.distortion import (
     IsotropicDistortion,
     NullDistortion,
 )
-from MuyGPyS.gp.kernels import (
+from MuyGPyS.gp.hyperparameter import (
     append_optim_params_lists_scalar,
     apply_scalar_hyperparameter,
-    Hyperparameter,
+    ScalarHyperparameter,
+)
+from MuyGPyS.gp.kernels import (
     KernelFn,
 )
 
 
-def _set_matern_fn(nu: Hyperparameter):
+def _set_matern_fn(nu: ScalarHyperparameter):
     if nu.fixed() is True:
         if nu() == 0.5:
             return _matern_05_fn
@@ -115,9 +117,9 @@ class Matern(KernelFn):
 
     def __init__(
         self,
-        nu: Hyperparameter = Hyperparameter(0.5),
+        nu: ScalarHyperparameter = ScalarHyperparameter(0.5),
         metric: Union[IsotropicDistortion, NullDistortion] = IsotropicDistortion(
-            "l2", length_scale=Hyperparameter(1.0)
+            "l2", length_scale=ScalarHyperparameter(1.0)
         ),
     ):
         super().__init__(metric=metric)
@@ -186,7 +188,7 @@ class Matern(KernelFn):
     def _get_opt_fn(
         matern_fn: KernelFn,
         distortion_fn: Union[IsotropicDistortion, NullDistortion],
-        nu: Hyperparameter,
+        nu: ScalarHyperparameter,
     ) -> Callable:
         opt_fn = KernelFn._get_opt_fn(matern_fn, distortion_fn)
         opt_fn = apply_scalar_hyperparameter(opt_fn, nu, "nu")
