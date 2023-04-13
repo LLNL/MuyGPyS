@@ -47,6 +47,7 @@ from MuyGPyS._src.gp.kernels import (
 )
 from MuyGPyS.gp.distortion import (
     embed_with_distortion_model,
+    AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
 )
@@ -112,7 +113,7 @@ class Matern(KernelFn):
         self,
         nu: Hyperparameter = Hyperparameter(0.5),
         metric: Union[
-            IsotropicDistortion, NullDistortion
+            AnisotropicDistortion, IsotropicDistortion, NullDistortion
         ] = IsotropicDistortion("l2", length_scale=Hyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
@@ -120,7 +121,7 @@ class Matern(KernelFn):
         self.hyperparameters["nu"] = self.nu
         self._fn = _set_matern_fn(self.nu)
         self._fn = embed_with_distortion_model(
-            self._fn, self._distortion_fn, self._distortion_fn.length_scale()
+            self._fn, self._distortion_fn, self._distortion_fn.length_scale
         )
 
     def __call__(self, diffs):
@@ -138,7 +139,12 @@ class Matern(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self._fn(diffs, nu=self.nu())
+        if isinstance(self._distortion_fn, AnisotropicDistortion):
+            return self._fn(
+                diffs, nu=self.nu(), **self._distortion_fn.length_scale
+            )
+        else:
+            return self._fn(diffs, nu=self.nu())
 
     def get_optim_params(
         self,
@@ -174,7 +180,9 @@ class Matern(KernelFn):
     @staticmethod
     def _get_opt_fn(
         matern_fn: KernelFn,
-        distortion_fn: Union[IsotropicDistortion, NullDistortion],
+        distortion_fn: Union[
+            AnisotropicDistortion, IsotropicDistortion, NullDistortion
+        ],
         nu: Hyperparameter,
     ) -> Callable:
         opt_fn = KernelFn._get_opt_fn(matern_fn, distortion_fn)

@@ -79,7 +79,7 @@ class RBF(KernelFn):
         super().__init__(metric=metric)
         self._fn = _rbf_fn
         self._fn = embed_with_distortion_model(
-            self._fn, self._distortion_fn, self._distortion_fn.length_scale()
+            self._fn, self._distortion_fn, self._distortion_fn.length_scale
         )
 
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
@@ -99,7 +99,10 @@ class RBF(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self._fn(diffs)
+        if isinstance(self._distortion_fn, AnisotropicDistortion):
+            return self._fn(diffs, **self._distortion_fn.length_scale)
+        else:
+            return self._fn(diffs)
 
     def get_optim_params(
         self,

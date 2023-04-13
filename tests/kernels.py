@@ -558,38 +558,28 @@ class AnisotropicTest(KernelTest):
             for k_kwargs in [
                 {
                     "nu": Hyperparameter(0.42, "fixed"),
-                    "length_scales": {
-                        "length_scale0": Hyperparameter(1.0),
-                        "length_scale1": Hyperparameter(2.0),
-                    },
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
                 },
                 {
                     "nu": Hyperparameter(0.5),
-                    "length_scales": {
-                        "length_scale0": Hyperparameter(1.0),
-                        "length_scale1": Hyperparameter(2.0),
-                    },
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
                 },
                 {
                     "nu": Hyperparameter(1.5),
-                    "length_scales": {
-                        "length_scale0": Hyperparameter(1.0),
-                        "length_scale1": Hyperparameter(2.0),
-                    },
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
                 },
                 {
                     "nu": Hyperparameter(2.5),
-                    "length_scales": {
-                        "length_scale0": Hyperparameter(1.0),
-                        "length_scale1": Hyperparameter(2.0),
-                    },
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
                 },
                 {
                     "nu": Hyperparameter(mm.inf),
-                    "length_scales": {
-                        "length_scale0": Hyperparameter(1.0),
-                        "length_scale1": Hyperparameter(2.0),
-                    },
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
                 },
             ]
             # for f in [1]
@@ -630,7 +620,9 @@ class AnisotropicTest(KernelTest):
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
         dist_model = AnisotropicDistortion(
-            metric="l2", length_scales=k_kwargs["length_scales"]
+            metric="l2",
+            length_scale0=k_kwargs["length_scale0"],
+            length_scale1=k_kwargs["length_scale1"],
         )
         mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
         # mtn = Matern(**k_kwargs)
@@ -638,15 +630,18 @@ class AnisotropicTest(KernelTest):
             mtn,
             **{
                 "nu": k_kwargs["nu"],
-                "length_scale0": k_kwargs["length_scales"]["length_scale0"],
-                "length_scale1": k_kwargs["length_scales"]["length_scale1"],
+                "length_scale0": k_kwargs["length_scale0"],
+                "length_scale1": k_kwargs["length_scale1"],
             },
         )
         kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
+        length_scale0 = k_kwargs["length_scale0"]
+        length_scale1 = k_kwargs["length_scale1"]
         sk_mtn = sk_Matern(
-            nu=mtn.nu(), length_scale=dist_model.length_scale_array
+            nu=mtn.nu(),
+            length_scale=mm.array([length_scale0(), length_scale1()]),
         )
         sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
@@ -667,20 +662,24 @@ class AnisotropicTest(KernelTest):
         self.assertTrue(mm.allclose(Kcross, sk_Kcross))
 
         dist_model = AnisotropicDistortion(
-            metric="F2", length_scales=k_kwargs["length_scales"]
+            metric="F2",
+            length_scale0=k_kwargs["length_scale0"],
+            length_scale1=k_kwargs["length_scale1"],
         )
         rbf = RBF(metric=dist_model)
         self._check_params_chassis(
             rbf,
             **{
-                "length_scale0": k_kwargs["length_scales"]["length_scale0"],
-                "length_scale1": k_kwargs["length_scales"]["length_scale1"],
+                "length_scale0": k_kwargs["length_scale0"],
+                "length_scale1": k_kwargs["length_scale1"],
             },
         )
         kern = _consistent_unchunk_tensor(rbf(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
-        sk_rbf = sk_RBF(length_scale=dist_model.length_scale_array)
+        sk_rbf = sk_RBF(
+            length_scale=mm.array([length_scale0(), length_scale1()])
+        )
         sk_kern = mm.array(np.array([sk_rbf(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))

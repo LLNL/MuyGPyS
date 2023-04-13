@@ -99,20 +99,16 @@ class GPInitTest(parameterized.TestCase):
                 nu=Hyperparameter(1.0, (1e-2, 5e4)),
                 metric=AnisotropicDistortion(
                     "l2",
-                    length_scales={
-                        "length_scale0": Hyperparameter(2.0, (0.0, 3.0)),
-                        "length_scale1": Hyperparameter(2.0, (0.0, 3.0)),
-                    },
+                    length_scale0=Hyperparameter(2.0, (0.0, 3.0)),
+                    length_scale1=Hyperparameter(2.0, (0.0, 3.0)),
                 ),
             ),
             Matern(
                 nu=Hyperparameter(1.0),
                 metric=AnisotropicDistortion(
                     "l2",
-                    length_scales={
-                        "length_scale0": Hyperparameter(2.0, (0.0, 3.0)),
-                        "length_scale1": Hyperparameter(2.0, (0.0, 3.0)),
-                    },
+                    length_scale0=Hyperparameter(2.0, (0.0, 3.0)),
+                    length_scale1=Hyperparameter(2.0, (0.0, 3.0)),
                 ),
             ),
             RBF(
@@ -128,10 +124,8 @@ class GPInitTest(parameterized.TestCase):
             RBF(
                 metric=AnisotropicDistortion(
                     "F2",
-                    length_scales={
-                        "length_scale0": Hyperparameter(2.0, (0.0, 3.0)),
-                        "length_scale1": Hyperparameter(2.0, (0.0, 3.0)),
-                    },
+                    length_scale0=Hyperparameter(2.0, (0.0, 3.0)),
+                    length_scale1=Hyperparameter(2.0, (0.0, 3.0)),
                 )
             ),
         )
@@ -201,19 +195,15 @@ class GPInitTest(parameterized.TestCase):
                 nu=Hyperparameter("log_sample", (1e-2, 5e4)),
                 metric=AnisotropicDistortion(
                     "l2",
-                    length_scales={
-                        "length_scale0": Hyperparameter(2.0, (0.0, 3.0)),
-                        "length_scale1": Hyperparameter(2.0, (0.0, 3.0)),
-                    },
+                    length_scale0=Hyperparameter(2.0, (0.0, 3.0)),
+                    length_scale1=Hyperparameter(2.0, (0.0, 3.0)),
                 ),
             ),
             RBF(
                 metric=AnisotropicDistortion(
                     "F2",
-                    length_scales={
-                        "length_scale0": Hyperparameter(2.0, (0.0, 3.0)),
-                        "length_scale1": Hyperparameter(2.0, (0.0, 3.0)),
-                    },
+                    length_scale0=Hyperparameter(2.0, (0.0, 3.0)),
+                    length_scale1=Hyperparameter(2.0, (0.0, 3.0)),
                 )
             ),
         )
