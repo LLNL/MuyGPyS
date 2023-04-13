@@ -7,13 +7,12 @@
 MuyGPs implementation
 """
 
-from typing import Callable, Union, Optional
+from typing import Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import (
     _muygps_fast_posterior_mean_precompute,
 )
-from MuyGPyS.gp.kernels import apply_hyperparameter
 from MuyGPyS.gp.noise import (
     HomoscedasticNoise,
     HeteroscedasticNoise,
@@ -24,9 +23,7 @@ from MuyGPyS.gp.noise import (
 
 class FastPrecomputeCoefficients:
     def __init__(
-        self,
-        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
-        **kwargs
+        self, eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise], **kwargs
     ):
         self.eps = eps
         self._fn = _muygps_fast_posterior_mean_precompute
@@ -37,5 +34,4 @@ class FastPrecomputeCoefficients:
         K: mm.ndarray,
         train_nn_targets_fast: mm.ndarray,
     ) -> mm.ndarray:
-
         return self._fn(K, train_nn_targets_fast, eps=self.eps())

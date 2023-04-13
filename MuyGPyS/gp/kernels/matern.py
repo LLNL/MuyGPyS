@@ -51,8 +51,8 @@ from MuyGPyS.gp.distortion import (
     NullDistortion,
 )
 from MuyGPyS.gp.kernels import (
-    append_optim_params_lists,
-    apply_hyperparameter,
+    append_optim_params_lists_scalar,
+    apply_scalar_hyperparameter,
     Hyperparameter,
     KernelFn,
 )
@@ -69,7 +69,6 @@ def _set_matern_fn(nu: Hyperparameter):
         elif nu() == mm.inf:
             return _matern_inf_fn
         else:
-
             return _matern_gen_fn
 
     return _matern_gen_fn
@@ -117,9 +116,9 @@ class Matern(KernelFn):
     def __init__(
         self,
         nu: Hyperparameter = Hyperparameter(0.5),
-        metric: Union[
-            IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion("l2", length_scale=Hyperparameter(1.0)),
+        metric: Union[IsotropicDistortion, NullDistortion] = IsotropicDistortion(
+            "l2", length_scale=Hyperparameter(1.0)
+        ),
     ):
         super().__init__(metric=metric)
         self.nu = nu
@@ -165,7 +164,7 @@ class Matern(KernelFn):
                 A list of unfixed hyperparameter bound tuples.
         """
         names, params, bounds = super().get_optim_params()
-        append_optim_params_lists(self.nu, "nu", names, params, bounds)
+        append_optim_params_lists_scalar(self.nu, "nu", names, params, bounds)
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:
@@ -190,5 +189,5 @@ class Matern(KernelFn):
         nu: Hyperparameter,
     ) -> Callable:
         opt_fn = KernelFn._get_opt_fn(matern_fn, distortion_fn)
-        opt_fn = apply_hyperparameter(opt_fn, nu, "nu")
+        opt_fn = apply_scalar_hyperparameter(opt_fn, nu, "nu")
         return opt_fn

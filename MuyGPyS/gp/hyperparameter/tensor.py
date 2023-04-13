@@ -66,16 +66,14 @@ class TensorHyperparameter:
                 will produce an error.
         """
         if isinstance(val, str):
-            raise ValueError(
-                f"TensorHyperparameter class does not support strings."
-            )
+            raise ValueError("TensorHyperparameter class does not support strings.")
         if not isinstance(val, mm.ndarray):
             raise ValueError(
                 f"Non-array tensor hyperparameter value {val} is not allowed."
             )
         if self.fixed() is False:
             raise ValueError(
-                f"TensorHyperparameters objects do not support optimization."
+                "TensorHyperparameters objects do not support optimization."
             )
         self._val = val
 
@@ -122,9 +120,7 @@ def _init_tensor_hyperparameter(
     return type(val)
 
 
-def apply_tensor_hyperparameter(
-    fn: Callable, param: TensorHyperparameter, name: str
-):
+def apply_tensor_hyperparameter(fn: Callable, param: TensorHyperparameter, name: str):
     if param.fixed():
 
         def applied_fn(*args, **kwargs):
