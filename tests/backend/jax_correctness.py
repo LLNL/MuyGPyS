@@ -114,7 +114,11 @@ from MuyGPyS._src.optimize.sigma_sq.jax import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distortion import apply_distortion, IsotropicDistortion
+from MuyGPyS.gp.distortion import (
+    apply_distortion,
+    apply_anisotropic_distortion,
+    IsotropicDistortion,
+)
 from MuyGPyS.gp.kernels import Hyperparameter, Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
@@ -142,6 +146,100 @@ def isotropic_l2_j(diffs, length_scale):
     return l2_j(diffs / length_scale)
 
 
+def anisotropic_F2_n(diffs, **length_scales):
+    partial_name = "length_scale"
+    if isinstance(length_scales["length_scale0"], float):
+        length_scale_array = [
+            value
+            for key, value in length_scales.items()
+            if key.startswith(partial_name)
+        ]
+    elif isinstance(length_scales["length_scale0"], Hyperparameter):
+        length_scale_array = [
+            value()
+            for key, value in length_scales.items()
+            if key.startswith(partial_name)
+        ]
+    length_scale_array = np.array(length_scale_array)
+    if (
+        diffs.shape[-1] != len(length_scale_array)
+        and len(length_scale_array) != 1
+    ):
+        raise ValueError(
+            f"Number of lengthscale parameters "
+            f"({len(length_scale_array)}) must match number of "
+            f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
+        )
+    return F2_n(diffs / length_scale_array)
+
+
+def anisotropic_l2_n(diffs, **length_scales):
+    partial_name = "length_scale"
+    if isinstance(length_scales["length_scale0"], float):
+        length_scale_array = [
+            value
+            for key, value in length_scales.items()
+            if key.startswith(partial_name)
+        ]
+    elif isinstance(length_scales["length_scale0"], Hyperparameter):
+        length_scale_array = [
+            value()
+            for key, value in length_scales.items()
+            if key.startswith(partial_name)
+        ]
+    length_scale_array = np.array(length_scale_array)
+    if (
+        diffs.shape[-1] != len(length_scale_array)
+        and len(length_scale_array) != 1
+    ):
+        raise ValueError(
+            f"Number of lengthscale parameters "
+            f"({len(length_scale_array)}) must match number of "
+            f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
+        )
+    return l2_n(diffs / length_scale_array)
+
+
+def anisotropic_F2_j(diffs, **length_scales):
+    partial_name = "length_scale"
+    length_scale_array = [
+        value
+        for key, value in length_scales.items()
+        if key.startswith(partial_name)
+    ]
+    length_scale_array = jnp.array(length_scale_array)
+    if (
+        diffs.shape[-1] != len(length_scale_array)
+        and len(length_scale_array) != 1
+    ):
+        raise ValueError(
+            f"Number of lengthscale parameters "
+            f"({len(length_scale_array)}) must match number of "
+            f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
+        )
+    return F2_j(diffs / length_scale_array)
+
+
+def anisotropic_l2_j(diffs, **length_scales):
+    partial_name = "length_scale"
+    length_scale_array = [
+        value
+        for key, value in length_scales.items()
+        if key.startswith(partial_name)
+    ]
+    length_scale_array = jnp.array(length_scale_array)
+    if (
+        diffs.shape[-1] != len(length_scale_array)
+        and len(length_scale_array) != 1
+    ):
+        raise ValueError(
+            f"Number of lengthscale parameters "
+            f"({len(length_scale_array)}) must match number of "
+            f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
+        )
+    return l2_j(diffs / length_scale_array)
+
+
 rbf_fn_n = apply_distortion(isotropic_F2_n, 1.0)(rbf_fn_n)
 matern_05_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_05_fn_n)
 matern_15_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_15_fn_n)
@@ -155,6 +253,44 @@ matern_15_fn_j = apply_distortion(isotropic_l2_j, 1.0)(matern_15_fn_j)
 matern_25_fn_j = apply_distortion(isotropic_l2_j, 1.0)(matern_25_fn_j)
 matern_inf_fn_j = apply_distortion(isotropic_l2_j, 1.0)(matern_inf_fn_j)
 matern_gen_fn_j = apply_distortion(isotropic_l2_j, 1.0)(matern_gen_fn_j)
+
+rbf_anisotropic_fn_n = apply_anisotropic_distortion(
+    anisotropic_F2_n, length_scale0=1.0
+)(rbf_fn_n)
+matern_05_anisotropic_fn_n = apply_anisotropic_distortion(
+    anisotropic_l2_n, length_scale0=1.0
+)(matern_05_fn_n)
+matern_15_anisotropic_fn_n = apply_anisotropic_distortion(
+    anisotropic_l2_n, length_scale0=1.0
+)(matern_15_fn_n)
+matern_25_anisotropic_fn_n = apply_anisotropic_distortion(
+    anisotropic_l2_n, length_scale0=1.0
+)(matern_25_fn_n)
+matern_inf_anisotropic_fn_n = apply_anisotropic_distortion(
+    anisotropic_l2_n, length_scale0=1.0
+)(matern_inf_fn_n)
+matern_gen_anisotropic_fn_n = apply_anisotropic_distortion(
+    anisotropic_l2_n, nu=0.5, length_scale0=1.0
+)(matern_gen_fn_n)
+
+rbf_anisotropic_fn_j = apply_anisotropic_distortion(
+    anisotropic_F2_j, length_scale0=1.0
+)(rbf_fn_j)
+matern_05_anisotropic_fn_j = apply_anisotropic_distortion(
+    anisotropic_l2_j, length_scale0=1.0
+)(matern_05_fn_j)
+matern_15_anisotropic_fn_j = apply_anisotropic_distortion(
+    anisotropic_l2_j, length_scale0=1.0
+)(matern_15_fn_j)
+matern_25_anisotropic_fn_j = apply_anisotropic_distortion(
+    anisotropic_l2_j, length_scale0=1.0
+)(matern_25_fn_j)
+matern_inf_anisotropic_fn_j = apply_anisotropic_distortion(
+    anisotropic_l2_j, length_scale0=1.0
+)(matern_inf_fn_j)
+matern_gen_anisotropic_fn_j = apply_anisotropic_distortion(
+    anisotropic_l2_j, nu=0.5, length_scale0=1.0
+)(matern_gen_fn_j)
 
 
 def allclose_gen(a: np.ndarray, b: np.ndarray) -> bool:
@@ -452,11 +588,31 @@ class KernelTest(KernelTestCase):
         )
         self.assertTrue(
             allclose_gen(
+                matern_05_anisotropic_fn_n(
+                    self.crosswise_diffs_n, length_scale0=1.0
+                ),
+                matern_05_anisotropic_fn_j(
+                    self.crosswise_diffs_j, length_scale0=1.0
+                ),
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
                 matern_15_fn_n(
                     self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_15_fn_j(
                     self.crosswise_diffs_j, length_scale=self.length_scale
+                ),
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
+                matern_15_anisotropic_fn_n(
+                    self.crosswise_diffs_n, length_scale0=self.length_scale
+                ),
+                matern_15_anisotropic_fn_j(
+                    self.crosswise_diffs_j, length_scale0=self.length_scale
                 ),
             )
         )
@@ -472,11 +628,31 @@ class KernelTest(KernelTestCase):
         )
         self.assertTrue(
             allclose_gen(
+                matern_25_anisotropic_fn_n(
+                    self.crosswise_diffs_n, length_scale0=self.length_scale
+                ),
+                matern_25_anisotropic_fn_j(
+                    self.crosswise_diffs_j, length_scale0=self.length_scale
+                ),
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
                 matern_inf_fn_n(
                     self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_inf_fn_j(
                     self.crosswise_diffs_j, length_scale=self.length_scale
+                ),
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
+                matern_inf_anisotropic_fn_n(
+                    self.crosswise_diffs_n, length_scale0=self.length_scale
+                ),
+                matern_inf_anisotropic_fn_j(
+                    self.crosswise_diffs_j, length_scale0=self.length_scale
                 ),
             )
         )
@@ -491,6 +667,20 @@ class KernelTest(KernelTestCase):
                     self.crosswise_diffs_j,
                     nu=self.nu,
                     length_scale=self.length_scale,
+                ),
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
+                matern_gen_anisotropic_fn_n(
+                    self.crosswise_diffs_n,
+                    nu=self.nu,
+                    length_scale0=self.length_scale,
+                ),
+                matern_gen_anisotropic_fn_j(
+                    self.crosswise_diffs_j,
+                    nu=self.nu,
+                    length_scale0=self.length_scale,
                 ),
             )
         )
@@ -532,6 +722,7 @@ class KernelTest(KernelTestCase):
                 ),
             )
         )
+
         self.assertTrue(
             allclose_gen(
                 matern_gen_fn_n(

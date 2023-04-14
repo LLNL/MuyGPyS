@@ -29,7 +29,11 @@ from MuyGPyS._test.utils import (
     _sq_rel_err,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import IsotropicDistortion, NullDistortion
+from MuyGPyS.gp.distortion import (
+    AnisotropicDistortion,
+    IsotropicDistortion,
+    NullDistortion,
+)
 from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
