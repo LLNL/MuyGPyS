@@ -124,9 +124,11 @@ class Matern(KernelFn):
         super().__init__(metric=metric)
         self.nu = nu
         self.hyperparameters["nu"] = self.nu
-        self._fn = _set_matern_fn(self.nu)
+        self._kernel_fn = _set_matern_fn(self.nu)
         self._fn = embed_with_distortion_model(
-            self._fn, self._distortion_fn, self._distortion_fn.length_scale()
+            self._kernel_fn,
+            self._distortion_fn,
+            self._distortion_fn.length_scale(),
         )
 
     def __call__(self, diffs):

@@ -76,9 +76,11 @@ class RBF(KernelFn):
         ] = IsotropicDistortion("F2", length_scale=Hyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
-        self._fn = _rbf_fn
+        self._kernel_fn = _rbf_fn
         self._fn = embed_with_distortion_model(
-            self._fn, self._distortion_fn, self._distortion_fn.length_scale()
+            self._kernel_fn,
+            self._distortion_fn,
+            self._distortion_fn.length_scale(),
         )
 
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
