@@ -29,18 +29,12 @@ class AnisotropicDistortion:
 
     def __call__(self, diffs: mm.ndarray, **length_scales) -> mm.ndarray:
         partial_name = "length_scale"
-        if isinstance(length_scales["length_scale0"], float):
-            length_scale_array = [
-                value
-                for key, value in length_scales.items()
-                if key.startswith(partial_name)
-            ]
-        elif isinstance(length_scales["length_scale0"], Hyperparameter):
-            length_scale_array = [
-                value()
-                for key, value in length_scales.items()
-                if key.startswith(partial_name)
-            ]
+        length_scale_array = [
+            value
+            for key, value in length_scales.items()
+            if key.startswith(partial_name)
+        ]
+        length_scale_array = mm.array(length_scale_array)
         if (
             diffs.shape[-1] != len(length_scale_array)
             and len(length_scale_array) != 1

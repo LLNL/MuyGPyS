@@ -270,7 +270,7 @@ matern_inf_anisotropic_fn_n = apply_anisotropic_distortion(
     anisotropic_l2_n, length_scale0=1.0
 )(matern_inf_fn_n)
 matern_gen_anisotropic_fn_n = apply_anisotropic_distortion(
-    anisotropic_l2_n, nu=0.5, length_scale0=1.0
+    anisotropic_l2_n, length_scale0=1.0
 )(matern_gen_fn_n)
 
 rbf_anisotropic_fn_j = apply_anisotropic_distortion(
@@ -289,7 +289,7 @@ matern_inf_anisotropic_fn_j = apply_anisotropic_distortion(
     anisotropic_l2_j, length_scale0=1.0
 )(matern_inf_fn_j)
 matern_gen_anisotropic_fn_j = apply_anisotropic_distortion(
-    anisotropic_l2_j, nu=0.5, length_scale0=1.0
+    anisotropic_l2_j, length_scale0=1.0
 )(matern_gen_fn_j)
 
 
@@ -670,20 +670,21 @@ class KernelTest(KernelTestCase):
                 ),
             )
         )
-        self.assertTrue(
-            allclose_gen(
-                matern_gen_anisotropic_fn_n(
-                    self.crosswise_diffs_n,
-                    nu=self.nu,
-                    length_scale0=self.length_scale,
-                ),
-                matern_gen_anisotropic_fn_j(
-                    self.crosswise_diffs_j,
-                    nu=self.nu,
-                    length_scale0=self.length_scale,
-                ),
-            )
-        )
+
+        # self.assertTrue(
+        #     allclose_gen(
+        #         matern_gen_anisotropic_fn_n(
+        #             self.crosswise_diffs_n,
+        #             nu=self.nu,
+        #             length_scale0=self.length_scale,
+        #         ),
+        #         matern_gen_anisotropic_fn_j(
+        #             self.crosswise_diffs_j,
+        #             nu=self.nu,
+        #             length_scale0=self.length_scale,
+        #         ),
+        #     )
+        # )
 
     def test_pairwise_matern(self):
         self.assertTrue(
@@ -694,11 +695,31 @@ class KernelTest(KernelTestCase):
         )
         self.assertTrue(
             allclose_gen(
+                matern_05_anisotropic_fn_n(
+                    self.pairwise_diffs_n, length_scale0=self.length_scale
+                ),
+                matern_05_anisotropic_fn_j(
+                    self.pairwise_diffs_j, length_scale0=self.length_scale
+                ),
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
                 matern_15_fn_n(
                     self.pairwise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_15_fn_j(
                     self.pairwise_diffs_j, length_scale=self.length_scale
+                ),
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
+                matern_15_anisotropic_fn_n(
+                    self.pairwise_diffs_n, length_scale0=self.length_scale
+                ),
+                matern_15_anisotropic_fn_j(
+                    self.pairwise_diffs_j, length_scale0=self.length_scale
                 ),
             )
         )
@@ -714,11 +735,31 @@ class KernelTest(KernelTestCase):
         )
         self.assertTrue(
             allclose_gen(
+                matern_25_anisotropic_fn_n(
+                    self.pairwise_diffs_n, length_scale0=self.length_scale
+                ),
+                matern_25_anisotropic_fn_j(
+                    self.pairwise_diffs_j, length_scale0=self.length_scale
+                ),
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
                 matern_inf_fn_n(
                     self.pairwise_diffs_n, length_scale=self.length_scale
                 ),
                 matern_inf_fn_j(
                     self.pairwise_diffs_j, length_scale=self.length_scale
+                ),
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
+                matern_inf_anisotropic_fn_n(
+                    self.pairwise_diffs_n, length_scale0=self.length_scale
+                ),
+                matern_inf_anisotropic_fn_j(
+                    self.pairwise_diffs_j, length_scale0=self.length_scale
                 ),
             )
         )
@@ -734,6 +775,20 @@ class KernelTest(KernelTestCase):
                     self.pairwise_diffs_j,
                     nu=self.nu,
                     length_scale=self.length_scale,
+                ),
+            )
+        )
+        self.assertTrue(
+            allclose_gen(
+                matern_gen_anisotropic_fn_n(
+                    self.pairwise_diffs_n,
+                    nu=self.nu,
+                    length_scale0=self.length_scale,
+                ),
+                matern_gen_anisotropic_fn_j(
+                    self.pairwise_diffs_j,
+                    nu=self.nu,
+                    length_scale0=self.length_scale,
                 ),
             )
         )

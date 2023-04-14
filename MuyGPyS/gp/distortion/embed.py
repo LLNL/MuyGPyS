@@ -27,7 +27,7 @@ def apply_anisotropic_distortion(distortion_fn: Callable, **kwargs):
     def distortion_applier(fn: Callable):
         def distorted_fn(diffs, *args, **kwargs):
             return fn(
-                distortion_fn(diffs, **kwargs),
+                distortion_fn(diffs, **convert_length_scales(kwargs)),
                 *args,
                 **kwargs,
             )
@@ -35,6 +35,14 @@ def apply_anisotropic_distortion(distortion_fn: Callable, **kwargs):
         return distorted_fn
 
     return distortion_applier
+
+
+def convert_length_scales(length_scales: Dict):
+    partial_name = "length_scale"
+    for key, value in length_scales.items():
+        if isinstance(value, Hyperparameter) and key.startswith(partial_name):
+            length_scales[key] = value()
+    return length_scales
 
 
 def embed_with_distortion_model(
