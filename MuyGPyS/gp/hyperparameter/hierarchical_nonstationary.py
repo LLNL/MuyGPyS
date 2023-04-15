@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: MIT
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.gp.kernels.rbf import RBF
 
 
 class HierarchicalNonstationaryHyperparameter:
@@ -13,7 +12,7 @@ class HierarchicalNonstationaryHyperparameter:
 
     HierarchicalNonstationaryHyperparameter are defined by a set of knots,
     initial guesses for the hyperparameter values at each of those knots,
-    and hyperparameters of the lower-level GP, currently a simple RBF.
+    and a lower-level GP kernel.
 
     Args:
         knot_features:
@@ -22,12 +21,12 @@ class HierarchicalNonstationaryHyperparameter:
         knot_values:
             Tensor of floats of shape `(knot_count, 1)`
             containing the initial values at each knot.
-        k_kwargs:
-            Kernel keyword arguments for the lower-level GP (RBF).
+        kernel:
+            Initialized lower-level GP kernel.
     """
 
-    def __init__(self, knot_features, knot_values, k_kwargs):
-        self.kernel = RBF(**k_kwargs)
+    def __init__(self, knot_features, knot_values, kernel):
+        self.kernel = kernel
         self.knot_features = knot_features
         lower_K = self.kernel(mm._pairwise_distances(self.knot_features))
         self.solve = mm.linalg.solve(lower_K, knot_values)
