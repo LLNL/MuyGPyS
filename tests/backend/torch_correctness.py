@@ -8,7 +8,7 @@ from MuyGPyS import config
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
 if config.state.torch_enabled is False:
-    raise ValueError(f"Bad attempt to run torch-only code with torch diabled.")
+    raise ValueError(f"Bad attempt to run torch-only code with torch disabled.")
 if config.state.backend == "mpi":
     raise ValueError(f"Bad attempt to run non-MPI code in MPI mode.")
 if config.state.backend != "numpy":

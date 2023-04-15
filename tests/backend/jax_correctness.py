@@ -8,7 +8,7 @@ from MuyGPyS import config, jax_config
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
 if config.state.jax_enabled is False:
-    raise ValueError(f"Bad attempt to run jax-only code with jax diabled.")
+    raise ValueError(f"Bad attempt to run jax-only code with jax disabled.")
 if config.state.backend == "mpi":
     raise ValueError(f"Bad attempt to run non-MPI code in MPI mode.")
 elif config.state.backend != "numpy":
@@ -124,7 +124,6 @@ from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
-from MuyGPyS.gp.noise import HeteroscedasticNoise
 
 
 def isotropic_F2_n(diffs, length_scale):
