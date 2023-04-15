@@ -166,9 +166,13 @@ class ScalarHyperparameter:
                 if _is_mpi_mode() is True:
                     val = config.mpi_state.comm_world.bcast(val, root=0)
             else:
-                raise ValueError(f"Unsupported string hyperparameter value {val}.")
+                raise ValueError(
+                    f"Unsupported string hyperparameter value {val}."
+                )
         if isinstance(val, Sequence) or hasattr(val, "__len__"):
-            raise ValueError(f"Nonscalar hyperparameter value {val} is not allowed.")
+            raise ValueError(
+                f"Nonscalar hyperparameter value {val} is not allowed."
+            )
         if not isinstance(val, mm.ndarray):
             val = float(val)
 
@@ -312,7 +316,9 @@ def _init_scalar_hyperparameter(
 
 
 def apply_scalar_hyperparameter(
-    fn: Callable, param: Union[TensorHyperparameter, ScalarHyperparameter], name: str
+    fn: Callable,
+    param: Union[TensorHyperparameter, ScalarHyperparameter],
+    name: str,
 ):
     if param.fixed():
 

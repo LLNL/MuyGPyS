@@ -65,7 +65,9 @@ class IsotropicDistortion:
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        opt_fn = apply_scalar_hyperparameter(fn, self.length_scale, "length_scale")
+        opt_fn = apply_scalar_hyperparameter(
+            fn, self.length_scale, "length_scale"
+        )
         return opt_fn
 
     def populate_length_scale(self, hyperparameters: Dict) -> Dict:

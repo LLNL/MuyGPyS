@@ -22,7 +22,9 @@ from MuyGPyS.gp.noise import (
 
 class PosteriorMean:
     def __init__(
-        self, eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise], **kwargs
+        self,
+        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
+        **kwargs
     ):
         self.eps = eps
         self._fn = _muygps_posterior_mean

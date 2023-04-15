@@ -172,12 +172,16 @@ class MuyGPs_layer(nn.Module):
         muygps_model = MuyGPS(
             Matern(
                 nu=self.nu,
-                metric=IsotropicDistortion("l2", length_scale=self.length_scale),
+                metric=IsotropicDistortion(
+                    "l2", length_scale=self.length_scale
+                ),
             ),
             eps=self.eps,
         )
 
-        predictions = muygps_model.posterior_mean(K, Kcross, self.batch_nn_targets)
+        predictions = muygps_model.posterior_mean(
+            K, Kcross, self.batch_nn_targets
+        )
 
         if isinstance(self.eps, HomoscedasticNoise):
             sigma_sq = _analytic_sigma_sq_optim(
@@ -365,7 +369,9 @@ class MultivariateMuyGPs_layer(nn.Module):
             if isinstance(self.eps[i], HomoscedasticNoise):
                 sigma_sq[i] = _analytic_sigma_sq_optim(
                     _homoscedastic_perturb(K[:, :, :, i], self.eps[i]()),
-                    self.batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+                    self.batch_nn_targets[:, :, i].reshape(
+                        batch_count, nn_count, 1
+                    ),
                 )
             elif isinstance(self.eps[i], HeteroscedasticNoise):
                 nugget_tensor = _make_heteroscedastic_tensor(
@@ -373,15 +379,21 @@ class MultivariateMuyGPs_layer(nn.Module):
                 )
                 sigma_sq[i] = _analytic_sigma_sq_optim(
                     _heteroscedastic_perturb(K[:, :, :, i], nugget_tensor),
-                    self.batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+                    self.batch_nn_targets[:, :, i].reshape(
+                        batch_count, nn_count, 1
+                    ),
                 )
             else:
-                raise ValueError(f"Noise model {type(self.eps[i])} is not supported")
+                raise ValueError(
+                    f"Noise model {type(self.eps[i])} is not supported"
+                )
 
         mmuygps_model.sigma_sq.val = sigma_sq
         variances = mmuygps_model.posterior_variance(K, Kcross)
 
-        predictions = mmuygps_model.posterior_mean(K, Kcross, self.batch_nn_targets)
+        predictions = mmuygps_model.posterior_mean(
+            K, Kcross, self.batch_nn_targets
+        )
 
         return predictions, variances
 
