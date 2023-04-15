@@ -331,7 +331,7 @@ def apply_scalar_hyperparameter(
     return fn
 
 
-def append_optim_params_lists_scalar(
+def append_scalar_optim_params_list(
     param: Union[TensorHyperparameter, ScalarHyperparameter],
     name: str,
     names: List[str],

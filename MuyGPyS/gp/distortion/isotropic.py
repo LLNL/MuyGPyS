@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Tuple
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS.gp.hyperparameter import (
-    append_optim_params_lists_scalar,
+    append_scalar_optim_params_list,
     apply_scalar_hyperparameter,
     ScalarHyperparameter,
 )
@@ -47,7 +47,7 @@ class IsotropicDistortion:
         names: List[str] = []
         params: List[float] = []
         bounds: List[Tuple[float, float]] = []
-        append_optim_params_lists_scalar(
+        append_scalar_optim_params_list(
             self.length_scale, "length_scale", names, params, bounds
         )
         return names, params, bounds
