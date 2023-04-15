@@ -11,8 +11,8 @@ from typing import Callable, List, Tuple, Union
 from copy import deepcopy
 
 import MuyGPyS._src.math as mm
+from MuyGPyS.gp.hyperparameter import append_scalar_optim_params_list
 from MuyGPyS.gp.kernels import (
-    append_scalar_optim_params_list,
     Matern,
     RBF,
 )

@@ -11,7 +11,7 @@ from typing import Callable, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
-from MuyGPyS.gp.kernels import apply_scalar_hyperparameter
+from MuyGPyS.gp.hyperparameter import apply_scalar_hyperparameter
 from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
 from MuyGPyS.gp.noise import (
     HomoscedasticNoise,

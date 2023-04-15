@@ -11,7 +11,7 @@ from typing import Callable, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
-from MuyGPyS.gp.kernels import apply_scalar_hyperparameter
+from MuyGPyS.gp.hyperparameter import apply_scalar_hyperparameter
 from MuyGPyS.gp.noise import (
     HeteroscedasticNoise,
     HomoscedasticNoise,
