@@ -337,6 +337,7 @@ class MuyGPS:
         To be used when the MuyGPs model has been trained and needs to be
         used for prediction, or if multiple batches are needed during training
         of a heteroscedastic model.
+
         Args:
             new_noise:
                 If homoscedastic, a float to update the nugget parameter.
