@@ -16,5 +16,3 @@ from .tensor import (
     append_optim_params_lists_tensor,
     apply_tensor_hyperparameter,
 )
-
-from .hierarchical_nonstationary import HierarchicalNonstationaryHyperparameter
