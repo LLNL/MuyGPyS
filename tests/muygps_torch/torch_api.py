@@ -35,8 +35,8 @@ from MuyGPyS._test.api import RegressionAPITest
 from MuyGPyS._test.utils import _balanced_subsample
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
 from MuyGPyS.examples.muygps_torch import predict_model
-from MuyGPyS.gp.kernels import Hyperparameter
-from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
@@ -145,8 +145,8 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         model = SVDKMuyGPs(
             num_models=num_test_responses,
             eps=[HomoscedasticNoise(1e-6)] * num_test_responses,
-            nu=[Hyperparameter(0.5)] * num_test_responses,
-            length_scale=[Hyperparameter(1.0)] * num_test_responses,
+            nu=[ScalarHyperparameter(0.5)] * num_test_responses,
+            length_scale=[ScalarHyperparameter(1.0)] * num_test_responses,
             batch_indices=batch_indices,
             batch_nn_indices=batch_nn_indices,
             batch_targets=batch_targets,
@@ -274,8 +274,8 @@ class HeatonTest(RegressionAPITest):
 
         model = SVDKMuyGPs_Heaton(
             eps=HomoscedasticNoise(1e-3),
-            nu=Hyperparameter(0.5),
-            length_scale=Hyperparameter(1.0),
+            nu=ScalarHyperparameter(0.5),
+            length_scale=ScalarHyperparameter(1.0),
             batch_indices=batch_indices,
             batch_nn_indices=batch_nn_indices,
             batch_targets=batch_targets,

@@ -115,7 +115,8 @@ from MuyGPyS._src.optimize.sigma_sq.jax import (
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import apply_distortion, IsotropicDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import noise_perturb
@@ -205,18 +206,18 @@ class TensorsTestCase(parameterized.TestCase):
         )
         cls.k_kwargs = {
             "kernel": Matern(
-                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HomoscedasticNoise(cls.eps),
         }
         cls.k_kwargs_heteroscedastic = {
             "kernel": Matern(
-                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n),
@@ -851,18 +852,18 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         )
         cls.k_kwargs_1 = {
             "kernel": Matern(
-                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs_2 = {
             "kernel": Matern(
-                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
@@ -1078,7 +1079,7 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_fn_n,
             IsotropicDistortion(
-                "l2", length_scale=Hyperparameter(self.length_scale)
+                "l2", length_scale=ScalarHyperparameter(self.length_scale)
             ),
             self.muygps.kernel.nu,
         )
@@ -1087,7 +1088,7 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_fn_j,
             IsotropicDistortion(
-                "l2", length_scale=Hyperparameter(self.length_scale)
+                "l2", length_scale=ScalarHyperparameter(self.length_scale)
             ),
             self.muygps.kernel.nu,
         )
