@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 import MuyGPyS._src.math as mm
+from MuyGPyS._src.gp.tensors import _pairwise_diffs, _crosswise_diffs
 
 
 class HierarchicalNonstationaryHyperparameter:
@@ -28,11 +29,11 @@ class HierarchicalNonstationaryHyperparameter:
     def __init__(self, knot_features, knot_values, kernel):
         self.kernel = kernel
         self.knot_features = knot_features
-        lower_K = self.kernel(mm._pairwise_distances(self.knot_features))
+        lower_K = self.kernel(_pairwise_diffs(self.knot_features))
         self.solve = mm.linalg.solve(lower_K, knot_values)
 
     def __call__(self, batch_features) -> mm.ndarray:
         lower_Kcross = self.kernel(
-            mm._crosswise_distances(batch_features, self.knot_features)
+            _crosswise_diffs(batch_features, self.knot_features)
         )
         return lower_Kcross @ self.solve
