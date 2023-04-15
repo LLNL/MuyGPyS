@@ -16,21 +16,19 @@ from MuyGPyS._src.gp.noise import (
     _homoscedastic_perturb,
     _heteroscedastic_perturb,
 )
-from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import (
-    IsotropicDistortion,
-    NullDistortion,
-)
+from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter.experimental import (
+    HierarchicalNonstationaryHyperparameter,
+)
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS.gp.tensors import (
     make_train_tensors,
     make_predict_tensors,
-    make_heteroscedastic_tensor,
 )
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
@@ -823,6 +821,42 @@ class GPSigmaSqTest(GPTestCase):
                 low_bound=0,
                 high_bound=5,
             )
+
+
+class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
+    @parameterized.parameters(
+        (
+            (kernel,)
+            for kernel in [
+                RBF(),
+                Matern(),
+            ]
+        )
+    )
+    def test_hierarchical_nonstationary_hyperparameter(
+        self,
+        kernel,
+    ):
+        knot_count = 10
+        batch_count = 50
+        train, test = _make_gaussian_data(
+            train_count=knot_count,
+            test_count=batch_count,
+            feature_count=1000,
+            response_count=1,
+        )
+        knot_features = train["input"]
+        knot_values = train["output"]
+        batch_features = test["input"]
+        hyp = HierarchicalNonstationaryHyperparameter(
+            knot_features,
+            knot_values,
+            kernel,
+        )
+        hyperparameters = hyp(batch_features)
+        _check_ndarray(
+            self.assertEqual, hyperparameters, mm.ftype, shape=(batch_count, 1)
+        )
 
 
 if __name__ == "__main__":
