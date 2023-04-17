@@ -129,9 +129,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
+          python3 -m pip install --upgrade pip
           sudo apt-get install pandoc
-          python -m pip install --upgrade pip
-          python -m pip install -e .[docs]
+          python3 -m pip install -e .[docs]
       - name: Build docs
         run: |
           sphinx-build -b html docs docs/_build/html/
