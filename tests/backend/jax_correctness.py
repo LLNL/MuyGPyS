@@ -810,7 +810,7 @@ class MuyGPSTestCase(KernelTestCase):
     @classmethod
     def setUpClass(cls):
         super(MuyGPSTestCase, cls).setUpClass()
-        cls.K_n = matern_gen_fn_n(
+        cls.K_n = matern_gen_isotropic_fn_n(
             cls.pairwise_diffs_n, nu=cls.nu, length_scale=cls.length_scale
         )
         cls.K_j = jnp.array(cls.K_n)
@@ -822,7 +822,7 @@ class MuyGPSTestCase(KernelTestCase):
         cls.heteroscedastic_K_j = heteroscedastic_perturb_j(
             cls.K_j, cls.eps_heteroscedastic_j
         )
-        cls.Kcross_n = matern_gen_fn_n(
+        cls.Kcross_n = matern_gen_isotropic_fn_n(
             cls.crosswise_diffs_n, nu=cls.nu, length_scale=cls.length_scale
         )
         cls.Kcross_j = jnp.array(cls.Kcross_n)
@@ -972,7 +972,7 @@ class FastPredictTest(MuyGPSTestCase):
             np.arange(0, cls.test_count),
             cls.closest_set_new_n,
         )
-        cls.Kcross_fast_n = matern_gen_fn_n(
+        cls.Kcross_fast_n = matern_gen_isotropic_fn_n(
             cls.crosswise_diffs_fast_n,
             nu=cls.nu,
             length_scale=cls.length_scale,
@@ -1024,7 +1024,7 @@ class FastPredictTest(MuyGPSTestCase):
             np.arange(0, cls.test_count),
             cls.closest_set_new_j,
         )
-        cls.Kcross_fast_j = matern_gen_fn_j(
+        cls.Kcross_fast_j = matern_gen_isotropic_fn_j(
             cls.crosswise_diffs_fast_j,
             nu=cls.nu,
             length_scale=cls.length_scale,
@@ -1334,7 +1334,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_kernel_fn_n(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_gen_fn_n,
+            matern_gen_isotropic_fn_n,
             IsotropicDistortion(
                 "l2", length_scale=Hyperparameter(self.length_scale)
             ),
@@ -1343,7 +1343,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_kernel_fn_j(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_gen_fn_j,
+            matern_gen_isotropic_fn_j,
             IsotropicDistortion(
                 "l2", length_scale=Hyperparameter(self.length_scale)
             ),

@@ -234,19 +234,27 @@ def anisotropic_l2_t(diffs, **length_scales):
     return l2_t(diffs / length_scale_array)
 
 
-rbf_fn_n = apply_distortion(isotropic_F2_n, 1.0)(rbf_fn_n)
-matern_05_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_05_fn_n)
-matern_15_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_15_fn_n)
-matern_25_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_25_fn_n)
-matern_inf_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_inf_fn_n)
-matern_gen_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_gen_fn_n)
+rbf_isotropic_fn_n = apply_distortion(isotropic_F2_n, 1.0)(rbf_fn_n)
+matern_05_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_05_fn_n)
+matern_15_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_15_fn_n)
+matern_25_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_25_fn_n)
+matern_inf_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(
+    matern_inf_fn_n
+)
+matern_gen_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(
+    matern_gen_fn_n
+)
 
-rbf_fn_t = apply_distortion(isotropic_F2_t, 1.0)(rbf_fn_t)
-matern_05_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_05_fn_t)
-matern_15_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_15_fn_t)
-matern_25_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_25_fn_t)
-matern_inf_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_inf_fn_t)
-matern_gen_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_gen_fn_t)
+rbf_isotropic_fn_t = apply_distortion(isotropic_F2_t, 1.0)(rbf_fn_t)
+matern_05_isotropic_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_05_fn_t)
+matern_15_isotropic_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_15_fn_t)
+matern_25_isotropic_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_25_fn_t)
+matern_inf_isotropic_fn_t = apply_distortion(isotropic_l2_t, 1.0)(
+    matern_inf_fn_t
+)
+matern_gen_isotropic_fn_t = apply_distortion(isotropic_l2_t, 1.0)(
+    matern_gen_fn_t
+)
 
 rbf_anisotropic_fn_n = apply_anisotropic_distortion(
     anisotropic_F2_n, length_scale0=1.0
@@ -495,10 +503,10 @@ class KernelTest(KernelTestCase):
     def test_crosswise_matern(self):
         self.assertTrue(
             np.allclose(
-                matern_05_fn_n(
+                matern_05_isotropic_fn_n(
                     self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
-                matern_05_fn_t(
+                matern_05_isotropic_fn_t(
                     self.crosswise_diffs_t, length_scale=self.length_scale
                 ),
             )
@@ -515,10 +523,10 @@ class KernelTest(KernelTestCase):
         )
         self.assertTrue(
             np.allclose(
-                matern_15_fn_n(
+                matern_15_isotropic_fn_n(
                     self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
-                matern_15_fn_t(
+                matern_15_isotropic_fn_t(
                     self.crosswise_diffs_t, length_scale=self.length_scale
                 ),
             )
@@ -535,10 +543,10 @@ class KernelTest(KernelTestCase):
         )
         self.assertTrue(
             np.allclose(
-                matern_25_fn_n(
+                matern_25_isotropic_fn_n(
                     self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
-                matern_25_fn_t(
+                matern_25_isotropic_fn_t(
                     self.crosswise_diffs_t, length_scale=self.length_scale
                 ),
             )
@@ -555,10 +563,10 @@ class KernelTest(KernelTestCase):
         )
         self.assertTrue(
             np.allclose(
-                matern_inf_fn_n(
+                matern_inf_isotropic_fn_n(
                     self.crosswise_diffs_n, length_scale=self.length_scale
                 ),
-                matern_inf_fn_t(
+                matern_inf_isotropic_fn_t(
                     self.crosswise_diffs_t, length_scale=self.length_scale
                 ),
             )
@@ -577,10 +585,10 @@ class KernelTest(KernelTestCase):
     def test_pairwise_matern(self):
         self.assertTrue(
             np.allclose(
-                matern_05_fn_n(
+                matern_05_isotropic_fn_n(
                     self.pairwise_diffs_n, length_scale=self.length_scale
                 ),
-                matern_05_fn_t(
+                matern_05_isotropic_fn_t(
                     self.pairwise_diffs_t, length_scale=self.length_scale
                 ),
             )
@@ -597,10 +605,10 @@ class KernelTest(KernelTestCase):
         )
         self.assertTrue(
             np.allclose(
-                matern_15_fn_n(
+                matern_15_isotropic_fn_n(
                     self.pairwise_diffs_n, length_scale=self.length_scale
                 ),
-                matern_15_fn_t(
+                matern_15_isotropic_fn_t(
                     self.pairwise_diffs_t, length_scale=self.length_scale
                 ),
             )
@@ -617,10 +625,10 @@ class KernelTest(KernelTestCase):
         )
         self.assertTrue(
             np.allclose(
-                matern_25_fn_n(
+                matern_25_isotropic_fn_n(
                     self.pairwise_diffs_n, length_scale=self.length_scale
                 ),
-                matern_25_fn_t(
+                matern_25_isotropic_fn_t(
                     self.pairwise_diffs_t, length_scale=self.length_scale
                 ),
             )
@@ -637,10 +645,10 @@ class KernelTest(KernelTestCase):
         )
         self.assertTrue(
             np.allclose(
-                matern_inf_fn_n(
+                matern_inf_isotropic_fn_n(
                     self.pairwise_diffs_n, length_scale=self.length_scale
                 ),
-                matern_inf_fn_t(
+                matern_inf_isotropic_fn_t(
                     self.pairwise_diffs_t, length_scale=self.length_scale
                 ),
             )
@@ -661,7 +669,7 @@ class MuyGPSTestCase(KernelTestCase):
     @classmethod
     def setUpClass(cls):
         super(MuyGPSTestCase, cls).setUpClass()
-        cls.K_n = matern_05_fn_n(
+        cls.K_n = matern_05_isotropic_fn_n(
             cls.pairwise_diffs_n, length_scale=cls.length_scale
         )
         cls.homoscedastic_K_n = homoscedastic_perturb_n(
@@ -672,7 +680,7 @@ class MuyGPSTestCase(KernelTestCase):
             cls.K_n, cls.muygps_heteroscedastic.eps()
         )
 
-        cls.K_t = matern_05_fn_t(
+        cls.K_t = matern_05_isotropic_fn_t(
             cls.pairwise_diffs_t, length_scale=cls.length_scale
         )
         cls.homoscedastic_K_t = homoscedastic_perturb_t(
@@ -682,10 +690,10 @@ class MuyGPSTestCase(KernelTestCase):
             cls.K_t, cls.muygps_heteroscedastic.eps()
         )
 
-        cls.Kcross_n = matern_05_fn_n(
+        cls.Kcross_n = matern_05_isotropic_fn_n(
             cls.crosswise_diffs_n, length_scale=cls.length_scale
         )
-        cls.Kcross_t = matern_05_fn_t(
+        cls.Kcross_t = matern_05_isotropic_fn_t(
             cls.crosswise_diffs_t, length_scale=cls.length_scale
         )
 
@@ -832,7 +840,7 @@ class FastPredictTestCase(MuyGPSTestCase):
             cls.closest_set_new_n,
         )
 
-        kernel_func_n = matern_05_fn_n
+        kernel_func_n = matern_05_isotropic_fn_n
         cls.Kcross_fast_n = kernel_func_n(cls.crosswise_diffs_fast_n)
 
         cls.nn_indices_all_t, _ = cls.nbrs_lookup.get_batch_nns(
@@ -876,7 +884,7 @@ class FastPredictTestCase(MuyGPSTestCase):
             cls.closest_set_new_t,
         )
 
-        kernel_func_t = matern_05_fn_t
+        kernel_func_t = matern_05_isotropic_fn_t
         cls.Kcross_fast_t = kernel_func_t(cls.crosswise_diffs_fast_t)
 
     def test_fast_nn_update(self):
@@ -1058,7 +1066,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
         Kcross_fast_n = np.zeros(
             (cls.test_count, cls.nn_count, cls.response_count)
         )
-        kernel_func_n = matern_05_fn_n
+        kernel_func_n = matern_05_isotropic_fn_n
         for i, model in enumerate(cls.muygps.models):
             Kcross_fast_n[:, :, i] = kernel_func_n(cls.crosswise_diffs_fast_n)
         cls.Kcross_fast_n = Kcross_fast_n
@@ -1166,7 +1174,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_kernel_fn_n(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_05_fn_n,
+            matern_05_isotropic_fn_n,
             IsotropicDistortion(
                 "l2", length_scale=Hyperparameter(self.length_scale)
             ),
@@ -1175,7 +1183,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_kernel_fn_t(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_05_fn_t,
+            matern_05_isotropic_fn_t,
             IsotropicDistortion(
                 "l2", length_scale=Hyperparameter(self.length_scale)
             ),

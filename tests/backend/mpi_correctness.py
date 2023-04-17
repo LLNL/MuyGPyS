@@ -177,19 +177,27 @@ anisotropic_F2_m = anisotropic_F2_n
 anisotropic_l2_m = anisotropic_l2_n
 
 
-rbf_fn_n = apply_distortion(isotropic_F2_n, 1.0)(rbf_fn_n)
-matern_05_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_05_fn_n)
-matern_15_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_15_fn_n)
-matern_25_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_25_fn_n)
-matern_inf_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_inf_fn_n)
-matern_gen_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_gen_fn_n)
+rbf_isotropic_fn_n = apply_distortion(isotropic_F2_n, 1.0)(rbf_fn_n)
+matern_05_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_05_fn_n)
+matern_15_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_15_fn_n)
+matern_25_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_25_fn_n)
+matern_inf_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(
+    matern_inf_fn_n
+)
+matern_gen_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(
+    matern_gen_fn_n
+)
 
-rbf_fn_m = apply_distortion(isotropic_F2_m, 1.0)(rbf_fn_m)
-matern_05_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_05_fn_m)
-matern_15_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_15_fn_m)
-matern_25_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_25_fn_m)
-matern_inf_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_inf_fn_m)
-matern_gen_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_gen_fn_m)
+rbf_isotropic_fn_m = apply_distortion(isotropic_F2_m, 1.0)(rbf_fn_m)
+matern_05_isotropic_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_05_fn_m)
+matern_15_isotropic_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_15_fn_m)
+matern_25_isotropic_fn_m = apply_distortion(isotropic_l2_m, 1.0)(matern_25_fn_m)
+matern_inf_isotropic_fn_m = apply_distortion(isotropic_l2_m, 1.0)(
+    matern_inf_fn_m
+)
+matern_gen_isotropic_fn_m = apply_distortion(isotropic_l2_m, 1.0)(
+    matern_gen_fn_m
+)
 
 rbf_anisotropic_fn_n = apply_anisotropic_distortion(
     anisotropic_F2_n, length_scale0=1.0
@@ -437,36 +445,74 @@ class KernelTestCase(TensorsTestCase):
     def setUpClass(cls):
         super(KernelTestCase, cls).setUpClass()
         if rank == 0:
-            cls.batch_covariance_rbf = rbf_fn_n(cls.batch_pairwise_diffs)
-            cls.batch_covariance_05 = matern_05_fn_n(cls.batch_pairwise_diffs)
-            cls.batch_covariance_15 = matern_15_fn_n(cls.batch_pairwise_diffs)
-            cls.batch_covariance_25 = matern_25_fn_n(cls.batch_pairwise_diffs)
-            cls.batch_covariance_inf = matern_inf_fn_n(cls.batch_pairwise_diffs)
-            cls.batch_covariance_gen = matern_gen_fn_n(
+            cls.batch_covariance_rbf = rbf_isotropic_fn_n(
+                cls.batch_pairwise_diffs
+            )
+            cls.batch_covariance_05 = matern_05_isotropic_fn_n(
+                cls.batch_pairwise_diffs
+            )
+            cls.batch_covariance_15 = matern_15_isotropic_fn_n(
+                cls.batch_pairwise_diffs
+            )
+            cls.batch_covariance_25 = matern_25_isotropic_fn_n(
+                cls.batch_pairwise_diffs
+            )
+            cls.batch_covariance_inf = matern_inf_isotropic_fn_n(
+                cls.batch_pairwise_diffs
+            )
+            cls.batch_covariance_gen = matern_gen_isotropic_fn_n(
                 cls.batch_pairwise_diffs, **cls.kernel_kwargs
             )
-            cls.batch_crosscov_rbf = rbf_fn_n(cls.batch_crosswise_diffs)
-            cls.batch_crosscov_05 = matern_05_fn_n(cls.batch_crosswise_diffs)
-            cls.batch_crosscov_15 = matern_15_fn_n(cls.batch_crosswise_diffs)
-            cls.batch_crosscov_25 = matern_25_fn_n(cls.batch_crosswise_diffs)
-            cls.batch_crosscov_inf = matern_inf_fn_n(cls.batch_crosswise_diffs)
-            cls.batch_crosscov_gen = matern_gen_fn_n(
+            cls.batch_crosscov_rbf = rbf_isotropic_fn_n(
+                cls.batch_crosswise_diffs
+            )
+            cls.batch_crosscov_05 = matern_05_isotropic_fn_n(
+                cls.batch_crosswise_diffs
+            )
+            cls.batch_crosscov_15 = matern_15_isotropic_fn_n(
+                cls.batch_crosswise_diffs
+            )
+            cls.batch_crosscov_25 = matern_25_isotropic_fn_n(
+                cls.batch_crosswise_diffs
+            )
+            cls.batch_crosscov_inf = matern_inf_isotropic_fn_n(
+                cls.batch_crosswise_diffs
+            )
+            cls.batch_crosscov_gen = matern_gen_isotropic_fn_n(
                 cls.batch_crosswise_diffs, **cls.kernel_kwargs
             )
-            cls.test_covariance_rbf = rbf_fn_n(cls.test_pairwise_diffs)
-            cls.test_covariance_05 = matern_05_fn_n(cls.test_pairwise_diffs)
-            cls.test_covariance_15 = matern_15_fn_n(cls.test_pairwise_diffs)
-            cls.test_covariance_25 = matern_25_fn_n(cls.test_pairwise_diffs)
-            cls.test_covariance_inf = matern_inf_fn_n(cls.test_pairwise_diffs)
-            cls.test_covariance_gen = matern_gen_fn_n(
+            cls.test_covariance_rbf = rbf_isotropic_fn_n(
+                cls.test_pairwise_diffs
+            )
+            cls.test_covariance_05 = matern_05_isotropic_fn_n(
+                cls.test_pairwise_diffs
+            )
+            cls.test_covariance_15 = matern_15_isotropic_fn_n(
+                cls.test_pairwise_diffs
+            )
+            cls.test_covariance_25 = matern_25_isotropic_fn_n(
+                cls.test_pairwise_diffs
+            )
+            cls.test_covariance_inf = matern_inf_isotropic_fn_n(
+                cls.test_pairwise_diffs
+            )
+            cls.test_covariance_gen = matern_gen_isotropic_fn_n(
                 cls.test_pairwise_diffs, **cls.kernel_kwargs
             )
-            cls.test_crosscov_rbf = rbf_fn_n(cls.test_crosswise_diffs)
-            cls.test_crosscov_05 = matern_05_fn_n(cls.test_crosswise_diffs)
-            cls.test_crosscov_15 = matern_15_fn_n(cls.test_crosswise_diffs)
-            cls.test_crosscov_25 = matern_25_fn_n(cls.test_crosswise_diffs)
-            cls.test_crosscov_inf = matern_inf_fn_n(cls.test_crosswise_diffs)
-            cls.test_crosscov_gen = matern_gen_fn_n(
+            cls.test_crosscov_rbf = rbf_isotropic_fn_n(cls.test_crosswise_diffs)
+            cls.test_crosscov_05 = matern_05_isotropic_fn_n(
+                cls.test_crosswise_diffs
+            )
+            cls.test_crosscov_15 = matern_15_isotropic_fn_n(
+                cls.test_crosswise_diffs
+            )
+            cls.test_crosscov_25 = matern_25_isotropic_fn_n(
+                cls.test_crosswise_diffs
+            )
+            cls.test_crosscov_inf = matern_inf_isotropic_fn_n(
+                cls.test_crosswise_diffs
+            )
+            cls.test_crosscov_gen = matern_gen_isotropic_fn_n(
                 cls.test_crosswise_diffs, **cls.kernel_kwargs
             )
             cls.batch_covariance_anisotropic_rbf = rbf_anisotropic_fn_n(
@@ -593,70 +639,76 @@ class KernelTestCase(TensorsTestCase):
             cls.test_crosscov_anisotropic_inf = None
             cls.test_crosscov_anisotropic_gen = None
 
-        cls.batch_covariance_rbf_chunk = rbf_fn_m(
+        cls.batch_covariance_rbf_chunk = rbf_isotropic_fn_m(
             cls.batch_pairwise_diffs_chunk
         )
-        cls.batch_covariance_05_chunk = matern_05_fn_m(
+        cls.batch_covariance_05_chunk = matern_05_isotropic_fn_m(
             cls.batch_pairwise_diffs_chunk
         )
-        cls.batch_covariance_15_chunk = matern_15_fn_m(
+        cls.batch_covariance_15_chunk = matern_15_isotropic_fn_m(
             cls.batch_pairwise_diffs_chunk
         )
-        cls.batch_covariance_25_chunk = matern_25_fn_m(
+        cls.batch_covariance_25_chunk = matern_25_isotropic_fn_m(
             cls.batch_pairwise_diffs_chunk
         )
-        cls.batch_covariance_inf_chunk = matern_inf_fn_m(
+        cls.batch_covariance_inf_chunk = matern_inf_isotropic_fn_m(
             cls.batch_pairwise_diffs_chunk
         )
-        cls.batch_covariance_gen_chunk = matern_gen_fn_m(
+        cls.batch_covariance_gen_chunk = matern_gen_isotropic_fn_m(
             cls.batch_pairwise_diffs_chunk, **cls.kernel_kwargs
         )
-        cls.batch_crosscov_rbf_chunk = rbf_fn_m(cls.batch_crosswise_diffs_chunk)
-        cls.batch_crosscov_05_chunk = matern_05_fn_n(
+        cls.batch_crosscov_rbf_chunk = rbf_isotropic_fn_m(
             cls.batch_crosswise_diffs_chunk
         )
-        cls.batch_crosscov_15_chunk = matern_15_fn_n(
+        cls.batch_crosscov_05_chunk = matern_05_isotropic_fn_n(
             cls.batch_crosswise_diffs_chunk
         )
-        cls.batch_crosscov_25_chunk = matern_25_fn_n(
+        cls.batch_crosscov_15_chunk = matern_15_isotropic_fn_n(
             cls.batch_crosswise_diffs_chunk
         )
-        cls.batch_crosscov_inf_chunk = matern_inf_fn_n(
+        cls.batch_crosscov_25_chunk = matern_25_isotropic_fn_n(
             cls.batch_crosswise_diffs_chunk
         )
-        cls.batch_crosscov_gen_chunk = matern_gen_fn_n(
+        cls.batch_crosscov_inf_chunk = matern_inf_isotropic_fn_n(
+            cls.batch_crosswise_diffs_chunk
+        )
+        cls.batch_crosscov_gen_chunk = matern_gen_isotropic_fn_n(
             cls.batch_crosswise_diffs_chunk, **cls.kernel_kwargs
         )
-        cls.test_covariance_rbf_chunk = rbf_fn_m(cls.test_pairwise_diffs_chunk)
-        cls.test_covariance_05_chunk = matern_05_fn_m(
+        cls.test_covariance_rbf_chunk = rbf_isotropic_fn_m(
             cls.test_pairwise_diffs_chunk
         )
-        cls.test_covariance_15_chunk = matern_15_fn_m(
+        cls.test_covariance_05_chunk = matern_05_isotropic_fn_m(
             cls.test_pairwise_diffs_chunk
         )
-        cls.test_covariance_25_chunk = matern_25_fn_m(
+        cls.test_covariance_15_chunk = matern_15_isotropic_fn_m(
             cls.test_pairwise_diffs_chunk
         )
-        cls.test_covariance_inf_chunk = matern_inf_fn_m(
+        cls.test_covariance_25_chunk = matern_25_isotropic_fn_m(
             cls.test_pairwise_diffs_chunk
         )
-        cls.test_covariance_gen_chunk = matern_gen_fn_m(
+        cls.test_covariance_inf_chunk = matern_inf_isotropic_fn_m(
+            cls.test_pairwise_diffs_chunk
+        )
+        cls.test_covariance_gen_chunk = matern_gen_isotropic_fn_m(
             cls.test_pairwise_diffs_chunk, **cls.kernel_kwargs
         )
-        cls.test_crosscov_rbf_chunk = rbf_fn_m(cls.test_crosswise_diffs_chunk)
-        cls.test_crosscov_05_chunk = matern_05_fn_n(
+        cls.test_crosscov_rbf_chunk = rbf_isotropic_fn_m(
             cls.test_crosswise_diffs_chunk
         )
-        cls.test_crosscov_15_chunk = matern_15_fn_n(
+        cls.test_crosscov_05_chunk = matern_05_isotropic_fn_n(
             cls.test_crosswise_diffs_chunk
         )
-        cls.test_crosscov_25_chunk = matern_25_fn_n(
+        cls.test_crosscov_15_chunk = matern_15_isotropic_fn_n(
             cls.test_crosswise_diffs_chunk
         )
-        cls.test_crosscov_inf_chunk = matern_inf_fn_n(
+        cls.test_crosscov_25_chunk = matern_25_isotropic_fn_n(
             cls.test_crosswise_diffs_chunk
         )
-        cls.test_crosscov_gen_chunk = matern_gen_fn_n(
+        cls.test_crosscov_inf_chunk = matern_inf_isotropic_fn_n(
+            cls.test_crosswise_diffs_chunk
+        )
+        cls.test_crosscov_gen_chunk = matern_gen_isotropic_fn_n(
             cls.test_crosswise_diffs_chunk, **cls.kernel_kwargs
         )
 
@@ -1152,7 +1204,7 @@ class OptimTestCase(MuyGPSTestCase):
     # Numpy kernel functions
     def _get_kernel_fn_n(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_gen_fn_n,
+            matern_gen_isotropic_fn_n,
             IsotropicDistortion(
                 "l2", length_scale=Hyperparameter(self.length_scale)
             ),
@@ -1161,7 +1213,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_kernel_fn_anisotropic_n(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_gen_fn_n,
+            matern_gen_isotropic_fn_n,
             AnisotropicDistortion(
                 "l2", length_scale=Hyperparameter(self.length_scale)
             ),
@@ -1171,7 +1223,7 @@ class OptimTestCase(MuyGPSTestCase):
     # MPI kernel functions
     def _get_kernel_fn_m(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_gen_fn_m,
+            matern_gen_isotropic_fn_m,
             IsotropicDistortion(
                 "l2", length_scale=Hyperparameter(self.length_scale)
             ),
@@ -1180,7 +1232,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_kernel_fn_anisotropic_m(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_gen_fn_m,
+            matern_gen_isotropic_fn_m,
             AnisotropicDistortion(
                 "l2", length_scale=Hyperparameter(self.length_scale)
             ),
