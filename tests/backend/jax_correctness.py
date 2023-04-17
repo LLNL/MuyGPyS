@@ -670,21 +670,20 @@ class KernelTest(KernelTestCase):
                 ),
             )
         )
-
-        # self.assertTrue(
-        #     allclose_gen(
-        #         matern_gen_anisotropic_fn_n(
-        #             self.crosswise_diffs_n,
-        #             nu=self.nu,
-        #             length_scale0=self.length_scale,
-        #         ),
-        #         matern_gen_anisotropic_fn_j(
-        #             self.crosswise_diffs_j,
-        #             nu=self.nu,
-        #             length_scale0=self.length_scale,
-        #         ),
-        #     )
-        # )
+        self.assertTrue(
+            allclose_gen(
+                matern_gen_anisotropic_fn_n(
+                    self.crosswise_diffs_n,
+                    nu=self.nu,
+                    length_scale0=self.length_scale,
+                ),
+                matern_gen_anisotropic_fn_j(
+                    self.crosswise_diffs_j,
+                    nu=self.nu,
+                    length_scale0=self.length_scale,
+                ),
+            )
+        )
 
     def test_pairwise_matern(self):
         self.assertTrue(
