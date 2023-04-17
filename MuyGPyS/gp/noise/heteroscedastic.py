@@ -11,7 +11,6 @@ Defines data structures and functors that handle noise priors for MuyGPs models.
 import MuyGPyS._src.math as mm
 
 from MuyGPyS.gp.kernels import TensorHyperparameter
-from typing import Type
 
 
 class HeteroscedasticNoise(TensorHyperparameter):
@@ -38,7 +37,7 @@ class HeteroscedasticNoise(TensorHyperparameter):
         super(HeteroscedasticNoise, self).__init__(val)
         if mm.sum(self._val.flatten() < 0) > 0:
             raise ValueError(
-                f"Heteroscedastic noise values are not strictly non-negative!"
+                "Heteroscedastic noise values are not strictly non-negative!"
             )
 
     def fixed(self) -> bool:

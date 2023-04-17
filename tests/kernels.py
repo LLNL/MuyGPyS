@@ -9,12 +9,9 @@ from absl.testing import parameterized
 from sklearn.gaussian_process.kernels import Matern as sk_Matern
 from sklearn.gaussian_process.kernels import RBF as sk_RBF
 
-from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
 import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
+from MuyGPyS import config
 from MuyGPyS._src.gp.tensors import _l2, _F2
 from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor, _warn0
 from MuyGPyS._test.utils import (
@@ -25,10 +22,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp.tensors import crosswise_tensor, pairwise_tensor
 from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern
-from MuyGPyS.gp.distortion import (
-    IsotropicDistortion,
-    NullDistortion,
-)
+from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
 

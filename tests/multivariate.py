@@ -6,12 +6,9 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
 import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
+from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import (
     _consistent_unchunk_tensor,
     _consistent_chunk_tensor,
@@ -34,7 +31,7 @@ from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import NullDistortion, IsotropicDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.kernels import Hyperparameter, Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
@@ -567,12 +564,8 @@ class MakeClassifierTest(parameterized.TestCase):
         opt_method_and_kwargs,
         args,
     ):
-        # skip if we are using the MPI implementation
         if config.state.backend == "torch":
-            _warn0(f"optimization does not support MPI. skipping.")
-            return
-        if config.state.backend == "torch":
-            _warn0(f"optimization does not support torch. skipping.")
+            _warn0("optimization does not support MPI. skipping.")
             return
 
         opt_method, opt_kwargs = opt_method_and_kwargs
@@ -673,10 +666,10 @@ class MakeRegressorTest(parameterized.TestCase):
         args,
     ):
         if config.state.backend == "mpi":
-            _warn0(f"optimization does not support mpi. skipping.")
+            _warn0("optimization does not support mpi. skipping.")
             return
         if config.state.backend == "torch":
-            _warn0(f"optimization does not support torch. skipping.")
+            _warn0("optimization does not support torch. skipping.")
             return
         # skip if we are using the MPI implementation
         opt_method, opt_kwargs = opt_method_and_kwargs

@@ -7,12 +7,6 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
-if config.state.backend in ["mpi", "torch"]:
-    raise ValueError(f"This test only supports numpy and jax!")
-
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
@@ -20,8 +14,11 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp.distortion import IsotropicDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.kernels import Hyperparameter, Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
+
+if config.state.backend in ["mpi", "torch"]:
+    raise ValueError("This test only supports numpy and jax!")
 
 
 class MakeFastRegressorTest(parameterized.TestCase):

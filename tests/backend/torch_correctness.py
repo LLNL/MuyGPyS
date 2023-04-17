@@ -3,29 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
-if config.state.torch_enabled is False:
-    raise ValueError(f"Bad attempt to run torch-only code with torch diabled.")
-if config.state.backend == "mpi":
-    raise ValueError(f"Bad attempt to run non-MPI code in MPI mode.")
-if config.state.backend != "numpy":
-    import warnings
-
-    warnings.warn(
-        f"Backend correctness codes assume numpy mode, not "
-        f"{config.state.backend}. "
-        f"Force-switching MuyGPyS into numpy backend."
-    )
-    config.update("muygpys_backend", "numpy")
 
 from absl.testing import absltest
 from absl.testing import parameterized
 
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
+from MuyGPyS import config
 from MuyGPyS._src.gp.tensors.numpy import (
     _pairwise_tensor as pairwise_tensor_n,
     _crosswise_tensor as crosswise_tensor_n,
@@ -117,6 +101,16 @@ from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
+
+if config.state.torch_enabled is False:
+    raise ValueError("Bad attempt to run torch-only code with torch diabled.")
+if config.state.backend == "mpi":
+    raise ValueError("Bad attempt to run non-MPI code in MPI mode.")
+if config.state.backend != "numpy":
+    raise ValueError(
+        f"torch_correctness.py must be run in numpy mode, not "
+        f"{config.state.backend} mode."
+    )
 
 
 def isotropic_F2_n(diffs, length_scale):

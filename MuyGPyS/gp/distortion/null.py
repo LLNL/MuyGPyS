@@ -33,10 +33,10 @@ class NullDistortion:
 
     def get_opt_fn(self, *args, **kwargs):
         raise NotImplementedError(
-            f"NullDistortion cannot be used in optimization!"
+            "NullDistortion cannot be used in optimization!"
         )
 
     def get_optim_params(self, *args, **kwargs):
         raise NotImplementedError(
-            f"NullDistortion cannot be used in optimization!"
+            "NullDistortion cannot be used in optimization!"
         )

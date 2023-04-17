@@ -10,8 +10,6 @@ import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
-from MuyGPyS import config
-
 if config.muygpys_hnswlib_enabled is True:  # type: ignore
     _basic_nn_kwarg_options = [
         {"nn_method": "exact", "algorithm": "ball_tree"},

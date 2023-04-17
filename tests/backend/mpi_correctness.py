@@ -6,43 +6,23 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
-if config.state.mpi_enabled is False:
-    raise ValueError(f"Bad attempt to run mpi-only code with mpi diabled.")
-
-if config.state.backend != "mpi":
-    raise ValueError(
-        f"MPI correctness test must be run in MPI mode, not "
-        f"{config.state.backend}."
-    )
 
 import MuyGPyS._src.math.numpy as np
-from MuyGPyS._test.utils import (
-    _make_gaussian_matrix,
-    _make_gaussian_data,
-    _exact_nn_kwarg_options,
-    _make_heteroscedastic_test_nugget,
-    _make_uniform_matrix,
-)
+from MuyGPyS import config
 from MuyGPyS._src.gp.tensors.numpy import (
-    _make_predict_tensors as make_predict_tensors_n,
-    _make_train_tensors as make_train_tensors_n,
     _F2 as F2_n,
     _l2 as l2_n,
     _make_heteroscedastic_tensor as make_heteroscedastic_tensor_n,
+    _make_train_tensors as make_train_tensors_n,
+    _make_predict_tensors as make_predict_tensors_n,
 )
 from MuyGPyS._src.gp.tensors.mpi import (
-    _make_predict_tensors as make_predict_tensors_m,
-    _make_train_tensors as make_train_tensors_m,
     _F2 as F2_m,
     _l2 as l2_m,
     _make_heteroscedastic_tensor as make_heteroscedastic_tensor_m,
+    _make_train_tensors as make_train_tensors_m,
+    _make_predict_tensors as make_predict_tensors_m,
 )
-from MuyGPyS._src.mpi_utils import _chunk_tensor
-
 from MuyGPyS._src.gp.kernels.numpy import (
     _rbf_fn as rbf_fn_n,
     _matern_05_fn as matern_05_fn_n,
@@ -59,21 +39,22 @@ from MuyGPyS._src.gp.kernels.mpi import (
     _matern_inf_fn as matern_inf_fn_m,
     _matern_gen_fn as matern_gen_fn_m,
 )
+from MuyGPyS._src.mpi_utils import _chunk_tensor
 from MuyGPyS._src.gp.muygps.numpy import (
-    _muygps_posterior_mean as muygps_posterior_mean_n,
     _muygps_diagonal_variance as muygps_diagonal_variance_n,
+    _muygps_posterior_mean as muygps_posterior_mean_n,
 )
 from MuyGPyS._src.gp.muygps.mpi import (
-    _muygps_posterior_mean as muygps_posterior_mean_m,
     _muygps_diagonal_variance as muygps_diagonal_variance_m,
+    _muygps_posterior_mean as muygps_posterior_mean_m,
 )
 from MuyGPyS._src.gp.noise.numpy import (
-    _homoscedastic_perturb as homoscedastic_perturb_n,
     _heteroscedastic_perturb as heteroscedastic_perturb_n,
+    _homoscedastic_perturb as homoscedastic_perturb_n,
 )
 from MuyGPyS._src.gp.noise.mpi import (
-    _homoscedastic_perturb as homoscedastic_perturb_m,
     _heteroscedastic_perturb as heteroscedastic_perturb_m,
+    _homoscedastic_perturb as homoscedastic_perturb_m,
 )
 from MuyGPyS._src.optimize.sigma_sq.numpy import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
@@ -83,24 +64,30 @@ from MuyGPyS._src.optimize.sigma_sq.mpi import (
 )
 from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
 from MuyGPyS._src.optimize.loss.numpy import (
-    _mse_fn as mse_fn_n,
     _cross_entropy_fn as cross_entropy_fn_n,
     _lool_fn as lool_fn_n,
+    _mse_fn as mse_fn_n,
 )
 from MuyGPyS._src.optimize.loss.mpi import (
-    _mse_fn as mse_fn_m,
     _cross_entropy_fn as cross_entropy_fn_m,
     _lool_fn as lool_fn_m,
+    _mse_fn as mse_fn_m,
 )
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
 
 from MuyGPyS._src.optimize.chassis.numpy import (
-    _scipy_optimize as scipy_optimize_n,
     _bayes_opt_optimize as bayes_optimize_n,
+    _scipy_optimize as scipy_optimize_n,
 )
 from MuyGPyS._src.optimize.chassis.mpi import (
-    _scipy_optimize as scipy_optimize_m,
     _bayes_opt_optimize as bayes_optimize_m,
+    _scipy_optimize as scipy_optimize_m,
+)
+from MuyGPyS._test.utils import (
+    _exact_nn_kwarg_options,
+    _make_gaussian_matrix,
+    _make_gaussian_data,
+    _make_uniform_matrix,
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import apply_distortion, IsotropicDistortion
@@ -110,6 +97,15 @@ from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import noise_perturb
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
+
+if config.state.mpi_enabled is False:
+    raise ValueError("Bad attempt to run mpi-only code with mpi diabled.")
+
+if config.state.backend != "mpi":
+    raise ValueError(
+        "MPI correctness test must be run in MPI mode, not "
+        f"{config.state.backend}. mode"
+    )
 
 
 def isotropic_F2_n(diffs, length_scale):

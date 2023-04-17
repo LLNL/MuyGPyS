@@ -6,10 +6,6 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
 import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS._test.utils import (

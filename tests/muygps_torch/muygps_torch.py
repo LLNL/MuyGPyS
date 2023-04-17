@@ -6,36 +6,31 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
-if config.state.torch_enabled is False:
-    raise ValueError(f"Bad attempt to run torch-only code with torch disabled.")
-if config.state.ftype == "64":
-    raise ValueError(
-        f"torch optimization is currently only supported for 32 bits"
-    )
-if config.state.backend != "torch":
-    import warnings
-
-    warnings.warn(
-        f"Attempting to run torch-only code in {config.state.backend} mode. "
-        f"Force-switching MuyGPyS into the torch backend."
-    )
-    config.update("muygpys_backend", "torch")
-
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
+from MuyGPyS import config
+from MuyGPyS._test.torch_utils import SVDKMuyGPs, SVDKMultivariateMuyGPs
 from MuyGPyS._test.utils import _check_ndarray, _make_gaussian_data
 from MuyGPyS.gp.kernels import Hyperparameter
-from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
 from MuyGPyS.examples.muygps_torch import predict_model
 from MuyGPyS.neighbors import NN_Wrapper
 
-from MuyGPyS._test.torch_utils import SVDKMuyGPs, SVDKMultivariateMuyGPs
+
+if config.state.torch_enabled is False:
+    raise ValueError("Bad attempt to run torch-only code with torch disabled.")
+
+if config.state.backend != "torch":
+    raise ValueError(
+        f"Bad attempt to run torch-only code in {config.state.backend} mode."
+    )
+
+if config.state.ftype != "32":
+    raise ValueError(
+        "Torch optimization only supports 32-bit values at this time."
+    )
 
 
 class RegressTest(parameterized.TestCase):

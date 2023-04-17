@@ -38,7 +38,7 @@ def _make_fast_predict_tensors(
     train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     raise NotImplementedError(
-        f'Function "make_fast_predict_tensors" does not support mpi!'
+        'Function "make_fast_predict_tensors" does not support mpi!'
     )
 
 
@@ -106,5 +106,5 @@ def _fast_nn_update(
     nn_indices: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
-        f'Function "muygps_fast_nn_update" does not support mpi!'
+        'Function "muygps_fast_nn_update" does not support mpi!'
     )

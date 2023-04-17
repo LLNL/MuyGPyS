@@ -16,12 +16,7 @@ from typing import Callable, Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
-from MuyGPyS._src.gp.noise import (
-    _homoscedastic_perturb,
-    _heteroscedastic_perturb,
-)
 from MuyGPyS.optimize.utils import _switch_on_sigma_method
 from MuyGPyS.gp.noise.perturbation import select_perturb_fn
 

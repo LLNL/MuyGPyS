@@ -10,7 +10,6 @@ def _cross_entropy_fn(
     predictions: torch.ndarray,
     targets: torch.ndarray,
 ) -> torch.ndarray:
-    loss = torch.nn.CrossEntropyLoss()
     one_hot_targets = torch.where(targets > 0.0, 1.0, 0.0)
     softmax_predictions = predictions.softmax(dim=1)
 

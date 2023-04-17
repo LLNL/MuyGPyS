@@ -10,11 +10,6 @@ from absl.testing import parameterized
 
 from MuyGPyS import config
 
-if config.state.backend == "torch":
-    raise ValueError(f"conventional optimization does not support torch.")
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
 from MuyGPyS.examples.classify import classify_any
 from MuyGPyS.examples.two_class_classify_uq import (
     classify_two_class_uq,
@@ -36,6 +31,9 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
 )
 from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor
+
+if config.state.backend == "torch":
+    raise ValueError("conventional optimization does not support torch.")
 
 
 class ClassifyTest(parameterized.TestCase):

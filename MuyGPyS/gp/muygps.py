@@ -303,12 +303,12 @@ class MuyGPS:
 
         .. math::
             \\widehat{Y} (\\mathbf{z} \\mid X) =
-                K_\\theta (\\mathbf{z}, X_{N^*}) \mathbf{C}_{N^*}.
+                K_\\theta (\\mathbf{z}, X_{N^*}) \\mathbf{C}_{N^*}.
 
         Here :math:`X_{N^*}` is the union of the nearest neighbor of the queried
         test point :math:`\\mathbf{z}` and the nearest neighbors of that
         training point, :math:`K_\\theta` is the kernel functor
-        specified by `self.kernel`, and :math:`\mathbf{C}_{N^*}` is
+        specified by `self.kernel`, and :math:`\\mathbf{C}_{N^*}` is
         the matrix of precomputed coefficients given in Equation (8)
         of [dunton2022fast]_.
 

@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Callable, Union
+from typing import Callable
 
 from MuyGPyS.gp.distortion.isotropic import IsotropicDistortion
 from MuyGPyS.gp.distortion.null import NullDistortion

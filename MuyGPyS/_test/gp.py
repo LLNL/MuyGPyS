@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-from copy import deepcopy
 from typing import Dict, Tuple, Union
 
 from sklearn.metrics import pairwise_distances as skl_pairwise_distances

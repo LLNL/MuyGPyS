@@ -2,19 +2,6 @@
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
-from MuyGPyS import config
-
-if config.state.torch_enabled is False:
-    raise ValueError(f"Bad attempt to run torch-only code with torch disabled.")
-
-if config.state.backend != "torch":
-    import warnings
-
-    warnings.warn(
-        f"Attempting to run torch-only code in {config.state.backend} mode. "
-        f"Force-switching MuyGPyS into the torch backend."
-    )
-    config.update("muygpys_backend", "torch")
 
 import os
 import sys
@@ -25,8 +12,6 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS import config
@@ -36,10 +21,23 @@ from MuyGPyS._test.utils import _balanced_subsample
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
 from MuyGPyS.examples.muygps_torch import predict_model
 from MuyGPyS.gp.kernels import Hyperparameter
-from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
+
+if config.state.torch_enabled is False:
+    raise ValueError("Bad attempt to run torch-only code with torch disabled.")
+
+if config.state.backend != "torch":
+    raise ValueError(
+        f"Bad attempt to run torch-only code in {config.state.backend} mode."
+    )
+
+if config.state.ftype != "32":
+    raise ValueError(
+        "Torch optimization only supports 32-bit values at this time."
+    )
 
 hardpath = "../data/"
 

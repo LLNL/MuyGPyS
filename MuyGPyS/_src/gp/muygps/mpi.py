@@ -14,7 +14,7 @@ def _muygps_fast_posterior_mean(
     coeffs_tensor: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
-        f'Function "muygps_fast_posterior_mean" does not support mpi!'
+        'Function "muygps_fast_posterior_mean" does not support mpi!'
     )
 
 
@@ -23,7 +23,7 @@ def _mmuygps_fast_posterior_mean(
     coeffs_tensor: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
-        f'Function "mmuygps_fast_posterior_mean" does not support mpi!'
+        'Function "mmuygps_fast_posterior_mean" does not support mpi!'
     )
 
 
@@ -33,5 +33,5 @@ def _muygps_fast_posterior_mean_precompute(
     train_nn_targets_fast: np.ndarray,
 ) -> np.ndarray:
     raise NotImplementedError(
-        f'Function "muygps_fast_posterior_mean_precompute" does not support mpi!'
+        'Function "muygps_fast_posterior_mean_precompute" does not support mpi!'
     )

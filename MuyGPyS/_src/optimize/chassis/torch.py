@@ -15,7 +15,7 @@ def _scipy_optimize(
     **kwargs,
 ) -> MuyGPS:
     raise NotImplementedError(
-        f"Scipy optimization is not supported in MuyGPs PyTorch module."
+        "Scipy optimization is not supported in MuyGPs PyTorch module."
     )
 
 
@@ -26,5 +26,5 @@ def _bayes_opt_optimize(
     **kwargs,
 ) -> MuyGPS:
     raise NotImplementedError(
-        f"Bayesian optimization is not supported in MuyGPs PyTorch module."
+        "Bayesian optimization is not supported in MuyGPs PyTorch module."
     )

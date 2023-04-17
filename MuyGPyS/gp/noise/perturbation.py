@@ -7,13 +7,8 @@
 Noise perturbation function wrapper
 """
 
-
 from typing import Callable, Union
 
-
-from copy import deepcopy
-
-import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.noise import (
     _homoscedastic_perturb,
     _heteroscedastic_perturb,

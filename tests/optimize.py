@@ -6,15 +6,9 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
-if config.state.backend == "torch":
-    raise ValueError(f"optimize.py does not support torch backend at this time")
-
 import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
+from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor, _warn0
 from MuyGPyS._test.gp import (
     benchmark_pairwise_distances,
@@ -30,13 +24,16 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import IsotropicDistortion, NullDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.kernels import Hyperparameter, Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
+
+if config.state.backend == "torch":
+    raise ValueError("optimize.py does not support torch backend at this time")
 
 
 class BenchmarkTestCase(parameterized.TestCase):
