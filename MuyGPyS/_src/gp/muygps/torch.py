@@ -53,3 +53,21 @@ def _muygps_fast_posterior_mean_precompute(
     train_nn_targets_fast: torch.ndarray,
 ) -> torch.ndarray:
     return torch.linalg.solve(K, train_nn_targets_fast)
+
+
+def _get_length_scale_array(**length_scales) -> torch.ndarray:
+    partial_name = "length_scale"
+    if isinstance(length_scales["length_scale0"], float):
+        length_scale_array = [
+            value
+            for key, value in length_scales.items()
+            if key.startswith(partial_name)
+        ]
+    else:
+        length_scale_array = [
+            value()
+            for key, value in length_scales.items()
+            if key.startswith(partial_name)
+        ]
+    length_scale_array = torch.array(length_scale_array)
+    return length_scale_array

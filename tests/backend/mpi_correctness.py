@@ -62,10 +62,12 @@ from MuyGPyS._src.gp.kernels.mpi import (
 from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_posterior_mean as muygps_posterior_mean_n,
     _muygps_diagonal_variance as muygps_diagonal_variance_n,
+    _get_length_scale_array as get_length_scale_array_n,
 )
 from MuyGPyS._src.gp.muygps.mpi import (
     _muygps_posterior_mean as muygps_posterior_mean_m,
     _muygps_diagonal_variance as muygps_diagonal_variance_m,
+    _get_length_scale_array as get_length_scale_array_m,
 )
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb as homoscedastic_perturb_n,
@@ -134,13 +136,7 @@ def isotropic_l2_m(diffs, length_scale):
 
 
 def anisotropic_F2_n(diffs, **length_scales):
-    partial_name = "length_scale"
-    length_scale_array = [
-        value
-        for key, value in length_scales.items()
-        if key.startswith(partial_name)
-    ]
-    length_scale_array = np.array(length_scale_array)
+    length_scale_array = get_length_scale_array_n(**length_scales)
     if (
         diffs.shape[-1] != len(length_scale_array)
         and len(length_scale_array) != 1
@@ -154,13 +150,7 @@ def anisotropic_F2_n(diffs, **length_scales):
 
 
 def anisotropic_l2_n(diffs, **length_scales):
-    partial_name = "length_scale"
-    length_scale_array = [
-        value
-        for key, value in length_scales.items()
-        if key.startswith(partial_name)
-    ]
-    length_scale_array = np.array(length_scale_array)
+    length_scale_array = get_length_scale_array_n(**length_scales)
     if (
         diffs.shape[-1] != len(length_scale_array)
         and len(length_scale_array) != 1

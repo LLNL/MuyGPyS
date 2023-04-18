@@ -79,6 +79,7 @@ def _set_matern_fn(nu: Hyperparameter):
 class Matern(KernelFn):
     """
     The Màtern kernel.
+
     The Màtern kernel includes a length scale parameter :math:`\\ell>0` and an
     additional smoothness parameter :math:`\\nu>0`. :math:`\\nu` is
     proportional to the smoothness of the resulting function. The Màtern kernel

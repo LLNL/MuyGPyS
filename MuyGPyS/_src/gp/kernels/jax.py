@@ -40,10 +40,7 @@ def _matern_inf_fn(dists: jnp.ndarray, **kwargs) -> jnp.ndarray:
 @jit
 def _matern_gen_fn(dists: jnp.ndarray, nu: float, **kwargs) -> jnp.ndarray:
     K = dists
-    if len(K.shape) == 1:
-        diag_indices = 0
-    if len(K.shape) > 1:
-        diag_indices = jnp.arange(K.shape[1])
+    diag_indices = jnp.arange(K.shape[1])
     if len(K.shape) == 3:
         K = K.at[:, diag_indices, diag_indices].set(1.0)
     tmp = jnp.sqrt(2 * nu) * K

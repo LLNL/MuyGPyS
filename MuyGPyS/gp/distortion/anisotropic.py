@@ -5,6 +5,7 @@
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
+from MuyGPyS._src.gp.muygps import _get_length_scale_array
 
 from copy import deepcopy
 from typing import List, Tuple, Callable, Dict
@@ -20,6 +21,16 @@ class AnisotropicDistortion:
     def __init__(self, metric: str, **length_scales):
         self.metric = metric
         self.length_scale = length_scales
+        for i, key in enumerate(self.length_scale.keys()):
+            if key != "length_scale" + str(i) or not isinstance(
+                self.length_scale[key], Hyperparameter
+            ):
+                raise ValueError(
+                    f"Anisotropic model expects either one keyword"
+                    f"argument labeled length_scale0 or a keyword argument for"
+                    f"each feature in the dataset labeled length_scalei for the"
+                    f" ith feature."
+                )
         if metric == "l2":
             self._dist_fn = _l2
         elif metric == "F2":
@@ -28,13 +39,7 @@ class AnisotropicDistortion:
             raise ValueError(f"Metric {metric} is not supported!")
 
     def __call__(self, diffs: mm.ndarray, **length_scales) -> mm.ndarray:
-        partial_name = "length_scale"
-        length_scale_array = [
-            value
-            for key, value in length_scales.items()
-            if key.startswith(partial_name)
-        ]
-        length_scale_array = mm.array(length_scale_array)
+        length_scale_array = _get_length_scale_array(**length_scales)
         if (
             diffs.shape[-1] != len(length_scale_array)
             and len(length_scale_array) != 1
@@ -64,16 +69,14 @@ class AnisotropicDistortion:
         names: List[str] = []
         params: List[float] = []
         bounds: List[Tuple[float, float]] = []
-        partial_key = "length_scale"
         for key in self.length_scale.keys():
-            if partial_key.lower() in key.lower():
-                append_optim_params_lists(
-                    self.length_scale[key],
-                    key,
-                    names,
-                    params,
-                    bounds,
-                )
+            append_optim_params_lists(
+                self.length_scale[key],
+                key,
+                names,
+                params,
+                bounds,
+            )
         return names, params, bounds
 
     def get_opt_fn(self, fn) -> Callable:
@@ -89,14 +92,12 @@ class AnisotropicDistortion:
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        partial_key = "length_scale"
-        for key in self.length_scale.keys():
-            if partial_key.lower() in key.lower():
-                fn = apply_hyperparameter(
-                    fn,
-                    self.length_scale[key],
-                    key,
-                )
+        for i, key in enumerate(self.length_scale.keys()):
+            fn = apply_hyperparameter(
+                fn,
+                "length_scale" + str(i),
+                key,
+            )
         opt_fn = fn
         return opt_fn
 
@@ -112,9 +113,7 @@ class AnisotropicDistortion:
         Returns:
             An updated hyperparameter dictionary.
         """
-        partial_key = "length_scale"
         for key in self.length_scale.keys():
-            if partial_key.lower() in key.lower():
-                hyperparameters[key] = self.length_scale[key]
+            hyperparameters[key] = self.length_scale[key]
 
         return hyperparameters

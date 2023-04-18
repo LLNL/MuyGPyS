@@ -17,6 +17,7 @@ import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.gp.tensors import _l2, _F2
 from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor, _warn0
+from MuyGPyS._src.gp.muygps import _get_length_scale_array
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _check_ndarray,
@@ -552,6 +553,61 @@ class AnisotropicTest(KernelTest):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
+            for f in [1, 3]
+            for nn in [30]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for k_kwargs in [
+                {
+                    "nu": Hyperparameter(0.42, "fixed"),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
+                },
+            ]
+        )
+    )
+    def test_correct_number_length_scales(
+        self,
+        train_count,
+        feature_count,
+        nn_count,
+        test_count,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
+            0.5,
+            1.5,
+            2.5,
+            mm.inf,
+        ]:
+            bad_nu = k_kwargs["nu"]["val"]
+            _warn0(
+                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+            )
+            return
+        train = _make_gaussian_matrix(train_count, feature_count)
+        test = _make_gaussian_matrix(test_count, feature_count)
+        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+        nn_dists = mm.sqrt(nn_dists)
+        pairwise_diffs = pairwise_tensor(train, nn_indices)
+        dist_model = AnisotropicDistortion(
+            metric="l2",
+            length_scale0=k_kwargs["length_scale0"],
+            length_scale1=k_kwargs["length_scale1"],
+        )
+        mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
+        num_length_scales = 2
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Number of lengthscale parameters ({num_length_scales}) must match number of "
+            f"features ({pairwise_diffs.shape[-1]}) or be 1 (Isotropic model).",
+        ):
+            kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
+
+    @parameterized.parameters(
+        (
+            (1000, f, nn, 10, nn_kwargs, k_kwargs)
             for f in [2]
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
@@ -582,18 +638,9 @@ class AnisotropicTest(KernelTest):
                     "length_scale1": Hyperparameter(2.0),
                 },
             ]
-            # for f in [1]
-            # for nn in [5]
-            # for nn_kwargs in [_basic_nn_kwarg_options[1]]
-            # for k_kwargs in [
-            #     {
-            #         "nu": {"val": mm.inf, "bounds": "fixed"},
-            #         "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
-            #     }
-            # ]
         )
     )
-    def test_anisotropic(
+    def test_anisotropic_matern(
         self,
         train_count,
         feature_count,
@@ -661,6 +708,62 @@ class AnisotropicTest(KernelTest):
         _check_ndarray(self.assertEqual, Kcross, mm.ftype)
         self.assertTrue(mm.allclose(Kcross, sk_Kcross))
 
+    @parameterized.parameters(
+        (
+            (1000, f, nn, 10, nn_kwargs, k_kwargs)
+            for f in [2]
+            for nn in [5, 10, 100]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for k_kwargs in [
+                {
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
+                },
+                {
+                    "length_scale0": Hyperparameter(0.1),
+                    "length_scale1": Hyperparameter(2.0),
+                },
+                {
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(10.0),
+                },
+                {
+                    "length_scale0": Hyperparameter(0.1),
+                    "length_scale1": Hyperparameter(10.0),
+                },
+                {
+                    "length_scale0": Hyperparameter(2.0),
+                    "length_scale1": Hyperparameter(0.01),
+                },
+            ]
+        )
+    )
+    def test_anisotropic_rbf(
+        self,
+        train_count,
+        feature_count,
+        nn_count,
+        test_count,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
+            0.5,
+            1.5,
+            2.5,
+            mm.inf,
+        ]:
+            bad_nu = k_kwargs["nu"]["val"]
+            _warn0(
+                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+            )
+            return
+        train = _make_gaussian_matrix(train_count, feature_count)
+        test = _make_gaussian_matrix(test_count, feature_count)
+        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+        nn_dists = mm.sqrt(nn_dists)
+        pairwise_diffs = pairwise_tensor(train, nn_indices)
         dist_model = AnisotropicDistortion(
             metric="F2",
             length_scale0=k_kwargs["length_scale0"],
@@ -677,6 +780,8 @@ class AnisotropicTest(KernelTest):
         kern = _consistent_unchunk_tensor(rbf(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
+        length_scale0 = k_kwargs["length_scale0"]
+        length_scale1 = k_kwargs["length_scale1"]
         sk_rbf = sk_RBF(
             length_scale=mm.array([length_scale0(), length_scale1()])
         )
@@ -695,6 +800,369 @@ class AnisotropicTest(KernelTest):
         self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
         _check_ndarray(self.assertEqual, Kcross, mm.ftype)
         self.assertTrue(mm.allclose(Kcross, sk_Kcross))
+
+    @parameterized.parameters(
+        (
+            (1000, f, nn, 10, nn_kwargs, k_kwargs)
+            for f in [2]
+            for nn in [5, 10, 100]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for k_kwargs in [
+                {
+                    "nu": Hyperparameter(0.42, "fixed"),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
+                },
+                {
+                    "nu": Hyperparameter(0.5),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
+                },
+                {
+                    "nu": Hyperparameter(1.5),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
+                },
+                {
+                    "nu": Hyperparameter(2.5),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
+                },
+                {
+                    "nu": Hyperparameter(mm.inf),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
+                },
+            ]
+        )
+    )
+    def test_anisotropic_1_length_scale_same_as_isotropic_matern(
+        self,
+        train_count,
+        feature_count,
+        nn_count,
+        test_count,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
+            0.5,
+            1.5,
+            2.5,
+            mm.inf,
+        ]:
+            bad_nu = k_kwargs["nu"]["val"]
+            _warn0(
+                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+            )
+            return
+        train = _make_gaussian_matrix(train_count, feature_count)
+        test = _make_gaussian_matrix(test_count, feature_count)
+        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+        nn_dists = mm.sqrt(nn_dists)
+        pairwise_diffs = pairwise_tensor(train, nn_indices)
+        dist_model_aniso = AnisotropicDistortion(
+            metric="l2",
+            length_scale0=k_kwargs["length_scale0"],
+        )
+        mtn_aniso = Matern(nu=k_kwargs["nu"], metric=dist_model_aniso)
+
+        self._check_params_chassis(
+            mtn_aniso,
+            **{
+                "nu": k_kwargs["nu"],
+                "length_scale0": k_kwargs["length_scale0"],
+            },
+        )
+        kern_aniso = _consistent_unchunk_tensor(mtn_aniso(pairwise_diffs))
+
+        dist_model_iso = IsotropicDistortion(
+            metric="l2",
+            length_scale=k_kwargs["length_scale0"],
+        )
+        mtn_iso = Matern(nu=k_kwargs["nu"], metric=dist_model_iso)
+
+        self._check_params_chassis(
+            mtn_iso,
+            **{
+                "nu": k_kwargs["nu"],
+                "length_scale": k_kwargs["length_scale0"],
+            },
+        )
+        kern_iso = _consistent_unchunk_tensor(mtn_iso(pairwise_diffs))
+        self.assertTrue(mm.allclose(kern_aniso, kern_iso))
+
+        crosswise_diffs = crosswise_tensor(
+            test, train, np.arange(test_count), nn_indices
+        )
+        Kcross_iso = mtn_iso(crosswise_diffs)
+        Kcross_aniso = mtn_aniso(crosswise_diffs)
+        self.assertTrue(mm.allclose(Kcross_iso, Kcross_aniso))
+
+    @parameterized.parameters(
+        (
+            (1000, f, nn, 10, nn_kwargs, k_kwargs)
+            for f in [2]
+            for nn in [5, 10, 100]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for k_kwargs in [
+                {
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(2.0),
+                },
+                {
+                    "length_scale0": Hyperparameter(0.1),
+                    "length_scale1": Hyperparameter(2.0),
+                },
+                {
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(10.0),
+                },
+                {
+                    "length_scale0": Hyperparameter(0.1),
+                    "length_scale1": Hyperparameter(10.0),
+                },
+                {
+                    "length_scale0": Hyperparameter(2.0),
+                    "length_scale1": Hyperparameter(0.01),
+                },
+            ]
+        )
+    )
+    def test_anisotropic_1_length_scale_same_as_isotropic_rbf(
+        self,
+        train_count,
+        feature_count,
+        nn_count,
+        test_count,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
+            0.5,
+            1.5,
+            2.5,
+            mm.inf,
+        ]:
+            bad_nu = k_kwargs["nu"]["val"]
+            _warn0(
+                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+            )
+            return
+        train = _make_gaussian_matrix(train_count, feature_count)
+        test = _make_gaussian_matrix(test_count, feature_count)
+        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+        nn_dists = mm.sqrt(nn_dists)
+        pairwise_diffs = pairwise_tensor(train, nn_indices)
+        dist_model_aniso = AnisotropicDistortion(
+            metric="F2",
+            length_scale0=k_kwargs["length_scale0"],
+        )
+        rbf_aniso = RBF(metric=dist_model_aniso)
+        self._check_params_chassis(
+            rbf_aniso,
+            **{
+                "length_scale0": k_kwargs["length_scale0"],
+            },
+        )
+        kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
+
+        dist_model_iso = IsotropicDistortion(
+            metric="F2",
+            length_scale=k_kwargs["length_scale0"],
+        )
+        rbf_iso = RBF(metric=dist_model_iso)
+        self._check_params_chassis(
+            rbf_iso,
+            **{
+                "length_scale": k_kwargs["length_scale0"],
+            },
+        )
+        kern_iso = _consistent_unchunk_tensor(rbf_iso(pairwise_diffs))
+        crosswise_diffs = crosswise_tensor(
+            test, train, np.arange(test_count), nn_indices
+        )
+        Kcross_iso = rbf_iso(crosswise_diffs)
+        Kcross_aniso = rbf_aniso(crosswise_diffs)
+        self.assertTrue(mm.allclose(kern_iso, kern_aniso))
+        self.assertTrue(mm.allclose(Kcross_iso, Kcross_aniso))
+
+    @parameterized.parameters(
+        (
+            (1000, f, nn, 10, nn_kwargs, k_kwargs)
+            for f in [2]
+            for nn in [5, 10, 100]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for k_kwargs in [
+                {
+                    "nu": Hyperparameter(0.42, "fixed"),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(1.0),
+                },
+                {
+                    "nu": Hyperparameter(0.5),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(1.0),
+                },
+                {
+                    "nu": Hyperparameter(1.5),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(1.0),
+                },
+                {
+                    "nu": Hyperparameter(2.5),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(1.0),
+                },
+                {
+                    "nu": Hyperparameter(mm.inf),
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(1.0),
+                },
+            ]
+        )
+    )
+    def test_anisotropic_same_length_scales_same_as_isotropic_matern(
+        self,
+        train_count,
+        feature_count,
+        nn_count,
+        test_count,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
+            0.5,
+            1.5,
+            2.5,
+            mm.inf,
+        ]:
+            bad_nu = k_kwargs["nu"]["val"]
+            _warn0(
+                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+            )
+            return
+        train = _make_gaussian_matrix(train_count, feature_count)
+        test = _make_gaussian_matrix(test_count, feature_count)
+        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+        nn_dists = mm.sqrt(nn_dists)
+        pairwise_diffs = pairwise_tensor(train, nn_indices)
+        dist_model_aniso = AnisotropicDistortion(
+            metric="l2",
+            length_scale0=k_kwargs["length_scale0"],
+            length_scale1=k_kwargs["length_scale1"],
+        )
+        mtn_aniso = Matern(nu=k_kwargs["nu"], metric=dist_model_aniso)
+
+        self._check_params_chassis(
+            mtn_aniso,
+            **{
+                "nu": k_kwargs["nu"],
+                "length_scale0": k_kwargs["length_scale0"],
+                "length_scale1": k_kwargs["length_scale1"],
+            },
+        )
+        kern_aniso = _consistent_unchunk_tensor(mtn_aniso(pairwise_diffs))
+
+        dist_model_iso = IsotropicDistortion(
+            metric="l2",
+            length_scale=k_kwargs["length_scale0"],
+        )
+        mtn_iso = Matern(nu=k_kwargs["nu"], metric=dist_model_iso)
+
+        self._check_params_chassis(
+            mtn_iso,
+            **{
+                "nu": k_kwargs["nu"],
+                "length_scale": k_kwargs["length_scale0"],
+            },
+        )
+        kern_iso = _consistent_unchunk_tensor(mtn_iso(pairwise_diffs))
+        self.assertTrue(mm.allclose(kern_aniso, kern_iso))
+
+        crosswise_diffs = crosswise_tensor(
+            test, train, np.arange(test_count), nn_indices
+        )
+        Kcross_iso = mtn_iso(crosswise_diffs)
+        Kcross_aniso = mtn_aniso(crosswise_diffs)
+        self.assertTrue(mm.allclose(Kcross_iso, Kcross_aniso))
+
+    @parameterized.parameters(
+        (
+            (1000, f, nn, 10, nn_kwargs, k_kwargs)
+            for f in [2]
+            for nn in [5, 10, 100]
+            for nn_kwargs in _basic_nn_kwarg_options
+            for k_kwargs in [
+                {
+                    "length_scale0": Hyperparameter(1.0),
+                    "length_scale1": Hyperparameter(1.0),
+                },
+            ]
+        )
+    )
+    def test_anisotropic_same_length_scales_same_as_isotropic_rbf(
+        self,
+        train_count,
+        feature_count,
+        nn_count,
+        test_count,
+        nn_kwargs,
+        k_kwargs,
+    ):
+        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
+            0.5,
+            1.5,
+            2.5,
+            mm.inf,
+        ]:
+            bad_nu = k_kwargs["nu"]["val"]
+            _warn0(
+                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+            )
+            return
+        train = _make_gaussian_matrix(train_count, feature_count)
+        test = _make_gaussian_matrix(test_count, feature_count)
+        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
+        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
+        nn_dists = mm.sqrt(nn_dists)
+        pairwise_diffs = pairwise_tensor(train, nn_indices)
+        dist_model_aniso = AnisotropicDistortion(
+            metric="F2",
+            length_scale0=k_kwargs["length_scale0"],
+        )
+        rbf_aniso = RBF(metric=dist_model_aniso)
+        self._check_params_chassis(
+            rbf_aniso,
+            **{
+                "length_scale0": k_kwargs["length_scale0"],
+                "length_scale1": k_kwargs["length_scale1"],
+            },
+        )
+        kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
+
+        dist_model_iso = IsotropicDistortion(
+            metric="F2",
+            length_scale=k_kwargs["length_scale0"],
+        )
+        rbf_iso = RBF(metric=dist_model_iso)
+        self._check_params_chassis(
+            rbf_iso,
+            **{
+                "length_scale": k_kwargs["length_scale0"],
+            },
+        )
+        kern_iso = _consistent_unchunk_tensor(rbf_iso(pairwise_diffs))
+        crosswise_diffs = crosswise_tensor(
+            test, train, np.arange(test_count), nn_indices
+        )
+        Kcross_iso = rbf_iso(crosswise_diffs)
+        Kcross_aniso = rbf_aniso(crosswise_diffs)
+        self.assertTrue(mm.allclose(kern_iso, kern_aniso))
+        self.assertTrue(mm.allclose(Kcross_iso, Kcross_aniso))
 
 
 if __name__ == "__main__":

@@ -73,6 +73,7 @@ from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_fast_posterior_mean as muygps_fast_posterior_mean_n,
     _mmuygps_fast_posterior_mean as mmuygps_fast_posterior_mean_n,
     _muygps_fast_posterior_mean_precompute as muygps_fast_posterior_mean_precompute_n,
+    _get_length_scale_array as get_length_scale_array_n,
 )
 from MuyGPyS._src.gp.muygps.jax import (
     _muygps_posterior_mean as muygps_posterior_mean_j,
@@ -80,6 +81,7 @@ from MuyGPyS._src.gp.muygps.jax import (
     _muygps_fast_posterior_mean as muygps_fast_posterior_mean_j,
     _mmuygps_fast_posterior_mean as mmuygps_fast_posterior_mean_j,
     _muygps_fast_posterior_mean_precompute as muygps_fast_posterior_mean_precompute_j,
+    _get_length_scale_array as get_length_scale_array_j,
 )
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb as homoscedastic_perturb_n,
@@ -147,20 +149,7 @@ def isotropic_l2_j(diffs, length_scale):
 
 
 def anisotropic_F2_n(diffs, **length_scales):
-    partial_name = "length_scale"
-    if isinstance(length_scales["length_scale0"], float):
-        length_scale_array = [
-            value
-            for key, value in length_scales.items()
-            if key.startswith(partial_name)
-        ]
-    elif isinstance(length_scales["length_scale0"], Hyperparameter):
-        length_scale_array = [
-            value()
-            for key, value in length_scales.items()
-            if key.startswith(partial_name)
-        ]
-    length_scale_array = np.array(length_scale_array)
+    length_scale_array = get_length_scale_array_n(**length_scales)
     if (
         diffs.shape[-1] != len(length_scale_array)
         and len(length_scale_array) != 1
@@ -174,20 +163,7 @@ def anisotropic_F2_n(diffs, **length_scales):
 
 
 def anisotropic_l2_n(diffs, **length_scales):
-    partial_name = "length_scale"
-    if isinstance(length_scales["length_scale0"], float):
-        length_scale_array = [
-            value
-            for key, value in length_scales.items()
-            if key.startswith(partial_name)
-        ]
-    elif isinstance(length_scales["length_scale0"], Hyperparameter):
-        length_scale_array = [
-            value()
-            for key, value in length_scales.items()
-            if key.startswith(partial_name)
-        ]
-    length_scale_array = np.array(length_scale_array)
+    length_scale_array = get_length_scale_array_n(**length_scales)
     if (
         diffs.shape[-1] != len(length_scale_array)
         and len(length_scale_array) != 1
@@ -201,13 +177,7 @@ def anisotropic_l2_n(diffs, **length_scales):
 
 
 def anisotropic_F2_j(diffs, **length_scales):
-    partial_name = "length_scale"
-    length_scale_array = [
-        value
-        for key, value in length_scales.items()
-        if key.startswith(partial_name)
-    ]
-    length_scale_array = jnp.array(length_scale_array)
+    length_scale_array = get_length_scale_array_j(**length_scales)
     if (
         diffs.shape[-1] != len(length_scale_array)
         and len(length_scale_array) != 1
@@ -221,13 +191,7 @@ def anisotropic_F2_j(diffs, **length_scales):
 
 
 def anisotropic_l2_j(diffs, **length_scales):
-    partial_name = "length_scale"
-    length_scale_array = [
-        value
-        for key, value in length_scales.items()
-        if key.startswith(partial_name)
-    ]
-    length_scale_array = jnp.array(length_scale_array)
+    length_scale_array = get_length_scale_array_j(**length_scales)
     if (
         diffs.shape[-1] != len(length_scale_array)
         and len(length_scale_array) != 1

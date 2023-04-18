@@ -2,8 +2,6 @@
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
-from copy import deepcopy
-import MuyGPyS._src.math as mm
 
 from typing import Callable, Union, Dict
 
@@ -37,18 +35,16 @@ def apply_anisotropic_distortion(distortion_fn: Callable, **kwargs):
     return distortion_applier
 
 
-def convert_length_scales(length_scales: Dict):
-    partial_name = "length_scale"
+def convert_length_scales(length_scales: Dict[str, Hyperparameter]):
     for key, value in length_scales.items():
-        if isinstance(value, Hyperparameter) and key.startswith(partial_name):
-            length_scales[key] = value()
+        length_scales[key] = value
     return length_scales
 
 
 def embed_with_distortion_model(
     fn: Callable,
     distortion_fn: Callable,
-    length_scale: Union[Hyperparameter, Dict],
+    length_scale: Union[Hyperparameter, Dict[str, Hyperparameter]],
     **kwargs,
 ):
     if isinstance(distortion_fn, AnisotropicDistortion):

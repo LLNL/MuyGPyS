@@ -30,7 +30,6 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import (
-    AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
 )
