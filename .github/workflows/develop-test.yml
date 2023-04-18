@@ -67,7 +67,6 @@ jobs:
           python -m pip install -e .[tests,hnswlib,jax_cpu]
       - name: Test JAX correctness
         run: |
-          export MUYGPYS_BACKEND=jax
           python tests/backend/jax_correctness.py
 
   build-mpi:
