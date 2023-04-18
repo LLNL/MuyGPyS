@@ -39,9 +39,9 @@ jobs:
           python tests/neighbors.py
           python tests/kernels.py
           python tests/gp.py
-          pytyon tests/batch.py
+          python tests/batch.py
           python tests/predict.py
-          python tests/precompute/fast_regressor.py
+          python tests/precompute/fast_posterior_mean.py
       - name: Optimize Tests
         if: matrix.test_group == 'optimize'
         run: python tests/optimize.py

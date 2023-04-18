@@ -16,20 +16,19 @@ from MuyGPyS._src.gp.noise import (
     _homoscedastic_perturb,
     _heteroscedastic_perturb,
 )
-from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import (
-    IsotropicDistortion,
-    NullDistortion,
+from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter.experimental import (
+    HierarchicalNonstationaryHyperparameter,
 )
-from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS.gp.tensors import (
     make_train_tensors,
     make_predict_tensors,
-    make_heteroscedastic_tensor,
 )
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
@@ -53,7 +52,7 @@ class GPInitTest(parameterized.TestCase):
     @parameterized.parameters(
         (kernel, e, gp)
         for kernel in (
-            Matern(nu=Hyperparameter(1.0)),
+            Matern(nu=ScalarHyperparameter(1.0)),
             RBF(),
         )
         for e in ((HomoscedasticNoise(1e-5),))
@@ -83,25 +82,25 @@ class GPInitTest(parameterized.TestCase):
         (kernel, e, gp)
         for kernel in (
             Matern(
-                nu=Hyperparameter(1.0, (1e-2, 5e4)),
+                nu=ScalarHyperparameter(1.0, (1e-2, 5e4)),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             Matern(
-                nu=Hyperparameter(1.0),
+                nu=ScalarHyperparameter(1.0),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
         )
@@ -146,25 +145,25 @@ class GPInitTest(parameterized.TestCase):
         (kernel, e, gp, 100)
         for kernel in (
             Matern(
-                nu=Hyperparameter("sample", (1e-2, 5e4)),
+                nu=ScalarHyperparameter("sample", (1e-2, 5e4)),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             Matern(
-                nu=Hyperparameter("log_sample", (1e-2, 5e4)),
+                nu=ScalarHyperparameter("log_sample", (1e-2, 5e4)),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
         )
@@ -267,7 +266,7 @@ class GPTensorShapesTest(GPTestCase):
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for kwargs in (
                 {
-                    "kernel": Matern(nu=Hyperparameter(1.5)),
+                    "kernel": Matern(nu=ScalarHyperparameter(1.5)),
                     "eps": HomoscedasticNoise(1e-5),
                 },
                 {
@@ -335,7 +334,7 @@ class HomoscedasticNoiseTest(GPTestCase):
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for kwargs in (
                 {
-                    "kernel": Matern(nu=Hyperparameter(1.5)),
+                    "kernel": Matern(nu=ScalarHyperparameter(1.5)),
                     "eps": HomoscedasticNoise(1e-5),
                 },
                 {
@@ -386,7 +385,7 @@ class HeteroscedasticNoiseTest(GPTestCase):
             # for r in [1]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for kernel in (
-                Matern(nu=Hyperparameter(1.5)),
+                Matern(nu=ScalarHyperparameter(1.5)),
                 RBF(),
             )
         )
@@ -443,7 +442,7 @@ class GPSolveTest(GPTestCase):
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for kwargs in (
                 {
-                    "kernel": Matern(nu=Hyperparameter(1.5)),
+                    "kernel": Matern(nu=ScalarHyperparameter(1.5)),
                     "eps": HomoscedasticNoise(1e-5),
                 },
                 {
@@ -520,7 +519,7 @@ class GPDiagonalVariance(GPTestCase):
             # for r in [10]
             for kwargs in (
                 {
-                    "kernel": Matern(nu=Hyperparameter(1.5)),
+                    "kernel": Matern(nu=ScalarHyperparameter(1.5)),
                     "eps": HomoscedasticNoise(1e-5),
                 },
                 {
@@ -586,7 +585,9 @@ class MakeClassifierTest(parameterized.TestCase):
             for lm in ["mse"]
             for kwargs in (
                 {
-                    "kernel": Matern(nu=Hyperparameter("sample", (1e-1, 1e0))),
+                    "kernel": Matern(
+                        nu=ScalarHyperparameter("sample", (1e-1, 1e0))
+                    ),
                     "eps": HomoscedasticNoise(1e-5),
                 },
             )
@@ -658,7 +659,9 @@ class MakeRegressorTest(parameterized.TestCase):
             for ssm in ["analytic", None]
             for k_kwargs in (
                 {
-                    "kernel": Matern(nu=Hyperparameter("sample", (1e-1, 1e0))),
+                    "kernel": Matern(
+                        nu=ScalarHyperparameter("sample", (1e-1, 1e0))
+                    ),
                     "eps": HomoscedasticNoise(1e-5),
                 },
             )
@@ -740,7 +743,7 @@ class GPSigmaSqTest(GPTestCase):
             for sm in ["analytic"]
             for k_kwargs in (
                 {
-                    "kernel": Matern(nu=Hyperparameter(1.5)),
+                    "kernel": Matern(nu=ScalarHyperparameter(1.5)),
                     "eps": HomoscedasticNoise(1e-5),
                 },
                 {
@@ -818,6 +821,42 @@ class GPSigmaSqTest(GPTestCase):
                 low_bound=0,
                 high_bound=5,
             )
+
+
+class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
+    @parameterized.parameters(
+        (
+            (kernel,)
+            for kernel in [
+                RBF(),
+                Matern(),
+            ]
+        )
+    )
+    def test_hierarchical_nonstationary_hyperparameter(
+        self,
+        kernel,
+    ):
+        knot_count = 10
+        batch_count = 50
+        train, test = _make_gaussian_data(
+            train_count=knot_count,
+            test_count=batch_count,
+            feature_count=1000,
+            response_count=1,
+        )
+        knot_features = train["input"]
+        knot_values = train["output"]
+        batch_features = test["input"]
+        hyp = HierarchicalNonstationaryHyperparameter(
+            knot_features,
+            knot_values,
+            kernel,
+        )
+        hyperparameters = hyp(batch_features)
+        _check_ndarray(
+            self.assertEqual, hyperparameters, mm.ftype, shape=(batch_count, 1)
+        )
 
 
 if __name__ == "__main__":
