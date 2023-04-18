@@ -13,7 +13,8 @@ import MuyGPyS._src.math as mm
 from MuyGPyS import config
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import IsotropicDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import RBF, Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import make_train_tensors, make_predict_tensors
 from MuyGPyS.neighbors import NN_Wrapper
@@ -103,9 +104,9 @@ def main():
     muygps = MuyGPS(
         Matern(
             metric=IsotropicDistortion(
-                "l2", length_scale=Hyperparameter(1.0, (1e-1, 1e1))
+                "l2", length_scale=ScalarHyperparameter(1.0, (1e-1, 1e1))
             ),
-            nu=Hyperparameter(1 / 2),
+            nu=ScalarHyperparameter(1 / 2),
         ),
         eps=HomoscedasticNoise(1e-3),
     )
@@ -349,7 +350,7 @@ def benchmark_fn(fn, params):
             value = fn(*args, **kwargs)
             end_time = perf_counter_ns()
             timing += (end_time - start_time) / 1e9
-        return value, timing
+        return value, timing / params.iterations
 
     return profiler_fn
 
