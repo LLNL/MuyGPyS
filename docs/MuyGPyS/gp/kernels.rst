@@ -4,10 +4,6 @@ kernels
 ===========================
 
 .. default-role:: code
-.. autoclass:: MuyGPyS.gp.kernels.hyperparameters
-  :members:
-
-.. default-role:: code
 .. automodule:: MuyGPyS.gp.kernels.kernel_fn
   :members:
   :special-members: __call__

@@ -34,7 +34,8 @@ from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import NullDistortion, IsotropicDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
@@ -50,18 +51,18 @@ class InitTest(parameterized.TestCase):
             [
                 {
                     "kernel": Matern(
-                        nu=Hyperparameter(1.0),
+                        nu=ScalarHyperparameter(1.0),
                         metric=IsotropicDistortion(
-                            metric="l2", length_scale=Hyperparameter(7.2)
+                            metric="l2", length_scale=ScalarHyperparameter(7.2)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": Matern(
-                        nu=Hyperparameter(1.2),
+                        nu=ScalarHyperparameter(1.2),
                         metric=IsotropicDistortion(
-                            metric="l2", length_scale=Hyperparameter(2.2)
+                            metric="l2", length_scale=ScalarHyperparameter(2.2)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-6),
@@ -70,9 +71,9 @@ class InitTest(parameterized.TestCase):
             [
                 {
                     "kernel": Matern(
-                        nu=Hyperparameter(1.0),
+                        nu=ScalarHyperparameter(1.0),
                         metric=IsotropicDistortion(
-                            metric="l2", length_scale=Hyperparameter(7.2)
+                            metric="l2", length_scale=ScalarHyperparameter(7.2)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -107,27 +108,30 @@ class SigmaSqTest(parameterized.TestCase):
                 [
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(1.5),
+                            nu=ScalarHyperparameter(1.5),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(7.2)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(7.2),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.5),
+                            nu=ScalarHyperparameter(0.5),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(2.2)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(2.2),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
                     },
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(mm.inf),
+                            nu=ScalarHyperparameter(mm.inf),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(12.4)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(12.4),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
@@ -212,20 +216,20 @@ class OptimTest(parameterized.TestCase):
                     [
                         {
                             "kernel": Matern(
-                                nu=Hyperparameter("sample", (1e-2, 1e0)),
+                                nu=ScalarHyperparameter("sample", (1e-2, 1e0)),
                                 metric=IsotropicDistortion(
                                     metric="l2",
-                                    length_scale=Hyperparameter(1.5),
+                                    length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-5),
                         },
                         {
                             "kernel": Matern(
-                                nu=Hyperparameter("sample", (1e-2, 1e0)),
+                                nu=ScalarHyperparameter("sample", (1e-2, 1e0)),
                                 metric=IsotropicDistortion(
                                     metric="l2",
-                                    length_scale=Hyperparameter(0.7),
+                                    length_scale=ScalarHyperparameter(0.7),
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-5),
@@ -292,18 +296,18 @@ class OptimTest(parameterized.TestCase):
         gp_args = (
             {
                 "kernel": Matern(
-                    nu=Hyperparameter(target[0]),
+                    nu=ScalarHyperparameter(target[0]),
                     metric=NullDistortion(
-                        metric="l2", length_scale=Hyperparameter(1.5)
+                        metric="l2", length_scale=ScalarHyperparameter(1.5)
                     ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },
             {
                 "kernel": Matern(
-                    nu=Hyperparameter(target[1]),
+                    nu=ScalarHyperparameter(target[1]),
                     metric=NullDistortion(
-                        metric="l2", length_scale=Hyperparameter(0.7)
+                        metric="l2", length_scale=ScalarHyperparameter(0.7)
                     ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
@@ -375,18 +379,20 @@ class ClassifyTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.38),
+                            nu=ScalarHyperparameter(0.38),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(1.5)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.79),
+                            nu=ScalarHyperparameter(0.79),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(0.7)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(0.7),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -449,18 +455,20 @@ class RegressTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(1.5),
+                            nu=ScalarHyperparameter(1.5),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(1.5)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            Hyperparameter(0.5),
+                            ScalarHyperparameter(0.5),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(0.7)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(0.7),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -535,18 +543,20 @@ class MakeClassifierTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(1.5)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.8),
+                            nu=ScalarHyperparameter(0.8),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(0.7)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(0.7),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -639,18 +649,20 @@ class MakeRegressorTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(1.5)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.8),
+                            nu=ScalarHyperparameter(0.8),
                             metric=IsotropicDistortion(
-                                metric="l2", length_scale=Hyperparameter(0.7)
+                                metric="l2",
+                                length_scale=ScalarHyperparameter(0.7),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
