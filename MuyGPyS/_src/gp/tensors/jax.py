@@ -106,12 +106,17 @@ def _pairwise_tensor(
     nn_indices: jnp.ndarray,
 ) -> jnp.ndarray:
     points = data[nn_indices]
-    return _diffs(points)
+    return _pairwise_diffs(points)
 
 
 @jit
-def _diffs(points: jnp.ndarray) -> jnp.ndarray:
-    return points[:, :, None, :] - points[:, None, :, :]
+def _pairwise_diffs(points: jnp.ndarray) -> jnp.ndarray:
+    if len(points.shape) == 3:
+        return points[:, :, None, :] - points[:, None, :, :]
+    elif len(points.shape) == 2:
+        return points[:, None, :] - points[None, :, :]
+    else:
+        raise ValueError(f"points shape {points.shape} is not supported")
 
 
 @jit
