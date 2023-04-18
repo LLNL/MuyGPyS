@@ -21,7 +21,8 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.examples.two_class_classify_uq import example_lambdas
-from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 if config.state.backend == "torch":
@@ -87,10 +88,10 @@ class MNISTTest(ClassifyAPITest):
                     0.85,
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.5, (1e-1, 1e0)),
+                            nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                             metric=IsotropicDistortion(
                                 "l2",
-                                length_scale=Hyperparameter(1.5),
+                                length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
@@ -101,7 +102,7 @@ class MNISTTest(ClassifyAPITest):
                 #     {
                 #         "kern": "rbf",
                 #         "metric": "F2",
-                #         "length_scale": Hyperparameter(1.5, "bounds": (0.5, 1e1)},
+                #         "length_scale": ScalarHyperparameter(1.5, "bounds": (0.5, 1e1)},
                 #         "eps": HomoscedasticNoise(1e-3),
                 #     },
                 # ),
@@ -181,10 +182,10 @@ class StargalClassifyTest(StargalTest):
                     0.92,
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.5, (1e-1, 1e0)),
+                            nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                             metric=IsotropicDistortion(
                                 "l2",
-                                length_scale=Hyperparameter(1.5),
+                                length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
@@ -196,7 +197,9 @@ class StargalClassifyTest(StargalTest):
                         "kernel": RBF(
                             metric=IsotropicDistortion(
                                 "F2",
-                                length_scale=Hyperparameter(1.5, (0.5, 1e1)),
+                                length_scale=ScalarHyperparameter(
+                                    1.5, (0.5, 1e1)
+                                ),
                             )
                         ),
                         "eps": HomoscedasticNoise(1e-3),
@@ -267,10 +270,10 @@ class StargalUQTest(StargalTest):
                     0.92,
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.5, (1e-1, 1e0)),
+                            nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                             metric=IsotropicDistortion(
                                 "l2",
-                                length_scale=Hyperparameter(1.5),
+                                length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
@@ -282,7 +285,7 @@ class StargalUQTest(StargalTest):
                         "kernel": RBF(
                             metric=IsotropicDistortion(
                                 "F2",
-                                length_scale=Hyperparameter(1.5),
+                                length_scale=ScalarHyperparameter(1.5),
                             )
                         ),
                         "eps": HomoscedasticNoise(1e-3),
@@ -346,20 +349,20 @@ class MultivariateStargalClassifyTest(StargalTest):
                     [
                         {
                             "kernel": Matern(
-                                nu=Hyperparameter(0.5, (1e-1, 1e0)),
+                                nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
                                     "l2",
-                                    length_scale=Hyperparameter(1.5),
+                                    length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": Matern(
-                                nu=Hyperparameter(0.5, (1e-1, 1e0)),
+                                nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
                                     "l2",
-                                    length_scale=Hyperparameter(1.5),
+                                    length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-3),
@@ -373,7 +376,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
                                     "F2",
-                                    length_scale=Hyperparameter(
+                                    length_scale=ScalarHyperparameter(
                                         1.5, (0.5, 1e1)
                                     ),
                                 )
@@ -384,7 +387,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
                                     "F2",
-                                    length_scale=Hyperparameter(
+                                    length_scale=ScalarHyperparameter(
                                         1.5, (0.5, 1e1)
                                     ),
                                 )

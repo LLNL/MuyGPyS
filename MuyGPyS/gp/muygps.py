@@ -11,8 +11,8 @@ from typing import Callable, List, Tuple, Union
 from copy import deepcopy
 
 import MuyGPyS._src.math as mm
+from MuyGPyS.gp.hyperparameter import append_scalar_optim_params_list
 from MuyGPyS.gp.kernels import (
-    append_optim_params_lists,
     Matern,
     RBF,
 )
@@ -148,7 +148,7 @@ class MuyGPS:
                 A list of unfixed hyperparameter bound tuples.
         """
         names, params, bounds = self.kernel.get_optim_params()
-        append_optim_params_lists(self.eps, "eps", names, params, bounds)
+        append_scalar_optim_params_list(self.eps, "eps", names, params, bounds)
         return names, mm.array(params), mm.array(bounds)
 
     def fast_coefficients(
@@ -337,6 +337,7 @@ class MuyGPS:
         To be used when the MuyGPs model has been trained and needs to be
         used for prediction, or if multiple batches are needed during training
         of a heteroscedastic model.
+
         Args:
             new_noise:
                 If homoscedastic, a float to update the nugget parameter.

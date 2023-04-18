@@ -14,7 +14,8 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp.distortion import IsotropicDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 if config.state.backend in ["mpi", "torch"]:
@@ -34,9 +35,9 @@ class MakeFastRegressorTest(parameterized.TestCase):
             for k_kwargs in (
                 {
                     "kernel": Matern(
-                        nu=Hyperparameter("sample", (1e-1, 1e0)),
+                        nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                         metric=IsotropicDistortion(
-                            "l2", length_scale=Hyperparameter(1.5)
+                            "l2", length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -121,18 +122,18 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.5),
+                            nu=ScalarHyperparameter(0.5),
                             metric=IsotropicDistortion(
-                                "l2", length_scale=Hyperparameter(1.5)
+                                "l2", length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.8),
+                            nu=ScalarHyperparameter(0.8),
                             metric=IsotropicDistortion(
-                                "l2", length_scale=Hyperparameter(0.7)
+                                "l2", length_scale=ScalarHyperparameter(0.7)
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),

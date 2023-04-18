@@ -24,7 +24,8 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import IsotropicDistortion, NullDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
@@ -59,20 +60,20 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.k_kwargs = (
             {
                 "kernel": Matern(
-                    nu=Hyperparameter(0.5),
+                    nu=ScalarHyperparameter(0.5),
                     metric=IsotropicDistortion(
                         metric="l2",
-                        length_scale=Hyperparameter(cls.length_scale),
+                        length_scale=ScalarHyperparameter(cls.length_scale),
                     ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },
             {
                 "kernel": Matern(
-                    nu=Hyperparameter(1.5),
+                    nu=ScalarHyperparameter(1.5),
                     metric=IsotropicDistortion(
                         metric="l2",
-                        length_scale=Hyperparameter(cls.length_scale),
+                        length_scale=ScalarHyperparameter(cls.length_scale),
                     ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
@@ -81,18 +82,20 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.sim_kwargs = (
             {
                 "kernel": Matern(
-                    nu=Hyperparameter(0.5),
+                    nu=ScalarHyperparameter(0.5),
                     metric=NullDistortion(
-                        "l2", length_scale=Hyperparameter(cls.length_scale)
+                        "l2",
+                        length_scale=ScalarHyperparameter(cls.length_scale),
                     ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
             },
             {
                 "kernel": Matern(
-                    nu=Hyperparameter(1.5),
+                    nu=ScalarHyperparameter(1.5),
                     metric=NullDistortion(
-                        "l2", length_scale=Hyperparameter(cls.length_scale)
+                        "l2",
+                        length_scale=ScalarHyperparameter(cls.length_scale),
                     ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
@@ -100,10 +103,10 @@ class BenchmarkTestCase(parameterized.TestCase):
         )
         cls.k_kwargs_opt = {
             "kernel": Matern(
-                nu=Hyperparameter("sample", (0.1, 5.0)),
+                nu=ScalarHyperparameter("sample", (0.1, 5.0)),
                 metric=IsotropicDistortion(
                     metric="l2",
-                    length_scale=Hyperparameter(cls.length_scale),
+                    length_scale=ScalarHyperparameter(cls.length_scale),
                 ),
             ),
             "eps": HomoscedasticNoise(1e-5),

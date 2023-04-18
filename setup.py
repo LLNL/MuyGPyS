@@ -23,7 +23,7 @@ DOCS_REQUIRES = [
     "sphinx-autodoc-typehints==1.12.0",
     "matplotlib>=3.2.1",
     "nbsphinx==0.8.7",
-    "pandoc==2.0.1",
+    "pandoc==2.3.0",
     "pandocfilters==1.5.0",
     "ipython==7.30.1",
     "ipykernel==6.6.0",

@@ -11,7 +11,7 @@ import MuyGPyS._src.math.torch as torch
 from MuyGPyS import config
 from MuyGPyS._test.torch_utils import SVDKMuyGPs, SVDKMultivariateMuyGPs
 from MuyGPyS._test.utils import _check_ndarray, _make_gaussian_data
-from MuyGPyS.gp.kernels import Hyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
@@ -80,8 +80,8 @@ class RegressTest(parameterized.TestCase):
 
         model = SVDKMuyGPs(
             eps=HomoscedasticNoise(1e-3),
-            nu=Hyperparameter(0.5),
-            length_scale=Hyperparameter(1.0),
+            nu=ScalarHyperparameter(0.5),
+            length_scale=ScalarHyperparameter(1.0),
             batch_indices=batch_indices,
             batch_nn_indices=batch_nn_indices,
             batch_targets=batch_targets,
@@ -186,8 +186,8 @@ class MultivariateRegressTest(parameterized.TestCase):
         model = SVDKMultivariateMuyGPs(
             num_models=num_test_responses,
             eps=[HomoscedasticNoise(1e-6)] * num_test_responses,
-            nu=[Hyperparameter(0.5)] * num_test_responses,
-            length_scale=[Hyperparameter(1.0)] * num_test_responses,
+            nu=[ScalarHyperparameter(0.5)] * num_test_responses,
+            length_scale=[ScalarHyperparameter(1.0)] * num_test_responses,
             batch_indices=batch_indices,
             batch_nn_indices=batch_nn_indices,
             batch_targets=batch_targets,

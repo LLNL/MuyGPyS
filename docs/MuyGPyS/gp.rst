@@ -9,7 +9,7 @@ gp
    :maxdepth: 2
    :caption: Contents:
 
-   gp/distance
+   gp/tensors
    gp/kernels
    gp/MuyGPS
    gp/MultivariateMuyGPS

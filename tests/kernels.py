@@ -21,7 +21,8 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
 )
 from MuyGPyS.gp.tensors import crosswise_tensor, pairwise_tensor
-from MuyGPyS.gp.kernels import Hyperparameter, RBF, Matern
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import RBF, Matern
 from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
@@ -182,7 +183,7 @@ class HyperparameterTest(parameterized.TestCase):
         )
     )
     def test_full_init(self, val, bounds):
-        param = Hyperparameter(val, bounds)
+        param = ScalarHyperparameter(val, bounds)
         self.assertEqual(val, param())
         self._check_in_bounds(bounds, param)
 
@@ -196,7 +197,7 @@ class HyperparameterTest(parameterized.TestCase):
         (kwargs for kwargs in ({"val": 1.0, "bounds": "fixed"},))
     )
     def test_fixed_init(self, val, bounds):
-        param = Hyperparameter(val, bounds)
+        param = ScalarHyperparameter(val, bounds)
         self.assertEqual(val, param())
         self.assertTrue(param.fixed())
 
@@ -211,7 +212,7 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_sample(self, val, bounds, reps):
         for _ in range(reps):
-            param = Hyperparameter(val, bounds)
+            param = ScalarHyperparameter(val, bounds)
             self._check_in_bounds(bounds, param)
 
     @parameterized.parameters(
@@ -225,7 +226,7 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_fixed_sample(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "Fixed bounds do not support "):
-            Hyperparameter(val, bounds)
+            ScalarHyperparameter(val, bounds)
 
     @parameterized.parameters(
         (
@@ -238,7 +239,7 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_oob(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "bound"):
-            Hyperparameter(val, bounds)
+            ScalarHyperparameter(val, bounds)
 
     @parameterized.parameters(
         (
@@ -251,7 +252,7 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_nonscalar(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "Nonscalar hyperparameter"):
-            Hyperparameter(val, bounds)
+            ScalarHyperparameter(val, bounds)
 
     @parameterized.parameters(
         (kwargs for kwargs in ({"val": "wut", "bounds": (1e-1, 1e2)},))
@@ -260,7 +261,7 @@ class HyperparameterTest(parameterized.TestCase):
         with self.assertRaisesRegex(
             ValueError, "Unsupported string hyperparameter"
         ):
-            Hyperparameter(val, bounds)
+            ScalarHyperparameter(val, bounds)
 
     @parameterized.parameters(
         (kwargs for kwargs in ({"val": "sample", "bounds": "fixed"},))
@@ -269,21 +270,21 @@ class HyperparameterTest(parameterized.TestCase):
         with self.assertRaisesRegex(
             ValueError, "Fixed bounds do not support string"
         ):
-            Hyperparameter(val, bounds)
+            ScalarHyperparameter(val, bounds)
 
     @parameterized.parameters(
         (kwargs for kwargs in ({"val": 1.0, "bounds": "badstring"},))
     )
     def test_bad_val_bounds(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "Unknown"):
-            Hyperparameter(val, bounds)
+            ScalarHyperparameter(val, bounds)
 
     @parameterized.parameters(
         (kwargs for kwargs in ({"val": 1.0, "bounds": (1e2, 1e-1)},))
     )
     def test_bad_bounds(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "not lesser than upper bound"):
-            Hyperparameter(val, bounds)
+            ScalarHyperparameter(val, bounds)
 
     @parameterized.parameters(
         (
@@ -296,7 +297,7 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_bad_bound_length(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "unsupported length"):
-            Hyperparameter(val, bounds)
+            ScalarHyperparameter(val, bounds)
 
     @parameterized.parameters(
         (
@@ -309,14 +310,14 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_bad_bound_vals(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "supported hyperparameter"):
-            Hyperparameter(val, bounds)
+            ScalarHyperparameter(val, bounds)
 
     @parameterized.parameters(
         (kwargs for kwargs in ({"val": 1.0, "bounds": 1e-2},))
     )
     def test_noniterable_bound(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "non-iterable type"):
-            Hyperparameter(val, bounds)
+            ScalarHyperparameter(val, bounds)
 
 
 class KernelTest(parameterized.TestCase):
@@ -352,8 +353,8 @@ class RBFTest(KernelTest):
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
-                {"length_scale": Hyperparameter(1.0, (1e-5, 1e1))},
-                {"length_scale": Hyperparameter(2.0, (1e-4, 1e3))},
+                {"length_scale": ScalarHyperparameter(1.0, (1e-5, 1e1))},
+                {"length_scale": ScalarHyperparameter(2.0, (1e-4, 1e3))},
             ]
         )
     )
@@ -400,12 +401,12 @@ class ParamTest(KernelTest):
         (
             (k_kwargs, alt_kwargs)
             for k_kwargs in [
-                {"length_scale": Hyperparameter(10.0, (1e-5, 1e1))}
+                {"length_scale": ScalarHyperparameter(10.0, (1e-5, 1e1))}
             ]
             for alt_kwargs in [
-                {"length_scale": Hyperparameter(1.0, (1e-2, 1e4))},
-                {"length_scale": Hyperparameter("sample", (1e-3, 1e2))},
-                {"length_scale": Hyperparameter(2.0)},
+                {"length_scale": ScalarHyperparameter(1.0, (1e-2, 1e4))},
+                {"length_scale": ScalarHyperparameter("sample", (1e-3, 1e2))},
+                {"length_scale": ScalarHyperparameter(2.0)},
             ]
         )
     )
@@ -418,21 +419,21 @@ class ParamTest(KernelTest):
             (k_kwargs, alt_kwargs)
             for k_kwargs in [
                 {
-                    "nu": Hyperparameter(0.42, (1e-4, 5e1)),
-                    "length_scale": Hyperparameter(1.0, (1e-5, 1e1)),
+                    "nu": ScalarHyperparameter(0.42, (1e-4, 5e1)),
+                    "length_scale": ScalarHyperparameter(1.0, (1e-5, 1e1)),
                 }
             ]
             for alt_kwargs in [
                 {
-                    "nu": Hyperparameter(1.0, (1e-2, 5e4)),
-                    "length_scale": Hyperparameter(7.2, (2e-5, 2e1)),
+                    "nu": ScalarHyperparameter(1.0, (1e-2, 5e4)),
+                    "length_scale": ScalarHyperparameter(7.2, (2e-5, 2e1)),
                 },
                 {
-                    "nu": Hyperparameter(1.0),
-                    "length_scale": Hyperparameter("sample", (2e-5, 2e1)),
+                    "nu": ScalarHyperparameter(1.0),
+                    "length_scale": ScalarHyperparameter("sample", (2e-5, 2e1)),
                 },
                 {
-                    "nu": Hyperparameter("sample", (1e-2, 5e4)),
+                    "nu": ScalarHyperparameter("sample", (1e-2, 5e4)),
                 },
             ]
         )
@@ -457,24 +458,24 @@ class MaternTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": Hyperparameter(0.42, "fixed"),
-                    "length_scale": Hyperparameter(1.0),
+                    "nu": ScalarHyperparameter(0.42, "fixed"),
+                    "length_scale": ScalarHyperparameter(1.0),
                 },
                 {
-                    "nu": Hyperparameter(0.5),
-                    "length_scale": Hyperparameter(1.0),
+                    "nu": ScalarHyperparameter(0.5),
+                    "length_scale": ScalarHyperparameter(1.0),
                 },
                 {
-                    "nu": Hyperparameter(1.5),
-                    "length_scale": Hyperparameter(1.0),
+                    "nu": ScalarHyperparameter(1.5),
+                    "length_scale": ScalarHyperparameter(1.0),
                 },
                 {
-                    "nu": Hyperparameter(2.5),
-                    "length_scale": Hyperparameter(1.0),
+                    "nu": ScalarHyperparameter(2.5),
+                    "length_scale": ScalarHyperparameter(1.0),
                 },
                 {
-                    "nu": Hyperparameter(mm.inf),
-                    "length_scale": Hyperparameter(1.0),
+                    "nu": ScalarHyperparameter(mm.inf),
+                    "length_scale": ScalarHyperparameter(1.0),
                 },
             ]
             # for f in [1]

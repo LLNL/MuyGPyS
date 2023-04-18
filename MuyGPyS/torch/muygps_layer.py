@@ -31,7 +31,8 @@ from MuyGPyS._src.gp.noise.torch import (
     _heteroscedastic_perturb,
 )
 from MuyGPyS.gp.distortion import IsotropicDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern
+from MuyGPyS.gp.kernels import Matern
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
@@ -115,8 +116,8 @@ class MuyGPs_layer(nn.Module):
         self,
         eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
         nu,
-        length_scale: Hyperparameter,
-        batch_indices: Hyperparameter,
+        length_scale: ScalarHyperparameter,
+        batch_indices: ScalarHyperparameter,
         batch_nn_indices,
         batch_targets,
         batch_nn_targets,
@@ -286,8 +287,8 @@ class MultivariateMuyGPs_layer(nn.Module):
         self,
         num_models,
         eps: List[Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise]],
-        nu_vals: List[Hyperparameter],
-        length_scales: List[Hyperparameter],
+        nu_vals: List[ScalarHyperparameter],
+        length_scales: List[ScalarHyperparameter],
         batch_indices,
         batch_nn_indices,
         batch_targets,

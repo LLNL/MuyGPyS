@@ -11,10 +11,10 @@ Defines data structures and functors that handle noise priors for MuyGPs models.
 
 from typing import Tuple, Union
 
-from MuyGPyS.gp.kernels import Hyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 
 
-class HomoscedasticNoise(Hyperparameter):
+class HomoscedasticNoise(ScalarHyperparameter):
     """
     A scalar :math:`\\eps` prior noise parameter.
 

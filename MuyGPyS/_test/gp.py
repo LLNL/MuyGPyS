@@ -9,7 +9,8 @@ from sklearn.metrics import pairwise_distances as skl_pairwise_distances
 
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS.gp.distortion import NullDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.sigma_sq import SigmaSq
 
@@ -167,7 +168,7 @@ class BenchmarkGP:
             return False
         return True
 
-    def get_optim_params(self) -> Dict[str, Hyperparameter]:
+    def get_optim_params(self) -> Dict[str, ScalarHyperparameter]:
         """
         Return a dictionary of references to the unfixed kernel hyperparameters.
 

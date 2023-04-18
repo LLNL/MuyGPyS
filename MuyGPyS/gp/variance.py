@@ -11,7 +11,7 @@ from typing import Callable, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
-from MuyGPyS.gp.kernels import apply_hyperparameter
+from MuyGPyS.gp.hyperparameter import apply_scalar_hyperparameter
 from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
 from MuyGPyS.gp.noise import (
     HomoscedasticNoise,
@@ -52,6 +52,6 @@ class PosteriorVariance:
         eps: Union[HomoscedasticNoise, HeteroscedasticNoise, NullNoise],
         sigma_sq: SigmaSq,
     ) -> Callable:
-        opt_fn = apply_hyperparameter(var_fn, eps, "eps")
+        opt_fn = apply_scalar_hyperparameter(var_fn, eps, "eps")
         opt_fn = sigma_sq_apply(opt_fn, sigma_sq)
         return opt_fn

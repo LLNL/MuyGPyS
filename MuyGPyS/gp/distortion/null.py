@@ -6,11 +6,11 @@
 from typing import Dict
 
 from MuyGPyS._src.gp.tensors import _F2, _l2
-from MuyGPyS.gp.kernels import Hyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 
 
 class NullDistortion:
-    def __init__(self, metric: str, length_scale: Hyperparameter):
+    def __init__(self, metric: str, length_scale: ScalarHyperparameter):
         self.length_scale = length_scale
         self.metric = metric
         if metric == "l2":

@@ -21,7 +21,8 @@ from MuyGPyS._test.utils import (
     _basic_opt_method_and_kwarg_options,
 )
 from MuyGPyS.gp.distortion import IsotropicDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 if config.state.backend == "torch":
@@ -79,20 +80,20 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                     [
                         {
                             "kernel": Matern(
-                                nu=Hyperparameter("sample", (1e-1, 1e0)),
+                                nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
                                     "l2",
-                                    length_scale=Hyperparameter(1.5),
+                                    length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": Matern(
-                                nu=Hyperparameter(0.5),
+                                nu=ScalarHyperparameter(0.5),
                                 metric=IsotropicDistortion(
                                     "l2",
-                                    length_scale=Hyperparameter(1.5),
+                                    length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-3),
@@ -106,7 +107,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
                                     "F2",
-                                    length_scale=Hyperparameter(1.5),
+                                    length_scale=ScalarHyperparameter(1.5),
                                 )
                             ),
                             "eps": HomoscedasticNoise(1e-3),
@@ -115,7 +116,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
                                     "F2",
-                                    length_scale=Hyperparameter(1.5),
+                                    length_scale=ScalarHyperparameter(1.5),
                                 )
                             ),
                             "eps": HomoscedasticNoise(1e-3),
@@ -184,10 +185,10 @@ class HeatonTest(RegressionAPITest):
                     11.0,
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=IsotropicDistortion(
                                 "l2",
-                                length_scale=Hyperparameter(1.5),
+                                length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
@@ -198,7 +199,7 @@ class HeatonTest(RegressionAPITest):
                 #     {
                 #         "kern": "rbf",
                 #         "metric": "F2",
-                #         "length_scale": Hyperparameter(1.5, "bounds": (0.5, 1e1)},
+                #         "length_scale": ScalarHyperparameter(1.5, "bounds": (0.5, 1e1)},
                 #         "eps": HomoscedasticNoise(1e-3),
                 #     },
                 # ),

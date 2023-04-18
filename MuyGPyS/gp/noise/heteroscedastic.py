@@ -10,7 +10,7 @@ Defines data structures and functors that handle noise priors for MuyGPs models.
 """
 import MuyGPyS._src.math as mm
 
-from MuyGPyS.gp.kernels import TensorHyperparameter
+from MuyGPyS.gp.hyperparameter import TensorHyperparameter
 
 
 class HeteroscedasticNoise(TensorHyperparameter):

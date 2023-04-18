@@ -36,5 +36,4 @@ class FastPrecomputeCoefficients:
         K: mm.ndarray,
         train_nn_targets_fast: mm.ndarray,
     ) -> mm.ndarray:
-
         return self._fn(K, train_nn_targets_fast, eps=self.eps())

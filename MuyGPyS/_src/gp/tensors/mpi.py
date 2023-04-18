@@ -91,6 +91,12 @@ def _crosswise_tensor(
     )
 
 
+def _crosswise_diffs(locations: np.ndarray, points: np.ndarray) -> np.ndarray:
+    raise NotImplementedError(
+        'Function "muygps_crosswise_diffs" does not support mpi!'
+    )
+
+
 def _pairwise_tensor(
     data: np.ndarray,
     nn_indices: np.ndarray,
@@ -99,6 +105,12 @@ def _pairwise_tensor(
         _pairwise_tensor_n,
         data,
         nn_indices,
+    )
+
+
+def _pairwise_diffs(points: np.ndarray) -> np.ndarray:
+    raise NotImplementedError(
+        'Function "muygps_pairwise_diffs" does not support mpi!'
     )
 
 
