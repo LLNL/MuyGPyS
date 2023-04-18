@@ -21,13 +21,23 @@ def apply_distortion(distortion_fn: Callable, length_scale: float):
     return distortion_applier
 
 
-def apply_anisotropic_distortion(distortion_fn: Callable, **kwargs):
+def apply_anisotropic_distortion(distortion_fn: Callable, **length_scales):
     def distortion_applier(fn: Callable):
         def distorted_fn(diffs, *args, **kwargs):
+            inner_kwargs = {
+                key: _optional_invoke_param(kwargs[key])
+                for key in kwargs
+                if key.startswith("length_scale")
+            }
+            for ls in length_scales:
+                inner_kwargs.setdefault(ls, length_scales[ls]())
+            outer_kwargs = {
+                key: _optional_invoke_param(kwargs[key])
+                for key in kwargs
+                if not key.startswith("length_scale")
+            }
             return fn(
-                distortion_fn(diffs, **convert_length_scales(kwargs)),
-                *args,
-                **kwargs,
+                distortion_fn(diffs, **inner_kwargs), *args, **outer_kwargs
             )
 
         return distorted_fn
@@ -35,20 +45,19 @@ def apply_anisotropic_distortion(distortion_fn: Callable, **kwargs):
     return distortion_applier
 
 
-def convert_length_scales(length_scales: Dict[str, Hyperparameter]):
-    for key, value in length_scales.items():
-        length_scales[key] = value
-    return length_scales
+def _optional_invoke_param(param: Union[Hyperparameter, float]) -> float:
+    if isinstance(param, Hyperparameter):
+        return param()
+    return param
 
 
 def embed_with_distortion_model(
     fn: Callable,
     distortion_fn: Callable,
     length_scale: Union[Hyperparameter, Dict[str, Hyperparameter]],
-    **kwargs,
 ):
     if isinstance(distortion_fn, AnisotropicDistortion):
-        return apply_anisotropic_distortion(distortion_fn, **kwargs)(fn)
+        return apply_anisotropic_distortion(distortion_fn, **length_scale)(fn)
     if isinstance(distortion_fn, IsotropicDistortion):
         return apply_distortion(distortion_fn, length_scale())(fn)
     elif isinstance(distortion_fn, NullDistortion):

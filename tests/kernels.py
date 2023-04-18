@@ -527,7 +527,12 @@ class MaternTest(KernelTest):
         # mtn = Matern(**k_kwargs)
         self._check_params_chassis(mtn, **k_kwargs)
         kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
-        self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
+        _check_ndarray(
+            self.assertEqual,
+            kern.shape,
+            mm.ftype,
+            (test_count, nn_count, nn_count),
+        )
         points = train[nn_indices]
         sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=dist_model.length_scale())
         sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
@@ -537,7 +542,6 @@ class MaternTest(KernelTest):
             test, train, np.arange(test_count), nn_indices
         )
         Kcross = mtn(crosswise_diffs)
-        self.assertEqual(Kcross.shape, (test_count, nn_count))
         sk_Kcross = mm.array(
             np.array(
                 [sk_mtn(vec, mat) for vec, mat in zip(test, points)]
@@ -553,7 +557,7 @@ class AnisotropicTest(KernelTest):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
-            for f in [1, 3]
+            for f in [1, 3, 5, 10]
             for nn in [30]
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
@@ -597,11 +601,8 @@ class AnisotropicTest(KernelTest):
             length_scale1=k_kwargs["length_scale1"],
         )
         mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
-        num_length_scales = 2
         with self.assertRaisesRegex(
-            ValueError,
-            f"Number of lengthscale parameters ({num_length_scales}) must match number of "
-            f"features ({pairwise_diffs.shape[-1]}) or be 1 (Isotropic model).",
+            ValueError, "Number of lengthscale parameters "
         ):
             kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
 

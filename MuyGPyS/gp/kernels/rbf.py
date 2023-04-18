@@ -99,10 +99,7 @@ class RBF(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        if isinstance(self._distortion_fn, AnisotropicDistortion):
-            return self._fn(diffs, **self._distortion_fn.length_scale)
-        else:
-            return self._fn(diffs)
+        return self._fn(diffs)
 
     def get_optim_params(
         self,

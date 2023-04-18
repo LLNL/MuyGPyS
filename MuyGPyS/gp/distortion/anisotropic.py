@@ -92,10 +92,10 @@ class AnisotropicDistortion:
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        for i, key in enumerate(self.length_scale.keys()):
+        for key in self.length_scale.keys():
             fn = apply_hyperparameter(
                 fn,
-                "length_scale" + str(i),
+                self.length_scale[key],
                 key,
             )
         opt_fn = fn
