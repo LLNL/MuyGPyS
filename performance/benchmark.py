@@ -11,15 +11,16 @@ from time import perf_counter_ns
 
 import MuyGPyS._src.math as mm
 from MuyGPyS import config
+from MuyGPyS._src.mpi_utils import _rank0, _print0
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
-from MuyGPyS.gp.kernels import RBF, Matern
+from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import make_train_tensors, make_predict_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.loss import lool_fn, mse_fn, cross_entropy_fn
+from MuyGPyS.optimize.loss import lool_fn, mse_fn
 from MuyGPyS.optimize.objective import make_obj_fn
 from MuyGPyS.optimize.sigma_sq import (
     make_sigma_sq_optim,
@@ -28,7 +29,7 @@ from MuyGPyS.optimize.sigma_sq import (
 
 
 def print_line():
-    print(
+    _print0(
         "=================================================="
         "=================================================="
     )
@@ -199,11 +200,11 @@ class BenchmarkPipeline:
         self.values[name] = value
         self.timings[name] = timing
         if self._params.verbose is True:
-            print(f"{name} : {self.timings[name]}s")
+            _print0(f"{name} : {self.timings[name]}s")
         return value
 
     def __call__(self):
-        print(f"Begin pipeline for {self._params.iterations} iterations")
+        _print0(f"Begin pipeline for {self._params.iterations} iterations")
         print_line()
         # batch profiling
         batch_pairwise_dists = self.profile(
@@ -277,9 +278,8 @@ class BenchmarkPipeline:
         )
 
     def serialize(self):
-        if self._params.out_file is not None:
+        if self._params.out_file is not None and _rank0() is True:
             with open(self._params.out_file, "wb") as f:
-                print("gets here")
                 pickle.dump(self.timings, f)
 
     def prepare_data(self, nn_kwargs):
@@ -334,9 +334,9 @@ class BenchmarkPipeline:
 def print_timing(rank, name, mode, timing, verbose):
     if rank == 0:
         if verbose is True:
-            print(f"{name} {mode} runtime {timing}s")
+            _print0(f"{name} {mode} runtime {timing}s")
         else:
-            print(timing)
+            _print0(timing)
 
 
 def benchmark_fn(fn, params):
