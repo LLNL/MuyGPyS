@@ -24,10 +24,10 @@ class AnisotropicDistortion:
                 self.length_scale[key], ScalarHyperparameter
             ):
                 raise ValueError(
-                    f"Anisotropic model expects either one keyword"
-                    f"argument labeled length_scale0 or a keyword argument for"
-                    f"each feature in the dataset labeled length_scalei for the"
-                    f" ith feature."
+                    "Anisotropic model expects either one keyword argument for"
+                    "each feature in the dataset labeled length_scalei for the"
+                    "ith feature with indexing beginning at zero, with each"
+                    "corresponding value being a ScalarHyperparameter."
                 )
         if metric == "l2":
             self._dist_fn = _l2

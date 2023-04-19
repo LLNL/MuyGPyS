@@ -93,6 +93,7 @@ class Matern(KernelFn):
     and :math:`\\nu=2.5` (twice differentiable functions).
     NOTE[bwp] We currently assume that the kernel is isotropic, so
     :math:`|\\ell| = 1`.
+
     The kernel is defined by
     .. math::
          k(x_i, x_j) =  \\frac{1}{\\Gamma(\\nu)2^{\\nu-1}}\\Bigg(
@@ -116,7 +117,7 @@ class Matern(KernelFn):
         nu: ScalarHyperparameter = ScalarHyperparameter(0.5),
         metric: Union[
             AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion("l2", length_scale=ScalarHyperparameter(1.0)),
+        ] = IsotropicDistortion("l2", length_scale0=ScalarHyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
         self.nu = nu

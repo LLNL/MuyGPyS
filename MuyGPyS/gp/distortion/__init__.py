@@ -5,7 +5,6 @@
 
 from .embed import (
     apply_distortion,
-    apply_anisotropic_distortion,
     embed_with_distortion_model,
 )
 from .isotropic import IsotropicDistortion

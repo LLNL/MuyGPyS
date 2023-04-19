@@ -11,14 +11,13 @@ from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS.gp.hyperparameter import (
     append_scalar_optim_params_list,
     apply_scalar_hyperparameter,
-    ScalarHyperparameter,
 )
 
 
 class IsotropicDistortion:
-    def __init__(self, metric: str, length_scale: ScalarHyperparameter):
+    def __init__(self, metric: str, **length_scale):
         self.metric = metric
-        self.length_scale = length_scale
+        self.length_scale = length_scale["length_scale0"]
         if metric == "l2":
             self._dist_fn = _l2
         elif metric == "F2":
@@ -26,7 +25,8 @@ class IsotropicDistortion:
         else:
             raise ValueError(f"Metric {metric} is not supported!")
 
-    def __call__(self, diffs: mm.ndarray, length_scale: float) -> mm.ndarray:
+    def __call__(self, diffs: mm.ndarray, **length_scale) -> mm.ndarray:
+        length_scale = length_scale["length_scale0"]
         return self._dist_fn(diffs / length_scale)
 
     def get_optim_params(
@@ -48,7 +48,7 @@ class IsotropicDistortion:
         params: List[float] = []
         bounds: List[Tuple[float, float]] = []
         append_scalar_optim_params_list(
-            self.length_scale, "length_scale", names, params, bounds
+            self.length_scale, "length_scale0", names, params, bounds
         )
         return names, params, bounds
 
@@ -66,7 +66,7 @@ class IsotropicDistortion:
             hyperparameter values for unfixed parameters.
         """
         opt_fn = apply_scalar_hyperparameter(
-            fn, self.length_scale, "length_scale"
+            fn, self.length_scale, "length_scale0"
         )
         return opt_fn
 
@@ -82,5 +82,5 @@ class IsotropicDistortion:
         Returns:
             An updated hyperparameter dictionary.
         """
-        hyperparameters["length_scale"] = self.length_scale
+        hyperparameters["length_scale0"] = self.length_scale
         return hyperparameters

@@ -173,7 +173,7 @@ class MuyGPs_layer(nn.Module):
             Matern(
                 nu=self.nu,
                 metric=IsotropicDistortion(
-                    "l2", length_scale=self.length_scale
+                    "l2", length_scale0=self.length_scale
                 ),
             ),
             eps=self.eps,
@@ -341,7 +341,7 @@ class MultivariateMuyGPs_layer(nn.Module):
                     "kernel": Matern(
                         nu=self.nu[i],
                         metric=IsotropicDistortion(
-                            "l2", length_scale=self.length_scale[i]
+                            "l2", length_scale0=self.length_scale[i]
                         ),
                     ),
                     "eps": self.eps[i],

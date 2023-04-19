@@ -11,17 +11,7 @@ from MuyGPyS.gp.distortion.isotropic import IsotropicDistortion
 from MuyGPyS.gp.distortion.null import NullDistortion
 
 
-def apply_distortion(distortion_fn: Callable, length_scale: float):
-    def distortion_applier(fn: Callable):
-        def distorted_fn(diffs, *args, length_scale=length_scale, **kwargs):
-            return fn(distortion_fn(diffs, length_scale), *args, **kwargs)
-
-        return distorted_fn
-
-    return distortion_applier
-
-
-def apply_anisotropic_distortion(distortion_fn: Callable, **length_scales):
+def apply_distortion(distortion_fn: Callable, **length_scales):
     def distortion_applier(fn: Callable):
         def distorted_fn(diffs, *args, **kwargs):
             inner_kwargs = {
@@ -58,10 +48,12 @@ def embed_with_distortion_model(
     distortion_fn: Callable,
     length_scale: Union[ScalarHyperparameter, Dict[str, ScalarHyperparameter]],
 ):
-    if isinstance(distortion_fn, AnisotropicDistortion):
-        return apply_anisotropic_distortion(distortion_fn, **length_scale)(fn)
-    if isinstance(distortion_fn, IsotropicDistortion):
-        return apply_distortion(distortion_fn, length_scale())(fn)
+    if isinstance(length_scale, ScalarHyperparameter):
+        length_scale = {"length_scale0": length_scale}
+    if isinstance(distortion_fn, AnisotropicDistortion) or isinstance(
+        distortion_fn, IsotropicDistortion
+    ):
+        return apply_distortion(distortion_fn, **length_scale)(fn)
     elif isinstance(distortion_fn, NullDistortion):
         return fn
     else:
