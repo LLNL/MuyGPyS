@@ -108,7 +108,6 @@ from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 
 from MuyGPyS.gp.distortion import (
     apply_distortion,
-    apply_anisotropic_distortion,
     AnisotropicDistortion,
     IsotropicDistortion,
 )
@@ -126,20 +125,20 @@ from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
 
 
-def isotropic_F2_n(diffs, length_scale):
-    return F2_n(diffs / length_scale)
+def isotropic_F2_n(diffs, **length_scale):
+    return F2_n(diffs / length_scale["length_scale0"])
 
 
-def isotropic_l2_n(diffs, length_scale):
-    return l2_n(diffs / length_scale)
+def isotropic_l2_n(diffs, **length_scale):
+    return l2_n(diffs / length_scale["length_scale0"])
 
 
-def isotropic_F2_t(diffs, length_scale):
-    return F2_t(diffs / length_scale)
+def isotropic_F2_t(diffs, **length_scale):
+    return F2_t(diffs / length_scale["length_scale0"])
 
 
-def isotropic_l2_t(diffs, length_scale):
-    return l2_t(diffs / length_scale)
+def isotropic_l2_t(diffs, **length_scale):
+    return l2_t(diffs / length_scale["length_scale0"])
 
 
 def anisotropic_F2_n(diffs, **length_scales):
@@ -170,63 +169,79 @@ def anisotropic_l2_t(diffs, **length_scales):
     return l2_t(diffs / length_scale_array)
 
 
-rbf_isotropic_fn_n = apply_distortion(isotropic_F2_n, 1.0)(rbf_fn_n)
-matern_05_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_05_fn_n)
-matern_15_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_15_fn_n)
-matern_25_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(matern_25_fn_n)
-matern_inf_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(
+rbf_isotropic_fn_n = apply_distortion(isotropic_F2_n, length_scale0=1.0)(
+    rbf_fn_n
+)
+matern_05_isotropic_fn_n = apply_distortion(isotropic_l2_n, length_scale0=1.0)(
+    matern_05_fn_n
+)
+matern_15_isotropic_fn_n = apply_distortion(isotropic_l2_n, length_scale0=1.0)(
+    matern_15_fn_n
+)
+matern_25_isotropic_fn_n = apply_distortion(isotropic_l2_n, length_scale0=1.0)(
+    matern_25_fn_n
+)
+matern_inf_isotropic_fn_n = apply_distortion(isotropic_l2_n, length_scale0=1.0)(
     matern_inf_fn_n
 )
-matern_gen_isotropic_fn_n = apply_distortion(isotropic_l2_n, 1.0)(
+matern_gen_isotropic_fn_n = apply_distortion(isotropic_l2_n, length_scale0=1.0)(
     matern_gen_fn_n
 )
 
-rbf_isotropic_fn_t = apply_distortion(isotropic_F2_t, 1.0)(rbf_fn_t)
-matern_05_isotropic_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_05_fn_t)
-matern_15_isotropic_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_15_fn_t)
-matern_25_isotropic_fn_t = apply_distortion(isotropic_l2_t, 1.0)(matern_25_fn_t)
-matern_inf_isotropic_fn_t = apply_distortion(isotropic_l2_t, 1.0)(
+rbf_isotropic_fn_t = apply_distortion(isotropic_F2_t, length_scale0=1.0)(
+    rbf_fn_t
+)
+matern_05_isotropic_fn_t = apply_distortion(isotropic_l2_t, length_scale0=1.0)(
+    matern_05_fn_t
+)
+matern_15_isotropic_fn_t = apply_distortion(isotropic_l2_t, length_scale0=1.0)(
+    matern_15_fn_t
+)
+matern_25_isotropic_fn_t = apply_distortion(isotropic_l2_t, length_scale0=1.0)(
+    matern_25_fn_t
+)
+matern_inf_isotropic_fn_t = apply_distortion(isotropic_l2_t, length_scale0=1.0)(
     matern_inf_fn_t
 )
-matern_gen_isotropic_fn_t = apply_distortion(isotropic_l2_t, 1.0)(
+matern_gen_isotropic_fn_t = apply_distortion(isotropic_l2_t, length_scale0=1.0)(
     matern_gen_fn_t
 )
 
-rbf_anisotropic_fn_n = apply_anisotropic_distortion(
-    anisotropic_F2_n, length_scale0=1.0
-)(rbf_fn_n)
-matern_05_anisotropic_fn_n = apply_anisotropic_distortion(
+rbf_anisotropic_fn_n = apply_distortion(anisotropic_F2_n, length_scale0=1.0)(
+    rbf_fn_n
+)
+matern_05_anisotropic_fn_n = apply_distortion(
     anisotropic_l2_n, length_scale0=1.0
 )(matern_05_fn_n)
-matern_15_anisotropic_fn_n = apply_anisotropic_distortion(
+matern_15_anisotropic_fn_n = apply_distortion(
     anisotropic_l2_n, length_scale0=1.0
 )(matern_15_fn_n)
-matern_25_anisotropic_fn_n = apply_anisotropic_distortion(
+matern_25_anisotropic_fn_n = apply_distortion(
     anisotropic_l2_n, length_scale0=1.0
 )(matern_25_fn_n)
-matern_inf_anisotropic_fn_n = apply_anisotropic_distortion(
+matern_inf_anisotropic_fn_n = apply_distortion(
     anisotropic_l2_n, length_scale0=1.0
 )(matern_inf_fn_n)
-matern_gen_anisotropic_fn_n = apply_anisotropic_distortion(
+matern_gen_anisotropic_fn_n = apply_distortion(
     anisotropic_l2_n, length_scale0=1.0
 )(matern_gen_fn_n)
 
-rbf_anisotropic_fn_t = apply_anisotropic_distortion(
-    anisotropic_F2_t, length_scale0=1.0
-)(rbf_fn_t)
-matern_05_anisotropic_fn_t = apply_anisotropic_distortion(
+rbf_anisotropic_fn_t = apply_distortion(anisotropic_F2_t, length_scale0=1.0)(
+    rbf_fn_t
+)
+matern_05_anisotropic_fn_t = apply_distortion(
     anisotropic_l2_t, length_scale0=1.0
 )(matern_05_fn_t)
-matern_15_anisotropic_fn_t = apply_anisotropic_distortion(
+matern_15_anisotropic_fn_t = apply_distortion(
     anisotropic_l2_t, length_scale0=1.0
 )(matern_15_fn_t)
-matern_25_anisotropic_fn_t = apply_anisotropic_distortion(
+matern_25_anisotropic_fn_t = apply_distortion(
     anisotropic_l2_t, length_scale0=1.0
 )(matern_25_fn_t)
-matern_inf_anisotropic_fn_t = apply_anisotropic_distortion(
+matern_inf_anisotropic_fn_t = apply_distortion(
     anisotropic_l2_t, length_scale0=1.0
 )(matern_inf_fn_t)
-matern_gen_anisotropic_fn_t = apply_anisotropic_distortion(
+matern_gen_anisotropic_fn_t = apply_distortion(
     anisotropic_l2_t, length_scale0=1.0
 )(matern_gen_fn_t)
 
@@ -265,7 +280,7 @@ class TensorsTestCase(parameterized.TestCase):
             "kernel": Matern(
                 nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
+                    "l2", length_scale0=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HomoscedasticNoise(cls.eps),
@@ -274,7 +289,7 @@ class TensorsTestCase(parameterized.TestCase):
             "kernel": Matern(
                 nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
+                    "l2", length_scale0=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n),
@@ -283,7 +298,7 @@ class TensorsTestCase(parameterized.TestCase):
             "kernel": Matern(
                 nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
+                    "l2", length_scale0=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
@@ -922,7 +937,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
             "kernel": Matern(
                 nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
+                    "l2", length_scale0=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
@@ -931,7 +946,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
             "kernel": Matern(
                 nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
+                    "l2", length_scale0=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
@@ -1112,7 +1127,7 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps.kernel._get_opt_fn(
             matern_05_isotropic_fn_n,
             IsotropicDistortion(
-                "l2", length_scale=ScalarHyperparameter(self.length_scale)
+                "l2", length_scale0=ScalarHyperparameter(self.length_scale)
             ),
             nu=self.muygps.kernel.nu,
         )
@@ -1121,7 +1136,7 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps.kernel._get_opt_fn(
             matern_05_isotropic_fn_t,
             IsotropicDistortion(
-                "l2", length_scale=ScalarHyperparameter(self.length_scale)
+                "l2", length_scale0=ScalarHyperparameter(self.length_scale)
             ),
             nu=self.muygps.kernel.nu,
         )

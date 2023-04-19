@@ -57,7 +57,7 @@ class InitTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(1.0),
                         metric=IsotropicDistortion(
-                            metric="l2", length_scale=ScalarHyperparameter(7.2)
+                            metric="l2", length_scale0=ScalarHyperparameter(7.2)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -66,7 +66,7 @@ class InitTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(1.2),
                         metric=IsotropicDistortion(
-                            metric="l2", length_scale=ScalarHyperparameter(2.2)
+                            metric="l2", length_scale0=ScalarHyperparameter(2.2)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-6),
@@ -77,7 +77,7 @@ class InitTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(1.0),
                         metric=IsotropicDistortion(
-                            metric="l2", length_scale=ScalarHyperparameter(7.2)
+                            metric="l2", length_scale0=ScalarHyperparameter(7.2)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -115,7 +115,7 @@ class SigmaSqTest(parameterized.TestCase):
                             nu=ScalarHyperparameter(1.5),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(7.2),
+                                length_scale0=ScalarHyperparameter(7.2),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -125,7 +125,7 @@ class SigmaSqTest(parameterized.TestCase):
                             nu=ScalarHyperparameter(0.5),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(2.2),
+                                length_scale0=ScalarHyperparameter(2.2),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
@@ -135,7 +135,7 @@ class SigmaSqTest(parameterized.TestCase):
                             nu=ScalarHyperparameter(mm.inf),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(12.4),
+                                length_scale0=ScalarHyperparameter(12.4),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
@@ -253,7 +253,7 @@ class OptimTest(parameterized.TestCase):
                                 nu=ScalarHyperparameter("sample", (1e-2, 1e0)),
                                 metric=IsotropicDistortion(
                                     metric="l2",
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale0=ScalarHyperparameter(1.5),
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-5),
@@ -263,7 +263,7 @@ class OptimTest(parameterized.TestCase):
                                 nu=ScalarHyperparameter("sample", (1e-2, 1e0)),
                                 metric=IsotropicDistortion(
                                     metric="l2",
-                                    length_scale=ScalarHyperparameter(0.7),
+                                    length_scale0=ScalarHyperparameter(0.7),
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-5),
@@ -416,7 +416,7 @@ class ClassifyTest(parameterized.TestCase):
                             nu=ScalarHyperparameter(0.38),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale0=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -426,7 +426,7 @@ class ClassifyTest(parameterized.TestCase):
                             nu=ScalarHyperparameter(0.79),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(0.7),
+                                length_scale0=ScalarHyperparameter(0.7),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -512,7 +512,7 @@ class RegressTest(parameterized.TestCase):
                             nu=ScalarHyperparameter(1.5),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale0=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -522,7 +522,7 @@ class RegressTest(parameterized.TestCase):
                             ScalarHyperparameter(0.5),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(0.7),
+                                length_scale0=ScalarHyperparameter(0.7),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -620,7 +620,7 @@ class MakeClassifierTest(parameterized.TestCase):
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale0=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -630,7 +630,7 @@ class MakeClassifierTest(parameterized.TestCase):
                             nu=ScalarHyperparameter(0.8),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(0.7),
+                                length_scale0=ScalarHyperparameter(0.7),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -746,7 +746,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale0=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -756,7 +756,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             nu=ScalarHyperparameter(0.8),
                             metric=IsotropicDistortion(
                                 metric="l2",
-                                length_scale=ScalarHyperparameter(0.7),
+                                length_scale0=ScalarHyperparameter(0.7),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),

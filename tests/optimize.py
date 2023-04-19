@@ -67,7 +67,7 @@ class BenchmarkTestCase(parameterized.TestCase):
                     nu=ScalarHyperparameter(0.5),
                     metric=IsotropicDistortion(
                         metric="l2",
-                        length_scale=ScalarHyperparameter(cls.length_scale),
+                        length_scale0=ScalarHyperparameter(cls.length_scale),
                     ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
@@ -77,7 +77,7 @@ class BenchmarkTestCase(parameterized.TestCase):
                     nu=ScalarHyperparameter(1.5),
                     metric=IsotropicDistortion(
                         metric="l2",
-                        length_scale=ScalarHyperparameter(cls.length_scale),
+                        length_scale0=ScalarHyperparameter(cls.length_scale),
                     ),
                 ),
                 "eps": HomoscedasticNoise(1e-5),
@@ -110,7 +110,7 @@ class BenchmarkTestCase(parameterized.TestCase):
                 nu=ScalarHyperparameter("sample", (0.1, 5.0)),
                 metric=IsotropicDistortion(
                     metric="l2",
-                    length_scale=ScalarHyperparameter(cls.length_scale),
+                    length_scale0=ScalarHyperparameter(cls.length_scale),
                 ),
             ),
             "eps": HomoscedasticNoise(1e-5),
