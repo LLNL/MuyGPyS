@@ -5,9 +5,7 @@
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
-from MuyGPyS._src.gp.muygps import _get_length_scale_array
 
-from copy import deepcopy
 from typing import List, Tuple, Callable, Dict
 
 from MuyGPyS.gp.hyperparameter import (
@@ -39,17 +37,28 @@ class AnisotropicDistortion:
             raise ValueError(f"Metric {metric} is not supported!")
 
     def __call__(self, diffs: mm.ndarray, **length_scales) -> mm.ndarray:
-        length_scale_array = _get_length_scale_array(**length_scales)
-        if (
-            diffs.shape[-1] != len(length_scale_array)
-            and len(length_scale_array) != 1
-        ):
-            raise ValueError(
-                f"Number of lengthscale parameters "
-                f"({len(length_scale_array)}) must match number of "
-                f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
-            )
+        length_scale_array = self._get_length_scale_array(
+            mm.array, diffs.shape[-1], **length_scales
+        )
         return self._dist_fn(diffs / length_scale_array)
+
+    @staticmethod
+    def _get_length_scale_array(
+        array_fn: Callable, target_length: float, **length_scales
+    ) -> mm.ndarray:
+        AnisotropicDistortion._lengths_agree(len(length_scales), target_length)
+        if callable(length_scales["length_scale0"]) is True:
+            length_scales = {ls: length_scales[ls]() for ls in length_scales}
+        return array_fn([value for value in length_scales.values()])
+
+    @staticmethod
+    def _lengths_agree(found_length, target_length):
+        if target_length != found_length and found_length != 1:
+            raise ValueError(
+                f"Number of lengthscale parameters ({found_length}) "
+                f"must match number of features ({target_length}) or be 1 "
+                "(Isotropic model)."
+            )
 
     def get_optim_params(
         self,

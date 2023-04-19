@@ -6,7 +6,6 @@ import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_posterior_mean,
     _muygps_diagonal_variance,
-    _get_length_scale_array,
 )
 
 

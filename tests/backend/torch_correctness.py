@@ -66,7 +66,6 @@ from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_fast_posterior_mean as muygps_fast_posterior_mean_n,
     _mmuygps_fast_posterior_mean as mmuygps_fast_posterior_mean_n,
     _muygps_fast_posterior_mean_precompute as muygps_fast_posterior_mean_precompute_n,
-    _get_length_scale_array as get_length_scale_array_n,
 )
 from MuyGPyS._src.gp.muygps.torch import (
     _muygps_posterior_mean as muygps_posterior_mean_t,
@@ -74,7 +73,6 @@ from MuyGPyS._src.gp.muygps.torch import (
     _muygps_fast_posterior_mean as muygps_fast_posterior_mean_t,
     _mmuygps_fast_posterior_mean as mmuygps_fast_posterior_mean_t,
     _muygps_fast_posterior_mean_precompute as muygps_fast_posterior_mean_precompute_t,
-    _get_length_scale_array as get_length_scale_array_t,
 )
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb as homoscedastic_perturb_n,
@@ -111,6 +109,7 @@ from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import (
     apply_distortion,
     apply_anisotropic_distortion,
+    AnisotropicDistortion,
     IsotropicDistortion,
 )
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
@@ -144,58 +143,30 @@ def isotropic_l2_t(diffs, length_scale):
 
 
 def anisotropic_F2_n(diffs, **length_scales):
-    length_scale_array = get_length_scale_array_n(**length_scales)
-    if (
-        diffs.shape[-1] != len(length_scale_array)
-        and len(length_scale_array) != 1
-    ):
-        raise ValueError(
-            f"Number of lengthscale parameters "
-            f"({len(length_scale_array)}) must match number of "
-            f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
-        )
+    length_scale_array = AnisotropicDistortion._get_length_scale_array(
+        np.array, diffs.shape[-1], **length_scales
+    )
     return F2_n(diffs / length_scale_array)
 
 
 def anisotropic_l2_n(diffs, **length_scales):
-    length_scale_array = get_length_scale_array_n(**length_scales)
-    if (
-        diffs.shape[-1] != len(length_scale_array)
-        and len(length_scale_array) != 1
-    ):
-        raise ValueError(
-            f"Number of lengthscale parameters "
-            f"({len(length_scale_array)}) must match number of "
-            f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
-        )
+    length_scale_array = AnisotropicDistortion._get_length_scale_array(
+        np.array, diffs.shape[-1], **length_scales
+    )
     return l2_n(diffs / length_scale_array)
 
 
 def anisotropic_F2_t(diffs, **length_scales):
-    length_scale_array = get_length_scale_array_t(**length_scales)
-    if (
-        diffs.shape[-1] != len(length_scale_array)
-        and len(length_scale_array) != 1
-    ):
-        raise ValueError(
-            f"Number of lengthscale parameters "
-            f"({len(length_scale_array)}) must match number of "
-            f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
-        )
+    length_scale_array = AnisotropicDistortion._get_length_scale_array(
+        torch.array, diffs.shape[-1], **length_scales
+    )
     return F2_t(diffs / length_scale_array)
 
 
 def anisotropic_l2_t(diffs, **length_scales):
-    length_scale_array = get_length_scale_array_t(**length_scales)
-    if (
-        diffs.shape[-1] != len(length_scale_array)
-        and len(length_scale_array) != 1
-    ):
-        raise ValueError(
-            f"Number of lengthscale parameters "
-            f"({len(length_scale_array)}) must match number of "
-            f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
-        )
+    length_scale_array = AnisotropicDistortion._get_length_scale_array(
+        torch.array, diffs.shape[-1], **length_scales
+    )
     return l2_t(diffs / length_scale_array)
 
 

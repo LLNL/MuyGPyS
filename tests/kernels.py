@@ -17,7 +17,6 @@ import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.gp.tensors import _l2, _F2
 from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor, _warn0
-from MuyGPyS._src.gp.muygps import _get_length_scale_array
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _check_ndarray,

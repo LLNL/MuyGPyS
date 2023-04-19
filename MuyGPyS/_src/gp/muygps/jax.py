@@ -60,22 +60,3 @@ def _muygps_fast_posterior_mean_precompute(
     train_nn_targets_fast: jnp.ndarray,
 ) -> jnp.ndarray:
     return jnp.linalg.solve(K, train_nn_targets_fast)
-
-
-@jit
-def _get_length_scale_array(**length_scales) -> jnp.ndarray:
-    partial_name = "length_scale"
-    if not callable(length_scales["length_scale0"]):
-        length_scale_array = [
-            value
-            for key, value in length_scales.items()
-            if key.startswith(partial_name)
-        ]
-    else:
-        length_scale_array = [
-            value()
-            for key, value in length_scales.items()
-            if key.startswith(partial_name)
-        ]
-    length_scale_array = jnp.array(length_scale_array)
-    return length_scale_array

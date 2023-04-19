@@ -61,12 +61,10 @@ from MuyGPyS._src.gp.kernels.mpi import (
 from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_posterior_mean as muygps_posterior_mean_n,
     _muygps_diagonal_variance as muygps_diagonal_variance_n,
-    _get_length_scale_array as get_length_scale_array_n,
 )
 from MuyGPyS._src.gp.muygps.mpi import (
     _muygps_posterior_mean as muygps_posterior_mean_m,
     _muygps_diagonal_variance as muygps_diagonal_variance_m,
-    _get_length_scale_array as get_length_scale_array_m,
 )
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb as homoscedastic_perturb_n,
@@ -106,9 +104,9 @@ from MuyGPyS._src.optimize.chassis.mpi import (
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import (
     apply_distortion,
-    IsotropicDistortion,
     apply_anisotropic_distortion,
     AnisotropicDistortion,
+    IsotropicDistortion,
 )
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
@@ -136,30 +134,16 @@ def isotropic_l2_m(diffs, length_scale):
 
 
 def anisotropic_F2_n(diffs, **length_scales):
-    length_scale_array = get_length_scale_array_n(**length_scales)
-    if (
-        diffs.shape[-1] != len(length_scale_array)
-        and len(length_scale_array) != 1
-    ):
-        raise ValueError(
-            f"Number of lengthscale parameters "
-            f"({len(length_scale_array)}) must match number of "
-            f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
-        )
+    length_scale_array = AnisotropicDistortion._get_length_scale_array(
+        np.array, diffs.shape[-1], **length_scales
+    )
     return F2_n(diffs / length_scale_array)
 
 
 def anisotropic_l2_n(diffs, **length_scales):
-    length_scale_array = get_length_scale_array_n(**length_scales)
-    if (
-        diffs.shape[-1] != len(length_scale_array)
-        and len(length_scale_array) != 1
-    ):
-        raise ValueError(
-            f"Number of lengthscale parameters "
-            f"({len(length_scale_array)}) must match number of "
-            f"features ({diffs.shape[-1]}) or be 1 (Isotropic model)."
-        )
+    length_scale_array = AnisotropicDistortion._get_length_scale_array(
+        np.array, diffs.shape[-1], **length_scales
+    )
     return l2_n(diffs / length_scale_array)
 
 
