@@ -10,10 +10,10 @@ from MuyGPyS._src.gp.muygps import _get_length_scale_array
 from copy import deepcopy
 from typing import List, Tuple, Callable, Dict
 
-from MuyGPyS.gp.kernels import (
-    append_optim_params_lists,
-    apply_hyperparameter,
-    Hyperparameter,
+from MuyGPyS.gp.hyperparameter import (
+    append_scalar_optim_params_list,
+    apply_scalar_hyperparameter,
+    ScalarHyperparameter,
 )
 
 
@@ -23,7 +23,7 @@ class AnisotropicDistortion:
         self.length_scale = length_scales
         for i, key in enumerate(self.length_scale.keys()):
             if key != "length_scale" + str(i) or not isinstance(
-                self.length_scale[key], Hyperparameter
+                self.length_scale[key], ScalarHyperparameter
             ):
                 raise ValueError(
                     f"Anisotropic model expects either one keyword"
@@ -70,7 +70,7 @@ class AnisotropicDistortion:
         params: List[float] = []
         bounds: List[Tuple[float, float]] = []
         for key in self.length_scale.keys():
-            append_optim_params_lists(
+            append_scalar_optim_params_list(
                 self.length_scale[key],
                 key,
                 names,
@@ -93,7 +93,7 @@ class AnisotropicDistortion:
             hyperparameter values for unfixed parameters.
         """
         for key in self.length_scale.keys():
-            fn = apply_hyperparameter(
+            fn = apply_scalar_hyperparameter(
                 fn,
                 self.length_scale[key],
                 key,

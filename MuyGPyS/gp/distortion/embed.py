@@ -5,7 +5,7 @@
 
 from typing import Callable, Union, Dict
 
-from MuyGPyS.gp.kernels import Hyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.distortion.anisotropic import AnisotropicDistortion
 from MuyGPyS.gp.distortion.isotropic import IsotropicDistortion
 from MuyGPyS.gp.distortion.null import NullDistortion
@@ -30,7 +30,9 @@ def apply_anisotropic_distortion(distortion_fn: Callable, **length_scales):
                 if key.startswith("length_scale")
             }
             for ls in length_scales:
-                inner_kwargs.setdefault(ls, length_scales[ls]())
+                inner_kwargs.setdefault(
+                    ls, _optional_invoke_param(length_scales[ls])
+                )
             outer_kwargs = {
                 key: _optional_invoke_param(kwargs[key])
                 for key in kwargs
@@ -45,8 +47,8 @@ def apply_anisotropic_distortion(distortion_fn: Callable, **length_scales):
     return distortion_applier
 
 
-def _optional_invoke_param(param: Union[Hyperparameter, float]) -> float:
-    if isinstance(param, Hyperparameter):
+def _optional_invoke_param(param: Union[ScalarHyperparameter, float]) -> float:
+    if isinstance(param, ScalarHyperparameter):
         return param()
     return param
 
@@ -54,7 +56,7 @@ def _optional_invoke_param(param: Union[Hyperparameter, float]) -> float:
 def embed_with_distortion_model(
     fn: Callable,
     distortion_fn: Callable,
-    length_scale: Union[Hyperparameter, Dict[str, Hyperparameter]],
+    length_scale: Union[ScalarHyperparameter, Dict[str, ScalarHyperparameter]],
 ):
     if isinstance(distortion_fn, AnisotropicDistortion):
         return apply_anisotropic_distortion(distortion_fn, **length_scale)(fn)
