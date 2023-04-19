@@ -23,10 +23,10 @@ from MuyGPyS import config
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
-from MuyGPyS.gp.kernels.tensor_hyperparameters import TensorHyperparameter
+from MuyGPyS.gp.hyperparameter.tensor import TensorHyperparameter
 
 
-class Hyperparameter:
+class ScalarHyperparameter:
     """
     A MuyGPs kernel or model Hyperparameter.
 
@@ -291,12 +291,12 @@ class Hyperparameter:
         return self._fixed
 
 
-def _init_hyperparameter(
+def _init_scalar_hyperparameter(
     val_def: Union[str, float],
     bounds_def: Union[str, Tuple[float, float]],
-    type: Type = Hyperparameter,
+    type: Type = ScalarHyperparameter,
     **kwargs,
-) -> Hyperparameter:
+) -> ScalarHyperparameter:
     """
     Initialize a hyperparameter given default values.
 
@@ -315,8 +315,10 @@ def _init_hyperparameter(
     return type(val, bounds)
 
 
-def apply_hyperparameter(
-    fn: Callable, param: Union[TensorHyperparameter, Hyperparameter], name: str
+def apply_scalar_hyperparameter(
+    fn: Callable,
+    param: Union[TensorHyperparameter, ScalarHyperparameter],
+    name: str,
 ):
     if param.fixed():
 
@@ -329,8 +331,8 @@ def apply_hyperparameter(
     return fn
 
 
-def append_optim_params_lists(
-    param: Union[TensorHyperparameter, Hyperparameter],
+def append_scalar_optim_params_list(
+    param: Union[TensorHyperparameter, ScalarHyperparameter],
     name: str,
     names: List[str],
     params: List[float],

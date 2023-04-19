@@ -8,15 +8,15 @@ from typing import Callable, Dict, List, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
-from MuyGPyS.gp.kernels import (
-    append_optim_params_lists,
-    apply_hyperparameter,
-    Hyperparameter,
+from MuyGPyS.gp.hyperparameter import (
+    append_scalar_optim_params_list,
+    apply_scalar_hyperparameter,
+    ScalarHyperparameter,
 )
 
 
 class IsotropicDistortion:
-    def __init__(self, metric: str, length_scale: Hyperparameter):
+    def __init__(self, metric: str, length_scale: ScalarHyperparameter):
         self.metric = metric
         self.length_scale = length_scale
         if metric == "l2":
@@ -47,7 +47,7 @@ class IsotropicDistortion:
         names: List[str] = []
         params: List[float] = []
         bounds: List[Tuple[float, float]] = []
-        append_optim_params_lists(
+        append_scalar_optim_params_list(
             self.length_scale, "length_scale", names, params, bounds
         )
         return names, params, bounds
@@ -65,7 +65,9 @@ class IsotropicDistortion:
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        opt_fn = apply_hyperparameter(fn, self.length_scale, "length_scale")
+        opt_fn = apply_scalar_hyperparameter(
+            fn, self.length_scale, "length_scale"
+        )
         return opt_fn
 
     def populate_length_scale(self, hyperparameters: Dict) -> Dict:

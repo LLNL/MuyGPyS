@@ -9,10 +9,10 @@ Noise modeling
 Defines data structures and functors that handle noise priors for MuyGPs models.
 """
 
-from MuyGPyS.gp.kernels import Hyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 
 
-class NullNoise(Hyperparameter):
+class NullNoise(ScalarHyperparameter):
     """
     A zero noise assumption model.
     """

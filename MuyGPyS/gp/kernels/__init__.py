@@ -3,19 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .hyperparameters import (
-    _init_hyperparameter,
-    append_optim_params_lists,
-    apply_hyperparameter,
-    Hyperparameter,
-)
-
-from .tensor_hyperparameters import (
-    TensorHyperparameter,
-    _init_tensor_hyperparameter,
-    append_optim_params_lists_tensor,
-    apply_tensor_hyperparameter,
-)
 from .kernel_fn import KernelFn
 from .matern import Matern
 from .rbf import RBF

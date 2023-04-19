@@ -24,8 +24,14 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
 )
+<<<<<<< HEAD
 from MuyGPyS.gp.distortion import AnisotropicDistortion, IsotropicDistortion
 from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
+=======
+from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import Matern, RBF
+>>>>>>> develop
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
@@ -64,9 +70,9 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
                     11.0,
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                "l2", length_scale=Hyperparameter(1.5)
+                                "l2", length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
@@ -146,18 +152,18 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                     [
                         {
                             "kernel": Matern(
-                                nu=Hyperparameter("sample", (1e-1, 1e0)),
+                                nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
-                                    "l2", length_scale=Hyperparameter(1.5)
+                                    "l2", length_scale=ScalarHyperparameter(1.5)
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": Matern(
-                                nu=Hyperparameter(0.5),
+                                nu=ScalarHyperparameter(0.5),
                                 metric=IsotropicDistortion(
-                                    "l2", length_scale=Hyperparameter(1.5)
+                                    "l2", length_scale=ScalarHyperparameter(1.5)
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-3),
@@ -170,7 +176,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                         {
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
-                                    "l2", length_scale=Hyperparameter(1.5)
+                                    "l2", length_scale=ScalarHyperparameter(1.5)
                                 )
                             ),
                             "eps": HomoscedasticNoise(1e-3),
@@ -178,7 +184,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                         {
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
-                                    "l2", length_scale=Hyperparameter(1.5)
+                                    "l2", length_scale=ScalarHyperparameter(1.5)
                                 )
                             ),
                             "eps": HomoscedasticNoise(1e-3),
@@ -248,9 +254,9 @@ class StargalFastTest(FastPosteriorMeanAPITest):
                     1.0,
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter(0.5),
+                            nu=ScalarHyperparameter(0.5),
                             metric=IsotropicDistortion(
-                                "l2", length_scale=Hyperparameter(1.5)
+                                "l2", length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
@@ -261,7 +267,7 @@ class StargalFastTest(FastPosteriorMeanAPITest):
                     {
                         "kernel": RBF(
                             metric=IsotropicDistortion(
-                                "l2", length_scale=Hyperparameter(1.5)
+                                "l2", length_scale=ScalarHyperparameter(1.5)
                             )
                         ),
                         "eps": HomoscedasticNoise(1e-3),

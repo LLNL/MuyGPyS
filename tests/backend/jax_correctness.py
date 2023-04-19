@@ -8,7 +8,7 @@ from MuyGPyS import config, jax_config
 config.parse_flags_with_absl()  # Affords option setting from CLI
 
 if config.state.jax_enabled is False:
-    raise ValueError(f"Bad attempt to run jax-only code with jax diabled.")
+    raise ValueError(f"Bad attempt to run jax-only code with jax disabled.")
 if config.state.backend == "mpi":
     raise ValueError(f"Bad attempt to run non-MPI code in MPI mode.")
 elif config.state.backend != "numpy":
@@ -116,12 +116,9 @@ from MuyGPyS._src.optimize.sigma_sq.jax import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distortion import (
-    apply_distortion,
-    apply_anisotropic_distortion,
-    IsotropicDistortion,
-)
-from MuyGPyS.gp.kernels import Hyperparameter, Matern
+from MuyGPyS.gp.distortion import apply_distortion, IsotropicDistortion
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.gp.noise import noise_perturb
@@ -129,7 +126,6 @@ from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
-from MuyGPyS.gp.noise import HeteroscedasticNoise
 
 
 def isotropic_F2_n(diffs, length_scale):
@@ -313,18 +309,18 @@ class TensorsTestCase(parameterized.TestCase):
         )
         cls.k_kwargs = {
             "kernel": Matern(
-                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HomoscedasticNoise(cls.eps),
         }
         cls.k_kwargs_heteroscedastic = {
             "kernel": Matern(
-                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n),
@@ -1073,18 +1069,18 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         )
         cls.k_kwargs_1 = {
             "kernel": Matern(
-                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
         }
         cls.k_kwargs_2 = {
             "kernel": Matern(
-                nu=Hyperparameter(cls.nu, cls.nu_bounds),
+                nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=Hyperparameter(cls.length_scale)
+                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
@@ -1300,7 +1296,7 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_isotropic_fn_n,
             IsotropicDistortion(
-                "l2", length_scale=Hyperparameter(self.length_scale)
+                "l2", length_scale=ScalarHyperparameter(self.length_scale)
             ),
             self.muygps.kernel.nu,
         )
@@ -1309,7 +1305,7 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_isotropic_fn_j,
             IsotropicDistortion(
-                "l2", length_scale=Hyperparameter(self.length_scale)
+                "l2", length_scale=ScalarHyperparameter(self.length_scale)
             ),
             self.muygps.kernel.nu,
         )
