@@ -108,7 +108,11 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 
-from MuyGPyS.gp.distortion import apply_distortion, IsotropicDistortion
+from MuyGPyS.gp.distortion import (
+    apply_distortion,
+    apply_anisotropic_distortion,
+    IsotropicDistortion,
+)
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale

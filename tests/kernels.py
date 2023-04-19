@@ -528,12 +528,7 @@ class MaternTest(KernelTest):
         # mtn = Matern(**k_kwargs)
         self._check_params_chassis(mtn, **k_kwargs)
         kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
-        _check_ndarray(
-            self.assertEqual,
-            kern.shape,
-            mm.ftype,
-            (test_count, nn_count, nn_count),
-        )
+        self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=dist_model.length_scale())
         sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
@@ -563,9 +558,9 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": Hyperparameter(0.42, "fixed"),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(0.42, "fixed"),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
             ]
         )
@@ -615,29 +610,29 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": Hyperparameter(0.42, "fixed"),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(0.42, "fixed"),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "nu": Hyperparameter(0.5),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(0.5),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "nu": Hyperparameter(1.5),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(1.5),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "nu": Hyperparameter(2.5),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(2.5),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "nu": Hyperparameter(mm.inf),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(mm.inf),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
             ]
         )
@@ -718,24 +713,24 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "length_scale0": Hyperparameter(0.1),
-                    "length_scale1": Hyperparameter(2.0),
+                    "length_scale0": ScalarHyperparameter(0.1),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(10.0),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(10.0),
                 },
                 {
-                    "length_scale0": Hyperparameter(0.1),
-                    "length_scale1": Hyperparameter(10.0),
+                    "length_scale0": ScalarHyperparameter(0.1),
+                    "length_scale1": ScalarHyperparameter(10.0),
                 },
                 {
-                    "length_scale0": Hyperparameter(2.0),
-                    "length_scale1": Hyperparameter(0.01),
+                    "length_scale0": ScalarHyperparameter(2.0),
+                    "length_scale1": ScalarHyperparameter(0.01),
                 },
             ]
         )
@@ -811,29 +806,29 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": Hyperparameter(0.42, "fixed"),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(0.42, "fixed"),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "nu": Hyperparameter(0.5),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(0.5),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "nu": Hyperparameter(1.5),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(1.5),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "nu": Hyperparameter(2.5),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(2.5),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "nu": Hyperparameter(mm.inf),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "nu": ScalarHyperparameter(mm.inf),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
             ]
         )
@@ -910,24 +905,24 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(2.0),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "length_scale0": Hyperparameter(0.1),
-                    "length_scale1": Hyperparameter(2.0),
+                    "length_scale0": ScalarHyperparameter(0.1),
+                    "length_scale1": ScalarHyperparameter(2.0),
                 },
                 {
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(10.0),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(10.0),
                 },
                 {
-                    "length_scale0": Hyperparameter(0.1),
-                    "length_scale1": Hyperparameter(10.0),
+                    "length_scale0": ScalarHyperparameter(0.1),
+                    "length_scale1": ScalarHyperparameter(10.0),
                 },
                 {
-                    "length_scale0": Hyperparameter(2.0),
-                    "length_scale1": Hyperparameter(0.01),
+                    "length_scale0": ScalarHyperparameter(2.0),
+                    "length_scale1": ScalarHyperparameter(0.01),
                 },
             ]
         )
@@ -999,29 +994,29 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": Hyperparameter(0.42, "fixed"),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(1.0),
+                    "nu": ScalarHyperparameter(0.42, "fixed"),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(1.0),
                 },
                 {
-                    "nu": Hyperparameter(0.5),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(1.0),
+                    "nu": ScalarHyperparameter(0.5),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(1.0),
                 },
                 {
-                    "nu": Hyperparameter(1.5),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(1.0),
+                    "nu": ScalarHyperparameter(1.5),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(1.0),
                 },
                 {
-                    "nu": Hyperparameter(2.5),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(1.0),
+                    "nu": ScalarHyperparameter(2.5),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(1.0),
                 },
                 {
-                    "nu": Hyperparameter(mm.inf),
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(1.0),
+                    "nu": ScalarHyperparameter(mm.inf),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(1.0),
                 },
             ]
         )
@@ -1100,8 +1095,8 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "length_scale0": Hyperparameter(1.0),
-                    "length_scale1": Hyperparameter(1.0),
+                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale1": ScalarHyperparameter(1.0),
                 },
             ]
         )

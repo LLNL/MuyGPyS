@@ -24,7 +24,6 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
     _make_gaussian_data,
     _exact_nn_kwarg_options,
-    _make_heteroscedastic_test_nugget,
     _make_uniform_matrix,
 )
 from MuyGPyS._src.gp.tensors.numpy import (
@@ -105,7 +104,12 @@ from MuyGPyS._src.optimize.chassis.mpi import (
     _bayes_opt_optimize as bayes_optimize_m,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import apply_distortion, IsotropicDistortion
+from MuyGPyS.gp.distortion import (
+    apply_distortion,
+    IsotropicDistortion,
+    apply_anisotropic_distortion,
+    AnisotropicDistortion,
+)
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise

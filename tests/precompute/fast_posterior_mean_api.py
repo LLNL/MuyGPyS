@@ -24,14 +24,9 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
 )
-<<<<<<< HEAD
-from MuyGPyS.gp.distortion import AnisotropicDistortion, IsotropicDistortion
-from MuyGPyS.gp.kernels import Hyperparameter, Matern, RBF
-=======
-from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
->>>>>>> develop
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
@@ -82,11 +77,11 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
                     11.0,
                     {
                         "kernel": Matern(
-                            nu=Hyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=AnisotropicDistortion(
                                 "l2",
-                                length_scale0=Hyperparameter(1.5),
-                                length_scale1=Hyperparameter(1.5),
+                                length_scale0=ScalarHyperparameter(1.5),
+                                length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),

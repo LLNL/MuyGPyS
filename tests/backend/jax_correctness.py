@@ -116,7 +116,11 @@ from MuyGPyS._src.optimize.sigma_sq.jax import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distortion import apply_distortion, IsotropicDistortion
+from MuyGPyS.gp.distortion import (
+    apply_distortion,
+    apply_anisotropic_distortion,
+    IsotropicDistortion,
+)
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
