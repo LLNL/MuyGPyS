@@ -80,7 +80,6 @@ from MuyGPyS._src.gp.muygps.jax import (
     _muygps_fast_posterior_mean as muygps_fast_posterior_mean_j,
     _mmuygps_fast_posterior_mean as mmuygps_fast_posterior_mean_j,
     _muygps_fast_posterior_mean_precompute as muygps_fast_posterior_mean_precompute_j,
-    _get_length_scale_array as get_length_scale_array_j,
 )
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb as homoscedastic_perturb_n,
