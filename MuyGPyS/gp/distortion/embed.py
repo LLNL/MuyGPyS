@@ -49,7 +49,7 @@ def embed_with_distortion_model(
     length_scale: Union[ScalarHyperparameter, Dict[str, ScalarHyperparameter]],
 ):
     if isinstance(length_scale, ScalarHyperparameter):
-        length_scale = {"length_scale0": length_scale}
+        length_scale = {"length_scale": length_scale}
     if isinstance(distortion_fn, AnisotropicDistortion) or isinstance(
         distortion_fn, IsotropicDistortion
     ):

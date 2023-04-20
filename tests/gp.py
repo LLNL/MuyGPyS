@@ -84,13 +84,13 @@ class GPInitTest(parameterized.TestCase):
             Matern(
                 nu=ScalarHyperparameter(1.0, (1e-2, 5e4)),
                 metric=IsotropicDistortion(
-                    "l2", length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             Matern(
                 nu=ScalarHyperparameter(1.0),
                 metric=IsotropicDistortion(
-                    "l2", length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             Matern(
@@ -111,12 +111,12 @@ class GPInitTest(parameterized.TestCase):
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             RBF(
@@ -170,23 +170,23 @@ class GPInitTest(parameterized.TestCase):
             Matern(
                 nu=ScalarHyperparameter("sample", (1e-2, 5e4)),
                 metric=IsotropicDistortion(
-                    "l2", length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             Matern(
                 nu=ScalarHyperparameter("log_sample", (1e-2, 5e4)),
                 metric=IsotropicDistortion(
-                    "l2", length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "F2", length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    "F2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             Matern(

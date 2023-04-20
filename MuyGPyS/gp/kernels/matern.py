@@ -117,7 +117,7 @@ class Matern(KernelFn):
         nu: ScalarHyperparameter = ScalarHyperparameter(0.5),
         metric: Union[
             AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion("l2", length_scale0=ScalarHyperparameter(1.0)),
+        ] = IsotropicDistortion("l2", length_scale=ScalarHyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
         self.nu = nu

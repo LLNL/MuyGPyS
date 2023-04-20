@@ -359,8 +359,8 @@ class RBFTest(KernelTest):
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
-                {"length_scale0": ScalarHyperparameter(1.0, (1e-5, 1e1))},
-                {"length_scale0": ScalarHyperparameter(2.0, (1e-4, 1e3))},
+                {"length_scale": ScalarHyperparameter(1.0, (1e-5, 1e1))},
+                {"length_scale": ScalarHyperparameter(2.0, (1e-4, 1e3))},
             ]
         )
     )
@@ -407,18 +407,18 @@ class ParamTest(KernelTest):
         (
             (k_kwargs, alt_kwargs)
             for k_kwargs in [
-                {"length_scale0": ScalarHyperparameter(10.0, (1e-5, 1e1))}
+                {"length_scale": ScalarHyperparameter(10.0, (1e-5, 1e1))}
             ]
             for alt_kwargs in [
-                {"length_scale0": ScalarHyperparameter(1.0, (1e-2, 1e4))},
-                {"length_scale0": ScalarHyperparameter("sample", (1e-3, 1e2))},
-                {"length_scale0": ScalarHyperparameter(2.0)},
+                {"length_scale": ScalarHyperparameter(1.0, (1e-2, 1e4))},
+                {"length_scale": ScalarHyperparameter("sample", (1e-3, 1e2))},
+                {"length_scale": ScalarHyperparameter(2.0)},
             ]
         )
     )
     def test_rbf(self, k_kwargs, alt_kwargs):
         dist_model = IsotropicDistortion(
-            "F2", length_scale0=k_kwargs["length_scale0"]
+            "F2", length_scale=k_kwargs["length_scale"]
         )
         self._test_chassis(RBF(dist_model), k_kwargs, alt_kwargs)
 
@@ -428,19 +428,17 @@ class ParamTest(KernelTest):
             for k_kwargs in [
                 {
                     "nu": ScalarHyperparameter(0.42, (1e-4, 5e1)),
-                    "length_scale0": ScalarHyperparameter(1.0, (1e-5, 1e1)),
+                    "length_scale": ScalarHyperparameter(1.0, (1e-5, 1e1)),
                 }
             ]
             for alt_kwargs in [
                 {
                     "nu": ScalarHyperparameter(1.0, (1e-2, 5e4)),
-                    "length_scale0": ScalarHyperparameter(7.2, (2e-5, 2e1)),
+                    "length_scale": ScalarHyperparameter(7.2, (2e-5, 2e1)),
                 },
                 {
                     "nu": ScalarHyperparameter(1.0),
-                    "length_scale0": ScalarHyperparameter(
-                        "sample", (2e-5, 2e1)
-                    ),
+                    "length_scale": ScalarHyperparameter("sample", (2e-5, 2e1)),
                 },
                 {
                     "nu": ScalarHyperparameter("sample", (1e-2, 5e4)),
@@ -450,7 +448,7 @@ class ParamTest(KernelTest):
     )
     def test_matern(self, k_kwargs, alt_kwargs):
         dist_model = IsotropicDistortion(
-            "l2", length_scale0=k_kwargs["length_scale0"]
+            "l2", length_scale=k_kwargs["length_scale"]
         )
         kern_fn = Matern(metric=dist_model, nu=k_kwargs["nu"])
         self._test_chassis(kern_fn, k_kwargs, alt_kwargs)
@@ -471,23 +469,23 @@ class MaternTest(KernelTest):
             for k_kwargs in [
                 {
                     "nu": ScalarHyperparameter(0.42, "fixed"),
-                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale": ScalarHyperparameter(1.0),
                 },
                 {
                     "nu": ScalarHyperparameter(0.5),
-                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale": ScalarHyperparameter(1.0),
                 },
                 {
                     "nu": ScalarHyperparameter(1.5),
-                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale": ScalarHyperparameter(1.0),
                 },
                 {
                     "nu": ScalarHyperparameter(2.5),
-                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale": ScalarHyperparameter(1.0),
                 },
                 {
                     "nu": ScalarHyperparameter(mm.inf),
-                    "length_scale0": ScalarHyperparameter(1.0),
+                    "length_scale": ScalarHyperparameter(1.0),
                 },
             ]
             # for f in [1]
@@ -528,7 +526,7 @@ class MaternTest(KernelTest):
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
         dist_model = IsotropicDistortion(
-            "l2", length_scale0=k_kwargs["length_scale0"]
+            "l2", length_scale=k_kwargs["length_scale"]
         )
         mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
         # mtn = Matern(**k_kwargs)
@@ -875,13 +873,13 @@ class AnisotropicTest(KernelTest):
 
         dist_model_iso = IsotropicDistortion(
             metric="F2",
-            length_scale0=k_kwargs["length_scale0"],
+            length_scale=k_kwargs["length_scale0"],
         )
         rbf_iso = RBF(metric=dist_model_iso)
         self._check_params_chassis(
             rbf_iso,
             **{
-                "length_scale0": k_kwargs["length_scale0"],
+                "length_scale": k_kwargs["length_scale0"],
             },
         )
         kern_iso = _consistent_unchunk_tensor(rbf_iso(pairwise_diffs))
@@ -973,7 +971,7 @@ class AnisotropicTest(KernelTest):
 
         dist_model_iso = IsotropicDistortion(
             metric="l2",
-            length_scale0=k_kwargs["length_scale0"],
+            length_scale=k_kwargs["length_scale0"],
         )
         mtn_iso = Matern(nu=k_kwargs["nu"], metric=dist_model_iso)
 
@@ -981,7 +979,7 @@ class AnisotropicTest(KernelTest):
             mtn_iso,
             **{
                 "nu": k_kwargs["nu"],
-                "length_scale0": k_kwargs["length_scale0"],
+                "length_scale": k_kwargs["length_scale0"],
             },
         )
         kern_iso = _consistent_unchunk_tensor(mtn_iso(pairwise_diffs))
@@ -1050,13 +1048,13 @@ class AnisotropicTest(KernelTest):
 
         dist_model_iso = IsotropicDistortion(
             metric="F2",
-            length_scale0=k_kwargs["length_scale0"],
+            length_scale=k_kwargs["length_scale0"],
         )
         rbf_iso = RBF(metric=dist_model_iso)
         self._check_params_chassis(
             rbf_iso,
             **{
-                "length_scale0": k_kwargs["length_scale0"],
+                "length_scale": k_kwargs["length_scale0"],
             },
         )
         kern_iso = _consistent_unchunk_tensor(rbf_iso(pairwise_diffs))

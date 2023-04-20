@@ -56,7 +56,7 @@ class ClassifyTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
                         metric=IsotropicDistortion(
-                            "l2", length_scale0=ScalarHyperparameter(1.5)
+                            "l2", length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -124,7 +124,7 @@ class ClassifyUQTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
                         metric=IsotropicDistortion(
-                            "l2", length_scale0=ScalarHyperparameter(1.5)
+                            "l2", length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -132,7 +132,7 @@ class ClassifyUQTest(parameterized.TestCase):
                 {
                     "kernel": RBF(
                         metric=IsotropicDistortion(
-                            "l2", length_scale0=ScalarHyperparameter(1.5)
+                            "l2", length_scale=ScalarHyperparameter(1.5)
                         )
                     ),
                     "eps": HomoscedasticNoise(1e-5),
