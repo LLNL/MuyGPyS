@@ -116,20 +116,20 @@ from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 
 
-def isotropic_F2_n(diffs, **length_scale):
-    return F2_n(diffs / length_scale["length_scale"])
+def isotropic_F2_n(diffs, length_scale):
+    return F2_n(diffs / length_scale)
 
 
-def isotropic_l2_n(diffs, **length_scale):
-    return l2_n(diffs / length_scale["length_scale"])
+def isotropic_l2_n(diffs, length_scale):
+    return l2_n(diffs / length_scale)
 
 
-def isotropic_F2_m(diffs, **length_scale):
-    return F2_m(diffs / length_scale["length_scale"])
+def isotropic_F2_m(diffs, length_scale):
+    return F2_m(diffs / length_scale)
 
 
-def isotropic_l2_m(diffs, **length_scale):
-    return l2_m(diffs / length_scale["length_scale"])
+def isotropic_l2_m(diffs, length_scale):
+    return l2_m(diffs / length_scale)
 
 
 def anisotropic_F2_n(diffs, **length_scales):
@@ -1203,7 +1203,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_kernel_fn_anisotropic_n(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_gen_isotropic_fn_n,
+            matern_gen_anisotropic_fn_n,
             AnisotropicDistortion(
                 "l2", length_scale0=ScalarHyperparameter(self.length_scale)
             ),
@@ -1222,7 +1222,7 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_kernel_fn_anisotropic_m(self):
         return self.muygps.kernel._get_opt_fn(
-            matern_gen_isotropic_fn_m,
+            matern_gen_anisotropic_fn_m,
             AnisotropicDistortion(
                 "l2", length_scale0=ScalarHyperparameter(self.length_scale)
             ),

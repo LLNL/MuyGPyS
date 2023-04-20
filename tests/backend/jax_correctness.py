@@ -130,20 +130,20 @@ from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
 
 
-def isotropic_F2_n(diffs, **length_scale):
-    return F2_n(diffs / length_scale["length_scale"])
+def isotropic_F2_n(diffs, length_scale):
+    return F2_n(diffs / length_scale)
 
 
-def isotropic_l2_n(diffs, **length_scale):
-    return l2_n(diffs / length_scale["length_scale"])
+def isotropic_l2_n(diffs, length_scale):
+    return l2_n(diffs / length_scale)
 
 
-def isotropic_F2_j(diffs, **length_scale):
-    return F2_j(diffs / length_scale["length_scale"])
+def isotropic_F2_j(diffs, length_scale):
+    return F2_j(diffs / length_scale)
 
 
-def isotropic_l2_j(diffs, **length_scale):
-    return l2_j(diffs / length_scale["length_scale"])
+def isotropic_l2_j(diffs, length_scale):
+    return l2_j(diffs / length_scale)
 
 
 def anisotropic_F2_n(diffs, **length_scales):

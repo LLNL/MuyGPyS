@@ -9,15 +9,16 @@ from typing import Callable, Dict, List, Tuple
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS.gp.hyperparameter import (
+    ScalarHyperparameter,
     append_scalar_optim_params_list,
     apply_scalar_hyperparameter,
 )
 
 
 class IsotropicDistortion:
-    def __init__(self, metric: str, **length_scale):
+    def __init__(self, metric: str, length_scale: ScalarHyperparameter):
         self.metric = metric
-        self.length_scale = length_scale["length_scale"]
+        self.length_scale = length_scale
         if metric == "l2":
             self._dist_fn = _l2
         elif metric == "F2":
@@ -25,8 +26,7 @@ class IsotropicDistortion:
         else:
             raise ValueError(f"Metric {metric} is not supported!")
 
-    def __call__(self, diffs: mm.ndarray, **length_scale) -> mm.ndarray:
-        length_scale = length_scale["length_scale"]
+    def __call__(self, diffs: mm.ndarray, length_scale: float) -> mm.ndarray:
         return self._dist_fn(diffs / length_scale)
 
     def get_optim_params(
