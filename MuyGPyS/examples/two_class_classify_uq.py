@@ -404,7 +404,7 @@ def classify_two_class_uq(
             variances[nonconstant_mask, :],
         ) = regress_from_indices(
             surrogate,
-            np.where(nonconstant_mask == True)[0],
+            np.where(nonconstant_mask)[0],
             test_nn_indices[nonconstant_mask, :],
             test_features,
             train_features,

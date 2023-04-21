@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Callable, Tuple, Type
-
 from MuyGPyS import config
 
 

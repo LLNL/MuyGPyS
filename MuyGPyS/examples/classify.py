@@ -20,7 +20,7 @@ above and :func:`~MuyGPyS.examples.classify.classify_any`.
 import numpy as np
 
 from time import perf_counter
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 from MuyGPyS.examples.from_indices import posterior_mean_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
@@ -600,8 +600,7 @@ def classify_any(
     timing:
         Timing for the subroutines of this function.
     """
-    test_count = test_features.shape[0]
-    class_count = train_labels.shape[1]
+    _, class_count = train_labels.shape
 
     # detect one hot encoding, e.g. {0,1}, {-0.1, 0.9}, {-1,1}, ...
     one_hot_false = float(np.min(train_labels[0, :]))
@@ -623,7 +622,7 @@ def classify_any(
     time_agree = perf_counter()
 
     if np.sum(nonconstant_mask) > 0:
-        nonconstant_indices = np.where(nonconstant_mask == True)[0]
+        nonconstant_indices = np.where(nonconstant_mask)[0]
         nonconstant_nn_indices = test_nn_indices[nonconstant_mask, :]
         predictions[nonconstant_mask] = posterior_mean_from_indices(
             surrogate,

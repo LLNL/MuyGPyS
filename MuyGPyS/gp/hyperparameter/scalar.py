@@ -16,7 +16,7 @@ between the upper and lower bounds if specified).
 
 from collections.abc import Sequence
 from numbers import Number
-from typing import Callable, cast, List, Optional, Tuple, Type, Union
+from typing import Callable, cast, List, Tuple, Type, Union
 
 from MuyGPyS import config
 
@@ -117,6 +117,31 @@ class ScalarHyperparameter:
         self._bounds = rhs._bounds
         self._fixed = rhs._fixed
 
+    def _sample_val(self, val: str) -> float:
+        if self.fixed() is True:
+            if isinstance(val, str):
+                raise ValueError(
+                    f"Fixed bounds do not support string value ({val}) prompts."
+                )
+        if val == "sample":
+            newval = float(
+                np.random.uniform(low=self._bounds[0], high=self._bounds[1])
+            )
+        elif val == "log_sample":
+            newval = float(
+                np.exp(
+                    np.random.uniform(
+                        low=np.log(self._bounds[0]),
+                        high=np.log(self._bounds[1]),
+                    )
+                )
+            )
+        else:
+            raise ValueError(f"Unsupported string hyperparameter value {val}.")
+        if _is_mpi_mode() is True:
+            newval = config.mpi_state.comm_world.bcast(newval, root=0)
+        return newval
+
     def _set_val(self, val: Union[str, float]) -> None:
         """
         Set hyperparameter value; sample if appropriate.
@@ -143,32 +168,7 @@ class ScalarHyperparameter:
                 produce an error.
         """
         if isinstance(val, str):
-            if self.fixed() is True:
-                if isinstance(val, str):
-                    raise ValueError(
-                        f"Fixed bounds do not support string value ({val}) prompts."
-                    )
-            if val == "sample":
-                val = float(
-                    np.random.uniform(low=self._bounds[0], high=self._bounds[1])
-                )
-                if _is_mpi_mode() is True:
-                    val = config.mpi_state.comm_world.bcast(val, root=0)
-            elif val == "log_sample":
-                val = float(
-                    np.exp(
-                        np.random.uniform(
-                            low=np.log(self._bounds[0]),
-                            high=np.log(self._bounds[1]),
-                        )
-                    )
-                )
-                if _is_mpi_mode() is True:
-                    val = config.mpi_state.comm_world.bcast(val, root=0)
-            else:
-                raise ValueError(
-                    f"Unsupported string hyperparameter value {val}."
-                )
+            val = self._sample_val(val)
         if isinstance(val, Sequence) or hasattr(val, "__len__"):
             raise ValueError(
                 f"Nonscalar hyperparameter value {val} is not allowed."
@@ -189,12 +189,12 @@ class ScalarHyperparameter:
                     [False, True],
                 )
             )
-            if any_below == True:
+            if any_below:
                 raise ValueError(
                     f"Hyperparameter value {val} is lesser than the "
                     f"optimization lower bound {self._bounds[0]}"
                 )
-            if any_above == True:
+            if any_above:
                 raise ValueError(
                     f"Hyperparameter value {val} is greater than the "
                     f"optimization upper bound {self._bounds[1]}"

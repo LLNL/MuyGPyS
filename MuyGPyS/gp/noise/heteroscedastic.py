@@ -37,7 +37,7 @@ class HeteroscedasticNoise(TensorHyperparameter):
         super(HeteroscedasticNoise, self).__init__(val)
         if mm.sum(self._val.flatten() < 0) > 0:
             raise ValueError(
-                f"Heteroscedastic noise values are not strictly non-negative!"
+                "Heteroscedastic noise values are not strictly non-negative!"
             )
 
     def fixed(self) -> bool:

@@ -87,7 +87,7 @@ class KernelFn:
 
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
         raise NotImplementedError(
-            f"__call__ is not implemented for base KernelFn"
+            "__call__ is not implemented for base KernelFn"
         )
 
     def get_optim_params(

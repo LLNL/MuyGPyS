@@ -8,22 +8,13 @@ Multivariate MuyGPs implementation
 """
 from copy import deepcopy
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _make_fast_predict_tensors
-from MuyGPyS._src.gp.muygps import (
-    _muygps_fast_posterior_mean_precompute,
-    _mmuygps_fast_posterior_mean,
-)
-from MuyGPyS._src.gp.noise import (
-    _homoscedastic_perturb,
-    _heteroscedastic_perturb,
-)
-from MuyGPyS.gp.sigma_sq import SigmaSq
+from MuyGPyS._src.gp.muygps import _mmuygps_fast_posterior_mean
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS.gp.mean import PosteriorMean
+from MuyGPyS.gp.noise import HeteroscedasticNoise
+from MuyGPyS.gp.noise.perturbation import select_perturb_fn
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
-from MuyGPyS.gp.noise.perturbation import select_perturb_fn
 
 
 class MultivariateMuyGPS:
@@ -292,12 +283,12 @@ class MultivariateMuyGPS:
 
         .. math::
             \\widehat{Y} (\\mathbf{z} \\mid X) =
-                K_\\theta (\\mathbf{z}, X_{N^*}) \mathbf{C}_{N^*}.
+                K_\\theta (\\mathbf{z}, X_{N^*}) \\mathbf{C}_{N^*}.
 
         Here :math:`X_{N^*}` is the union of the nearest neighbor of the queried
         test point :math:`\\mathbf{z}` and the nearest neighbors of that
         training point, :math:`K_\\theta` is the kernel functor specified by
-        `self.kernel`, and :math:`\mathbf{C}_{N^*}` is the matrix of
+        `self.kernel`, and :math:`\\mathbf{C}_{N^*}` is the matrix of
         precomputed coefficients given in Equation (8) of [dunton2022fast]_.
 
         Args:

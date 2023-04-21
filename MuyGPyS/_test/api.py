@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import cast, Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from absl.testing import parameterized
 
@@ -13,14 +13,13 @@ from MuyGPyS._src.mpi_utils import (
     _consistent_unchunk_tensor,
     _consistent_reduce_scalar,
 )
-from MuyGPyS._test.utils import _check_ndarray, _precision_assert
+from MuyGPyS._test.utils import _check_ndarray
 from MuyGPyS.examples.classify import do_classify
 from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq
 from MuyGPyS.examples.regress import do_regress
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.loss import mse_fn
 
 

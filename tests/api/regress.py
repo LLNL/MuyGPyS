@@ -11,14 +11,9 @@ import pickle as pkl
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
-if config.state.backend == "torch":
-    ValueError(f"Conventional optimization chassis does not support torch!")
 
 import MuyGPyS._src.math.numpy as np
+from MuyGPyS import config
 from MuyGPyS._test.api import RegressionAPITest
 from MuyGPyS._test.utils import (
     _balanced_subsample,
@@ -31,6 +26,10 @@ from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
+if config.state.backend == "torch":
+    ValueError("MuyGPyS.examples.regress does not support torch!")
+if config.state.backend == "mpi":
+    ValueError("MuyGPyS.examples.regress does not support mpi!")
 
 hardpath = "../data/"
 

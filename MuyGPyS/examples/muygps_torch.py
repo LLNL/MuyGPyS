@@ -6,33 +6,20 @@
 """
 Resources and high-level API for a deep kernel learning with MuyGPs.
 
-:func:`~MuyGPyS.examples.muygps_torch.train_deep_kernel_muygps` is a high-level 
+:func:`~MuyGPyS.examples.muygps_torch.train_deep_kernel_muygps` is a high-level
 API for training deep kernel MuyGPs models for regression.
 
-:func:`~MuyGPyS.examples.muygps_torch.predict_model` is a high-level API for 
-generating predictions at test locations given a trained model. 
+:func:`~MuyGPyS.examples.muygps_torch.predict_model` is a high-level API for
+generating predictions at test locations given a trained model.
 """
 
 from typing import Dict
 
-from MuyGPyS import config
-
-if config.state.backend != "torch":
-    import warnings
-
-    if config.state.torch_enabled == True:
-        config.update("muygpys_backend", "torch")
-        warnings.warn(
-            "Switching to torch backend in order to run torch-only code"
-        )
-    else:
-        warnings.warn(
-            f"Bad attempt to execute torch-only code with torch disabled. "
-            f"Allowing code to fail."
-        )
+from torch.optim.lr_scheduler import ExponentialLR
 
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
+from MuyGPyS import config
 from MuyGPyS._src.gp.tensors.torch import (
     _pairwise_tensor,
     _crosswise_tensor,
@@ -47,7 +34,11 @@ from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.torch.muygps_layer import kernel_func
 
-from torch.optim.lr_scheduler import ExponentialLR
+if config.state.backend != "torch":
+    raise ValueError(
+        f"torch-only code cannot be run in {config.state.backend} mode"
+    )
+
 
 mse_loss = torch.nn.MSELoss()
 l1_loss = torch.nn.L1Loss()
@@ -96,7 +87,7 @@ def predict_single_model(
         of the diagonal elements of the posterior variance.
     """
     if model.embedding is None:
-        raise NotImplementedError(f"MuyGPs PyTorch model requires embedding.")
+        raise NotImplementedError("MuyGPs PyTorch model requires embedding.")
     train_features_embedded = model.embedding(train_features).detach().numpy()
     test_features_embedded = model.embedding(test_features).detach().numpy()
 
@@ -192,7 +183,7 @@ def predict_multiple_model(
         `(batch_count, response_count)` for a multidimensional response.
     """
     if model.embedding is None:
-        raise NotImplementedError(f"MuyGPs PyTorch model requires embedding.")
+        raise NotImplementedError("MuyGPs PyTorch model requires embedding.")
 
     train_features_embedded = model.embedding(train_features).detach().numpy()
     test_features_embedded = model.embedding(test_features).detach().numpy()
@@ -328,7 +319,7 @@ def predict_model(
         `(batch_count, response_count)` for a multidimensional response.
     """
     if model.GP_layer is None:
-        raise NotImplementedError(f"MuyGPs PyTorch model requires GP_layer.")
+        raise NotImplementedError("MuyGPs PyTorch model requires GP_layer.")
     if hasattr(model.GP_layer, "num_models"):
         return predict_multiple_model(
             model,
@@ -450,7 +441,7 @@ def train_deep_kernel_muygps(
         A trained deep kernel MuyGPs model.
     """
     if model.embedding is None:
-        raise NotImplementedError(f"MuyGPs PyTorch model requires embedding.")
+        raise NotImplementedError("MuyGPs PyTorch model requires embedding.")
     optimizer = optimizer_method(
         [
             {"params": model.parameters()},
@@ -493,7 +484,7 @@ def train_deep_kernel_muygps(
         scheduler.step()
 
         if np.mod(i, update_frequency) == 0:
-            if verbose == True:
+            if verbose is True:
                 print(
                     "Iter %d/%d - Loss: %.10f"
                     % (i + 1, training_iterations, loss.sum().item())
@@ -593,7 +584,7 @@ def update_nearest_neighbors(
         A deep kernel MuyGPs model with updated nearest neighbors.
     """
     if model.embedding is None:
-        raise NotImplementedError(f"MuyGPs PyTorch model requires embedding.")
+        raise NotImplementedError("MuyGPs PyTorch model requires embedding.")
     batch_features = train_features[batch_indices, :]
     nbrs_lookup = NN_Wrapper(
         model.embedding(train_features).detach().numpy(),

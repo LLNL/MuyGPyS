@@ -77,7 +77,7 @@ def _update_jax_thread_local(val):
     config.state.jax_enabled = val
 
 
-#### JAX and GPU states
+# JAX and GPU states
 
 enable_jax = config.define_bool_state(
     name="muygpys_jax_enabled",
@@ -117,7 +117,7 @@ except Exception:
     config.update("muygpys_gpu_enabled", False)
 
 
-#### hnswlib states
+# hnswlib states
 
 
 def _update_hnswlib_global(val):
@@ -146,7 +146,7 @@ except Exception:
     config.update("muygpys_hnswlib_enabled", False)
 
 
-#### MPI states
+# MPI states
 
 
 def _update_mpi_global(val):
@@ -174,12 +174,12 @@ try:
     config.mpi_state.set_comm(Intracomm(MPI.COMM_WORLD))
 
     config.update("muygpys_mpi_enabled", True)
-except Exception as e:
+except Exception:
     MPI = None  # type: ignore
     config.update("muygpys_mpi_enabled", False)
 
 
-#### torch states
+# torch states
 
 
 def _update_torch_global(val):
@@ -207,7 +207,7 @@ try:
 except Exception:
     config.update("muygpys_torch_enabled", False)
 
-#### Backend state
+# Backend state
 
 
 def _update_backend_global(val):
@@ -229,11 +229,11 @@ backend = config.define_enum_state(
 
 if (
     config.state.backend == "jax"
-    and config.state.jax_enabled == False
+    and config.state.jax_enabled is False
     or config.state.backend == "torch"
-    and config.state.torch_enabled == False
+    and config.state.torch_enabled is False
     or config.state.backend == "mpi"
-    and config.state.mpi_enabled == False
+    and config.state.mpi_enabled is False
 ):
     be = config.state.backend
     raise ValueError(

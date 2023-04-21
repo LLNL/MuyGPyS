@@ -12,12 +12,6 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
-if config.state.backend in ["mpi", "torch"]:
-    raise ValueError(f"This test only supports numpy and jax backends!")
-
 from MuyGPyS._test.api import FastPosteriorMeanAPITest
 from MuyGPyS._test.utils import (
     _balanced_subsample,
@@ -28,6 +22,9 @@ from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
+
+if config.state.backend in ["mpi", "torch"]:
+    raise ValueError("This test only supports numpy and jax backends!")
 
 
 hardpath = "../data/"

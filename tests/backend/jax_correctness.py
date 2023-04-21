@@ -3,44 +3,20 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS import config, jax_config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
-if config.state.jax_enabled is False:
-    raise ValueError(f"Bad attempt to run jax-only code with jax disabled.")
-if config.state.backend == "mpi":
-    raise ValueError(f"Bad attempt to run non-MPI code in MPI mode.")
-elif config.state.backend != "numpy":
-    import warnings
-
-    warnings.warn(
-        f"Backend correctness codes assume numpy mode, not "
-        f"{config.state.backend}. "
-        f"Force-switching MuyGPyS into numpy backend."
-    )
-    config.update("muygpys_backend", "numpy")
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
 import MuyGPyS._src.math.jax as jnp
 import MuyGPyS._src.math.numpy as np
-from MuyGPyS._test.utils import (
-    _check_ndarray,
-    _exact_nn_kwarg_options,
-    _make_gaussian_matrix,
-    _make_gaussian_data,
-    _make_heteroscedastic_test_nugget,
-)
+from MuyGPyS import config, jax_config
 from MuyGPyS._src.gp.tensors.numpy import (
-    _pairwise_tensor as pairwise_tensor_n,
     _crosswise_tensor as crosswise_tensor_n,
-    _make_train_tensors as make_train_tensors_n,
-    _make_fast_predict_tensors as make_fast_predict_tensors_n,
     _fast_nn_update as fast_nn_update_n,
     _F2 as F2_n,
     _l2 as l2_n,
+    _pairwise_tensor as pairwise_tensor_n,
+    _make_train_tensors as make_train_tensors_n,
+    _make_fast_predict_tensors as make_fast_predict_tensors_n,
 )
 from MuyGPyS._src.gp.tensors.jax import (
     _pairwise_tensor as pairwise_tensor_j,
@@ -113,6 +89,13 @@ from MuyGPyS._src.optimize.sigma_sq.numpy import (
 from MuyGPyS._src.optimize.sigma_sq.jax import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_j,
 )
+from MuyGPyS._test.utils import (
+    _check_ndarray,
+    _exact_nn_kwarg_options,
+    _make_gaussian_matrix,
+    _make_gaussian_data,
+    _make_heteroscedastic_test_nugget,
+)
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import (
     apply_distortion,
@@ -121,13 +104,26 @@ from MuyGPyS.gp.distortion import (
 )
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
+from MuyGPyS.gp.noise import (
+    HeteroscedasticNoise,
+    HomoscedasticNoise,
+    noise_perturb,
+)
 from MuyGPyS.gp.sigma_sq import sigma_sq_scale
-from MuyGPyS.gp.noise import noise_perturb
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
+
+if config.state.jax_enabled is False:
+    raise ValueError("Bad attempt to run jax-only code with jax diabled.")
+if config.state.backend == "mpi":
+    raise ValueError("Bad attempt to run non-MPI code in MPI mode.")
+if config.state.backend != "numpy":
+    raise ValueError(
+        f"torch_correctness.py must be run in numpy mode, not "
+        f"{config.state.backend} mode."
+    )
 
 
 def isotropic_F2_n(diffs, length_scale):
@@ -1739,7 +1735,7 @@ class BayesOptimTest(OptimTestCase):
         if config.state.ftype == "32":
             import warnings
 
-            warnings.warn(f"Bayesopt does not support JAX in 32bit mode.")
+            warnings.warn("Bayesopt does not support JAX in 32bit mode.")
             return
         obj_fn_n = self._get_obj_fn_n()
         obj_fn_j = self._get_obj_fn_j()

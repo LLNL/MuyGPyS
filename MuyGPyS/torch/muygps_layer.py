@@ -38,9 +38,6 @@ from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
 
 
-from MuyGPyS.gp.sigma_sq import SigmaSq
-
-
 class MuyGPs_layer(nn.Module):
     """
     MuyGPs model written as a custom PyTorch layer using nn.Module.

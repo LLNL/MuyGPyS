@@ -6,15 +6,9 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
-if config.state.backend == "torch":
-    raise ValueError(f"optimize.py does not support torch backend at this time")
-
 import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
+from MuyGPyS import config
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _check_ndarray,
@@ -23,10 +17,13 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import (
+    full_filtered_batch,
     sample_batch,
     sample_balanced_batch,
-    full_filtered_batch,
 )
+
+if config.state.backend == "torch":
+    raise ValueError("batch.py does not support torch backend at this time")
 
 
 class BatchTest(parameterized.TestCase):

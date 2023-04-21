@@ -28,12 +28,11 @@ JAX dependency is not included.
 # pytype: skip-file
 
 import contextlib
-import functools
 import itertools
 import os
 import sys
 import threading
-from typing import Any, List, Callable, NamedTuple, Iterator, Optional
+from typing import Any, List, Callable, NamedTuple, Optional
 import warnings
 
 # from jax._src import lib

@@ -6,15 +6,28 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS import config
-
-config.parse_flags_with_absl()  # Affords option setting from CLI
-
 import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
+from MuyGPyS import config
 from MuyGPyS._src.gp.noise import (
     _homoscedastic_perturb,
     _heteroscedastic_perturb,
+)
+from MuyGPyS._src.mpi_utils import (
+    _consistent_unchunk_tensor,
+    _warn0,
+)
+
+# from MuyGPyS._test.gp import BenchmarkGP
+from MuyGPyS._test.utils import (
+    _basic_nn_kwarg_options,
+    _consistent_assert,
+    _check_ndarray,
+    _get_sigma_sq_series,
+    _make_gaussian_dict,
+    _make_gaussian_data,
+    _precision_assert,
+    _make_heteroscedastic_test_nugget,
 )
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
@@ -26,26 +39,9 @@ from MuyGPyS.gp.hyperparameter.experimental import (
 )
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
-from MuyGPyS.gp.tensors import (
-    make_train_tensors,
-    make_predict_tensors,
-)
+from MuyGPyS.gp.tensors import make_train_tensors, make_predict_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
-from MuyGPyS._test.utils import (
-    _basic_nn_kwarg_options,
-    _consistent_assert,
-    _check_ndarray,
-    _get_sigma_sq_series,
-    _make_gaussian_dict,
-    _make_gaussian_data,
-    _precision_assert,
-    _make_heteroscedastic_test_nugget,
-)
-from MuyGPyS._src.mpi_utils import (
-    _consistent_unchunk_tensor,
-    _warn0,
-)
 
 
 class GPInitTest(parameterized.TestCase):
@@ -341,8 +337,8 @@ class GPTensorShapesTest(GPTestCase):
         # # Check that kernels are positive semidefinite
         if config.state.low_precision() is True:
             _warn0(
-                f"numpy/jax/torch eigensolves are unstable using float32, "
-                f"skipping tests"
+                "numpy/jax/torch eigensolves are unstable using float32, "
+                "skipping tests"
             )
             return
         for i in range(K.shape[0]):
@@ -502,7 +498,7 @@ class GPSolveTest(GPTestCase):
     ):
         if config.state.low_precision() is True and feature_count < 10:
             _warn0(
-                f"test_tensor_solve() is unstable in low precision mode when "
+                "test_tensor_solve() is unstable in low precision mode when "
                 "distances are small. Skipping."
             )
             return
