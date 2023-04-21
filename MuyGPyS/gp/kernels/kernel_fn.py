@@ -41,6 +41,7 @@ from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.gp.distortion import (
+    AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
 )
@@ -60,7 +61,9 @@ class KernelFn:
 
     def __init__(
         self,
-        metric: Union[IsotropicDistortion, NullDistortion],
+        metric: Union[
+            AnisotropicDistortion, IsotropicDistortion, NullDistortion
+        ],
     ):
         """
         Initialize dict holding hyperparameters.
@@ -106,7 +109,10 @@ class KernelFn:
 
     @staticmethod
     def _get_opt_fn(
-        kernel_fn, distortion_fn: Union[IsotropicDistortion, NullDistortion]
+        kernel_fn,
+        distortion_fn: Union[
+            AnisotropicDistortion, IsotropicDistortion, NullDistortion
+        ],
     ) -> Callable:
         return distortion_fn.get_opt_fn(kernel_fn)
 

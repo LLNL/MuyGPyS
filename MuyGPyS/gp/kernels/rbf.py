@@ -39,6 +39,7 @@ import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import _rbf_fn
 from MuyGPyS.gp.distortion import (
     embed_with_distortion_model,
+    AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
 )
@@ -73,7 +74,7 @@ class RBF(KernelFn):
     def __init__(
         self,
         metric: Union[
-            IsotropicDistortion, NullDistortion
+            AnisotropicDistortion, IsotropicDistortion, NullDistortion
         ] = IsotropicDistortion("F2", length_scale=ScalarHyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
@@ -81,7 +82,7 @@ class RBF(KernelFn):
         self._fn = embed_with_distortion_model(
             self._kernel_fn,
             self._distortion_fn,
-            self._distortion_fn.length_scale(),
+            self._distortion_fn.length_scale,
         )
 
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:

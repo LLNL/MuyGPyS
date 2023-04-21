@@ -224,7 +224,7 @@ class MuyGPS:
         kernel functor specified by `self.kernel`, :math:`\\varepsilon I_k` is a
         diagonal homoscedastic noise matrix whose diagonal is the value of the
         `self.eps` hyperparameter, and :math:`Y(X_{N_i})` is the
-        `(nn_count, respones_count)` matrix of responses of the nearest
+        `(nn_count, response_count)` matrix of responses of the nearest
         neighbors given by the second two dimensions of the `batch_nn_targets`
         argument.
 
