@@ -9,9 +9,9 @@ from typing import Callable, Dict, List, Tuple
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS.gp.hyperparameter import (
+    ScalarHyperparameter,
     append_scalar_optim_params_list,
     apply_scalar_hyperparameter,
-    ScalarHyperparameter,
 )
 
 

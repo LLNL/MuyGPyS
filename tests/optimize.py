@@ -23,6 +23,7 @@ from MuyGPyS._test.utils import (
     _sq_rel_err,
 )
 from MuyGPyS.gp import MuyGPS
+
 from MuyGPyS.gp.distortion import IsotropicDistortion, NullDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern

@@ -8,7 +8,8 @@ gp
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
+   
+   gp/distortion
    gp/tensors
    gp/kernels
    gp/MuyGPS
