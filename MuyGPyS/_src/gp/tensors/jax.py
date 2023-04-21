@@ -116,12 +116,7 @@ def _pairwise_tensor(
     nn_indices: jnp.ndarray,
 ) -> jnp.ndarray:
     points = data[nn_indices]
-    return _diffs(points)
-
-
-@jit
-def _diffs(points: jnp.ndarray) -> jnp.ndarray:
-    return points[:, :, None, :] - points[:, None, :, :]
+    return _pairwise_diffs(points)
 
 
 @jit
