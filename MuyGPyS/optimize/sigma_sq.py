@@ -11,7 +11,7 @@ Currently only supports an analytic approximation, but will support other
 methods in the future.
 """
 
-from copy import deepcopy, copy
+from copy import deepcopy
 from typing import Callable, Optional
 
 import MuyGPyS._src.math as mm

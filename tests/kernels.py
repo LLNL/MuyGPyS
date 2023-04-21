@@ -598,7 +598,7 @@ class AnisotropicTest(KernelTest):
         with self.assertRaisesRegex(
             ValueError, "Number of lengthscale parameters "
         ):
-            kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
+            _ = _consistent_unchunk_tensor(mtn(pairwise_diffs))
 
     @parameterized.parameters(
         (
