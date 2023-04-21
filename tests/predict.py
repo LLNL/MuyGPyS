@@ -24,7 +24,7 @@ from MuyGPyS.examples.two_class_classify_uq import (
     do_uq,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -57,6 +57,15 @@ class ClassifyTest(parameterized.TestCase):
                         nu=ScalarHyperparameter(0.38),
                         metric=IsotropicDistortion(
                             "l2", length_scale=ScalarHyperparameter(1.5)
+                        ),
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
+                },
+                {
+                    "kernel": Matern(
+                        nu=ScalarHyperparameter(0.38),
+                        metric=AnisotropicDistortion(
+                            "l2", length_scale0=ScalarHyperparameter(1.5)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -124,6 +133,23 @@ class ClassifyUQTest(parameterized.TestCase):
                     "kernel": RBF(
                         metric=IsotropicDistortion(
                             "l2", length_scale=ScalarHyperparameter(1.5)
+                        )
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
+                },
+                {
+                    "kernel": Matern(
+                        nu=ScalarHyperparameter(0.38),
+                        metric=AnisotropicDistortion(
+                            "l2", length_scale0=ScalarHyperparameter(1.5)
+                        ),
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
+                },
+                {
+                    "kernel": RBF(
+                        metric=AnisotropicDistortion(
+                            "l2", length_scale0=ScalarHyperparameter(1.5)
                         )
                     ),
                     "eps": HomoscedasticNoise(1e-5),

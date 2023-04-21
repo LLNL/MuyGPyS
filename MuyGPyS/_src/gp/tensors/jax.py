@@ -101,6 +101,16 @@ def _crosswise_diffs(
 
 
 @jit
+def _pairwise_diffs(points: jnp.ndarray) -> jnp.ndarray:
+    if len(points.shape) == 3:
+        return points[:, :, None, :] - points[:, None, :, :]
+    elif len(points.shape) == 2:
+        return points[:, None, :] - points[None, :, :]
+    else:
+        raise ValueError(f"points shape {points.shape} is not supported.")
+
+
+@jit
 def _pairwise_tensor(
     data: jnp.ndarray,
     nn_indices: jnp.ndarray,

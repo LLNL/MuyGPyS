@@ -3,6 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .embed import apply_distortion, embed_with_distortion_model
+from .embed import (
+    apply_distortion,
+    embed_with_distortion_model,
+)
 from .isotropic import IsotropicDistortion
 from .null import NullDistortion
+from .anisotropic import AnisotropicDistortion
