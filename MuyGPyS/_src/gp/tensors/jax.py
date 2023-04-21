@@ -120,11 +120,6 @@ def _pairwise_tensor(
 
 
 @jit
-def _pairwise_diffs(points: jnp.ndarray) -> jnp.ndarray:
-    return points[:, :, None, :] - points[:, None, :, :]
-
-
-@jit
 def _F2(diffs: jnp.ndarray) -> jnp.ndarray:
     return jnp.sum(diffs**2, axis=-1)
 
