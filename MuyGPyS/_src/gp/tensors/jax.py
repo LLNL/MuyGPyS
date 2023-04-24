@@ -90,18 +90,18 @@ def _crosswise_tensor(
 ) -> jnp.ndarray:
     locations = data[data_indices]
     points = nn_data[nn_indices]
-    return _crosswise_diffs(locations, points)
+    return _crosswise_differences(locations, points)
 
 
 @jit
-def _crosswise_diffs(
+def _crosswise_differences(
     locations: jnp.ndarray, points: jnp.ndarray
 ) -> jnp.ndarray:
     return locations[:, None, :] - points
 
 
 @jit
-def _pairwise_diffs(points: jnp.ndarray) -> jnp.ndarray:
+def _pairwise_differences(points: jnp.ndarray) -> jnp.ndarray:
     if len(points.shape) == 3:
         return points[:, :, None, :] - points[:, None, :, :]
     elif len(points.shape) == 2:
@@ -116,7 +116,7 @@ def _pairwise_tensor(
     nn_indices: jnp.ndarray,
 ) -> jnp.ndarray:
     points = data[nn_indices]
-    return _pairwise_diffs(points)
+    return _pairwise_differences(points)
 
 
 @jit
