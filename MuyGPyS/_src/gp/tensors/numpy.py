@@ -72,6 +72,13 @@ def _make_train_tensors(
     return crosswise_diffs, pairwise_diffs, batch_targets, batch_nn_targets
 
 
+def _make_batch_tensor(
+    features: np.ndarray,
+    batch_indices: np.ndarray,
+) -> np.ndarray:
+    return features[batch_indices, :]
+
+
 def _crosswise_tensor(
     data: np.ndarray,
     nn_data: np.ndarray,
