@@ -43,14 +43,6 @@ JAX_CPU_REQUIRES = [
     "jax[cpu]>=0.2.26",
 ]
 
-JAX_CUDA11_CUDNN805_REQUIRES = [
-    "jax[cuda11_cudnn805]",
-]
-
-JAX_CUDA11_CUDNN82_REQUIRES = [
-    "jax[cuda11_cudnn82]",
-]
-
 MPI_REQUIRES = [
     "mpi4py==3.1.3",
 ]
@@ -68,9 +60,6 @@ setup(
         "tests": TEST_REQUIRES,
         "hnswlib": HNSWLIB_REQUIRES,
         "jax_cpu": JAX_CPU_REQUIRES + JAX_REQUIRES,
-        "jax_cuda": JAX_CUDA11_CUDNN805_REQUIRES + JAX_REQUIRES,
-        "jax_cuda11_cudnn805": JAX_CUDA11_CUDNN805_REQUIRES + JAX_REQUIRES,
-        "jax_cuda11_cudnn82": JAX_CUDA11_CUDNN82_REQUIRES + JAX_REQUIRES,
         "mpi": MPI_REQUIRES,
         "torch": TORCH_REQUIRES,
     },
