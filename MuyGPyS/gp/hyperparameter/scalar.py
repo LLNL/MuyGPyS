@@ -18,10 +18,9 @@ from collections.abc import Sequence
 from numbers import Number
 from typing import Callable, cast, List, Tuple, Type, Union
 
-from MuyGPyS import config
-
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math as mm
+from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 from MuyGPyS.gp.hyperparameter.tensor import TensorHyperparameter
 
@@ -81,6 +80,10 @@ class ScalarHyperparameter:
         """
         self._set_bounds(bounds)
         self._set_val(val)
+
+    def __str__(self, **kwargs):
+        bstring = "fixed" if self._fixed is True else self._bounds
+        return f"{type(self).__name__}({self._val}, {bstring})"
 
     def _set(self, rhs) -> None:
         """

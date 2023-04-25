@@ -57,13 +57,13 @@ class GPInitTest(parameterized.TestCase):
     )
     def test_bounds_defaults_init(self, kernel, eps, gp_type):
         muygps = gp_type(kernel=kernel, eps=eps)
-        for name, param in kernel.hyperparameters.items():
+        for name, param in kernel._hyperparameters.items():
             self.assertEqual(
                 param(),
-                muygps.kernel.hyperparameters[name](),
+                muygps.kernel._hyperparameters[name](),
             )
             self.assertTrue(
-                muygps.kernel.hyperparameters[name].fixed(),
+                muygps.kernel._hyperparameters[name].fixed(),
             )
         self.assertEqual(eps(), muygps.eps())
         self.assertTrue(muygps.eps.fixed())
@@ -134,18 +134,18 @@ class GPInitTest(parameterized.TestCase):
     )
     def test_full_init(self, kernel, eps, gp_type):
         muygps = gp_type(kernel=kernel, eps=eps)
-        for name, param in kernel.hyperparameters.items():
+        for name, param in kernel._hyperparameters.items():
             self.assertEqual(
                 param(),
-                muygps.kernel.hyperparameters[name](),
+                muygps.kernel._hyperparameters[name](),
             )
             if param.fixed() is True:
-                self.assertTrue(muygps.kernel.hyperparameters[name].fixed())
+                self.assertTrue(muygps.kernel._hyperparameters[name].fixed())
             else:
-                self.assertFalse(muygps.kernel.hyperparameters[name].fixed())
+                self.assertFalse(muygps.kernel._hyperparameters[name].fixed())
                 self.assertEqual(
                     param.get_bounds(),
-                    muygps.kernel.hyperparameters[name].get_bounds(),
+                    muygps.kernel._hyperparameters[name].get_bounds(),
                 )
         self.assertEqual(eps(), muygps.eps())
         if eps.fixed() is True:
@@ -213,10 +213,10 @@ class GPInitTest(parameterized.TestCase):
     def test_sample_init(self, kernel, eps, gp_type, reps):
         for _ in range(reps):
             muygps = gp_type(kernel=kernel, eps=eps)
-            for name, param in kernel.hyperparameters.items():
+            for name, param in kernel._hyperparameters.items():
                 self._check_in_bounds(
                     param.get_bounds(),
-                    muygps.kernel.hyperparameters[name],
+                    muygps.kernel._hyperparameters[name],
                 )
             self._check_in_bounds(eps.get_bounds(), muygps.eps)
 
@@ -668,16 +668,16 @@ class MakeClassifierTest(parameterized.TestCase):
         )
 
         self.assertEqual(k_kwargs["eps"](), muygps.eps())
-        for name, param in k_kwargs["kernel"].hyperparameters.items():
+        for name, param in k_kwargs["kernel"]._hyperparameters.items():
             if param.fixed() is False:
                 print(
                     f"optimized to find value "
-                    f"{muygps.kernel.hyperparameters[name]()}"
+                    f"{muygps.kernel._hyperparameters[name]()}"
                 )
             else:
                 self.assertEqual(
                     param(),
-                    muygps.kernel.hyperparameters[name](),
+                    muygps.kernel._hyperparameters[name](),
                 )
 
 
@@ -744,16 +744,16 @@ class MakeRegressorTest(parameterized.TestCase):
         )
 
         self.assertEqual(k_kwargs["eps"](), muygps.eps())
-        for name, param in k_kwargs["kernel"].hyperparameters.items():
+        for name, param in k_kwargs["kernel"]._hyperparameters.items():
             if param.fixed() is False:
                 print(
                     f"optimized to find value "
-                    f"{muygps.kernel.hyperparameters[name]()}"
+                    f"{muygps.kernel._hyperparameters[name]()}"
                 )
             else:
                 self.assertEqual(
                     param(),
-                    muygps.kernel.hyperparameters[name](),
+                    muygps.kernel._hyperparameters[name](),
                 )
 
         if sigma_method is None:

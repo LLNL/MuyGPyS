@@ -30,3 +30,16 @@ def _fullname(klass):
 
 def _collect_functions(package, *funcs):
     return tuple([getattr(__import__(package, fromlist=[f]), f) for f in funcs])
+
+
+def auto_str(klass):
+    def __str__(self):
+        public_members = ", ".join(
+            f"%s=%s" % item
+            for item in vars(self).items()
+            if not item[0].startswith("_")
+        )
+        return f"{type(self).__name__}({public_members})"
+
+    klass.__str__ = __str__
+    return klass

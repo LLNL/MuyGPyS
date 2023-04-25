@@ -49,8 +49,8 @@ class BenchmarkGP:
         Returns:
             Returns `True` if all parameters are fixed, and `False` otherwise.
         """
-        for p in self.kernel.hyperparameters:
-            if not self.kernel.hyperparameters[p].fixed():
+        for p in self.kernel._hyperparameters:
+            if not self.kernel._hyperparameters[p].fixed():
                 return False
         if not self.eps.fixed():
             return False

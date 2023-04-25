@@ -322,7 +322,7 @@ class HyperparameterTest(parameterized.TestCase):
 
 class KernelTest(parameterized.TestCase):
     def _check_params_chassis(self, kern_fn, **kwargs):
-        for p in kern_fn.hyperparameters:
+        for p in kern_fn._hyperparameters:
             self._check_params(
                 kern_fn,
                 p,
@@ -333,15 +333,15 @@ class KernelTest(parameterized.TestCase):
 
     def _check_params(self, kern_fn, name, param):
         if param() is not None:
-            self.assertEqual(param(), kern_fn.hyperparameters[name]())
+            self.assertEqual(param(), kern_fn._hyperparameters[name]())
         if param.get_bounds() is not None:
             if param.fixed():
-                self.assertTrue(kern_fn.hyperparameters[name].fixed())
+                self.assertTrue(kern_fn._hyperparameters[name].fixed())
             else:
-                self.assertFalse(kern_fn.hyperparameters[name].fixed())
+                self.assertFalse(kern_fn._hyperparameters[name].fixed())
                 self.assertEqual(
                     param.get_bounds(),
-                    kern_fn.hyperparameters[name].get_bounds(),
+                    kern_fn._hyperparameters[name].get_bounds(),
                 )
 
 
