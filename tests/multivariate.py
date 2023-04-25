@@ -30,11 +30,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distortion import (
-    NullDistortion,
-    IsotropicDistortion,
-    AnisotropicDistortion,
-)
+from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
