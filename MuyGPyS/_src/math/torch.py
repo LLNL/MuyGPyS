@@ -29,6 +29,7 @@ from torch import (
     log,
     logical_or,
     mean,
+    median,
     nn,
     norm,
     numel,
