@@ -170,10 +170,10 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
 
         (
             mmuygps,
-            nbrs_lookup,
+            _,
             predictions,
             precomputed_coefficient_matrix,
-            timings,
+            _,
         ) = do_fast_posterior_mean(
             test["input"],
             train["input"],
@@ -197,16 +197,16 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
         for i, muygps in enumerate(mmuygps.models):
             print(f"For model{i}:")
             self.assertEqual(k_kwargs[i]["eps"](), muygps.eps())
-            for name, param in k_kwargs[i]["kernel"].hyperparameters.items():
+            for name, param in k_kwargs[i]["kernel"]._hyperparameters.items():
                 if param.fixed() is False:
                     print(
                         f"optimized to find value "
-                        f"{muygps.kernel.hyperparameters[name]()}"
+                        f"{muygps.kernel._hyperparameters[name]()}"
                     )
                 else:
                     self.assertEqual(
                         param(),
-                        muygps.kernel.hyperparameters[name](),
+                        muygps.kernel._hyperparameters[name](),
                     )
             if sigma_method is None:
                 self.assertFalse(muygps.sigma_sq.trained)

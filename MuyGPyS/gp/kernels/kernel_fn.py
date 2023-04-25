@@ -68,10 +68,10 @@ class KernelFn:
         """
         Initialize dict holding hyperparameters.
         """
-        self.hyperparameters: Dict = dict()
-        self._distortion_fn = metric
-        self.hyperparameters = self._distortion_fn.populate_length_scale(
-            self.hyperparameters
+        self._hyperparameters: Dict = dict()
+        self.distortion_fn = metric
+        self._hyperparameters = self.distortion_fn.populate_length_scale(
+            self._hyperparameters
         )
 
     def set_params(self, **kwargs) -> None:
@@ -83,7 +83,7 @@ class KernelFn:
                 Hyperparameter kwargs.
         """
         for name in kwargs:
-            self.hyperparameters[name]._set(kwargs[name])
+            self._hyperparameters[name]._set(kwargs[name])
 
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
         raise NotImplementedError(
@@ -105,7 +105,7 @@ class KernelFn:
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        return self._distortion_fn.get_optim_params()
+        return self.distortion_fn.get_optim_params()
 
     @staticmethod
     def _get_opt_fn(
@@ -123,7 +123,7 @@ class KernelFn:
         Intended only for testing purposes.
         """
         ret = ""
-        for p in self.hyperparameters:
-            param = self.hyperparameters[p]
+        for p in self._hyperparameters:
+            param = self._hyperparameters[p]
             ret += f"{p} : {param()} - {param.get_bounds()}\n"
         return ret[:-1]

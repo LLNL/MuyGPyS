@@ -45,6 +45,7 @@ from MuyGPyS._src.gp.kernels import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
+from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.distortion import (
     embed_with_distortion_model,
     AnisotropicDistortion,
@@ -77,6 +78,7 @@ def _set_matern_fn(nu: ScalarHyperparameter):
     return _matern_gen_fn
 
 
+@auto_str
 class Matern(KernelFn):
     """
     The Màtern kernel.
@@ -121,12 +123,12 @@ class Matern(KernelFn):
     ):
         super().__init__(metric=metric)
         self.nu = nu
-        self.hyperparameters["nu"] = self.nu
+        self._hyperparameters["nu"] = self.nu
         self._kernel_fn = _set_matern_fn(self.nu)
         self._fn = embed_with_distortion_model(
             self._kernel_fn,
-            self._distortion_fn,
-            self._distortion_fn.length_scale,
+            self.distortion_fn,
+            self.distortion_fn.length_scale,
         )
 
     def __call__(self, diffs):
@@ -176,7 +178,7 @@ class Matern(KernelFn):
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._get_opt_fn(self._fn, self._distortion_fn, self.nu)
+        return self._get_opt_fn(self._fn, self.distortion_fn, self.nu)
 
     @staticmethod
     def _get_opt_fn(

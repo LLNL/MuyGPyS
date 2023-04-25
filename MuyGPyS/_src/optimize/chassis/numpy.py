@@ -25,7 +25,7 @@ def _new_muygps(muygps: MuyGPS, x0_names, bounds, opt_dict) -> MuyGPS:
         if key == "eps":
             ret.eps._set_val(val)
         else:
-            ret.kernel.hyperparameters[key]._set_val(val)
+            ret.kernel._hyperparameters[key]._set_val(val)
     return ret
 
 

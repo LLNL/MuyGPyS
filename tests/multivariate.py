@@ -83,12 +83,12 @@ class InitTest(parameterized.TestCase):
         self.assertEqual(len(mmuygps.models), len(model_args))
         for i, muygps in enumerate(mmuygps.models):
             this_kwargs = model_args[i]
-            for name, param in this_kwargs["kernel"].hyperparameters.items():
+            for name, param in this_kwargs["kernel"]._hyperparameters.items():
                 self.assertEqual(
                     param(),
-                    muygps.kernel.hyperparameters[name](),
+                    muygps.kernel._hyperparameters[name](),
                 )
-                self.assertTrue(muygps.kernel.hyperparameters[name].fixed())
+                self.assertTrue(muygps.kernel._hyperparameters[name].fixed())
             self.assertEqual(this_kwargs["eps"](), muygps.eps())
             self.assertTrue(muygps.eps.fixed())
             self.assertFalse(muygps.sigma_sq.trained)
@@ -360,7 +360,7 @@ class OptimTest(parameterized.TestCase):
                     sigma_method=sigma_method,
                     **opt_kwargs,
                 )
-                estimate = mmuygps.models[i].kernel.hyperparameters["nu"]()
+                estimate = mmuygps.models[i].kernel._hyperparameters["nu"]()
                 mse += mm.sum(estimate - target[i]) ** 2
         mse /= its * response_count
         print(f"optimizes with mse {mse}")
@@ -669,16 +669,16 @@ class MakeClassifierTest(parameterized.TestCase):
 
         for i, muygps in enumerate(mmuygps.models):
             self.assertEqual(args[i]["eps"](), muygps.eps())
-            for name, param in args[i]["kernel"].hyperparameters.items():
+            for name, param in args[i]["kernel"]._hyperparameters.items():
                 if param.fixed() is False:
                     print(
                         f"optimized to find value "
-                        f"{muygps.kernel.hyperparameters[name]()}"
+                        f"{muygps.kernel._hyperparameters[name]()}"
                     )
                 else:
                     self.assertEqual(
                         param(),
-                        muygps.kernel.hyperparameters[name](),
+                        muygps.kernel._hyperparameters[name](),
                     )
 
 
@@ -797,16 +797,16 @@ class MakeRegressorTest(parameterized.TestCase):
         for i, muygps in enumerate(mmuygps.models):
             print(f"For model{i}:")
             self.assertEqual(args[i]["eps"](), muygps.eps())
-            for name, param in args[i]["kernel"].hyperparameters.items():
+            for name, param in args[i]["kernel"]._hyperparameters.items():
                 if param.fixed() is False:
                     print(
                         f"optimized to find value "
-                        f"{muygps.kernel.hyperparameters[name]()}"
+                        f"{muygps.kernel._hyperparameters[name]()}"
                     )
                 else:
                     self.assertEqual(
                         param(),
-                        muygps.kernel.hyperparameters[name](),
+                        muygps.kernel._hyperparameters[name](),
                     )
             if sigma_method is None:
                 self.assertFalse(muygps.sigma_sq.trained)

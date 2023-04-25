@@ -33,6 +33,9 @@ class SigmaSq:
         self.val = mm.ones(response_count)
         self._trained = False
 
+    def __str__(self, **kwargs):
+        return f"{type(self).__name__}({self.val})"
+
     def _set(self, val: mm.ndarray) -> None:
         """
         Value setter.

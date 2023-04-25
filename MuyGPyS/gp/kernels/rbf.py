@@ -37,6 +37,7 @@ from typing import Callable, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import _rbf_fn
+from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.distortion import (
     embed_with_distortion_model,
     AnisotropicDistortion,
@@ -47,6 +48,7 @@ from MuyGPyS.gp.kernels import KernelFn
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 
 
+@auto_str
 class RBF(KernelFn):
     """
     The radial basis function (RBF) or squared-exponential kernel.
@@ -81,8 +83,8 @@ class RBF(KernelFn):
         self._kernel_fn = _rbf_fn
         self._fn = embed_with_distortion_model(
             self._kernel_fn,
-            self._distortion_fn,
-            self._distortion_fn.length_scale,
+            self.distortion_fn,
+            self.distortion_fn.length_scale,
         )
 
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
@@ -135,4 +137,4 @@ class RBF(KernelFn):
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return super()._get_opt_fn(self._fn, self._distortion_fn)
+        return super()._get_opt_fn(self._fn, self.distortion_fn)

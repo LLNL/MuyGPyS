@@ -11,6 +11,7 @@ from typing import Callable, List, Tuple, Union
 from copy import deepcopy
 
 import MuyGPyS._src.math as mm
+from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.hyperparameter import append_scalar_optim_params_list
 from MuyGPyS.gp.kernels import (
     Matern,
@@ -24,6 +25,7 @@ from MuyGPyS.gp.fast_mean import FastPosteriorMean
 from MuyGPyS.gp.fast_precompute import FastPrecomputeCoefficients
 
 
+@auto_str
 class MuyGPS:
     """
     Local Kriging Gaussian Process.
@@ -125,8 +127,8 @@ class MuyGPS:
         Returns:
             Returns `True` if all parameters are fixed, and `False` otherwise.
         """
-        for p in self.kernel.hyperparameters:
-            if not self.kernel.hyperparameters[p].fixed():
+        for p in self.kernel._hyperparameters:
+            if not self.kernel._hyperparameters[p].fixed():
                 return False
         if not self.eps.fixed():
             return False
@@ -390,9 +392,9 @@ class MuyGPS:
             return all(
                 (
                     all(
-                        self.kernel.hyperparameters[h]()
-                        == rhs.kernel.hyperparameters[h]()
-                        for h in self.kernel.hyperparameters
+                        self.kernel._hyperparameters[h]()
+                        == rhs.kernel._hyperparameters[h]()
+                        for h in self.kernel._hyperparameters
                     ),
                     self.eps() == rhs.eps(),
                     self.sigma_sq() == rhs.sigma_sq(),

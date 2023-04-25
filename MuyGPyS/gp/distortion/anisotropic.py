@@ -3,11 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _F2, _l2
-
 from typing import List, Tuple, Callable, Dict
 
+import MuyGPyS._src.math as mm
+from MuyGPyS._src.gp.tensors import _F2, _l2
+from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.hyperparameter import (
     append_scalar_optim_params_list,
     apply_scalar_hyperparameter,
@@ -15,6 +15,7 @@ from MuyGPyS.gp.hyperparameter import (
 )
 
 
+@auto_str
 class AnisotropicDistortion:
     def __init__(self, metric: str, **length_scales):
         self.metric = metric

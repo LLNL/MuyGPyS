@@ -148,7 +148,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             **opt_kwargs,
             verbose=True,
         )
-        estimate = muygps.kernel.hyperparameters[name]()
+        estimate = muygps.kernel._hyperparameters[name]()
         return _sq_rel_err(self.params[name](), estimate)
 
     def _check_ndarray(self, *args, **kwargs):

@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
+from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.hyperparameter import (
     ScalarHyperparameter,
     append_scalar_optim_params_list,
@@ -15,6 +16,7 @@ from MuyGPyS.gp.hyperparameter import (
 )
 
 
+@auto_str
 class IsotropicDistortion:
     def __init__(self, metric: str, length_scale: ScalarHyperparameter):
         self.metric = metric
