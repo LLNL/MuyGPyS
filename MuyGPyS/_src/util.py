@@ -35,7 +35,7 @@ def _collect_functions(package, *funcs):
 def auto_str(klass):
     def __str__(self):
         public_members = ", ".join(
-            f"%s=%s" % item
+            "%s=%s" % item
             for item in vars(self).items()
             if not item[0].startswith("_")
         )
