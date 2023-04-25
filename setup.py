@@ -15,6 +15,7 @@ DEV_REQUIRES = [
     "build>=0.7.0",
     "mypy>=0.910",
     "twine>=3.7.1",
+    "h5py>=3.7.0",
 ]
 
 DOCS_REQUIRES = [
