@@ -104,6 +104,53 @@ class BenchmarkTestCase(parameterized.TestCase):
                 slice(None),
             )
 
+    def _optim_chassis(
+        self,
+        muygps,
+        name,
+        itr,
+        nbrs_lookup,
+        batch_count,
+        loss_method,
+        obj_method,
+        opt_method,
+        sigma_method,
+        opt_kwargs,
+    ) -> float:
+        batch_indices, batch_nn_indices = sample_batch(
+            nbrs_lookup, batch_count, self.train_count
+        )
+        batch_crosswise_diffs = crosswise_tensor(
+            self.train_features,
+            self.train_features,
+            batch_indices,
+            batch_nn_indices,
+        )
+        batch_pairwise_diffs = pairwise_tensor(
+            self.train_features, batch_nn_indices
+        )
+        batch_targets = _consistent_chunk_tensor(
+            self.train_responses[itr, batch_indices, :]
+        )
+        batch_nn_targets = _consistent_chunk_tensor(
+            self.train_responses[itr, batch_nn_indices, :]
+        )
+        muygps = optimize_from_tensors(
+            muygps,
+            batch_targets,
+            batch_nn_targets,
+            batch_crosswise_diffs,
+            batch_pairwise_diffs,
+            loss_method=loss_method,
+            obj_method=obj_method,
+            opt_method=opt_method,
+            sigma_method=sigma_method,
+            **opt_kwargs,
+            verbose=True,
+        )
+        estimate = muygps.kernel.hyperparameters[name]()
+        return _sq_rel_err(self.params[name](), estimate)
+
     def _check_ndarray(self, *args, **kwargs):
         return _check_ndarray(self.assertEqual, *args, **kwargs)
 
@@ -220,10 +267,10 @@ class SigmaSqOptimTest(BenchmarkTestCase):
         self.assertLessEqual(mrse, self.sigma_tol)
 
 
-class OptimTest(BenchmarkTestCase):
+class NuTest(BenchmarkTestCase):
     @classmethod
     def setUpClass(cls):
-        super(OptimTest, cls).setUpClass()
+        super(NuTest, cls).setUpClass()
 
     @parameterized.parameters(
         (
@@ -247,7 +294,7 @@ class OptimTest(BenchmarkTestCase):
             ]
         )
     )
-    def test_hyper_optim(
+    def test_nu(
         self,
         batch_count,
         nn_count,
@@ -265,19 +312,6 @@ class OptimTest(BenchmarkTestCase):
         nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
 
         for i in range(self.its):
-            batch_indices, batch_nn_indices = sample_batch(
-                nbrs_lookup, batch_count, self.train_count
-            )
-            batch_crosswise_diffs = crosswise_tensor(
-                self.train_features,
-                self.train_features,
-                batch_indices,
-                batch_nn_indices,
-            )
-            batch_pairwise_diffs = pairwise_tensor(
-                self.train_features, batch_nn_indices
-            )
-
             # set up MuyGPS object
             muygps = MuyGPS(
                 kernel=Matern(
@@ -294,31 +328,20 @@ class OptimTest(BenchmarkTestCase):
                 eps=HomoscedasticNoise(self.params["eps"]()),
             )
 
-            batch_targets = _consistent_chunk_tensor(
-                self.train_responses[i, batch_indices, :]
-            )
-            batch_nn_targets = _consistent_chunk_tensor(
-                self.train_responses[i, batch_nn_indices, :]
-            )
-
-            muygps = optimize_from_tensors(
+            mrse += self._optim_chassis(
                 muygps,
-                batch_targets,
-                batch_nn_targets,
-                batch_crosswise_diffs,
-                batch_pairwise_diffs,
-                loss_method=loss_method,
-                obj_method=obj_method,
-                opt_method=opt_method,
-                sigma_method=sigma_method,
-                **opt_kwargs,
+                "nu",
+                i,
+                nbrs_lookup,
+                batch_count,
+                loss_method,
+                obj_method,
+                opt_method,
+                sigma_method,
+                opt_kwargs,
             )
-
-            # mse += (estimate - target) ** 2
-            estimate = muygps.kernel.hyperparameters["nu"]()
-            mrse += _sq_rel_err(self.params["nu"](), estimate)
         mrse /= self.its
-        print(f"optimizes with mean relative squared error {mrse}")
+        print(f"optimizes nu with mean relative squared error {mrse}")
         # Is this a strong enough guarantee?
         self.assertLessEqual(mrse, self.nu_tol)
 
