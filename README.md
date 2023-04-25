@@ -294,22 +294,24 @@ Finally, open the file `docs/_build/html/index.html` in your browser of choice.
 
 In order to run tests locally, first `pip` install `MuyGPyS` from source using 
 either the `dev` or `tests` options.
-All tests in the `test/` directory are then runnable using python, e.g.
+All tests in the `test/` directory are then runnable as python scripts, e.g.
 ```
 $ python tests/kernels.py
 ```
 
 Individual `absl` unit test classes can be run in isolation, e.g.
 ```
-$ python tests/kernels.py DistancesTest
+$ python tests/kernels.py DifferencesTest
 ```
 
-The user can also modify the `MuyGPyS.config` object when running `absl` tests
-from the command line.
-For example, if you have installed the JAX dependencies but want to run a test
-without using JAX, run
+The user can run most tests in all backends.
+Some tests use backend-dependent features, and will fail with informative error
+messages when attempting an unsupported backend.
+The user need only set `MUYGPYS_BACKEND` prior to running the desired test,
+e.g.,
 ```
-$ python tests/kernels.py --muygpys_jax_enabled=False
+$ export MUYGPYS_BACKEND=jax
+$ python tests/kernels.py
 ```
 
 If the MPI dependencies are installed, the user can also run `absl` tests using
