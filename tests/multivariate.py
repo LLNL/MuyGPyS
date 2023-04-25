@@ -322,35 +322,10 @@ class OptimTest(parameterized.TestCase):
             mm.array(sim_train["input"]), batch_nn_indices
         )
 
-        # this is needed because the benchmarkGP uses a different distortion
-        # model
-        gp_args = (
-            {
-                "kernel": Matern(
-                    nu=ScalarHyperparameter(target[0]),
-                    metric=NullDistortion(
-                        metric="l2", length_scale=ScalarHyperparameter(1.5)
-                    ),
-                ),
-                "eps": HomoscedasticNoise(1e-5),
-            },
-            {
-                "kernel": Matern(
-                    nu=ScalarHyperparameter(target[1]),
-                    metric=NullDistortion(
-                        metric="l2", length_scale=ScalarHyperparameter(0.7)
-                    ),
-                ),
-                "eps": HomoscedasticNoise(1e-5),
-            },
-        )
-
-        gps = [BenchmarkGP(**a) for a in gp_args]
+        gps = [BenchmarkGP(**a) for a in args]
         cholKs = [
             benchmark_prepare_cholK(
-                gp,
-                np.vstack((sim_test["input"], sim_train["input"])),
-                gp.kernel._distortion_fn.length_scale(),
+                gp, np.vstack((sim_test["input"], sim_train["input"]))
             )
             for gp in gps
         ]

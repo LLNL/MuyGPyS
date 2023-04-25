@@ -7,11 +7,11 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 import MuyGPyS._src.math as mm
-import MuyGPyS._src.math.numpy as np
+
 from MuyGPyS import config
-from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor, _warn0
+from MuyGPyS._src.gp.tensors import _pairwise_differences
+from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 from MuyGPyS._test.gp import (
-    benchmark_pairwise_distances,
     benchmark_sample_full,
     BenchmarkGP,
     get_analytic_sigma_sq,
@@ -24,7 +24,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS
 
-from MuyGPyS.gp.distortion import IsotropicDistortion, NullDistortion
+from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -34,8 +34,8 @@ from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 
-if config.state.backend == "torch":
-    raise ValueError("optimize.py does not support torch backend at this time")
+if config.state.backend != "numpy":
+    raise ValueError("optimize.py only supports the numpy backend at this time")
 
 
 class BenchmarkTestCase(parameterized.TestCase):
@@ -44,107 +44,65 @@ class BenchmarkTestCase(parameterized.TestCase):
         super(BenchmarkTestCase, cls).setUpClass()
         cls.data_count = 1001
         cls.its = 10
-        cls.sigma_sqs = [1.0, 0.002353, 19.32]
-        cls.sigma_tol = 5e-2
         cls.sim_train = dict()
-        cls.x = np.linspace(-10.0, 10.0, cls.data_count).reshape(
+        cls.xs = mm.linspace(-10.0, 10.0, cls.data_count).reshape(
             cls.data_count, 1
         )
-        cls.train_features = cls.x[::2, :]
-        cls.test_features = cls.x[1::2, :]
+        cls.train_features = cls.xs[::2, :]
+        cls.test_features = cls.xs[1::2, :]
         cls.train_count, _ = cls.train_features.shape
         cls.test_count, _ = cls.test_features.shape
         cls.feature_count = 1
         cls.response_count = 1
         cls.length_scale = 1e-2
 
-        cls.k_kwargs = (
-            {
-                "kernel": Matern(
-                    nu=ScalarHyperparameter(0.5),
-                    metric=IsotropicDistortion(
-                        metric="l2",
-                        length_scale=ScalarHyperparameter(cls.length_scale),
-                    ),
-                ),
-                "eps": HomoscedasticNoise(1e-5),
-            },
-            {
-                "kernel": Matern(
-                    nu=ScalarHyperparameter(1.5),
-                    metric=IsotropicDistortion(
-                        metric="l2",
-                        length_scale=ScalarHyperparameter(cls.length_scale),
-                    ),
-                ),
-                "eps": HomoscedasticNoise(1e-5),
-            },
-        )
-        cls.sim_kwargs = (
-            {
-                "kernel": Matern(
-                    nu=ScalarHyperparameter(0.5),
-                    metric=NullDistortion(
-                        "l2",
-                        length_scale=ScalarHyperparameter(cls.length_scale),
-                    ),
-                ),
-                "eps": HomoscedasticNoise(1e-5),
-            },
-            {
-                "kernel": Matern(
-                    nu=ScalarHyperparameter(1.5),
-                    metric=NullDistortion(
-                        "l2",
-                        length_scale=ScalarHyperparameter(cls.length_scale),
-                    ),
-                ),
-                "eps": HomoscedasticNoise(1e-5),
-            },
-        )
-        cls.k_kwargs_opt = {
-            "kernel": Matern(
-                nu=ScalarHyperparameter("sample", (0.1, 5.0)),
+        cls.sigma_tol = 5e-1
+        cls.nu_tol = 5e-2
+
+        cls.params = {
+            "length_scale": ScalarHyperparameter(1.5, (1e-1, 1e1)),
+            "nu": ScalarHyperparameter(0.38, (1e-1, 1e0)),
+            "eps": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
+        }
+
+        cls.gp = BenchmarkGP(
+            kernel=Matern(
+                nu=ScalarHyperparameter(cls.params["nu"]()),
                 metric=IsotropicDistortion(
                     metric="l2",
-                    length_scale=ScalarHyperparameter(cls.length_scale),
+                    length_scale=ScalarHyperparameter(
+                        cls.params["length_scale"]()
+                    ),
                 ),
             ),
-            "eps": HomoscedasticNoise(1e-5),
-        }
-        cls.model_count = len(cls.k_kwargs)
-        cls.ss_count = len(cls.sigma_sqs)
-        cls.gps = list()
-        cls.ys = list()
-        cls.train_targets_list = list()
-        cls.test_targets_list = list()
-        for i, kwargs in enumerate(cls.sim_kwargs):
-            cls.gps.append(list())
-            cls.ys.append(list())
-            cls.test_targets_list.append(list())
-            cls.train_targets_list.append(list())
-            for j, ss in enumerate(cls.sigma_sqs):
-                cls.gps[i].append(BenchmarkGP(**kwargs))
-                cls.gps[i][j]._set_sigma_sq(mm.array([ss]))
-                cls.ys[i].append(list())
-                cls.test_targets_list[i].append(list())
-                cls.train_targets_list[i].append(list())
-                for k in range(cls.its):
-                    cls.ys[i][j].append(list())
-                    cls.test_targets_list[i][j].append(list())
-                    cls.train_targets_list[i][j].append(list())
-                    cls.ys[i][j][k] = benchmark_sample_full(
-                        cls.gps[i][j],
-                        cls.train_features,
-                        cls.test_features,
-                        length_scale=cls.length_scale,
-                    )
-                    cls.test_targets_list[i][j][k] = cls.ys[i][j][k][
-                        : cls.test_count
-                    ].reshape(cls.test_count, 1)
-                    cls.train_targets_list[i][j][k] = cls.ys[i][j][k][
-                        cls.test_count :
-                    ].reshape(cls.train_count, 1)
+            eps=HomoscedasticNoise(cls.params["eps"]()),
+        )
+        cls.gp.sigma_sq._set(mm.array([0.5]))
+        cls.ys = mm.zeros((cls.its, cls.data_count, cls.response_count))
+        cls.train_responses = mm.zeros(
+            (cls.its, cls.train_count, cls.response_count)
+        )
+        cls.test_responses = mm.zeros(
+            (cls.its, cls.test_count, cls.response_count)
+        )
+        for i in range(cls.its):
+            ys = benchmark_sample_full(
+                cls.gp, cls.test_features, cls.train_features
+            )
+            cls.train_responses = mm.assign(
+                cls.train_responses,
+                ys[cls.test_count :, :],
+                i,
+                slice(None),
+                slice(None),
+            )
+            cls.test_responses = mm.assign(
+                cls.test_responses,
+                ys[: cls.test_count, :],
+                i,
+                slice(None),
+                slice(None),
+            )
 
     def _check_ndarray(self, *args, **kwargs):
         return _check_ndarray(self.assertEqual, *args, **kwargs)
@@ -156,268 +114,213 @@ class BenchmarkTest(BenchmarkTestCase):
         super(BenchmarkTest, cls).setUpClass()
 
     def test_types(self):
-        self._check_ndarray(self.train_features, np.ftype, ctype=np.ndarray)
-        self._check_ndarray(self.test_features, np.ftype, ctype=np.ndarray)
-        self._check_ndarray(self.train_features, np.ftype, ctype=np.ndarray)
-        for i, _ in enumerate(self.k_kwargs):
-            for j, _ in enumerate(self.sigma_sqs):
-                for k in range(self.its):
-                    self._check_ndarray(
-                        self.ys[i][j][k],
-                        np.ftype,
-                        ctype=np.ndarray,
-                        shape=(self.data_count, 1),
-                    )
-                    self._check_ndarray(
-                        self.test_targets_list[i][j][k],
-                        np.ftype,
-                        ctype=np.ndarray,
-                        shape=(self.test_count, 1),
-                    )
-                    self._check_ndarray(
-                        self.train_targets_list[i][j][k],
-                        np.ftype,
-                        ctype=np.ndarray,
-                        shape=(self.train_count, 1),
-                    )
+        self._check_ndarray(
+            self.train_features,
+            mm.ftype,
+            ctype=mm.ndarray,
+            shape=(self.train_count, self.feature_count),
+        )
+        self._check_ndarray(
+            self.test_features,
+            mm.ftype,
+            ctype=mm.ndarray,
+            shape=(self.test_count, self.feature_count),
+        )
+        self._check_ndarray(
+            self.train_responses,
+            mm.ftype,
+            ctype=mm.ndarray,
+            shape=(self.its, self.train_count, self.response_count),
+        )
+        self._check_ndarray(
+            self.test_responses,
+            mm.ftype,
+            ctype=mm.ndarray,
+            shape=(self.its, self.test_count, self.response_count),
+        )
 
 
-class BenchmarkSigmaSqTest(BenchmarkTestCase):
+class SigmaSqTest(BenchmarkTestCase):
     @classmethod
     def setUpClass(cls):
-        super(BenchmarkSigmaSqTest, cls).setUpClass()
+        super(SigmaSqTest, cls).setUpClass()
 
     def test_sigma_sq(self):
         mrse = 0.0
-        for i, _ in enumerate(self.k_kwargs):
-            for j, sigma_sq in enumerate(self.sigma_sqs):
-                model = self.gps[i][j]
-                pairwise_dists = benchmark_pairwise_distances(
-                    self.x / self.length_scale, metric=model.metric
-                )
-                K = model.kernel(pairwise_dists) + model.eps() * np.eye(
-                    self.data_count
-                )
-                for k in range(self.its):
-                    ss = get_analytic_sigma_sq(K, self.ys[i][j][k])
-                    mrse += _sq_rel_err(sigma_sq, ss)
-        mrse /= self.its * self.ss_count * self.model_count
-        print(f"optimizes with mean relative squared error {mrse}")
-        self.assertLessEqual(mrse, self.sigma_tol)
-
-
-class BenchmarkOptimTestCase(BenchmarkTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(BenchmarkOptimTestCase, cls).setUpClass()
-        cls.batch_count = cls.train_count
-        cls.nn_count = 34
-        cls.sm = ["analytic"]
-        cls.nn_kwargs = _basic_nn_kwarg_options[0]
-
-        nbrs_lookup = NN_Wrapper(
-            cls.train_features, cls.nn_count, **cls.nn_kwargs
+        pairwise_diffs = _pairwise_differences(self.train_features)
+        K = self.gp.kernel(pairwise_diffs) + self.gp.eps() * mm.eye(
+            self.feature_count
         )
-        cls.nu_target_list = list()
-        cls.batch_indices_list = list()
-        cls.batch_nn_indices_list = list()
-        cls.crosswise_diffs_list = list()
-        cls.pairwise_diffs_list = list()
-        cls.batch_nn_targets_list = list()
-        for i, kwargs in enumerate(cls.k_kwargs):
-            cls.nu_target_list.append(kwargs["kernel"].nu())
-            cls.batch_indices_list.append(list())
-            cls.batch_nn_indices_list.append(list())
-            cls.crosswise_diffs_list.append(list())
-            cls.pairwise_diffs_list.append(list())
-            cls.batch_nn_targets_list.append(list())
-            for j, sigma_sq in enumerate(cls.sigma_sqs):
-                batch_indices, batch_nn_indices = sample_batch(
-                    nbrs_lookup, cls.batch_count, cls.train_count
-                )
-                cls.batch_indices_list[i].append(batch_indices)
-                cls.batch_nn_indices_list[i].append(batch_nn_indices)
-                cls.crosswise_diffs_list[i].append(
-                    crosswise_tensor(
-                        cls.train_features,
-                        cls.train_features,
-                        cls.batch_indices_list[i][j],
-                        cls.batch_nn_indices_list[i][j],
-                    )
-                )
-                cls.pairwise_diffs_list[i].append(
-                    pairwise_tensor(
-                        cls.train_features,
-                        cls.batch_nn_indices_list[i][j],
-                    )
-                )
-                cls.batch_nn_targets_list[i].append(list())
-                for k in range(cls.its):
-                    cls.batch_nn_targets_list[i][j].append(
-                        _consistent_chunk_tensor(
-                            mm.array(
-                                cls.train_targets_list[i][j][k][
-                                    cls.batch_nn_indices_list[i][j], :
-                                ]
-                            )
-                        )
-                    )
+        for i in range(self.its):
+            ss = get_analytic_sigma_sq(K, self.train_features)
+            mrse += _sq_rel_err(self.gp.sigma_sq(), ss)
 
-
-class BenchmarkOptimTypesTest(BenchmarkOptimTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(BenchmarkOptimTypesTest, cls).setUpClass()
-
-    def test_types(self):
-        for i, kwargs in enumerate(self.k_kwargs):
-            for j, sigma_sq in enumerate(self.sigma_sqs):
-                self._check_ndarray(
-                    self.batch_indices_list[i][j],
-                    mm.itype,
-                    shape=(self.batch_count,),
-                )
-                self._check_ndarray(
-                    self.batch_nn_indices_list[i][j],
-                    mm.itype,
-                    shape=(self.batch_count, self.nn_count),
-                )
-                self._check_ndarray(
-                    self.crosswise_diffs_list[i][j],
-                    mm.ftype,
-                    shape=(self.batch_count, self.nn_count, self.feature_count),
-                )
-                self._check_ndarray(
-                    self.pairwise_diffs_list[i][j],
-                    mm.ftype,
-                    shape=(
-                        self.batch_count,
-                        self.nn_count,
-                        self.nn_count,
-                        self.feature_count,
-                    ),
-                )
-                for k in range(self.its):
-                    self._check_ndarray(
-                        self.batch_nn_targets_list[i][j][k], mm.ftype
-                    )
-                    self.assertEqual(
-                        self.batch_nn_targets_list[i][j][k].shape,
-                        (self.batch_count, self.nn_count, self.response_count),
-                    )
-
-
-class BenchmarkSigmaSqOptimTest(BenchmarkOptimTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(BenchmarkSigmaSqOptimTest, cls).setUpClass()
-
-    def test_sigma_sq_optim(self):
-        mrse = 0.0
-        for i, kwargs in enumerate(self.k_kwargs):
-            for j, sigma_sq in enumerate(self.sigma_sqs):
-                for k in range(self.its):
-                    muygps = MuyGPS(**kwargs)
-                    muygps = muygps_sigma_sq_optim(
-                        muygps,
-                        self.pairwise_diffs_list[i][j],
-                        self.batch_nn_targets_list[i][j][k],
-                        sigma_method="analytic",
-                    )
-                    estimate = muygps.sigma_sq()[0]
-
-                    mrse += _sq_rel_err(sigma_sq, estimate)
-        mrse /= self.its * self.model_count * self.ss_count
+        mrse /= self.its
         print(f"optimizes with mean relative squared error {mrse}")
         self.assertLessEqual(mrse, self.sigma_tol)
 
 
-class BenchmarkTensorsOptimTest(BenchmarkOptimTestCase):
+class SigmaSqOptimTest(BenchmarkTestCase):
     @classmethod
     def setUpClass(cls):
-        super(BenchmarkTensorsOptimTest, cls).setUpClass()
+        super(SigmaSqOptimTest, cls).setUpClass()
+
+    @parameterized.parameters(
+        (
+            (b, n, nn_kwargs)
+            for b in [250]
+            for n in [20]
+            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+        )
+    )
+    def test_sigma_sq_optim(
+        self,
+        batch_count,
+        nn_count,
+        nn_kwargs,
+    ):
+        mrse = 0.0
+
+        nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
+
+        for i in range(self.its):
+            muygps = MuyGPS(
+                kernel=Matern(
+                    nu=ScalarHyperparameter(self.params["nu"]()),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=ScalarHyperparameter(
+                            self.params["length_scale"]()
+                        ),
+                    ),
+                ),
+                eps=HomoscedasticNoise(self.params["eps"]()),
+            )
+            _, batch_nn_indices = sample_batch(
+                nbrs_lookup, batch_count, self.train_count
+            )
+            batch_pairwise_diffs = pairwise_tensor(
+                self.train_features, batch_nn_indices
+            )
+            batch_nn_targets = _consistent_chunk_tensor(
+                self.train_responses[i, batch_nn_indices, :]
+            )
+
+            muygps = muygps_sigma_sq_optim(
+                muygps,
+                batch_pairwise_diffs,
+                batch_nn_targets,
+                sigma_method="analytic",
+            )
+            estimate = muygps.sigma_sq()[0]
+
+            mrse += _sq_rel_err(self.gp.sigma_sq(), estimate)
+        mrse /= self.its
+        print(f"optimizes with mean relative squared error {mrse}")
+        self.assertLessEqual(mrse, self.sigma_tol)
+
+
+class OptimTest(BenchmarkTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(OptimTest, cls).setUpClass()
 
     @parameterized.parameters(
         (
             (
-                lm,
+                b,
+                n,
+                nn_kwargs,
+                loss_and_sigma_methods,
                 om,
                 opt_method_and_kwargs,
-                sm,
             )
-            for lm in ["lool"]
+            for b in [250]
+            for n in [20]
+            for loss_and_sigma_methods in [["lool", "analytic"]]
             for om in ["loo_crossval"]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
-            for sm in [None]
+            # for nn_kwargs in _basic_nn_kwarg_options
+            # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for opt_method_and_kwargs in [
+                _basic_opt_method_and_kwarg_options[0]
+            ]
         )
     )
-    def test_optim(
-        self, loss_method, obj_method, opt_method_and_kwargs, sigma_method
+    def test_hyper_optim(
+        self,
+        batch_count,
+        nn_count,
+        nn_kwargs,
+        loss_and_sigma_methods,
+        obj_method,
+        opt_method_and_kwargs,
     ):
-        if True:
-            _warn0(f"{self.__class__} is temporarily disabled.")
-            return
+        loss_method, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
 
-        model_idx = 1
-        ss_idx = 0
         mrse = 0.0
-        for k in range(self.its):
-            muygps = MuyGPS(**self.k_kwargs_opt)
 
-            guess = muygps.kernel.hyperparameters["nu"]()
+        # compute nearest neighbor structure
+        nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
+
+        for i in range(self.its):
+            batch_indices, batch_nn_indices = sample_batch(
+                nbrs_lookup, batch_count, self.train_count
+            )
+            batch_crosswise_diffs = crosswise_tensor(
+                self.train_features,
+                self.train_features,
+                batch_indices,
+                batch_nn_indices,
+            )
+            batch_pairwise_diffs = pairwise_tensor(
+                self.train_features, batch_nn_indices
+            )
+
+            # set up MuyGPS object
+            muygps = MuyGPS(
+                kernel=Matern(
+                    nu=ScalarHyperparameter(
+                        "sample", self.params["nu"].get_bounds()
+                    ),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=ScalarHyperparameter(
+                            self.params["length_scale"]()
+                        ),
+                    ),
+                ),
+                eps=HomoscedasticNoise(self.params["eps"]()),
+            )
 
             batch_targets = _consistent_chunk_tensor(
-                mm.array(
-                    self.train_targets_list[model_idx][ss_idx][k][
-                        self.batch_indices_list[model_idx][ss_idx], :
-                    ]
-                )
+                self.train_responses[i, batch_indices, :]
             )
             batch_nn_targets = _consistent_chunk_tensor(
-                mm.array(
-                    self.train_targets_list[model_idx][ss_idx][k][
-                        self.batch_nn_indices_list[model_idx][ss_idx], :
-                    ]
-                )
+                self.train_responses[i, batch_nn_indices, :]
             )
-            self._check_ndarray(
-                batch_targets,
-                mm.ftype,
-                shape=(self.batch_count, self.response_count),
-            )
-            self._check_ndarray(
-                batch_nn_targets,
-                mm.ftype,
-                shape=(
-                    self.batch_count,
-                    self.nn_count,
-                    self.response_count,
-                ),
-            )
+
             muygps = optimize_from_tensors(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
-                self.crosswise_diffs_list[model_idx][ss_idx],
-                self.pairwise_diffs_list[model_idx][ss_idx],
+                batch_crosswise_diffs,
+                batch_pairwise_diffs,
                 loss_method=loss_method,
                 obj_method=obj_method,
                 opt_method=opt_method,
                 sigma_method=sigma_method,
                 **opt_kwargs,
             )
+
+            # mse += (estimate - target) ** 2
             estimate = muygps.kernel.hyperparameters["nu"]()
-            print(
-                f"iteration {k} found nu={estimate}, "
-                f"(target={self.nu_target_list[model_idx]}) with initial guess "
-                f"{guess}"
-            )
-            mrse += _sq_rel_err(self.nu_target_list[model_idx], estimate)
+            mrse += _sq_rel_err(self.params["nu"](), estimate)
         mrse /= self.its
         print(f"optimizes with mean relative squared error {mrse}")
         # Is this a strong enough guarantee?
-        self.assertAlmostEqual(mrse, 0.0, 0)
+        self.assertLessEqual(mrse, self.nu_tol)
 
 
 if __name__ == "__main__":
