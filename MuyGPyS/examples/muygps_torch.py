@@ -34,6 +34,9 @@ if config.state.backend != "torch":
         f"torch-only code cannot be run in {config.state.backend} mode"
     )
 
+if config.state.ftype != "32":
+    raise ValueError("Example torch code must run in 32-bit mode")
+
 
 mse_loss = torch.nn.MSELoss()
 l1_loss = torch.nn.L1Loss()
@@ -335,7 +338,7 @@ def train_deep_kernel_muygps(
         >>> batch_count = 100
         >>> train_count = 10000
         >>> batch_indices, batch_nn_indices = sample_batch(nbrs_lookup,
-        ...batch_count, train_count)
+        ... batch_count, train_count)
         >>> nbrs_struct, model_trained = train_deep_kernel_muygps(
         ... model=model,
         ... train_features=torch.from_numpy(train['input']),
