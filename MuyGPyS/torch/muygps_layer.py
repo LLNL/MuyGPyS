@@ -125,14 +125,14 @@ class MuyGPs_layer(nn.Module):
             consisting of the diagonal elements of the posterior variance.
         """
 
-        crosswise_diffs = _crosswise_tensor(
+        crosswise_diffs = crosswise_tensor(
             x,
             x,
             self.batch_indices,
             self.batch_nn_indices,
         )
 
-        pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices)
+        pairwise_diffs = pairwise_tensor(x, self.batch_nn_indices)
 
         Kcross = self.muygps_model.kernel(crosswise_diffs)
         K = self.muygps_model.kernel(pairwise_diffs)
