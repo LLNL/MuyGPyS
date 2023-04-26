@@ -58,9 +58,10 @@ class BenchmarkTestCase(parameterized.TestCase):
 
         cls.sigma_tol = 5e-1
         cls.nu_tol = 5e-2
+        cls.length_scale_tol = 1e-1
 
         cls.params = {
-            "length_scale": ScalarHyperparameter(1.5, (1e-1, 1e1)),
+            "length_scale": ScalarHyperparameter(1e-1, (1e-2, 1e0)),
             "nu": ScalarHyperparameter(0.38, (1e-1, 1e0)),
             "eps": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
         }
@@ -77,7 +78,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             ),
             eps=HomoscedasticNoise(cls.params["eps"]()),
         )
-        cls.gp.sigma_sq._set(mm.array([0.5]))
+        cls.gp.sigma_sq._set(mm.array([5.0]))
         cls.ys = mm.zeros((cls.its, cls.data_count, cls.response_count))
         cls.train_responses = mm.zeros(
             (cls.its, cls.train_count, cls.response_count)
@@ -344,6 +345,86 @@ class NuTest(BenchmarkTestCase):
         print(f"optimizes nu with mean relative squared error {mrse}")
         # Is this a strong enough guarantee?
         self.assertLessEqual(mrse, self.nu_tol)
+
+
+class LengthScaleTest(BenchmarkTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(LengthScaleTest, cls).setUpClass()
+
+    @parameterized.parameters(
+        (
+            (
+                b,
+                n,
+                nn_kwargs,
+                loss_and_sigma_methods,
+                om,
+                opt_method_and_kwargs,
+            )
+            for b in [250]
+            for n in [20]
+            for loss_and_sigma_methods in [["lool", "analytic"]]
+            for om in ["loo_crossval"]
+            # for nn_kwargs in _basic_nn_kwarg_options
+            # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for nn_kwargs in [_basic_nn_kwarg_options[0]]
+            for opt_method_and_kwargs in [
+                _basic_opt_method_and_kwarg_options[0]
+            ]
+        )
+    )
+    def test_length_scale(
+        self,
+        batch_count,
+        nn_count,
+        nn_kwargs,
+        loss_and_sigma_methods,
+        obj_method,
+        opt_method_and_kwargs,
+    ):
+        loss_method, sigma_method = loss_and_sigma_methods
+        opt_method, opt_kwargs = opt_method_and_kwargs
+
+        error_vector = mm.zeros((self.its,))
+
+        # compute nearest neighbor structure
+        nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
+
+        for i in range(self.its):
+            # set up MuyGPS object
+            muygps = MuyGPS(
+                kernel=Matern(
+                    nu=ScalarHyperparameter(self.params["nu"]()),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=ScalarHyperparameter(
+                            "sample", self.params["length_scale"].get_bounds()
+                        ),
+                    ),
+                ),
+                eps=HomoscedasticNoise(self.params["eps"]()),
+            )
+
+            error_vector[i] = self._optim_chassis(
+                muygps,
+                "length_scale",
+                i,
+                nbrs_lookup,
+                batch_count,
+                loss_method,
+                obj_method,
+                opt_method,
+                sigma_method,
+                opt_kwargs,
+            )
+        median_error = mm.median(error_vector)
+        print(
+            "optimizes length_scale with "
+            f"median relative squared error {median_error}"
+        )
+        # Is this a strong enough guarantee?
+        self.assertLessEqual(median_error, self.length_scale_tol)
 
 
 if __name__ == "__main__":

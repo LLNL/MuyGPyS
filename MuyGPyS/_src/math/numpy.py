@@ -36,6 +36,7 @@ from numpy import (
     logical_or,
     max,
     mean,
+    median,
     min,
     mod,
     ndarray,
