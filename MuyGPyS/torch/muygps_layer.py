@@ -6,34 +6,15 @@
 """
 MuyGPs PyTorch implementation
 """
-
-from typing import List, Union
-
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS._src.math.torch import nn
+from MuyGPyS.gp.tensors import (
+    pairwise_tensor,
+    crosswise_tensor,
+)
 
-from MuyGPyS._src.gp.kernels.torch import (
-    _matern_05_fn,
-    _matern_15_fn,
-    _matern_25_fn,
-    _matern_inf_fn,
-    _matern_gen_fn,
-)
-from MuyGPyS._src.gp.tensors.torch import (
-    _pairwise_tensor,
-    _crosswise_tensor,
-    _l2,
-    _make_heteroscedastic_tensor,
-)
-from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
-from MuyGPyS._src.gp.noise.torch import (
-    _homoscedastic_perturb,
-    _heteroscedastic_perturb,
-)
-from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
-from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
 
@@ -65,17 +46,21 @@ class MuyGPs_layer(nn.Module):
 
     Example:
         >>> from MuyGPyS.torch.muygps_layer import MuyGPs_layer
-        >>> kernel_eps = 1e-3
-        >>> nu = 1/2
-        >>> length_scale = 1.0
+        >>> muygps_model = MuyGPS(
+        ... Matern(
+        ... nu=self.nu,
+        ...     metric=IsotropicDistortion(
+        ...         "l2", length_scale=self.length_scale
+        ...     ),
+        ... ),
+        ... eps=self.eps,
+        ... )
         >>> batch_indices = torch.arange(100,)
         >>> batch_nn_indices = torch.arange(100,)
         >>> batch_targets = torch.ones(100,)
         >>> batch_nn_targets = torch.ones(100,)
         >>> muygps_layer_object = MuyGPs_layer(
-        ... kernel_eps,
-        ... nu,
-        ... length_scale,
+        ... muygps_model,
         ... batch_indices,
         ... batch_nn_indices,
         ... batch_targets,
@@ -84,14 +69,8 @@ class MuyGPs_layer(nn.Module):
 
 
     Args:
-        eps:
-            A hyperparameter corresponding to the aleatoric uncertainty in the
-            data.
-        nu:
-            A smoothness parameter allowed to take on values 1/2, 3/2, 5/2, or
-            :math:`\\infty`.
-        length_scale:
-            The length scale parameter in the Matern kernel.
+        muygps_model:
+            A MuyGPs object providing the Gaussian Process final layer.
         batch_indices:
             A torch.Tensor of shape `(batch_count,)` containing the indices of
             the training data to be sampled for training.
@@ -114,23 +93,23 @@ class MuyGPs_layer(nn.Module):
 
     def __init__(
         self,
-        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
-        nu,
-        length_scale: ScalarHyperparameter,
+        muygps_model: MuyGPS,
         batch_indices: ScalarHyperparameter,
         batch_nn_indices,
         batch_targets,
         batch_nn_targets,
     ):
         super().__init__()
-
-        self.length_scale = length_scale
-        self.eps = eps
-        self.nu = nu
+        self.muygps_model = muygps_model
+        self.length_scale = muygps_model.kernel.distortion_fn.length_scale
+        self.eps = muygps_model.eps
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
         self.batch_nn_targets = batch_nn_targets
+
+        if isinstance(muygps_model.kernel, Matern):
+            self.nu = muygps_model.kernel.nu
 
     def forward(self, x):
         """
@@ -155,48 +134,14 @@ class MuyGPs_layer(nn.Module):
 
         pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices)
 
-        Kcross = kernel_func(
-            crosswise_diffs,
-            nu=self.nu(),
-            length_scale=self.length_scale(),
-        )
-        K = kernel_func(
-            pairwise_diffs,
-            nu=self.nu(),
-            length_scale=self.length_scale(),
-        )
+        Kcross = self.muygps_model.kernel(crosswise_diffs)
+        K = self.muygps_model.kernel(pairwise_diffs)
 
-        muygps_model = MuyGPS(
-            Matern(
-                nu=self.nu,
-                metric=IsotropicDistortion(
-                    "l2", length_scale=self.length_scale
-                ),
-            ),
-            eps=self.eps,
-        )
-
-        predictions = muygps_model.posterior_mean(
+        predictions = self.muygps_model.posterior_mean(
             K, Kcross, self.batch_nn_targets
         )
 
-        if isinstance(self.eps, HomoscedasticNoise):
-            sigma_sq = _analytic_sigma_sq_optim(
-                _homoscedastic_perturb(K, self.eps()), self.batch_nn_targets
-            )
-        elif isinstance(self.eps, HeteroscedasticNoise):
-            nugget_tensor = _make_heteroscedastic_tensor(
-                self.eps(), self.batch_nn_indices
-            )
-            sigma_sq = _analytic_sigma_sq_optim(
-                _heteroscedastic_perturb(K, nugget_tensor),
-                self.batch_nn_targets,
-            )
-        else:
-            raise ValueError(f"Noise model {type(self.eps)} is not supported")
-
-        muygps_model.sigma_sq.val = sigma_sq
-        variances = muygps_model.posterior_variance(K, Kcross)
+        variances = self.muygps_model.posterior_variance(K, Kcross)
 
         return predictions, variances
 
@@ -208,7 +153,7 @@ class MultivariateMuyGPs_layer(nn.Module):
     Implements the MuyGPs algorithm as articulated in [muyskens2021muygps]_. See
     documentation on MuyGPs class for more detail.
 
-    The MultivariateMuyGPs_layer class only supports the Matern kernel
+    The MultivariateMuyGPs_layer class only supports the RBF and Matern kernels
     currently. More kernels will be added to the torch module of MuyGPs in
     future releases.
 
@@ -218,7 +163,7 @@ class MultivariateMuyGPs_layer(nn.Module):
     :math:`\\rho` to be trained (provided an initial value by the user) as well
     as the homoskedastic :math:`\\varepsilon` noise parameter.
 
-    The MuyGPs layer returns the posterior mean, posterior variance, and a
+    The MultivariateMuyGPs layer returns the posterior mean, posterior variance, and a
     vector of :math:`\\sigma^2` indicating the scale parameter associated
     with the posterior variance of each dimension of the response.
 
@@ -229,19 +174,21 @@ class MultivariateMuyGPs_layer(nn.Module):
 
     Example:
         >>> from MuyGPyS.torch.muygps_layer import MultivariateMuyGPs_layer
-        >>> num_models = 10
-        >>> kernel_eps = 1e-3 * torch.ones(10,)
-        >>> nu = 1/2 * torch.ones(10,)
-        >>> length_scale = 1.0 * torch.ones(10,)
+        >>> multivariate_muygps_model = MMuyGPs(
+        ... Matern(
+        ... nu=self.nu,
+        ...     metric=IsotropicDistortion(
+        ...         "l2", length_scale=self.length_scale
+        ...     ),
+        ... ),
+        ... eps=self.eps,
+        ... )
         >>> batch_indices = torch.arange(100,)
         >>> batch_nn_indices = torch.arange(100,)
         >>> batch_targets = torch.ones(100,)
         >>> batch_nn_targets = torch.ones(100,)
         >>> muygps_layer_object = MultivariateMuyGPs_layer(
-        ... num_models,
-        ... kernel_eps,
-        ... nu,
-        ... length_scale,
+        ... multivariate_muygps_model,
         ... batch_indices,
         ... batch_nn_indices,
         ... batch_targets,
@@ -250,19 +197,8 @@ class MultivariateMuyGPs_layer(nn.Module):
 
 
     Args:
-        num_models:
-            The number of MuyGPs models to be used in the layer.
-        eps:
-            A torch.Tensor of shape `(num_models,)` containing the
-            hyperparameter corresponding to the aleatoric uncertainty in the
-            data for each model.
-        nu:
-            A torch.Tensor of shape `(num_models,)` containing the smoothness
-            parameter in the Matern kernel for each model. Allowed to take on
-            values 1/2, 3/2, 5/2, or :math:`\\infty`.
-        length_scale:
-            A torch.Tensor of shape `(num_models,)` containing the length scale
-            parameter in the Matern kernel for each model.
+        multivariate_muygps_model:
+            A MultivariateMuyGPS object to be used in the final GP layer.
         batch_indices:
             A torch.Tensor of shape `(batch_count,)` containing the indices of
             the training data to be sampled for training.
@@ -285,20 +221,14 @@ class MultivariateMuyGPs_layer(nn.Module):
 
     def __init__(
         self,
-        num_models,
-        eps: List[Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise]],
-        nu_vals: List[ScalarHyperparameter],
-        length_scales: List[ScalarHyperparameter],
+        multivariate_muygps_model: MMuyGPS,
         batch_indices,
         batch_nn_indices,
         batch_targets,
         batch_nn_targets,
     ):
         super().__init__()
-        self.num_models = num_models
-        self.length_scale = length_scales
-        self.eps = eps
-        self.nu = nu_vals
+        self.multivariate_muygps_model = multivariate_muygps_model
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
@@ -317,114 +247,28 @@ class MultivariateMuyGPs_layer(nn.Module):
             A torch.ndarray of shape `(batch_count, response_count)`
             consisting of the diagonal elements of the posterior variance.
         """
-        crosswise_diffs = _crosswise_tensor(
+        crosswise_diffs = crosswise_tensor(
             x,
             x,
             self.batch_indices,
             self.batch_nn_indices,
         )
 
-        pairwise_diffs = _pairwise_tensor(x, self.batch_nn_indices)
+        pairwise_diffs = pairwise_tensor(x, self.batch_nn_indices)
 
         batch_count, nn_count, response_count = self.batch_nn_targets.shape
 
         Kcross = torch.zeros(batch_count, nn_count, response_count)
         K = torch.zeros(batch_count, nn_count, nn_count, response_count)
 
-        k_kwargs_list = []
-        for i in range(response_count):
-            k_kwargs_list.append(
-                {
-                    "kernel": Matern(
-                        nu=self.nu[i],
-                        metric=IsotropicDistortion(
-                            "l2", length_scale=self.length_scale[i]
-                        ),
-                    ),
-                    "eps": self.eps[i],
-                }
-            )
+        for i, model in enumerate(self.multivariate_muygps_model.models):
+            Kcross[:, :, i] = model.kernel(crosswise_diffs)
+            K[:, :, :, i] = model.kernel(pairwise_diffs)
 
-        mmuygps_model = MMuyGPS(*k_kwargs_list)
+        variances = self.multivariate_muygps_model.posterior_variance(K, Kcross)
 
-        sigma_sq = torch.zeros(
-            response_count,
-        )
-
-        for i in range(self.num_models):
-            Kcross[:, :, i] = kernel_func(
-                crosswise_diffs,
-                nu=self.nu[i](),
-                length_scale=self.length_scale[i](),
-            )
-
-            K[:, :, :, i] = kernel_func(
-                pairwise_diffs,
-                nu=self.nu[i](),
-                length_scale=self.length_scale[i](),
-            )
-            if isinstance(self.eps[i], HomoscedasticNoise):
-                sigma_sq[i] = _analytic_sigma_sq_optim(
-                    _homoscedastic_perturb(K[:, :, :, i], self.eps[i]()),
-                    self.batch_nn_targets[:, :, i].reshape(
-                        batch_count, nn_count, 1
-                    ),
-                )
-            elif isinstance(self.eps[i], HeteroscedasticNoise):
-                nugget_tensor = _make_heteroscedastic_tensor(
-                    self.eps[i](), self.batch_nn_indices
-                )
-                sigma_sq[i] = _analytic_sigma_sq_optim(
-                    _heteroscedastic_perturb(K[:, :, :, i], nugget_tensor),
-                    self.batch_nn_targets[:, :, i].reshape(
-                        batch_count, nn_count, 1
-                    ),
-                )
-            else:
-                raise ValueError(
-                    f"Noise model {type(self.eps[i])} is not supported"
-                )
-
-        mmuygps_model.sigma_sq.val = sigma_sq
-        variances = mmuygps_model.posterior_variance(K, Kcross)
-
-        predictions = mmuygps_model.posterior_mean(
+        predictions = self.multivariate_muygps_model.posterior_mean(
             K, Kcross, self.batch_nn_targets
         )
 
         return predictions, variances
-
-
-def kernel_func(
-    diff_tensor: torch.ndarray, nu: float, length_scale: float
-) -> torch.ndarray:
-    """
-    Generate kernel tensors using the Matern kernel given an input difference
-    tensor. Currently only supports the Matern kernel, but more kernels will
-    be added in future releases.
-
-    Args:
-        diff_tensor:
-            A torch.Tensor difference tensor on which to evaluate the kernel.
-        nu:
-            The smoothness hyperparameter in the Matern kernel.
-        length_scale:
-            The lengthscale hyperparameter in the Matern kernel.
-
-    Returns:
-        A torch.Tensor containing the kernel matrix evaluated for the given
-        input values.
-    """
-    if nu == 1 / 2:
-        return _matern_05_fn(_l2(diff_tensor), length_scale=length_scale)
-
-    if nu == 3 / 2:
-        return _matern_15_fn(_l2(diff_tensor), length_scale=length_scale)
-
-    if nu == 5 / 2:
-        return _matern_25_fn(_l2(diff_tensor), length_scale=length_scale)
-
-    if nu == torch.inf:
-        return _matern_inf_fn(_l2(diff_tensor), length_scale=length_scale)
-    else:
-        return _matern_gen_fn(_l2(diff_tensor), nu, length_scale=length_scale)

@@ -15,7 +15,6 @@ from torch import (
     cov,
     corrcoef,
     cuda,
-    div,
     einsum,
     exp,
     inf,
@@ -55,6 +54,7 @@ from torch import (
 )
 from torch import (
     argmax as torch_argmax,
+    div as divide,
     max as torch_max,
     min as torch_min,
     sum as torch_sum,

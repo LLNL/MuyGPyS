@@ -17,22 +17,17 @@ from typing import Dict
 
 from torch.optim.lr_scheduler import ExponentialLR
 
-import MuyGPyS._src.math.numpy as np
-import MuyGPyS._src.math.torch as torch
+import torch
+import numpy as np
 from MuyGPyS import config
-from MuyGPyS._src.gp.tensors.torch import (
-    _pairwise_tensor,
-    _crosswise_tensor,
+from MuyGPyS.gp.tensors import (
+    pairwise_tensor,
+    crosswise_tensor,
 )
-from MuyGPyS._src.gp.muygps.torch import (
-    _muygps_posterior_mean,
-    _muygps_diagonal_variance,
-)
-from MuyGPyS._src.gp.noise.torch import _homoscedastic_perturb
-from MuyGPyS._src.optimize.loss.torch import _lool_fn_unscaled as lool_fn
-from MuyGPyS._src.optimize.sigma_sq.torch import _analytic_sigma_sq_optim
+from MuyGPyS.optimize.loss import lool_fn_unscaled as lool_fn
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.torch.muygps_layer import kernel_func
+
+from MuyGPyS.torch.muygps_layer import MultivariateMuyGPs_layer
 
 if config.state.backend != "torch":
     raise ValueError(
@@ -48,9 +43,9 @@ ce_loss = torch.nn.CrossEntropyLoss()
 
 def predict_single_model(
     model,
-    test_features: torch.ndarray,
-    train_features: torch.ndarray,
-    train_responses: torch.ndarray,
+    test_features: torch.Tensor,
+    train_features: torch.Tensor,
+    train_responses: torch.Tensor,
     nbrs_lookup: NN_Wrapper,
     nn_count: int,
 ):
@@ -66,13 +61,13 @@ def predict_single_model(
             `embedding` component and one
             `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer.
         test_features:
-            A torch.ndarray of shape `(test_count, feature_count)` containing
+            A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
         train_features:
-            A torch.ndarray of shape `(train_count, feature_count)` containing
+            A torch.Tensor of shape `(train_count, feature_count)` containing
             the training features.
         train_responses:
-            A torch.ndarray of shape `(train_count, response_count)` containing
+            A torch.Tensor of shape `(train_count, response_count)` containing
             the training responses corresponding to each feature.
         nbrs_lookup:
             A NN_Wrapper nearest neighbor lookup data structure.
@@ -80,10 +75,10 @@ def predict_single_model(
     Returns
     -------
     predictions:
-        A torch.ndarray of shape `(test_count, response_count)` whose rows are
+        A torch.Tensor of shape `(test_count, response_count)` whose rows are
         the predicted response for each of the given test feature.
     variances:
-        A torch.ndarray of shape `(batch_count,response_count)` shape consisting
+        A torch.Tensor of shape `(batch_count,response_count)` shape consisting
         of the diagonal elements of the posterior variance.
     """
     if model.embedding is None:
@@ -102,48 +97,32 @@ def predict_single_model(
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
-    crosswise_diffs = _crosswise_tensor(
+    crosswise_diffs = crosswise_tensor(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
         nn_indices_test,
     )
 
-    pairwise_diffs = _pairwise_tensor(train_features_embedded, nn_indices_test)
+    pairwise_diffs = pairwise_tensor(train_features_embedded, nn_indices_test)
 
-    Kcross = kernel_func(
-        crosswise_diffs,
-        nu=model.nu(),
-        length_scale=model.length_scale(),
-    )
-    K = kernel_func(
-        pairwise_diffs,
-        nu=model.nu(),
-        length_scale=model.length_scale(),
+    Kcross = model.GP_layer.muygps_model.kernel(crosswise_diffs)
+    K = model.GP_layer.muygps_model.kernel(pairwise_diffs)
+
+    predictions = model.GP_layer.muygps_model.posterior_mean(
+        K, Kcross, test_nn_targets
     )
 
-    predictions = _muygps_posterior_mean(
-        _homoscedastic_perturb(K, model.eps()), Kcross, test_nn_targets
-    )
-
-    sigma_sq = _analytic_sigma_sq_optim(
-        _homoscedastic_perturb(K, model.eps()), test_nn_targets
-    )
-
-    variances = _muygps_diagonal_variance(
-        _homoscedastic_perturb(K, model.eps()), Kcross
-    )
-    variances = torch.outer(variances, sigma_sq)
+    variances = model.GP_layer.muygps_model.posterior_variance(K, Kcross)
 
     return predictions, variances
 
 
 def predict_multiple_model(
     model,
-    num_responses: int,
-    test_features: torch.ndarray,
-    train_features: torch.ndarray,
-    train_responses: torch.ndarray,
+    test_features: torch.Tensor,
+    train_features: torch.Tensor,
+    train_responses: torch.Tensor,
     nbrs_lookup: NN_Wrapper,
     nn_count: int,
 ):
@@ -161,13 +140,13 @@ def predict_multiple_model(
             `embedding` component and one
             `MuyGPyS.torch.muygps_layer.MultivariateMuyGPs_layer` layer.
         test_features:
-            A torch.ndarray of shape `(test_count, feature_count)` containing
+            A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
         train_features:
-            A torch.ndarray of shape `(train_count, feature_count)` containing
+            A torch.Tensor of shape `(train_count, feature_count)` containing
             the training features.
         train_responses:
-            A torch.ndarray of shape `(train_count, response_count)` containing
+            A torch.Tensor of shape `(train_count, response_count)` containing
             the training responses corresponding to each feature.
         nbrs_lookup:
             A NN_Wrapper nearest neighbor lookup data structure.
@@ -175,10 +154,10 @@ def predict_multiple_model(
     Returns
     -------
     predictions:
-        A torch.ndarray of shape `(test_count, response_count)` whose rows are
+        A torch.Tensor of shape `(test_count, response_count)` whose rows are
         the predicted response for each of the given test feature.
     variances:
-        A torch.ndarray of shape `(batch_count,)` consisting of the diagonal
+        A torch.Tensor of shape `(batch_count,)` consisting of the diagonal
         elements of the posterior variance, or a matrix of shape
         `(batch_count, response_count)` for a multidimensional response.
     """
@@ -201,14 +180,14 @@ def predict_multiple_model(
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
-    crosswise_diffs = _crosswise_tensor(
+    crosswise_diffs = crosswise_tensor(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
         nn_indices_test,
     )
 
-    pairwise_diffs = _pairwise_tensor(train_features_embedded, nn_indices_test)
+    pairwise_diffs = pairwise_tensor(train_features_embedded, nn_indices_test)
 
     (
         batch_count,
@@ -219,49 +198,28 @@ def predict_multiple_model(
     Kcross = torch.zeros(test_count, nn_count, response_count)
     K = torch.zeros(test_count, nn_count, nn_count, response_count)
 
-    for i in range(num_responses):
-        Kcross[:, :, i] = kernel_func(
-            crosswise_diffs,
-            nu=model.nu[i](),
-            length_scale=model.length_scale[i](),
-        )
+    for i, muygps_model in enumerate(
+        model.GP_layer.multivariate_muygps_model.models
+    ):
+        Kcross[:, :, i] = muygps_model.kernel(crosswise_diffs)
+        K[:, :, :, i] = muygps_model.kernel(pairwise_diffs)
 
-        K[:, :, :, i] = kernel_func(
-            pairwise_diffs,
-            nu=model.nu[i](),
-            length_scale=model.length_scale[i](),
-        )
-
-    batch_count, nn_count, response_count = test_nn_targets.shape
-
-    predictions = torch.zeros(batch_count, response_count)
-    variances = torch.zeros(batch_count, response_count)
-    sigma_sq = torch.zeros(
-        response_count,
+    predictions = model.GP_layer.multivariate_muygps_model.posterior_mean(
+        K, Kcross, test_nn_targets
     )
 
-    for i in range(model.num_models):
-        predictions[:, i] = _muygps_posterior_mean(
-            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]()),
-            Kcross[:, :, i],
-            test_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
-        ).reshape(batch_count)
-        variances[:, i] = _muygps_diagonal_variance(
-            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]()),
-            Kcross[:, :, i],
-        )
-        sigma_sq[i] = _analytic_sigma_sq_optim(
-            _homoscedastic_perturb(K[:, :, :, i], model.eps[i]()),
-            test_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
-        )
+    variances = model.GP_layer.multivariate_muygps_model.posterior_variance(
+        K, Kcross
+    )
+
     return predictions, variances
 
 
 def predict_model(
     model,
-    test_features: torch.ndarray,
-    train_features: torch.ndarray,
-    train_responses: torch.ndarray,
+    test_features: torch.Tensor,
+    train_features: torch.Tensor,
+    train_responses: torch.Tensor,
     nbrs_lookup: NN_Wrapper,
     nn_count: int,
 ):
@@ -297,13 +255,13 @@ def predict_model(
             A custom PyTorch.nn.Module object containing an embedding component
             and one MuyGPs_layer or MultivariateMuyGPS_layer layer.
         test_features:
-            A torch.ndarray of shape `(test_count, feature_count)` containing
+            A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
         train_features:
-            A torch.ndarray of shape `(train_count, feature_count)` containing
+            A torch.Tensor of shape `(train_count, feature_count)` containing
             the training features.
         train_responses:
-            A torch.ndarray of shape `(train_count, response_count)` containing
+            A torch.Tensor of shape `(train_count, response_count)` containing
             the training responses corresponding to each feature.
         nbrs_lookup:
             A NN_Wrapper nearest neighbor lookup data structure.
@@ -311,19 +269,18 @@ def predict_model(
     Returns
     -------
     predictions:
-        A torch.ndarray of shape `(test_count, response_count)` whose rows are
+        A torch.Tensor of shape `(test_count, response_count)` whose rows are
         the predicted response for each of the given test feature.
     variances:
-        A torch.ndarray of shape `(batch_count,)` consisting of the diagonal
+        A torch.Tensor of shape `(batch_count,)` consisting of the diagonal
         elements of the posterior variance, or a matrix of shape
         `(batch_count, response_count)` for a multidimensional response.
     """
     if model.GP_layer is None:
         raise NotImplementedError("MuyGPs PyTorch model requires GP_layer.")
-    if hasattr(model.GP_layer, "num_models"):
+    if isinstance(model.GP_layer, MultivariateMuyGPs_layer):
         return predict_multiple_model(
             model,
-            model.GP_layer.num_models,
             test_features,
             train_features,
             train_responses,
@@ -343,9 +300,9 @@ def predict_model(
 
 def train_deep_kernel_muygps(
     model,
-    train_features: torch.ndarray,
-    train_responses: torch.ndarray,
-    batch_indices: torch.ndarray,
+    train_features: torch.Tensor,
+    train_responses: torch.Tensor,
+    batch_indices: torch.Tensor,
     nbrs_lookup: NN_Wrapper,
     training_iterations=10,
     optimizer_method=torch.optim.Adam,
@@ -397,13 +354,13 @@ def train_deep_kernel_muygps(
             embedding layer and one MuyGPs_layer or MultivariateMuyGPS_layer
             layer.
         train_features:
-            A torch.ndarray of shape `(train_count, feature_count)` containing
+            A torch.Tensor of shape `(train_count, feature_count)` containing
             the training features.
         train_responses:
-            A torch.ndarray of shape `(train_count, response_count)` containing
+            A torch.Tensor of shape `(train_count, response_count)` containing
             the training responses corresponding to each feature.
         batch_indices:
-            A torch.ndarray of shape `(batch_count,)` containing the indices of
+            A torch.Tensor of shape `(batch_count,)` containing the indices of
             the training batch.
         nbrs_lookup:
             A NN_Wrapper nearest neighbor lookup data structure.
@@ -522,9 +479,9 @@ def train_deep_kernel_muygps(
 
 def update_nearest_neighbors(
     model,
-    train_features: torch.ndarray,
-    train_responses: torch.ndarray,
-    batch_indices: torch.ndarray,
+    train_features: torch.Tensor,
+    train_responses: torch.Tensor,
+    batch_indices: torch.Tensor,
     nn_count: int,
     nn_kwargs: Dict = dict(),
 ):
@@ -560,13 +517,13 @@ def update_nearest_neighbors(
             embedding layer and one MuyGPs_layer or MultivariateMuyGPS_layer
             layer.
         train_features:
-            A torch.ndarray of shape `(train_count, feature_count)` containing
+            A torch.Tensor of shape `(train_count, feature_count)` containing
             the training features.
         train_responses:
-            A torch.ndarray of shape `(train_count, response_count)` containing
+            A torch.Tensor of shape `(train_count, response_count)` containing
             the training responses corresponding to each feature.
         batch_indices:
-            A torch.ndarray of shape `(batch_count,)` containing the indices of
+            A torch.Tensor of shape `(batch_count,)` containing the indices of
             the training batch.
         nn_count:
             A torch.int64 giving the number of nearest neighbors.
