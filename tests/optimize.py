@@ -78,7 +78,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             ),
             eps=HomoscedasticNoise(cls.params["eps"]()),
         )
-        cls.gp.sigma_sq._set(mm.array([0.5]))
+        cls.gp.sigma_sq._set(mm.array([5.0]))
         cls.ys = mm.zeros((cls.its, cls.data_count, cls.response_count))
         cls.train_responses = mm.zeros(
             (cls.its, cls.train_count, cls.response_count)
