@@ -334,7 +334,8 @@ def train_deep_kernel_muygps(
         >>> nbrs_lookup = NN_Wrapper(train['input'], nn_count, nn_method="hnsw")
         >>> batch_count = 100
         >>> train_count = 10000
-        >>> batch_indices, batch_nn_indices = sample_batch(nbrs_lookup, batch_count, train_count)
+        >>> batch_indices, batch_nn_indices = sample_batch(nbrs_lookup,
+        ...batch_count, train_count)
         >>> nbrs_struct, model_trained = train_deep_kernel_muygps(
         ... model=model,
         ... train_features=torch.from_numpy(train['input']),
