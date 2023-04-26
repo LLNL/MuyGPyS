@@ -24,9 +24,9 @@ from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
+from MuyGPyS.torch import MuyGPs_layer, MultivariateMuyGPs_layer
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.kernels import Matern
 

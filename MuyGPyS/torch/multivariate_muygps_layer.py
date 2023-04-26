@@ -6,34 +6,36 @@
 """
 MuyGPs PyTorch implementation
 """
+import MuyGPyS._src.math.torch as torch
 from MuyGPyS._src.math.torch import nn
 from MuyGPyS.gp.tensors import (
     pairwise_tensor,
     crosswise_tensor,
 )
 
-from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
 
 
-class MuyGPs_layer(nn.Module):
+class MultivariateMuyGPs_layer(nn.Module):
     """
-    MuyGPs model written as a custom PyTorch layer using nn.Module.
+    Multivariate MuyGPs model written as a custom PyTorch layer using nn.Module.
 
     Implements the MuyGPs algorithm as articulated in [muyskens2021muygps]_. See
     documentation on MuyGPs class for more detail.
 
-    The MuyGPs_layer class only supports the Matern kernel currently. More
-    kernels will be added to the torch module of MuyGPs in future releases.
+    The MultivariateMuyGPs_layer class only supports the RBF and Matern kernels
+    currently. More kernels will be added to the torch module of MuyGPs in
+    future releases.
 
     PyTorch does not currently support the Bessel function required to compute
     the Matern kernel for non-special values of :math:`\\nu`, e.g. 1/2, 3/2,
     5/2, and :math:`\\infty`. The MuyGPs layer allows the lengthscale parameter
     :math:`\\rho` to be trained (provided an initial value by the user) as well
-    as the homoscedastic :math:`\\varepsilon` noise parameter.
+    as the homoskedastic :math:`\\varepsilon` noise parameter.
 
-    The MuyGPs layer returns the posterior mean, posterior variance, and a
-    vector of :math:`\\sigma^2` indicating the scale parameter associated
-    with the posterior variance of each dimension of the response.
+    The MultivariateMuyGPs layer returns the posterior mean, posterior variance
+    , and a vector of :math:`\\sigma^2` indicating the scale parameter
+    associated with the posterior variance of each dimension of the response.
 
     :math:`\\sigma^2` is the only parameter assumed to be a training target by
     default, and is treated differently from all other hyperparameters. All
@@ -41,8 +43,8 @@ class MuyGPs_layer(nn.Module):
     a MuyGPs_layer object.
 
     Example:
-        >>> from MuyGPyS.torch.muygps_layer import MuyGPs_layer
-        >>> muygps_model = MuyGPS(
+        >>> from MuyGPyS.torch.muygps_layer import MultivariateMuyGPs_layer
+        >>> multivariate_muygps_model = MMuyGPs(
         ... Matern(
         ... nu=self.nu,
         ...     metric=IsotropicDistortion(
@@ -55,8 +57,8 @@ class MuyGPs_layer(nn.Module):
         >>> batch_nn_indices = torch.arange(100,)
         >>> batch_targets = torch.ones(100,)
         >>> batch_nn_targets = torch.ones(100,)
-        >>> muygps_layer_object = MuyGPs_layer(
-        ... muygps_model,
+        >>> muygps_layer_object = MultivariateMuyGPs_layer(
+        ... multivariate_muygps_model,
         ... batch_indices,
         ... batch_nn_indices,
         ... batch_targets,
@@ -65,8 +67,8 @@ class MuyGPs_layer(nn.Module):
 
 
     Args:
-        muygps_model:
-            A MuyGPs object providing the Gaussian Process final layer.
+        multivariate_muygps_model:
+            A MultivariateMuyGPS object to be used in the final GP layer.
         batch_indices:
             A torch.Tensor of shape `(batch_count,)` containing the indices of
             the training data to be sampled for training.
@@ -89,14 +91,14 @@ class MuyGPs_layer(nn.Module):
 
     def __init__(
         self,
-        muygps_model: MuyGPS,
+        multivariate_muygps_model: MMuyGPS,
         batch_indices,
         batch_nn_indices,
         batch_targets,
         batch_nn_targets,
     ):
         super().__init__()
-        self.muygps_model = muygps_model
+        self.multivariate_muygps_model = multivariate_muygps_model
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
@@ -112,10 +114,9 @@ class MuyGPs_layer(nn.Module):
             A torch.ndarray of shape `(batch_count, response_count)` whose rows
             are the predicted response for each of the given batch feature.
         variances:
-            A torch.ndarray of shape `(batch_count,response_count)`
+            A torch.ndarray of shape `(batch_count, response_count)`
             consisting of the diagonal elements of the posterior variance.
         """
-
         crosswise_diffs = crosswise_tensor(
             x,
             x,
@@ -125,13 +126,19 @@ class MuyGPs_layer(nn.Module):
 
         pairwise_diffs = pairwise_tensor(x, self.batch_nn_indices)
 
-        Kcross = self.muygps_model.kernel(crosswise_diffs)
-        K = self.muygps_model.kernel(pairwise_diffs)
+        batch_count, nn_count, response_count = self.batch_nn_targets.shape
 
-        predictions = self.muygps_model.posterior_mean(
+        Kcross = torch.zeros(batch_count, nn_count, response_count)
+        K = torch.zeros(batch_count, nn_count, nn_count, response_count)
+
+        for i, model in enumerate(self.multivariate_muygps_model.models):
+            Kcross[:, :, i] = model.kernel(crosswise_diffs)
+            K[:, :, :, i] = model.kernel(pairwise_diffs)
+
+        variances = self.multivariate_muygps_model.posterior_variance(K, Kcross)
+
+        predictions = self.multivariate_muygps_model.posterior_mean(
             K, Kcross, self.batch_nn_targets
         )
-
-        variances = self.muygps_model.posterior_variance(K, Kcross)
 
         return predictions, variances

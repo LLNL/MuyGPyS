@@ -27,7 +27,7 @@ from MuyGPyS.gp.tensors import (
 from MuyGPyS.optimize.loss import lool_fn_unscaled as lool_fn
 from MuyGPyS.neighbors import NN_Wrapper
 
-from MuyGPyS.torch.muygps_layer import MultivariateMuyGPs_layer
+from MuyGPyS.torch import MultivariateMuyGPs_layer
 
 if config.state.backend != "torch":
     raise ValueError(

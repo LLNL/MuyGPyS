@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from MuyGPyS._src.math.torch import nn
-from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
+from MuyGPyS.torch import MuyGPs_layer, MultivariateMuyGPs_layer
 
 
 class SVDKMuyGPs(nn.Module):

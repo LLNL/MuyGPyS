@@ -11,7 +11,7 @@ import MuyGPyS._src.math.torch as torch
 from MuyGPyS import config
 from MuyGPyS._test.torch_utils import SVDKMultivariateMuyGPs
 from MuyGPyS._test.utils import _check_ndarray, _make_gaussian_data
-from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
