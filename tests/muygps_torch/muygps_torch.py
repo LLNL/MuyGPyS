@@ -9,8 +9,11 @@ from absl.testing import parameterized
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS import config
-from MuyGPyS._test.torch_utils import SVDKMuyGPs, SVDKMultivariateMuyGPs
+from MuyGPyS._test.torch_utils import SVDKMultivariateMuyGPs
 from MuyGPyS._test.utils import _check_ndarray, _make_gaussian_data
+from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.kernels import Matern
+from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.batch import sample_batch
@@ -78,10 +81,37 @@ class RegressTest(parameterized.TestCase):
         _check_ndarray(self.assertEqual, batch_targets, torch.ftype)
         _check_ndarray(self.assertEqual, batch_nn_targets, torch.ftype)
 
-        model = SVDKMuyGPs(
-            eps=HomoscedasticNoise(1e-3),
-            nu=ScalarHyperparameter(0.5),
-            length_scale=ScalarHyperparameter(1.0),
+        model_nu = 0.5
+        model_length_scale = 1.0
+        measurement_eps = 1e-6
+
+        model_args = [
+            {
+                "kernel": Matern(
+                    nu=ScalarHyperparameter(model_nu),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=ScalarHyperparameter(model_length_scale),
+                    ),
+                ),
+                "eps": HomoscedasticNoise(measurement_eps),
+            },
+            {
+                "kernel": Matern(
+                    nu=ScalarHyperparameter(model_nu),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=ScalarHyperparameter(model_length_scale),
+                    ),
+                ),
+                "eps": HomoscedasticNoise(measurement_eps),
+            },
+        ]
+
+        multivariate_muygps_model = MMuyGPS(*model_args)
+
+        model = SVDKMultivariateMuyGPs(
+            multivariate_muygps_model=multivariate_muygps_model,
             batch_indices=batch_indices,
             batch_nn_indices=batch_nn_indices,
             batch_targets=batch_targets,
@@ -183,11 +213,33 @@ class MultivariateRegressTest(parameterized.TestCase):
         _check_ndarray(self.assertEqual, batch_targets, torch.ftype)
         _check_ndarray(self.assertEqual, batch_nn_targets, torch.ftype)
 
+        model_args = [
+            {
+                "kernel": Matern(
+                    nu=ScalarHyperparameter(1.5),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=ScalarHyperparameter(7.2),
+                    ),
+                ),
+                "eps": HomoscedasticNoise(1e-5),
+            },
+            {
+                "kernel": Matern(
+                    nu=ScalarHyperparameter(0.5),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=ScalarHyperparameter(2.2),
+                    ),
+                ),
+                "eps": HomoscedasticNoise(1e-6),
+            },
+        ]
+
+        multivariate_muygps_model = MMuyGPS(*model_args)
+
         model = SVDKMultivariateMuyGPs(
-            num_models=num_test_responses,
-            eps=[HomoscedasticNoise(1e-6)] * num_test_responses,
-            nu=[ScalarHyperparameter(0.5)] * num_test_responses,
-            length_scale=[ScalarHyperparameter(1.0)] * num_test_responses,
+            multivariate_muygps_model=multivariate_muygps_model,
             batch_indices=batch_indices,
             batch_nn_indices=batch_nn_indices,
             batch_targets=batch_targets,

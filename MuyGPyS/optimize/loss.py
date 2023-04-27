@@ -17,6 +17,7 @@ from MuyGPyS._src.optimize.loss import (
     _mse_fn,
     _cross_entropy_fn,
     _lool_fn,
+    _lool_fn_unscaled,
 )
 from MuyGPyS.optimize.utils import _switch_on_loss_method
 
@@ -124,3 +125,28 @@ def lool_fn(
         The LOOL loss of the prediction.
     """
     return _lool_fn(predictions, targets, variances, sigma_sq)
+
+
+def lool_fn_unscaled(
+    predictions: mm.ndarray, targets: mm.ndarray, variances: mm.ndarray
+) -> float:
+    """
+    Leave-one-out likelihood function.
+
+    Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
+    response. Treats multivariate outputs as interchangeable in terms of loss
+    penalty. Unlike lool_fn, does not require sigma_sq as an argument.
+
+    Args:
+        predictions:
+            The predicted response of shape `(batch_count, response_count)`.
+        targets:
+            The expected response of shape `(batch_count, response_count)`.
+        variances:
+            The unscaled variance of the predicted responses of shape
+            `(batch_count, response_count)`.
+
+    Returns:
+        The LOOL loss of the prediction.
+    """
+    return _lool_fn_unscaled(predictions, targets, variances)

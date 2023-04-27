@@ -3,19 +3,14 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import List, Union
-
 from MuyGPyS._src.math.torch import nn
-from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
-from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
+from MuyGPyS.torch import MuyGPs_layer, MultivariateMuyGPs_layer
 
 
 class SVDKMuyGPs(nn.Module):
     def __init__(
         self,
-        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
-        nu,
-        length_scale,
+        muygps_model,
         batch_indices,
         batch_nn_indices,
         batch_targets,
@@ -30,17 +25,13 @@ class SVDKMuyGPs(nn.Module):
             nn.Dropout(0.5),
             nn.PReLU(1),
         )
-        self.eps = eps
-        self.nu = nu
-        self.length_scale = length_scale
+        self.muygps_model = muygps_model
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
         self.batch_nn_targets = batch_nn_targets
         self.GP_layer = MuyGPs_layer(
-            self.eps,
-            self.nu,
-            self.length_scale,
+            self.muygps_model,
             self.batch_indices,
             self.batch_nn_indices,
             self.batch_targets,
@@ -56,10 +47,7 @@ class SVDKMuyGPs(nn.Module):
 class SVDKMultivariateMuyGPs(nn.Module):
     def __init__(
         self,
-        num_models,
-        eps: List[Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise]],
-        nu,
-        length_scale,
+        multivariate_muygps_model,
         batch_indices,
         batch_nn_indices,
         batch_targets,
@@ -74,19 +62,13 @@ class SVDKMultivariateMuyGPs(nn.Module):
             nn.Dropout(0.5),
             nn.ELU(1),
         )
-        self.eps = eps
-        self.nu = nu
-        self.length_scale = length_scale
+        self.multivariate_muygps_model = multivariate_muygps_model
         self.batch_indices = batch_indices
-        self.num_models = num_models
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
         self.batch_nn_targets = batch_nn_targets
         self.GP_layer = MultivariateMuyGPs_layer(
-            self.num_models,
-            self.eps,
-            self.nu,
-            self.length_scale,
+            self.multivariate_muygps_model,
             self.batch_indices,
             self.batch_nn_indices,
             self.batch_targets,

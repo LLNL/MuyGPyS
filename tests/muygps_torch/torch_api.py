@@ -24,7 +24,11 @@ from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.torch.muygps_layer import MuyGPs_layer, MultivariateMuyGPs_layer
+from MuyGPyS.torch import MuyGPs_layer, MultivariateMuyGPs_layer
+from MuyGPyS.gp.muygps import MuyGPS
+from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.kernels import Matern
 
 if config.state.torch_enabled is False:
     raise ValueError("Bad attempt to run torch-only code with torch disabled.")
@@ -53,13 +57,10 @@ stargal_files = {
 heaton_file = "heaton/sub_heaton.pkl"
 
 
-class SVDKMuyGPs(nn.Module):
+class SVDKMuyGPs_Star_Galaxy(nn.Module):
     def __init__(
         self,
-        num_models,
-        eps,
-        nu,
-        length_scale,
+        multivariate_muygps_model,
         batch_indices,
         batch_nn_indices,
         batch_targets,
@@ -74,19 +75,13 @@ class SVDKMuyGPs(nn.Module):
             nn.Dropout(0.5),
             nn.PReLU(1),
         )
-        self.eps = eps
-        self.nu = nu
-        self.length_scale = length_scale
+        self.multivariate_muygps_model = multivariate_muygps_model
         self.batch_indices = batch_indices
-        self.num_models = num_models
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
         self.batch_nn_targets = batch_nn_targets
         self.GP_layer = MultivariateMuyGPs_layer(
-            self.num_models,
-            self.eps,
-            self.nu,
-            self.length_scale,
+            self.multivariate_muygps_model,
             self.batch_indices,
             self.batch_nn_indices,
             self.batch_targets,
@@ -140,11 +135,33 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         batch_targets = train_responses[batch_indices, :]
         batch_nn_targets = train_responses[batch_nn_indices, :]
 
-        model = SVDKMuyGPs(
-            num_models=num_test_responses,
-            eps=[HomoscedasticNoise(1e-6)] * num_test_responses,
-            nu=[ScalarHyperparameter(0.5)] * num_test_responses,
-            length_scale=[ScalarHyperparameter(1.0)] * num_test_responses,
+        model_args = [
+            {
+                "kernel": Matern(
+                    nu=ScalarHyperparameter(1.5),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=ScalarHyperparameter(7.2),
+                    ),
+                ),
+                "eps": HomoscedasticNoise(1e-5),
+            },
+            {
+                "kernel": Matern(
+                    nu=ScalarHyperparameter(0.5),
+                    metric=IsotropicDistortion(
+                        metric="l2",
+                        length_scale=ScalarHyperparameter(2.2),
+                    ),
+                ),
+                "eps": HomoscedasticNoise(1e-6),
+            },
+        ]
+
+        multivariate_muygps_model = MMuyGPS(*model_args)
+
+        model = SVDKMuyGPs_Star_Galaxy(
+            multivariate_muygps_model=multivariate_muygps_model,
             batch_indices=batch_indices,
             batch_nn_indices=batch_nn_indices,
             batch_targets=batch_targets,
@@ -193,9 +210,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
 class SVDKMuyGPs_Heaton(nn.Module):
     def __init__(
         self,
-        eps,
-        nu,
-        length_scale,
+        muygps_model,
         batch_indices,
         batch_nn_indices,
         batch_targets,
@@ -210,17 +225,13 @@ class SVDKMuyGPs_Heaton(nn.Module):
             nn.Dropout(0.5),
             nn.PReLU(1),
         )
-        self.eps = eps
-        self.nu = nu
-        self.length_scale = length_scale
+        self.muygps_model = muygps_model
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
         self.batch_nn_targets = batch_nn_targets
         self.GP_layer = MuyGPs_layer(
-            self.eps,
-            self.nu,
-            self.length_scale,
+            self.muygps_model,
             self.batch_indices,
             self.batch_nn_indices,
             self.batch_targets,
@@ -270,10 +281,19 @@ class HeatonTest(RegressionAPITest):
         batch_targets = train_responses[batch_indices, :]
         batch_nn_targets = train_responses[batch_nn_indices, :]
 
+        muygps_model = MuyGPS(
+            Matern(
+                nu=ScalarHyperparameter(1.5),
+                metric=IsotropicDistortion(
+                    metric="l2",
+                    length_scale=ScalarHyperparameter(1.0),
+                ),
+            ),
+            eps=HomoscedasticNoise(1e-5),
+        )
+
         model = SVDKMuyGPs_Heaton(
-            eps=HomoscedasticNoise(1e-3),
-            nu=ScalarHyperparameter(0.5),
-            length_scale=ScalarHyperparameter(1.0),
+            muygps_model=muygps_model,
             batch_indices=batch_indices,
             batch_nn_indices=batch_nn_indices,
             batch_targets=batch_targets,

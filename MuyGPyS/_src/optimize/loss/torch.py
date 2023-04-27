@@ -54,6 +54,6 @@ def _lool_fn_unscaled(
     predictions: torch.ndarray, targets: torch.ndarray, variances: torch.ndarray
 ) -> float:
     return torch.sum(
-        torch.div((predictions - targets) ** 2, variances)
+        torch.divide((predictions - targets) ** 2, variances)
         + torch.log(variances)
     )
