@@ -95,8 +95,8 @@ def predict_single_model(
         test_features_embedded, nn_count=nn_count
     )
 
-    train_features_embedded = torch.from_numpy(train_features_embedded).float()
-    test_features_embedded = torch.from_numpy(test_features_embedded).float()
+    train_features_embedded = torch.from_numpy(train_features_embedded)
+    test_features_embedded = torch.from_numpy(test_features_embedded)
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
@@ -176,10 +176,8 @@ def predict_multiple_model(
         test_features_embedded, nn_count=nn_count
     )
 
-    # nn_indices_test = torch.from_numpy(nn_indices_test.astype(np.int64))
-
-    train_features_embedded = torch.from_numpy(train_features_embedded).float()
-    test_features_embedded = torch.from_numpy(test_features_embedded).float()
+    train_features_embedded = torch.from_numpy(train_features_embedded)
+    test_features_embedded = torch.from_numpy(test_features_embedded)
 
     test_nn_targets = train_responses[nn_indices_test, :]
 
@@ -193,7 +191,7 @@ def predict_multiple_model(
     pairwise_diffs = pairwise_tensor(train_features_embedded, nn_indices_test)
 
     (
-        batch_count,
+        _,
         nn_count,
         response_count,
     ) = model.batch_nn_targets.shape
