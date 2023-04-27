@@ -3,14 +3,23 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Dict
+from typing import Dict, Union
 
 from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter.experimental import (
+    HierarchicalNonstationaryHyperparameter,
+)
 
 
 class NullDistortion:
-    def __init__(self, metric: str, length_scale: ScalarHyperparameter):
+    def __init__(
+        self,
+        metric: str,
+        length_scale: Union[
+            ScalarHyperparameter, HierarchicalNonstationaryHyperparameter
+        ],
+    ):
         self.length_scale = length_scale
         self.metric = metric
         if metric == "l2":

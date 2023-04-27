@@ -9,8 +9,14 @@ from scipy.special import gamma, kv
 import MuyGPyS._src.math.numpy as np
 
 
-def _rbf_fn(squared_dists: np.ndarray, **kwargs) -> np.ndarray:
-    return np.exp(-squared_dists / 2.0)
+def _rbf_fn(
+    squared_dists: np.ndarray, length_scales: np.ndarray, **kwargs
+) -> np.ndarray:
+    # ensure scaling can be broadcast with squared_dists
+    scaling = 2.0 * np.square(length_scales).reshape(
+        (-1,) + (1,) * (squared_dists.ndim - 1)
+    )
+    return np.exp(-squared_dists / scaling)
 
 
 def _matern_05_fn(dists: np.ndarray, **kwargs) -> np.ndarray:

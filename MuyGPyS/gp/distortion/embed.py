@@ -6,6 +6,9 @@
 from typing import Callable, Union, Dict
 
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter.experimental import (
+    HierarchicalNonstationaryHyperparameter,
+)
 from MuyGPyS.gp.distortion.anisotropic import AnisotropicDistortion
 from MuyGPyS.gp.distortion.isotropic import IsotropicDistortion
 from MuyGPyS.gp.distortion.null import NullDistortion
@@ -46,9 +49,16 @@ def _optional_invoke_param(param: Union[ScalarHyperparameter, float]) -> float:
 def embed_with_distortion_model(
     fn: Callable,
     distortion_fn: Callable,
-    length_scale: Union[ScalarHyperparameter, Dict[str, ScalarHyperparameter]],
+    length_scale: Union[
+        ScalarHyperparameter,
+        HierarchicalNonstationaryHyperparameter,
+        Dict[str, ScalarHyperparameter],
+        Dict[str, HierarchicalNonstationaryHyperparameter],
+    ],
 ):
-    if isinstance(length_scale, ScalarHyperparameter):
+    if isinstance(length_scale, ScalarHyperparameter) or isinstance(
+        length_scale, HierarchicalNonstationaryHyperparameter
+    ):
         length_scale = {"length_scale": length_scale}
     if isinstance(distortion_fn, AnisotropicDistortion) or isinstance(
         distortion_fn, IsotropicDistortion

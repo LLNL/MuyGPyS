@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
@@ -14,11 +14,20 @@ from MuyGPyS.gp.hyperparameter import (
     append_scalar_optim_params_list,
     apply_scalar_hyperparameter,
 )
+from MuyGPyS.gp.hyperparameter.experimental import (
+    HierarchicalNonstationaryHyperparameter,
+)
 
 
 @auto_str
 class IsotropicDistortion:
-    def __init__(self, metric: str, length_scale: ScalarHyperparameter):
+    def __init__(
+        self,
+        metric: str,
+        length_scale: Union[
+            ScalarHyperparameter, HierarchicalNonstationaryHyperparameter
+        ],
+    ):
         self.metric = metric
         self.length_scale = length_scale
         if metric == "l2":
