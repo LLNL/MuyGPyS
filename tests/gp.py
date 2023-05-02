@@ -122,6 +122,16 @@ class GPInitTest(parameterized.TestCase):
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),
                 )
             ),
+            RBF(
+                metric=IsotropicDistortion(
+                    "l2",
+                    length_scale=HierarchicalNonstationaryHyperparameter(
+                        np.random.uniform(size=(10, 20)),
+                        np.random.uniform(size=(10, 1)),
+                        RBF(),
+                    ),
+                )
+            ),
         )
         for e in (
             (
@@ -135,18 +145,34 @@ class GPInitTest(parameterized.TestCase):
     def test_full_init(self, kernel, eps, gp_type):
         muygps = gp_type(kernel=kernel, eps=eps)
         for name, param in kernel._hyperparameters.items():
-            self.assertEqual(
-                param(),
-                muygps.kernel._hyperparameters[name](),
-            )
-            if param.fixed() is True:
-                self.assertTrue(muygps.kernel._hyperparameters[name].fixed())
-            else:
-                self.assertFalse(muygps.kernel._hyperparameters[name].fixed())
-                self.assertEqual(
-                    param.get_bounds(),
-                    muygps.kernel._hyperparameters[name].get_bounds(),
+            if isinstance(
+                kernel.distortion_fn.length_scale,
+                HierarchicalNonstationaryHyperparameter,
+            ):
+                batch_features = np.random.uniform(size=(10, 20))
+                self.assertTrue(
+                    mm.allclose(
+                        param(batch_features),
+                        muygps.kernel._hyperparameters[name](batch_features),
+                    )
                 )
+            else:
+                self.assertEqual(
+                    param(),
+                    muygps.kernel._hyperparameters[name](),
+                )
+                if param.fixed() is True:
+                    self.assertTrue(
+                        muygps.kernel._hyperparameters[name].fixed()
+                    )
+                else:
+                    self.assertFalse(
+                        muygps.kernel._hyperparameters[name].fixed()
+                    )
+                    self.assertEqual(
+                        param.get_bounds(),
+                        muygps.kernel._hyperparameters[name].get_bounds(),
+                    )
         self.assertEqual(eps(), muygps.eps())
         if eps.fixed() is True:
             self.assertTrue(muygps.eps.fixed())
