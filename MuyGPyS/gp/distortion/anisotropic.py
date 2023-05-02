@@ -3,13 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import List, Tuple, Callable, Dict
+from typing import List, Tuple, Callable, Dict, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS._src.util import auto_str
-
-from typing import List, Tuple, Callable, Dict, Union
 
 from MuyGPyS.gp.hyperparameter import (
     append_scalar_optim_params_list,

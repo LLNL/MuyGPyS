@@ -6,6 +6,7 @@
 from typing import Callable, Union, Dict, Optional
 
 import MuyGPyS._src.math as mm
+
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
