@@ -75,7 +75,7 @@ def _make_train_tensors(
     return crosswise_dists, pairwise_dists, batch_targets, batch_nn_targets
 
 
-def _make_batch_tensor(
+def _batch_features_tensor(
     features: torch.ndarray,
     batch_indices: torch.ndarray,
 ) -> torch.ndarray:

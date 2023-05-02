@@ -72,7 +72,7 @@ def _make_train_tensors(
     return crosswise_diffs, pairwise_diffs, batch_targets, batch_nn_targets
 
 
-def _make_batch_tensor(
+def _batch_features_tensor(
     features: np.ndarray,
     batch_indices: np.ndarray,
 ) -> np.ndarray:

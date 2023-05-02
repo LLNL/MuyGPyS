@@ -81,7 +81,7 @@ from MuyGPyS._src.gp.tensors import (
     _make_fast_predict_tensors,
     _make_predict_tensors,
     _make_train_tensors,
-    _make_batch_tensor,
+    _batch_features_tensor,
     _crosswise_tensor,
     _pairwise_tensor,
     _fast_nn_update,
@@ -302,7 +302,7 @@ def make_train_tensors(
     )
 
 
-def make_batch_tensor(
+def batch_features_tensor(
     features: mm.ndarray,
     batch_indices: mm.ndarray,
 ) -> mm.ndarray:
@@ -321,7 +321,7 @@ def make_batch_tensor(
         A tensor of shape `(batch_count, feature_count)` containing
         the feature vectors for each batch element.
     """
-    return _make_batch_tensor(features, batch_indices)
+    return _batch_features_tensor(features, batch_indices)
 
 
 def crosswise_tensor(

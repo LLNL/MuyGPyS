@@ -82,7 +82,7 @@ def _make_train_tensors(
 
 
 @jit
-def _make_batch_tensor(
+def _batch_features_tensor(
     features: jnp.ndarray,
     batch_indices: jnp.ndarray,
 ) -> jnp.ndarray:

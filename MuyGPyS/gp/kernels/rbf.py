@@ -88,7 +88,7 @@ class RBF(KernelFn):
         )
 
     def __call__(
-        self, diffs: mm.ndarray, features: mm.ndarray = None, **kwargs
+        self, diffs: mm.ndarray, batch_features: mm.ndarray = None, **kwargs
     ) -> mm.ndarray:
         """
         Compute RBF kernel(s) from a difference tensor.
@@ -100,7 +100,7 @@ class RBF(KernelFn):
                 `(data_count, nn_count, feature_count)`. In the four dimensional
                 case, it is assumed that the diagonals dists
                 diffs[i, j, j, :] == 0.
-            length_scales:
+            batch_features:
                 A tensor of shape `(data_count, 1)` or a vector of length
                 `data_count` or a scalar.
 
@@ -109,12 +109,7 @@ class RBF(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        if features is None:
-            # TODO: maybe error if features is missing when using hierarchical hyperparam
-            return self._fn(diffs, length_scale=mm.ndarray(1.0), **kwargs)
-        return self._fn(
-            diffs, length_scale=self.length_scale(features), **kwargs
-        )
+        return self._fn(diffs, batch_features=batch_features, **kwargs)
 
     def get_optim_params(
         self,

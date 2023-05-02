@@ -13,7 +13,7 @@ from MuyGPyS._src.mpi_utils import (
 from MuyGPyS._src.gp.tensors.numpy import (
     _crosswise_tensor as _crosswise_tensor_n,
     _pairwise_tensor as _pairwise_tensor_n,
-    _make_batch_tensor as _make_batch_tensor_n,
+    _batch_features_tensor as _batch_features_tensor_n,
     _make_train_tensors as _make_train_tensors_n,
     _make_predict_tensors as _make_predict_tensors_n,
     _make_heteroscedastic_tensor as _make_heteroscedatic_tensor_n,
@@ -77,13 +77,13 @@ def _make_train_tensors(
     )
 
 
-def _make_batch_tensor(
+def _batch_features_tensor(
     features: np.ndarray,
     batch_indices: np.ndarray,
 ) -> np.ndarray:
-    _make_batch_tensor_n
+    _batch_features_tensor_n
     return _chunk_function_tensor(
-        _make_batch_tensor_n,
+        _batch_features_tensor_n,
         features,
         batch_indices,
     )
