@@ -141,7 +141,7 @@ class UnivariateSampler:
         ax.legend(fontsize=20)
 
     def plot_target_sub(self, ax):
-        ax.set_title(f"Sampled Curve (subset)", fontsize=24)
+        ax.set_title("Sampled Curve (subset)", fontsize=24)
         ax.set_xlabel("Feature Domain", fontsize=20)
         ax.set_ylabel("Response Range", fontsize=20)
         ax.plot(
