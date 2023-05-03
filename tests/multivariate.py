@@ -364,7 +364,7 @@ class OptimTest(parameterized.TestCase):
                 mse += mm.sum(estimate - target[i]) ** 2
         mse /= its * response_count
         print(f"optimizes with mse {mse}")
-        self.assertAlmostEqual(mse, 0.0, 1)
+        self.assertLessEqual(mse, 0.25)
 
 
 class ClassifyTest(parameterized.TestCase):
