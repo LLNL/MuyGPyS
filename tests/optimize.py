@@ -9,7 +9,6 @@ from absl.testing import parameterized
 import MuyGPyS._src.math as mm
 
 from MuyGPyS import config
-from MuyGPyS._src.gp.tensors import _pairwise_differences, _l2
 from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 from MuyGPyS._test.gp import (
     benchmark_sample_full,
@@ -24,7 +23,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS
 
-from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.distortion import IsotropicDistortion, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -195,7 +194,7 @@ class SigmaSqTest(BenchmarkTestCase):
 
     def test_sigma_sq(self):
         mrse = 0.0
-        pairwise_diffs = _pairwise_differences(self.train_features)
+        pairwise_diffs = pairwise_tensor(self.train_features)
         K = self.gp.kernel(pairwise_diffs) + self.gp.eps() * mm.eye(
             self.feature_count
         )
@@ -320,7 +319,7 @@ class NuTest(BenchmarkTestCase):
                         "sample", self.params["nu"].get_bounds()
                     ),
                     metric=IsotropicDistortion(
-                        metric=_l2,
+                        metric=l2,
                         length_scale=ScalarHyperparameter(
                             self.params["length_scale"]()
                         ),
@@ -397,7 +396,7 @@ class LengthScaleTest(BenchmarkTestCase):
                 kernel=Matern(
                     nu=ScalarHyperparameter(self.params["nu"]()),
                     metric=IsotropicDistortion(
-                        metric=_l2,
+                        metric=l2,
                         length_scale=ScalarHyperparameter(
                             "sample", self.params["length_scale"].get_bounds()
                         ),

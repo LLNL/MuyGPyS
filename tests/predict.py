@@ -19,7 +19,7 @@ from MuyGPyS.examples.two_class_classify_uq import (
     do_uq,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion
+from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -32,7 +32,7 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
 )
 from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor
-from MuyGPyS._src.gp.tensors import _l2
+
 
 if config.state.backend == "torch":
     raise ValueError("conventional optimization does not support torch.")
@@ -55,7 +55,7 @@ class ClassifyTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
                         metric=IsotropicDistortion(
-                            _l2, length_scale=ScalarHyperparameter(1.5)
+                            l2, length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -64,7 +64,7 @@ class ClassifyTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
                         metric=AnisotropicDistortion(
-                            _l2, length_scale0=ScalarHyperparameter(1.5)
+                            l2, length_scale0=ScalarHyperparameter(1.5)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -123,7 +123,7 @@ class ClassifyUQTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
                         metric=IsotropicDistortion(
-                            _l2, length_scale=ScalarHyperparameter(1.5)
+                            l2, length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -131,7 +131,7 @@ class ClassifyUQTest(parameterized.TestCase):
                 {
                     "kernel": RBF(
                         metric=IsotropicDistortion(
-                            _l2, length_scale=ScalarHyperparameter(1.5)
+                            l2, length_scale=ScalarHyperparameter(1.5)
                         )
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -140,7 +140,7 @@ class ClassifyUQTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
                         metric=AnisotropicDistortion(
-                            _l2, length_scale0=ScalarHyperparameter(1.5)
+                            l2, length_scale0=ScalarHyperparameter(1.5)
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -148,7 +148,7 @@ class ClassifyUQTest(parameterized.TestCase):
                 {
                     "kernel": RBF(
                         metric=AnisotropicDistortion(
-                            _l2, length_scale0=ScalarHyperparameter(1.5)
+                            l2, length_scale0=ScalarHyperparameter(1.5)
                         )
                     ),
                     "eps": HomoscedasticNoise(1e-5),

@@ -10,3 +10,6 @@ from .embed import (
 from .isotropic import IsotropicDistortion
 from .null import NullDistortion
 from .anisotropic import AnisotropicDistortion
+
+from MuyGPyS._src.gp.tensors import _l2 as l2
+from MuyGPyS._src.gp.tensors import _F2 as F2

@@ -12,7 +12,7 @@ from sklearn.gaussian_process.kernels import RBF as sk_RBF
 import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
-from MuyGPyS._src.gp.tensors import _l2, _F2
+
 from MuyGPyS._src.mpi_utils import _consistent_unchunk_tensor, _warn0
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
@@ -23,7 +23,12 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.gp.tensors import crosswise_tensor, pairwise_tensor
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import RBF, Matern
-from MuyGPyS.gp.distortion import AnisotropicDistortion, IsotropicDistortion
+from MuyGPyS.gp.distortion import (
+    AnisotropicDistortion,
+    IsotropicDistortion,
+    F2,
+    l2,
+)
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
 
@@ -34,11 +39,11 @@ class DifferencesTest(parameterized.TestCase):
             (1000, f, nn, 10, nn_kwargs)
             # for f in [100]
             # for nn in [10]
-            # for m in [_l2]
+            # for m in [l2]
             # for nn_kwargs in [_basic_nn_kwarg_options][0]
             for f in [10, 2, 1]
             for nn in [5, 100]
-            # for m in [_l2, _F2]
+            # for m in [l2, F2]
             for nn_kwargs in _basic_nn_kwarg_options
         )
     )
@@ -121,8 +126,8 @@ class DistancesTest(parameterized.TestCase):
             mm.ftype,
             shape=(test_count, nn_count, nn_count, feature_count),
         )
-        l2_dists = _l2(diffs)
-        F2_dists = _F2(diffs)
+        l2_dists = l2(diffs)
+        F2_dists = F2(diffs)
         _check_ndarray(
             self.assertEqual,
             l2_dists,
@@ -442,7 +447,7 @@ class ParamTest(KernelTest):
     )
     def test_matern(self, k_kwargs, alt_kwargs):
         dist_model = IsotropicDistortion(
-            _l2, length_scale=k_kwargs["length_scale"]
+            l2, length_scale=k_kwargs["length_scale"]
         )
         kern_fn = Matern(metric=dist_model, nu=k_kwargs["nu"])
         self._test_chassis(kern_fn, k_kwargs, alt_kwargs)
@@ -520,7 +525,7 @@ class MaternTest(KernelTest):
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
         dist_model = IsotropicDistortion(
-            _l2, length_scale=k_kwargs["length_scale"]
+            l2, length_scale=k_kwargs["length_scale"]
         )
         mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
         # mtn = Matern(**k_kwargs)
@@ -590,7 +595,7 @@ class AnisotropicTest(KernelTest):
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
         dist_model = AnisotropicDistortion(
-            metric=_l2,
+            metric=l2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
@@ -662,7 +667,7 @@ class AnisotropicTest(KernelTest):
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
         dist_model = AnisotropicDistortion(
-            metric=_l2,
+            metric=l2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
@@ -947,7 +952,7 @@ class AnisotropicTest(KernelTest):
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
         dist_model_aniso = AnisotropicDistortion(
-            metric=_l2,
+            metric=l2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
@@ -964,7 +969,7 @@ class AnisotropicTest(KernelTest):
         kern_aniso = _consistent_unchunk_tensor(mtn_aniso(pairwise_diffs))
 
         dist_model_iso = IsotropicDistortion(
-            metric=_l2,
+            metric=l2,
             length_scale=k_kwargs["length_scale0"],
         )
         mtn_iso = Matern(nu=k_kwargs["nu"], metric=dist_model_iso)
