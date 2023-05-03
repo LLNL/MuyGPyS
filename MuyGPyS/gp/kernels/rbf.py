@@ -43,6 +43,7 @@ from MuyGPyS.gp.distortion import (
     AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
+    F2,
 )
 from MuyGPyS.gp.kernels import KernelFn
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
@@ -77,7 +78,7 @@ class RBF(KernelFn):
         self,
         metric: Union[
             AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion("F2", length_scale=ScalarHyperparameter(1.0)),
+        ] = IsotropicDistortion(F2, length_scale=ScalarHyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
         self._kernel_fn = _rbf_fn

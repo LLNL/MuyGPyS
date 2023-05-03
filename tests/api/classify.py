@@ -19,7 +19,7 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
 )
-from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.distortion import IsotropicDistortion, F2, l2
 from MuyGPyS.examples.two_class_classify_uq import example_lambdas
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
@@ -90,7 +90,7 @@ class MNISTTest(ClassifyAPITest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                "l2",
+                                l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
@@ -184,7 +184,7 @@ class StargalClassifyTest(StargalTest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                "l2",
+                                l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
@@ -196,7 +196,7 @@ class StargalClassifyTest(StargalTest):
                     {
                         "kernel": RBF(
                             metric=IsotropicDistortion(
-                                "F2",
+                                F2,
                                 length_scale=ScalarHyperparameter(
                                     1.5, (0.5, 1e1)
                                 ),
@@ -272,7 +272,7 @@ class StargalUQTest(StargalTest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                "l2",
+                                l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
@@ -284,7 +284,7 @@ class StargalUQTest(StargalTest):
                     {
                         "kernel": RBF(
                             metric=IsotropicDistortion(
-                                "F2",
+                                F2,
                                 length_scale=ScalarHyperparameter(1.5),
                             )
                         ),
@@ -351,7 +351,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                             "kernel": Matern(
                                 nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
-                                    "l2",
+                                    l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
@@ -361,7 +361,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                             "kernel": Matern(
                                 nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
-                                    "l2",
+                                    l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
@@ -375,7 +375,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                         {
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
-                                    "F2",
+                                    F2,
                                     length_scale=ScalarHyperparameter(
                                         1.5, (0.5, 1e1)
                                     ),
@@ -386,7 +386,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                         {
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
-                                    "F2",
+                                    F2,
                                     length_scale=ScalarHyperparameter(
                                         1.5, (0.5, 1e1)
                                     ),

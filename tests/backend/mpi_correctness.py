@@ -247,7 +247,7 @@ class TensorsTestCase(parameterized.TestCase):
             "kernel": Matern(
                 nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
+                    l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HomoscedasticNoise(cls.eps),
@@ -285,7 +285,7 @@ class TensorsTestCase(parameterized.TestCase):
                 "kernel": Matern(
                     nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                     metric=IsotropicDistortion(
-                        "l2",
+                        l2_n,
                         length_scale=ScalarHyperparameter(cls.length_scale),
                     ),
                 ),
@@ -371,7 +371,7 @@ class TensorsTestCase(parameterized.TestCase):
             "kernel": Matern(
                 nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
+                    l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n_chunk),
@@ -1194,7 +1194,7 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_isotropic_fn_n,
             IsotropicDistortion(
-                "l2", length_scale=ScalarHyperparameter(self.length_scale)
+                l2_n, length_scale=ScalarHyperparameter(self.length_scale)
             ),
             self.muygps.kernel.nu,
         )
@@ -1203,7 +1203,7 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_anisotropic_fn_n,
             AnisotropicDistortion(
-                "l2", length_scale0=ScalarHyperparameter(self.length_scale)
+                l2_n, length_scale0=ScalarHyperparameter(self.length_scale)
             ),
             self.muygps.kernel.nu,
         )
@@ -1213,7 +1213,7 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_isotropic_fn_m,
             IsotropicDistortion(
-                "l2", length_scale=ScalarHyperparameter(self.length_scale)
+                l2_m, length_scale=ScalarHyperparameter(self.length_scale)
             ),
             self.muygps.kernel.nu,
         )
@@ -1222,7 +1222,7 @@ class OptimTestCase(MuyGPSTestCase):
         return self.muygps.kernel._get_opt_fn(
             matern_gen_anisotropic_fn_m,
             AnisotropicDistortion(
-                "l2", length_scale0=ScalarHyperparameter(self.length_scale)
+                l2_m, length_scale0=ScalarHyperparameter(self.length_scale)
             ),
             self.muygps.kernel.nu,
         )
