@@ -37,12 +37,15 @@ class AnisotropicDistortion:
                     "feature in the dataset labeled length_scale{i} for the "
                     "ith feature with indexing beginning at zero."
                 )
-        if not all(
-            isinstance(param, ScalarHyperparameter)
-            for param in length_scales.values()
-        ) or not all(
-            isinstance(param, HierarchicalNonstationaryHyperparameter)
-            for param in length_scales.values()
+        if not (
+            all(
+                isinstance(param, ScalarHyperparameter)
+                for param in length_scales.values()
+            )
+            or all(
+                isinstance(param, HierarchicalNonstationaryHyperparameter)
+                for param in length_scales.values()
+            )
         ):
             raise ValueError(
                 "Anisotropic model expects all values for the length_scale{i} "
