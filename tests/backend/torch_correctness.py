@@ -930,7 +930,7 @@ class FastMultivariatePredictTestCase(MuyGPSTestCase):
             "kernel": Matern(
                 nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    ls_n, length_scale=ScalarHyperparameter(cls.length_scale)
+                    l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_train_n),
