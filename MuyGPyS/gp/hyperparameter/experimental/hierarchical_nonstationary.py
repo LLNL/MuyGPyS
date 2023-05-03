@@ -44,18 +44,18 @@ class HierarchicalNonstationaryHyperparameter:
         return lower_Kcross @ self.solve
 
 
-def sample_knots(feature_count: int, num_knots: int) -> mm.ndarray:
+def sample_knots(feature_count: int, knot_count: int) -> mm.ndarray:
     """
     Samples knots from feature matrix.
 
     Args:
         feature_count:
             Dimension of feature vectors.
-        num_knots:
+        knot_count:
             Number of knots to sample.
 
     Returns:
         Tensor of floats of shape `(knot_count, feature_count)`
         containing the sampled feature vectors for each knot.
     """
-    return LatinHypercube(feature_count, centered=True).random(num_knots)
+    return LatinHypercube(feature_count, centered=True).random(knot_count)
