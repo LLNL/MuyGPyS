@@ -11,7 +11,7 @@ import pickle as pkl
 from absl.testing import absltest
 from absl.testing import parameterized
 
-
+from MuyGPyS._src.gp.tensors import _F2, _l2
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
 from MuyGPyS._test.api import RegressionAPITest
@@ -83,7 +83,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                             "kernel": Matern(
                                 nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
-                                    "l2",
+                                    _l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
@@ -93,7 +93,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                             "kernel": Matern(
                                 nu=ScalarHyperparameter(0.5),
                                 metric=IsotropicDistortion(
-                                    "l2",
+                                    _l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
@@ -107,7 +107,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                         {
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
-                                    "F2",
+                                    _F2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 )
                             ),
@@ -116,7 +116,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                         {
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
-                                    "F2",
+                                    _F2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 )
                             ),
@@ -188,7 +188,7 @@ class HeatonTest(RegressionAPITest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                "l2",
+                                _l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
@@ -201,7 +201,7 @@ class HeatonTest(RegressionAPITest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=AnisotropicDistortion(
-                                "l2",
+                                _l2,
                                 length_scale0=ScalarHyperparameter(1.5),
                                 length_scale1=ScalarHyperparameter(1.5),
                             ),

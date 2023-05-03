@@ -11,6 +11,7 @@ import pickle as pkl
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from MuyGPyS._src.gp.tensors import _F2, _l2
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
 from MuyGPyS._test.api import ClassifyAPITest
@@ -90,7 +91,7 @@ class MNISTTest(ClassifyAPITest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                "l2",
+                                _l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
@@ -184,7 +185,7 @@ class StargalClassifyTest(StargalTest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                "l2",
+                                _l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
@@ -196,7 +197,7 @@ class StargalClassifyTest(StargalTest):
                     {
                         "kernel": RBF(
                             metric=IsotropicDistortion(
-                                "F2",
+                                _F2,
                                 length_scale=ScalarHyperparameter(
                                     1.5, (0.5, 1e1)
                                 ),
@@ -272,7 +273,7 @@ class StargalUQTest(StargalTest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                "l2",
+                                _l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
@@ -284,7 +285,7 @@ class StargalUQTest(StargalTest):
                     {
                         "kernel": RBF(
                             metric=IsotropicDistortion(
-                                "F2",
+                                _F2,
                                 length_scale=ScalarHyperparameter(1.5),
                             )
                         ),
@@ -351,7 +352,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                             "kernel": Matern(
                                 nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
-                                    "l2",
+                                    _l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
@@ -361,7 +362,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                             "kernel": Matern(
                                 nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
-                                    "l2",
+                                    _l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
@@ -375,7 +376,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                         {
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
-                                    "F2",
+                                    _F2,
                                     length_scale=ScalarHyperparameter(
                                         1.5, (0.5, 1e1)
                                     ),
@@ -386,7 +387,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                         {
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
-                                    "F2",
+                                    _F2,
                                     length_scale=ScalarHyperparameter(
                                         1.5, (0.5, 1e1)
                                     ),

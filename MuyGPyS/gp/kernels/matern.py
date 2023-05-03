@@ -45,6 +45,7 @@ from MuyGPyS._src.gp.kernels import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
+from MuyGPyS._src.gp.tensors import _l2
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.distortion import (
     embed_with_distortion_model,
@@ -119,7 +120,7 @@ class Matern(KernelFn):
         nu: ScalarHyperparameter = ScalarHyperparameter(0.5),
         metric: Union[
             AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion("l2", length_scale=ScalarHyperparameter(1.0)),
+        ] = IsotropicDistortion(_l2, length_scale=ScalarHyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
         self.nu = nu

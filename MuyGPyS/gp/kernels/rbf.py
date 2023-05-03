@@ -34,6 +34,7 @@ Example:
 """
 
 from typing import Callable, List, Tuple, Union
+from MuyGPyS._src.gp.tensors import _F2
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import _rbf_fn
@@ -77,7 +78,7 @@ class RBF(KernelFn):
         self,
         metric: Union[
             AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion("F2", length_scale=ScalarHyperparameter(1.0)),
+        ] = IsotropicDistortion(_F2, length_scale=ScalarHyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
         self._kernel_fn = _rbf_fn

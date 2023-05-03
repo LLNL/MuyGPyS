@@ -9,7 +9,7 @@ from absl.testing import parameterized
 import MuyGPyS._src.math as mm
 
 from MuyGPyS import config
-from MuyGPyS._src.gp.tensors import _pairwise_differences
+from MuyGPyS._src.gp.tensors import _pairwise_differences, _l2
 from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 from MuyGPyS._test.gp import (
     benchmark_sample_full,
@@ -320,7 +320,7 @@ class NuTest(BenchmarkTestCase):
                         "sample", self.params["nu"].get_bounds()
                     ),
                     metric=IsotropicDistortion(
-                        metric="l2",
+                        metric=_l2,
                         length_scale=ScalarHyperparameter(
                             self.params["length_scale"]()
                         ),
@@ -397,7 +397,7 @@ class LengthScaleTest(BenchmarkTestCase):
                 kernel=Matern(
                     nu=ScalarHyperparameter(self.params["nu"]()),
                     metric=IsotropicDistortion(
-                        metric="l2",
+                        metric=_l2,
                         length_scale=ScalarHyperparameter(
                             "sample", self.params["length_scale"].get_bounds()
                         ),

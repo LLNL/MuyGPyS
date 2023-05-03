@@ -11,7 +11,7 @@ import pickle as pkl
 from absl.testing import absltest
 from absl.testing import parameterized
 
-
+from MuyGPyS._src.gp.tensors import _l2
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS import config
@@ -140,7 +140,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                 "kernel": Matern(
                     nu=ScalarHyperparameter(1.5),
                     metric=IsotropicDistortion(
-                        metric="l2",
+                        metric=_l2,
                         length_scale=ScalarHyperparameter(7.2),
                     ),
                 ),
@@ -150,7 +150,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                 "kernel": Matern(
                     nu=ScalarHyperparameter(0.5),
                     metric=IsotropicDistortion(
-                        metric="l2",
+                        metric=_l2,
                         length_scale=ScalarHyperparameter(2.2),
                     ),
                 ),
@@ -285,7 +285,7 @@ class HeatonTest(RegressionAPITest):
             Matern(
                 nu=ScalarHyperparameter(1.5),
                 metric=IsotropicDistortion(
-                    metric="l2",
+                    metric=_l2,
                     length_scale=ScalarHyperparameter(1.0),
                 ),
             ),

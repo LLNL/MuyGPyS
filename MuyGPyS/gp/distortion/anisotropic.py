@@ -6,7 +6,6 @@
 from typing import List, Tuple, Callable, Dict
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.hyperparameter import (
     append_scalar_optim_params_list,
@@ -17,8 +16,8 @@ from MuyGPyS.gp.hyperparameter import (
 
 @auto_str
 class AnisotropicDistortion:
-    def __init__(self, metric: str, **length_scales):
-        self.metric = metric
+    def __init__(self, metric: Callable, **length_scales):
+        self._dist_fn = metric
         self.length_scale = length_scales
         for i, key in enumerate(self.length_scale.keys()):
             if key != "length_scale" + str(i) or not isinstance(
@@ -30,12 +29,6 @@ class AnisotropicDistortion:
                     "ith feature with indexing beginning at zero, with each"
                     "corresponding value being a ScalarHyperparameter."
                 )
-        if metric == "l2":
-            self._dist_fn = _l2
-        elif metric == "F2":
-            self._dist_fn = _F2
-        else:
-            raise ValueError(f"Metric {metric} is not supported!")
 
     def __call__(self, diffs: mm.ndarray, **length_scales) -> mm.ndarray:
         length_scale_array = self._get_length_scale_array(

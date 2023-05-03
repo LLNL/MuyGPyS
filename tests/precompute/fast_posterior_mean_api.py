@@ -12,6 +12,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from MuyGPyS import config
+from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS._test.api import FastPosteriorMeanAPITest
 from MuyGPyS._test.utils import (
     _balanced_subsample,
@@ -64,7 +65,7 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=IsotropicDistortion(
-                                "l2", length_scale=ScalarHyperparameter(1.5)
+                                _l2, length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
@@ -76,7 +77,7 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                             metric=AnisotropicDistortion(
-                                "l2",
+                                _l2,
                                 length_scale0=ScalarHyperparameter(1.5),
                                 length_scale1=ScalarHyperparameter(1.5),
                             ),
@@ -146,7 +147,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                             "kernel": Matern(
                                 nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
-                                    "l2",
+                                    _l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
@@ -156,7 +157,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                             "kernel": Matern(
                                 nu=ScalarHyperparameter(0.5),
                                 metric=IsotropicDistortion(
-                                    "l2",
+                                    _l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
@@ -170,7 +171,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                         {
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
-                                    "l2",
+                                    _F2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 )
                             ),
@@ -179,7 +180,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                         {
                             "kernel": RBF(
                                 metric=IsotropicDistortion(
-                                    "l2",
+                                    _F2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 )
                             ),
@@ -252,7 +253,7 @@ class StargalFastTest(FastPosteriorMeanAPITest):
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5),
                             metric=IsotropicDistortion(
-                                "l2", length_scale=ScalarHyperparameter(1.5)
+                                _l2, length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
@@ -263,7 +264,7 @@ class StargalFastTest(FastPosteriorMeanAPITest):
                     {
                         "kernel": RBF(
                             metric=IsotropicDistortion(
-                                "l2", length_scale=ScalarHyperparameter(1.5)
+                                _F2, length_scale=ScalarHyperparameter(1.5)
                             )
                         ),
                         "eps": HomoscedasticNoise(1e-3),
