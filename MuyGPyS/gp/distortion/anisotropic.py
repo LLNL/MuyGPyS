@@ -25,23 +25,31 @@ class AnisotropicDistortion:
         self,
         metric: str,
         **length_scales: Union[
-            ScalarHyperparameter, HierarchicalNonstationaryHyperparameter
+            List[ScalarHyperparameter],
+            List[HierarchicalNonstationaryHyperparameter],
         ],
     ):
         self.metric = metric
-        self.length_scale = length_scales
-        for i, (key, param) in enumerate(self.length_scale.items()):
-            if key != "length_scale" + str(i) or not (
-                isinstance(param, ScalarHyperparameter)
-                or isinstance(param, HierarchicalNonstationaryHyperparameter)
-            ):
+        for i, key in enumerate(length_scales.keys()):
+            if key != "length_scale" + str(i):
                 raise ValueError(
-                    "Anisotropic model expects either one keyword argument for"
-                    "each feature in the dataset labeled length_scalei for the"
-                    "ith feature with indexing beginning at zero, with each"
-                    "corresponding value being either a ScalarHyperparameter"
-                    "or a HierarchicalNonstationaryHyperparameter."
+                    "Anisotropic model expects one keyword argument for each "
+                    "feature in the dataset labeled length_scale{i} for the "
+                    "ith feature with indexing beginning at zero."
                 )
+        if not all(
+            isinstance(param, ScalarHyperparameter)
+            for param in length_scales.values()
+        ) or not all(
+            isinstance(param, HierarchicalNonstationaryHyperparameter)
+            for param in length_scales.values()
+        ):
+            raise ValueError(
+                "Anisotropic model expects all values for the length_scale{i} "
+                "keyword arguments to be of the same type, either "
+                "ScalarHyperparameter or HierarchicalNonstationaryHyperparameter."
+            )
+        self.length_scale = length_scales
         if metric == "l2":
             self._dist_fn = _l2
         elif metric == "F2":
