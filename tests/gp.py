@@ -36,12 +36,18 @@ from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
+    sample_knots,
 )
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
-from MuyGPyS.gp.tensors import make_train_tensors, make_predict_tensors
+from MuyGPyS.gp.tensors import (
+    make_train_tensors,
+    make_predict_tensors,
+    batch_features_tensor,
+)
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
+from MuyGPyS.optimize.batch import sample_batch
 
 
 class GPInitTest(parameterized.TestCase):
@@ -890,6 +896,60 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
         hyperparameters = hyp(batch_features)
         _check_ndarray(
             self.assertEqual, hyperparameters, mm.ftype, shape=(batch_count, 1)
+        )
+
+    def test_hierarchical_nonstationary_rbf(
+        self,
+    ):
+        feature_count = 50
+        knot_count = 10
+        knot_features = sample_knots(
+            feature_count=feature_count, knot_count=knot_count
+        )
+        knot_values = np.random.uniform(size=knot_count)
+        high_level_kernel = RBF()
+
+        muygps = MuyGPS(
+            kernel=RBF(
+                metric=IsotropicDistortion(
+                    "l2",
+                    length_scale=HierarchicalNonstationaryHyperparameter(
+                        knot_features, knot_values, high_level_kernel
+                    ),
+                ),
+            ),
+        )
+
+        # prepare data
+        data_count = 1000
+        data = _make_gaussian_dict(
+            data_count=data_count,
+            feature_count=feature_count,
+            response_count=1,
+        )
+
+        # neighbors and differences
+        nn_count = 30
+        nbrs_lookup = NN_Wrapper(
+            data["input"], nn_count, nn_method="exact", algorithm="ball_tree"
+        )
+        batch_count = 200
+        batch_indices, batch_nn_indices = sample_batch(
+            nbrs_lookup, batch_count, data_count
+        )
+        (_, pairwise_diffs, _, _) = make_train_tensors(
+            batch_indices,
+            batch_nn_indices,
+            data["input"],
+            data["output"],
+        )
+
+        batch_features = batch_features_tensor(data["input"], batch_indices)
+
+        K = muygps.kernel(pairwise_diffs, batch_features)
+
+        _check_ndarray(
+            self.assertEqual, K, mm.ftype, shape=(data_count, nn_count)
         )
 
 
