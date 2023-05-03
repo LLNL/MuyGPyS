@@ -18,10 +18,12 @@ hyperparameters.
 Example:
     >>> from MuyGPyS.gp.kernels import Matern
     >>> kern = Matern(
-    ...         nu = {"val": "log_sample", "bounds": (0.1, 2.5)},
-    ...         length_scale = {"val": 7.2},
-    ...         metric = "l2",
-    ... }
+    ...     nu=ScalarHyperparameter("log_sample", (0.1, 2.5)),
+    ...     metric=IsotropicDistortion(
+    ...         l2,
+    ...         length_scale=ScalarHyperparameter(1.0),
+    ...     ),
+    ... )
 
 One uses a previously computed `pairwise_diffs` tensor (see
 :func:`MuyGPyS.gp.tensor.pairwise_tensor`) to compute a kernel tensor whose
