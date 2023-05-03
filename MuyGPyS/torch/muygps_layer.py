@@ -43,13 +43,14 @@ class MuyGPs_layer(nn.Module):
     Example:
         >>> from MuyGPyS.torch.muygps_layer import MuyGPs_layer
         >>> muygps_model = MuyGPS(
-        ... Matern(
-        ... nu=self.nu,
-        ...     metric=IsotropicDistortion(
-        ...         "l2", length_scale=self.length_scale
+        ...     Matern(
+        ...         nu=ScalarHyperparameter("sample", (0.1, 1)),
+        ...         metric=IsotropicDistortion(
+        ...             l2,
+        ...             length_scale=ScalarHyperparameter(1.0)
+        ...         ),
         ...     ),
-        ... ),
-        ... eps=self.eps,
+        ...     eps=HomoscedasticNoise(1e-5),
         ... )
         >>> batch_indices = torch.arange(100,)
         >>> batch_nn_indices = torch.arange(100,)

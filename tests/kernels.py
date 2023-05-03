@@ -377,7 +377,7 @@ class RBFTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, _ = nbrs_lookup.get_nns(test)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = IsotropicDistortion("F2", **k_kwargs)
+        dist_model = IsotropicDistortion(F2, **k_kwargs)
         rbf = RBF(metric=dist_model)
         self._check_params_chassis(rbf, **k_kwargs)
         kern = _consistent_unchunk_tensor(rbf(pairwise_diffs))
@@ -417,7 +417,7 @@ class ParamTest(KernelTest):
     )
     def test_rbf(self, k_kwargs, alt_kwargs):
         dist_model = IsotropicDistortion(
-            "F2", length_scale=k_kwargs["length_scale"]
+            F2, length_scale=k_kwargs["length_scale"]
         )
         self._test_chassis(RBF(dist_model), k_kwargs, alt_kwargs)
 
@@ -765,7 +765,7 @@ class AnisotropicTest(KernelTest):
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
         dist_model = AnisotropicDistortion(
-            metric="F2",
+            metric=F2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
@@ -858,7 +858,7 @@ class AnisotropicTest(KernelTest):
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
         dist_model_aniso = AnisotropicDistortion(
-            metric="F2",
+            metric=F2,
             length_scale0=k_kwargs["length_scale0"],
         )
         rbf_aniso = RBF(metric=dist_model_aniso)
@@ -871,7 +871,7 @@ class AnisotropicTest(KernelTest):
         kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
 
         dist_model_iso = IsotropicDistortion(
-            metric="F2",
+            metric=F2,
             length_scale=k_kwargs["length_scale0"],
         )
         rbf_iso = RBF(metric=dist_model_iso)
@@ -1032,7 +1032,7 @@ class AnisotropicTest(KernelTest):
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
         dist_model_aniso = AnisotropicDistortion(
-            metric="F2",
+            metric=F2,
             length_scale0=k_kwargs["length_scale0"],
         )
         rbf_aniso = RBF(metric=dist_model_aniso)
@@ -1046,7 +1046,7 @@ class AnisotropicTest(KernelTest):
         kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
 
         dist_model_iso = IsotropicDistortion(
-            metric="F2",
+            metric=F2,
             length_scale=k_kwargs["length_scale0"],
         )
         rbf_iso = RBF(metric=dist_model_iso)

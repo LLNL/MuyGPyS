@@ -297,7 +297,7 @@ class TensorsTestCase(parameterized.TestCase):
             "kernel": Matern(
                 nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
+                    l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HomoscedasticNoise(cls.eps),
@@ -306,7 +306,7 @@ class TensorsTestCase(parameterized.TestCase):
             "kernel": Matern(
                 nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(cls.length_scale)
+                    l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
             ),
             "eps": HeteroscedasticNoise(cls.eps_heteroscedastic_n),

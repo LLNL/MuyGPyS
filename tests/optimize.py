@@ -70,7 +70,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             kernel=Matern(
                 nu=ScalarHyperparameter(cls.params["nu"]()),
                 metric=IsotropicDistortion(
-                    metric="l2",
+                    metric=l2,
                     length_scale=ScalarHyperparameter(
                         cls.params["length_scale"]()
                     ),
@@ -236,7 +236,7 @@ class SigmaSqOptimTest(BenchmarkTestCase):
                 kernel=Matern(
                     nu=ScalarHyperparameter(self.params["nu"]()),
                     metric=IsotropicDistortion(
-                        metric="l2",
+                        metric=l2,
                         length_scale=ScalarHyperparameter(
                             self.params["length_scale"]()
                         ),

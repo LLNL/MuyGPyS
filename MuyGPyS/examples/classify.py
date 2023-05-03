@@ -446,11 +446,14 @@ def do_classify(
         >>> train, test  = _make_gaussian_dict(10000, 100, 100, 10, categorial=True)
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
-        ...         "kern": "rbf",
-        ...         "metric": "F2",
-        ...         "eps": {"val": 1e-5},
-        ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)},
-        ... }
+        ...     "kernel": RBF(
+        ...          metric=IsotropicDistortion(
+        ...             l2,
+        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2)),
+        ...         ),
+        ...     ),
+        ...     "eps": HomoscedasticNoise(1e-5),
+        ... )
         >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
         ...         test['input'],
         ...         train['input'],

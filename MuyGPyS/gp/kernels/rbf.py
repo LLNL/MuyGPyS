@@ -17,7 +17,12 @@ hyperparameters.
 
 Example:
     >>> from MuyGPyS.gp.kernels import RBF
-    >>> kernel_fn = RBF(metric = "l2")
+    >>> kernel_fn = RBF(
+    ...     metric=IsotropicDistortion(
+    ...         l2,
+    ...         length_scale=ScalarHyperparameter(1.0),
+    ...     ),
+    ... )
 
 One uses a previously computed `pairwise_diffs` tensor (see
 :func:`MuyGPyS.gp.tensors.pairwise_tensor`) to compute a kernel tensor whose
