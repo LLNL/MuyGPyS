@@ -7,6 +7,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 import MuyGPyS._src.math as mm
+from MuyGPyS._src.gp.tensors import _pairwise_differences
 
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
@@ -194,7 +195,7 @@ class SigmaSqTest(BenchmarkTestCase):
 
     def test_sigma_sq(self):
         mrse = 0.0
-        pairwise_diffs = pairwise_tensor(self.train_features)
+        pairwise_diffs = _pairwise_differences(self.train_features)
         K = self.gp.kernel(pairwise_diffs) + self.gp.eps() * mm.eye(
             self.feature_count
         )
