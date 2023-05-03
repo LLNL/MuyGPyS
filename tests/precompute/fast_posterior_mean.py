@@ -7,7 +7,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from MuyGPyS import config
-from MuyGPyS._src.gp.tensors import _F2, _l2
+from MuyGPyS._src.gp.tensors import _l2
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_method_and_kwarg_options,
