@@ -17,10 +17,12 @@ object.
 Example:
     >>> from MuyGPyS.gp.kernels import Matern
     >>> kern = Matern(
-    ...         nu = {"val": "log_sample", "bounds": (0.1, 2.5)},
-    ...         length_scale = {"val": 7.2},
-    ...         metric = "l2",
-    ... }
+    ...     nu=ScalarHyperparameter("log_sample", (0.1, 2.5)),
+    ...     metric=IsotropicDistortion(
+    ...         l2,
+    ...         length_scale=ScalarHyperparameter(1.0),
+    ...     ),
+    ... )
 
 One uses a previously computed `pairwise_diffs` tensor (see
 :func:`MuyGPyS.gp.tensors.pairwise_tensor`) to compute a kernel tensor whose
@@ -45,12 +47,14 @@ from MuyGPyS._src.gp.kernels import (
     _matern_inf_fn,
     _matern_gen_fn,
 )
+
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.distortion import (
     embed_with_distortion_model,
     AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
+    l2,
 )
 from MuyGPyS.gp.hyperparameter import (
     append_scalar_optim_params_list,
@@ -119,7 +123,7 @@ class Matern(KernelFn):
         nu: ScalarHyperparameter = ScalarHyperparameter(0.5),
         metric: Union[
             AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion("l2", length_scale=ScalarHyperparameter(1.0)),
+        ] = IsotropicDistortion(l2, length_scale=ScalarHyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
         self.nu = nu

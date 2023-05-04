@@ -7,7 +7,6 @@
 from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.hyperparameter import (
     ScalarHyperparameter,
@@ -23,19 +22,13 @@ from MuyGPyS.gp.hyperparameter.experimental import (
 class IsotropicDistortion:
     def __init__(
         self,
-        metric: str,
+        metric: Callable,
         length_scale: Union[
             ScalarHyperparameter, HierarchicalNonstationaryHyperparameter
         ],
     ):
-        self.metric = metric
         self.length_scale = length_scale
-        if metric == "l2":
-            self._dist_fn = _l2
-        elif metric == "F2":
-            self._dist_fn = _F2
-        else:
-            raise ValueError(f"Metric {metric} is not supported!")
+        self._dist_fn = metric
 
     def __call__(self, diffs: mm.ndarray, length_scale: float) -> mm.ndarray:
         return self._dist_fn(diffs / length_scale)

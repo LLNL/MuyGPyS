@@ -33,7 +33,7 @@ jobs:
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           sh scripts/flake/issues.sh
       - name: Short Tests
-        if: matrix.test_group == 'short'
+        if: matrix.test-group == 'short'
         run: |
           python tests/data.py
           python tests/neighbors.py
@@ -43,10 +43,10 @@ jobs:
           python tests/predict.py
           python tests/precompute/fast_posterior_mean.py
       - name: Optimize Tests
-        if: matrix.test_group == 'optimize'
+        if: matrix.test-group == 'optimize'
         run: python tests/optimize.py
       - name: Multivariate Tests
-        if: matrix.test_group == 'multivariate'
+        if: matrix.test-group == 'multivariate'
         run: python tests/multivariate.py
 
   build-jax:

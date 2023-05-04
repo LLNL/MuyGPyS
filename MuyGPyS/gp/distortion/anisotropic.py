@@ -6,7 +6,6 @@
 from typing import List, Tuple, Callable, Dict, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS._src.util import auto_str
 
 from MuyGPyS.gp.hyperparameter import (
@@ -23,13 +22,13 @@ from MuyGPyS.gp.hyperparameter.experimental import (
 class AnisotropicDistortion:
     def __init__(
         self,
-        metric: str,
+        metric: Callable,
         **length_scales: Union[
             List[ScalarHyperparameter],
             List[HierarchicalNonstationaryHyperparameter],
         ],
     ):
-        self.metric = metric
+        self._dist_fn = metric
         for i, key in enumerate(length_scales.keys()):
             if key != "length_scale" + str(i):
                 raise ValueError(
@@ -53,12 +52,6 @@ class AnisotropicDistortion:
                 "ScalarHyperparameter or HierarchicalNonstationaryHyperparameter."
             )
         self.length_scale = length_scales
-        if metric == "l2":
-            self._dist_fn = _l2
-        elif metric == "F2":
-            self._dist_fn = _F2
-        else:
-            raise ValueError(f"Metric {metric} is not supported!")
 
     def __call__(self, diffs: mm.ndarray, **length_scales) -> mm.ndarray:
         length_scale_array = self._get_length_scale_array(

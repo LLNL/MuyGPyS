@@ -17,6 +17,7 @@ from MuyGPyS._src.mpi_utils import (
     _consistent_unchunk_tensor,
     _warn0,
 )
+from MuyGPyS.gp.distortion import F2, l2
 
 # from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS._test.utils import (
@@ -86,19 +87,19 @@ class GPInitTest(parameterized.TestCase):
             Matern(
                 nu=ScalarHyperparameter(1.0, (1e-2, 5e4)),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             Matern(
                 nu=ScalarHyperparameter(1.0),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             Matern(
                 nu=ScalarHyperparameter(1.0, (1e-2, 5e4)),
                 metric=AnisotropicDistortion(
-                    "l2",
+                    l2,
                     length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0)),
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),
                 ),
@@ -106,24 +107,24 @@ class GPInitTest(parameterized.TestCase):
             Matern(
                 nu=ScalarHyperparameter(1.0),
                 metric=AnisotropicDistortion(
-                    "l2",
+                    l2,
                     length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0)),
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),
                 ),
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             RBF(
                 metric=AnisotropicDistortion(
-                    "F2",
+                    F2,
                     length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0)),
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),
                 )
@@ -172,36 +173,36 @@ class GPInitTest(parameterized.TestCase):
             Matern(
                 nu=ScalarHyperparameter("sample", (1e-2, 5e4)),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             Matern(
                 nu=ScalarHyperparameter("log_sample", (1e-2, 5e4)),
                 metric=IsotropicDistortion(
-                    "l2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             RBF(
                 metric=IsotropicDistortion(
-                    "F2", length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
+                    F2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             Matern(
                 nu=ScalarHyperparameter("log_sample", (1e-2, 5e4)),
                 metric=AnisotropicDistortion(
-                    "l2",
+                    l2,
                     length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0)),
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),
                 ),
             ),
             RBF(
                 metric=AnisotropicDistortion(
-                    "F2",
+                    F2,
                     length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0)),
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),
                 )

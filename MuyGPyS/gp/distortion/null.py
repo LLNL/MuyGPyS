@@ -3,9 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Dict, Union
+from typing import Dict, Callable, Union
 
-from MuyGPyS._src.gp.tensors import _F2, _l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
@@ -15,19 +14,13 @@ from MuyGPyS.gp.hyperparameter.experimental import (
 class NullDistortion:
     def __init__(
         self,
-        metric: str,
+        metric: Callable,
         length_scale: Union[
             ScalarHyperparameter, HierarchicalNonstationaryHyperparameter
         ],
     ):
         self.length_scale = length_scale
-        self.metric = metric
-        if metric == "l2":
-            self._dist_fn = _l2
-        elif metric == "F2":
-            self._dist_fn = _F2
-        else:
-            raise ValueError(f"Metric {metric} is not supported!")
+        self._dist_fn = metric
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError("NullDistortion cannot be called!")

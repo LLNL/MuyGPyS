@@ -17,7 +17,12 @@ hyperparameters.
 
 Example:
     >>> from MuyGPyS.gp.kernels import RBF
-    >>> kernel_fn = RBF(metric = "l2")
+    >>> kernel_fn = RBF(
+    ...     metric=IsotropicDistortion(
+    ...         l2,
+    ...         length_scale=ScalarHyperparameter(1.0),
+    ...     ),
+    ... )
 
 One uses a previously computed `pairwise_diffs` tensor (see
 :func:`MuyGPyS.gp.tensors.pairwise_tensor`) to compute a kernel tensor whose
@@ -43,6 +48,7 @@ from MuyGPyS.gp.distortion import (
     AnisotropicDistortion,
     IsotropicDistortion,
     NullDistortion,
+    F2,
 )
 from MuyGPyS.gp.kernels import KernelFn
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
@@ -77,7 +83,7 @@ class RBF(KernelFn):
         self,
         metric: Union[
             AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion("F2", length_scale=ScalarHyperparameter(1.0)),
+        ] = IsotropicDistortion(F2, length_scale=ScalarHyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
         self._kernel_fn = _rbf_fn

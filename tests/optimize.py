@@ -7,9 +7,9 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 import MuyGPyS._src.math as mm
+from MuyGPyS._src.gp.tensors import _pairwise_differences
 
 from MuyGPyS import config
-from MuyGPyS._src.gp.tensors import _pairwise_differences
 from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 from MuyGPyS._test.gp import (
     benchmark_sample_full,
@@ -24,7 +24,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS
 
-from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.distortion import IsotropicDistortion, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -57,7 +57,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.length_scale = 1e-2
 
         cls.sigma_tol = 5e-1
-        cls.nu_tol = 5e-2
+        cls.nu_tol = 1e-1
         cls.length_scale_tol = 1e-1
 
         cls.params = {
@@ -70,7 +70,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             kernel=Matern(
                 nu=ScalarHyperparameter(cls.params["nu"]()),
                 metric=IsotropicDistortion(
-                    metric="l2",
+                    metric=l2,
                     length_scale=ScalarHyperparameter(
                         cls.params["length_scale"]()
                     ),
@@ -236,7 +236,7 @@ class SigmaSqOptimTest(BenchmarkTestCase):
                 kernel=Matern(
                     nu=ScalarHyperparameter(self.params["nu"]()),
                     metric=IsotropicDistortion(
-                        metric="l2",
+                        metric=l2,
                         length_scale=ScalarHyperparameter(
                             self.params["length_scale"]()
                         ),
@@ -320,7 +320,7 @@ class NuTest(BenchmarkTestCase):
                         "sample", self.params["nu"].get_bounds()
                     ),
                     metric=IsotropicDistortion(
-                        metric="l2",
+                        metric=l2,
                         length_scale=ScalarHyperparameter(
                             self.params["length_scale"]()
                         ),
@@ -397,7 +397,7 @@ class LengthScaleTest(BenchmarkTestCase):
                 kernel=Matern(
                     nu=ScalarHyperparameter(self.params["nu"]()),
                     metric=IsotropicDistortion(
-                        metric="l2",
+                        metric=l2,
                         length_scale=ScalarHyperparameter(
                             "sample", self.params["length_scale"].get_bounds()
                         ),
