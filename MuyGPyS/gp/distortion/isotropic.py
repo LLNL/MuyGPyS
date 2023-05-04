@@ -30,7 +30,12 @@ class IsotropicDistortion:
         self.length_scale = length_scale
         self._dist_fn = metric
 
-    def __call__(self, diffs: mm.ndarray, length_scale: float) -> mm.ndarray:
+    def __call__(
+        self, diffs: mm.ndarray, length_scale: Union[float, mm.ndarray]
+    ) -> mm.ndarray:
+        # make sure length_scale is broadcastable when its shape is (batch_count,)
+        shape = (-1,) + (1,) * (diffs.ndim - 1)
+        length_scale = mm.atleast_1d(length_scale).reshape(shape)
         return self._dist_fn(diffs / length_scale)
 
     def get_optim_params(

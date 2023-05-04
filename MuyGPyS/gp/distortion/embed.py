@@ -46,7 +46,9 @@ def apply_distortion(distortion_fn: Callable, **length_scales):
 
 
 def _optional_invoke_param(
-    param: Union[ScalarHyperparameter, float],
+    param: Union[
+        ScalarHyperparameter, HierarchicalNonstationaryHyperparameter, float
+    ],
     batch_features: Optional[mm.ndarray] = None,
 ) -> float:
     if isinstance(param, ScalarHyperparameter):

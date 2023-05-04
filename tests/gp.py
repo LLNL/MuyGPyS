@@ -913,7 +913,7 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
         muygps = MuyGPS(
             kernel=RBF(
                 metric=IsotropicDistortion(
-                    "l2",
+                    l2,
                     length_scale=HierarchicalNonstationaryHyperparameter(
                         knot_features, knot_values, high_level_kernel
                     ),
@@ -950,7 +950,10 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
         K = muygps.kernel(pairwise_diffs, batch_features)
 
         _check_ndarray(
-            self.assertEqual, K, mm.ftype, shape=(data_count, nn_count)
+            self.assertEqual,
+            K,
+            mm.ftype,
+            shape=(batch_count, nn_count, nn_count),
         )
 
 
