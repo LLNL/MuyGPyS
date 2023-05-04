@@ -35,7 +35,7 @@ class IsotropicDistortion:
     ) -> mm.ndarray:
         # make sure length_scale is broadcastable when its shape is (batch_count,)
         shape = (-1,) + (1,) * (diffs.ndim - 1)
-        length_scale = mm.atleast_1d(length_scale).reshape(shape)
+        length_scale = mm.array(length_scale).reshape(shape)
         return self._dist_fn(diffs / length_scale)
 
     def get_optim_params(
