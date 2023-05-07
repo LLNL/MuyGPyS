@@ -35,6 +35,7 @@ from torch import (
     optim,
     outer,
     rand,
+    reshape,
     sqrt,
     tile,
     unique,

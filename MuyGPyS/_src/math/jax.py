@@ -40,6 +40,7 @@ from jax.numpy import (
     newaxis,
     outer,
     repeat,
+    reshape,
     sqrt,
     sum,
     tile,

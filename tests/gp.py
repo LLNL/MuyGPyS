@@ -899,26 +899,45 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
             self.assertEqual, hyperparameters, mm.ftype, shape=(batch_count, 1)
         )
 
-    def test_hierarchical_nonstationary_rbf(
-        self,
-    ):
-        feature_count = 50
-        knot_count = 10
-        knot_features = sample_knots(
-            feature_count=feature_count, knot_count=knot_count
-        )
-        knot_values = np.random.uniform(size=knot_count)
-        high_level_kernel = RBF()
-
-        muygps = MuyGPS(
-            kernel=RBF(
-                metric=IsotropicDistortion(
+    @parameterized.parameters(
+        (
+            (feature_count, high_level_kernel, metric)
+            for feature_count in [2, 17]
+            for knot_count in [10]
+            for knot_features in [
+                sample_knots(feature_count=feature_count, knot_count=knot_count)
+            ]
+            for knot_values in [np.random.uniform(size=knot_count)]
+            for high_level_kernel in [RBF(), Matern()]
+            for metric in [
+                IsotropicDistortion(
                     l2,
                     length_scale=HierarchicalNonstationaryHyperparameter(
                         knot_features, knot_values, high_level_kernel
                     ),
                 ),
-            ),
+                AnisotropicDistortion(
+                    l2,
+                    **{
+                        f"length_scale{i}": HierarchicalNonstationaryHyperparameter(
+                            knot_features,
+                            (i + 1) * knot_values,
+                            high_level_kernel,
+                        )
+                        for i in range(feature_count)
+                    },
+                ),
+            ]
+        )
+    )
+    def test_hierarchical_nonstationary_rbf(
+        self,
+        feature_count,
+        high_level_kernel,
+        metric,
+    ):
+        muygps = MuyGPS(
+            kernel=RBF(metric=metric),
         )
 
         # prepare data

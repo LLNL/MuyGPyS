@@ -55,18 +55,24 @@ class AnisotropicDistortion:
 
     def __call__(self, diffs: mm.ndarray, **length_scales) -> mm.ndarray:
         length_scale_array = self._get_length_scale_array(
-            mm.array, diffs.shape[-1], **length_scales
+            mm.array, diffs.shape, **length_scales
         )
         return self._dist_fn(diffs / length_scale_array)
 
     @staticmethod
     def _get_length_scale_array(
-        array_fn: Callable, target_length: float, **length_scales
+        array_fn: Callable, target_shape: float, **length_scales
     ) -> mm.ndarray:
-        AnisotropicDistortion._lengths_agree(len(length_scales), target_length)
+        AnisotropicDistortion._lengths_agree(
+            len(length_scales), target_shape[-1]
+        )
         if callable(length_scales["length_scale0"]) is True:
             length_scales = {ls: length_scales[ls]() for ls in length_scales}
-        return array_fn([value for value in length_scales.values()])
+        # make sure each length_scale array is broadcastable when its shape is (batch_count,)
+        shape = (1,) * (len(target_shape) - 2) + (-1,)
+        return array_fn(
+            [mm.reshape(value, shape) for value in length_scales.values()]
+        ).T
 
     @staticmethod
     def _lengths_agree(found_length, target_length):
