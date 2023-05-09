@@ -47,7 +47,6 @@ from MuyGPyS.gp.distortion import (
     embed_with_distortion_model,
     AnisotropicDistortion,
     IsotropicDistortion,
-    NullDistortion,
     F2,
 )
 from MuyGPyS.gp.kernels import KernelFn
