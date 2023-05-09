@@ -82,7 +82,7 @@ class RBF(KernelFn):
     def __init__(
         self,
         metric: Union[
-            AnisotropicDistortion, IsotropicDistortion, NullDistortion
+            AnisotropicDistortion, IsotropicDistortion
         ] = IsotropicDistortion(F2, length_scale=ScalarHyperparameter(1.0)),
     ):
         super().__init__(metric=metric)

@@ -20,7 +20,9 @@ def apply_distortion(distortion_fn: Callable, **length_scales):
     def distortion_applier(fn: Callable):
         def distorted_fn(diffs, *args, batch_features=None, **kwargs):
             inner_kwargs = {
-                key: _optional_invoke_param(kwargs[key])
+                key: _optional_invoke_param(
+                    kwargs[key], batch_features=batch_features
+                )
                 for key in kwargs
                 if key.startswith("length_scale")
             }
@@ -32,7 +34,9 @@ def apply_distortion(distortion_fn: Callable, **length_scales):
                     ),
                 )
             outer_kwargs = {
-                key: _optional_invoke_param(kwargs[key])
+                key: _optional_invoke_param(
+                    kwargs[key], batch_features=batch_features
+                )
                 for key in kwargs
                 if not key.startswith("length_scale")
             }
