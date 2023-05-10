@@ -3,4 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .hierarchical_nonstationary import HierarchicalNonstationaryHyperparameter
+from .hierarchical_nonstationary import (
+    HierarchicalNonstationaryHyperparameter,
+    sample_knots,
+)

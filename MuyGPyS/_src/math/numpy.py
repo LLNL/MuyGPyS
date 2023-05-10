@@ -44,6 +44,7 @@ from numpy import (
     outer,
     random,
     repeat,
+    reshape,
     sqrt,
     sum,
     tile,

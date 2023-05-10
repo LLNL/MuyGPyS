@@ -3,13 +3,22 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Dict, Callable
+from typing import Dict, Callable, Union
 
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter.experimental import (
+    HierarchicalNonstationaryHyperparameter,
+)
 
 
 class NullDistortion:
-    def __init__(self, metric: Callable, length_scale: ScalarHyperparameter):
+    def __init__(
+        self,
+        metric: Callable,
+        length_scale: Union[
+            ScalarHyperparameter, HierarchicalNonstationaryHyperparameter
+        ],
+    ):
         self.length_scale = length_scale
         self._dist_fn = metric
 

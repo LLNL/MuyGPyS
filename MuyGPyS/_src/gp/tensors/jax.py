@@ -82,6 +82,14 @@ def _make_train_tensors(
 
 
 @jit
+def _batch_features_tensor(
+    features: jnp.ndarray,
+    batch_indices: jnp.ndarray,
+) -> jnp.ndarray:
+    return features[batch_indices, :]
+
+
+@jit
 def _crosswise_tensor(
     data: jnp.ndarray,
     nn_data: jnp.ndarray,

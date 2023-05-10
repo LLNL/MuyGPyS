@@ -136,28 +136,28 @@ def isotropic_l2_t(diffs, length_scale):
 
 def anisotropic_F2_n(diffs, **length_scales):
     length_scale_array = AnisotropicDistortion._get_length_scale_array(
-        np.array, diffs.shape[-1], **length_scales
+        np.array, diffs.shape, **length_scales
     )
     return F2_n(diffs / length_scale_array)
 
 
 def anisotropic_l2_n(diffs, **length_scales):
     length_scale_array = AnisotropicDistortion._get_length_scale_array(
-        np.array, diffs.shape[-1], **length_scales
+        np.array, diffs.shape, **length_scales
     )
     return l2_n(diffs / length_scale_array)
 
 
 def anisotropic_F2_t(diffs, **length_scales):
     length_scale_array = AnisotropicDistortion._get_length_scale_array(
-        torch.array, diffs.shape[-1], **length_scales
+        torch.array, diffs.shape, **length_scales
     )
     return F2_t(diffs / length_scale_array)
 
 
 def anisotropic_l2_t(diffs, **length_scales):
     length_scale_array = AnisotropicDistortion._get_length_scale_array(
-        torch.array, diffs.shape[-1], **length_scales
+        torch.array, diffs.shape, **length_scales
     )
     return l2_t(diffs / length_scale_array)
 

@@ -47,7 +47,6 @@ from MuyGPyS.gp.distortion import (
     embed_with_distortion_model,
     AnisotropicDistortion,
     IsotropicDistortion,
-    NullDistortion,
     F2,
 )
 from MuyGPyS.gp.kernels import KernelFn
@@ -82,7 +81,7 @@ class RBF(KernelFn):
     def __init__(
         self,
         metric: Union[
-            AnisotropicDistortion, IsotropicDistortion, NullDistortion
+            AnisotropicDistortion, IsotropicDistortion
         ] = IsotropicDistortion(F2, length_scale=ScalarHyperparameter(1.0)),
     ):
         super().__init__(metric=metric)
@@ -93,7 +92,9 @@ class RBF(KernelFn):
             self.distortion_fn.length_scale,
         )
 
-    def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
+    def __call__(
+        self, diffs: mm.ndarray, batch_features: mm.ndarray = None, **kwargs
+    ) -> mm.ndarray:
         """
         Compute RBF kernel(s) from a difference tensor.
 
@@ -104,13 +105,16 @@ class RBF(KernelFn):
                 `(data_count, nn_count, feature_count)`. In the four dimensional
                 case, it is assumed that the diagonals dists
                 diffs[i, j, j, :] == 0.
+            batch_features:
+                A tensor of shape `(data_count, 1)` or a vector of length
+                `data_count` or a scalar.
 
         Returns:
             A cross-covariance matrix of shape `(data_count, nn_count)` or a
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self._fn(diffs)
+        return self._fn(diffs, batch_features=batch_features, **kwargs)
 
     def get_optim_params(
         self,

@@ -81,6 +81,7 @@ from MuyGPyS._src.gp.tensors import (
     _make_fast_predict_tensors,
     _make_predict_tensors,
     _make_train_tensors,
+    _batch_features_tensor,
     _crosswise_tensor,
     _pairwise_tensor,
     _fast_nn_update,
@@ -299,6 +300,28 @@ def make_train_tensors(
     return _make_train_tensors(
         batch_indices, batch_nn_indices, train_features, train_targets
     )
+
+
+def batch_features_tensor(
+    features: mm.ndarray,
+    batch_indices: mm.ndarray,
+) -> mm.ndarray:
+    """
+    Compute a tensor of feature vectors for each batch element.
+
+    Args:
+        features:
+            The full floating point training or testing data matrix of shape
+            `(train_count, feature_count)` or `(test_count, feature_count)`.
+        batch_indices:
+            A vector of integers of shape `(batch_count,)` identifying the
+            training batch of observations to be approximated.
+
+    Returns:
+        A tensor of shape `(batch_count, feature_count)` containing
+        the feature vectors for each batch element.
+    """
+    return _batch_features_tensor(features, batch_indices)
 
 
 def crosswise_tensor(

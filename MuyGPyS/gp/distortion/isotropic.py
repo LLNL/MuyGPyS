@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
@@ -13,16 +13,40 @@ from MuyGPyS.gp.hyperparameter import (
     append_scalar_optim_params_list,
     apply_scalar_hyperparameter,
 )
+from MuyGPyS.gp.hyperparameter.experimental import (
+    HierarchicalNonstationaryHyperparameter,
+)
 
 
 @auto_str
 class IsotropicDistortion:
-    def __init__(self, metric: Callable, length_scale: ScalarHyperparameter):
+    def __init__(
+        self,
+        metric: Callable,
+        length_scale: Union[
+            ScalarHyperparameter, HierarchicalNonstationaryHyperparameter
+        ],
+    ):
         self.length_scale = length_scale
         self._dist_fn = metric
 
-    def __call__(self, diffs: mm.ndarray, length_scale: float) -> mm.ndarray:
-        return self._dist_fn(diffs / length_scale)
+    def __call__(
+        self, diffs: mm.ndarray, length_scale: Union[float, mm.ndarray]
+    ) -> mm.ndarray:
+        length_scale_array = self._get_length_scale_array(
+            mm.array, diffs.shape, length_scale
+        )
+        return self._dist_fn(diffs / length_scale_array)
+
+    @staticmethod
+    def _get_length_scale_array(
+        array_fn: Callable,
+        target_shape: float,
+        length_scale: Union[float, mm.ndarray],
+    ) -> mm.ndarray:
+        # make sure length_scale is broadcastable when its shape is (batch_count,)
+        shape = (-1,) + (1,) * (len(target_shape) - 1)
+        return mm.reshape(array_fn(length_scale), shape)
 
     def get_optim_params(
         self,
