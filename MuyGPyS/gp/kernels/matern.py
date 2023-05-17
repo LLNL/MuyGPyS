@@ -56,10 +56,7 @@ from MuyGPyS.gp.distortion import (
     NullDistortion,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import (
-    append_scalar_optim_params_list,
-    ScalarHyperparameter,
-)
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import (
     KernelFn,
 )
@@ -167,7 +164,7 @@ class Matern(KernelFn):
                 A list of unfixed hyperparameter bound tuples.
         """
         names, params, bounds = super().get_optim_params()
-        append_scalar_optim_params_list(self.nu, "nu", names, params, bounds)
+        self.nu.append_lists("nu", names, params, bounds)
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:

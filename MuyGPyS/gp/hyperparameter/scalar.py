@@ -304,6 +304,18 @@ class ScalarHyperparameter:
 
         return fn
 
+    def append_lists(
+        self,
+        name: str,
+        names: List[str],
+        params: List[float],
+        bounds: List[Tuple[float, float]],
+    ):
+        if not self.fixed():
+            names.append(name)
+            params.append(self())
+            bounds.append(self.get_bounds())
+
 
 def _init_scalar_hyperparameter(
     val_def: Union[str, float],
@@ -327,16 +339,3 @@ def _init_scalar_hyperparameter(
     val = kwargs.get("val", val_def)
     bounds = kwargs.get("bounds", bounds_def)
     return type(val, bounds)
-
-
-def append_scalar_optim_params_list(
-    param: Union[TensorHyperparameter, ScalarHyperparameter],
-    name: str,
-    names: List[str],
-    params: List[float],
-    bounds: List[Tuple[float, float]],
-):
-    if not param.fixed():
-        names.append(name)
-        params.append(param())
-        bounds.append(param.get_bounds())

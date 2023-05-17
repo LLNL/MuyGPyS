@@ -50,6 +50,11 @@ class HierarchicalNonstationaryHyperparameter:
             "optimizing hierarchical parameters is not yet supported"
         )
 
+    def append_lists(self, name, names, params, bounds):
+        raise NotImplementedError(
+            "optimizing hierarchical parameters is not yet supported"
+        )
+
 
 def sample_knots(feature_count: int, knot_count: int) -> mm.ndarray:
     """

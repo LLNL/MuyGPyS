@@ -8,10 +8,7 @@ from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
-from MuyGPyS.gp.hyperparameter import (
-    ScalarHyperparameter,
-    append_scalar_optim_params_list,
-)
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
 )
@@ -65,9 +62,7 @@ class IsotropicDistortion:
         names: List[str] = []
         params: List[float] = []
         bounds: List[Tuple[float, float]] = []
-        append_scalar_optim_params_list(
-            self.length_scale, "length_scale", names, params, bounds
-        )
+        self.length_scale.append_lists("length_scale", names, params, bounds)
         return names, params, bounds
 
     def get_opt_fn(self, fn) -> Callable:
