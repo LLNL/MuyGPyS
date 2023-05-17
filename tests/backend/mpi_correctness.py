@@ -1178,7 +1178,7 @@ class OptimTestCase(MuyGPSTestCase):
     @classmethod
     def setUpClass(cls):
         super(OptimTestCase, cls).setUpClass()
-        cls.x0_names, cls.x0, bounds = cls.muygps.get_optim_params()
+        cls.x0_names, cls.x0, bounds = cls.muygps.get_opt_params()
         cls.x0_map = {n: cls.x0[i] for i, n in enumerate(cls.x0_names)}
         cls.sopt_kwargs = {"verbose": False}
         cls.bopt_kwargs = {

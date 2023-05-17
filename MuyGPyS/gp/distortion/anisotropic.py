@@ -3,16 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import List, Tuple, Callable, Dict, Union
+from typing import List, Tuple, Callable, Dict
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
 
-from MuyGPyS.gp.hyperparameter import (
-    append_scalar_optim_params_list,
-    apply_scalar_hyperparameter,
-    ScalarHyperparameter,
-)
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
 )
@@ -23,10 +19,7 @@ class AnisotropicDistortion:
     def __init__(
         self,
         metric: Callable,
-        **length_scales: Union[
-            List[ScalarHyperparameter],
-            List[HierarchicalNonstationaryHyperparameter],
-        ],
+        **length_scales,
     ):
         self._dist_fn = metric
         for i, key in enumerate(length_scales.keys()):
@@ -64,7 +57,7 @@ class AnisotropicDistortion:
     @staticmethod
     def _get_length_scale_array(
         array_fn: Callable,
-        target_shape: float,
+        target_shape: mm.ndarray,
         batch_features=None,
         **length_scales,
     ) -> mm.ndarray:
@@ -90,7 +83,7 @@ class AnisotropicDistortion:
                 "(Isotropic model)."
             )
 
-    def get_optim_params(
+    def get_opt_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         """
@@ -108,14 +101,8 @@ class AnisotropicDistortion:
         names: List[str] = []
         params: List[float] = []
         bounds: List[Tuple[float, float]] = []
-        for key, param in self.length_scale.items():
-            append_scalar_optim_params_list(
-                param,
-                key,
-                names,
-                params,
-                bounds,
-            )
+        for name, param in self.length_scale.items():
+            param.append_lists(name, names, params, bounds)
         return names, params, bounds
 
     def get_opt_fn(self, fn) -> Callable:
@@ -131,12 +118,8 @@ class AnisotropicDistortion:
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        for key, param in self.length_scale.items():
-            fn = apply_scalar_hyperparameter(
-                fn,
-                param,
-                key,
-            )
+        for name, param in self.length_scale.items():
+            fn = param.apply(fn, name)
         opt_fn = fn
         return opt_fn
 

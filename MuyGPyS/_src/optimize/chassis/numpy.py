@@ -43,7 +43,7 @@ def _scipy_optimize(
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:
-    x0_names, x0, bounds = muygps.get_optim_params()
+    x0_names, x0, bounds = muygps.get_opt_params()
     if verbose is True:
         print(f"parameters to be optimized: {x0_names}")
         print(f"bounds: {bounds}")
@@ -74,7 +74,7 @@ def _bayes_opt_optimize(
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:
-    x0_names, x0, bounds = muygps.get_optim_params()
+    x0_names, x0, bounds = muygps.get_opt_params()
     if verbose is True:
         print(f"parameters to be optimized: {x0_names}")
         print(f"bounds: {bounds}")

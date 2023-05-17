@@ -116,7 +116,7 @@ class RBF(KernelFn):
         """
         return self._fn(diffs, batch_features=batch_features, **kwargs)
 
-    def get_optim_params(
+    def get_opt_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         """
@@ -131,7 +131,7 @@ class RBF(KernelFn):
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        names, params, bounds = super().get_optim_params()
+        names, params, bounds = super().get_opt_params()
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:

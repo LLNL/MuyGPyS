@@ -92,7 +92,7 @@ class KernelFn:
             "__call__ is not implemented for base KernelFn"
         )
 
-    def get_optim_params(
+    def get_opt_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         """
@@ -107,11 +107,11 @@ class KernelFn:
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        return self.distortion_fn.get_optim_params()
+        return self.distortion_fn.get_opt_params()
 
     @staticmethod
     def _get_opt_fn(
-        kernel_fn,
+        kernel_fn: Callable,
         distortion_fn: Union[
             AnisotropicDistortion, IsotropicDistortion, NullDistortion
         ],

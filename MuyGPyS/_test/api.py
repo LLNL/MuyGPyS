@@ -82,13 +82,13 @@ class ClassifyAPITest(APITestCase):
             )
         print("Finds hyperparameters:")
         if isinstance(muygps, MuyGPS):
-            param_names, param_vals, _ = muygps.get_optim_params()
+            param_names, param_vals, _ = muygps.get_opt_params()
             for i, p in enumerate(param_names):
                 print(f"\t{p} : {param_vals[i]}")
         elif isinstance(muygps, MMuyGPS):
             for i, model in enumerate(muygps.models):
                 print(f"model {i}:")
-                param_names, param_vals, _ = model.get_optim_params()
+                param_names, param_vals, _ = model.get_opt_params()
                 for i, p in enumerate(param_names):
                     print(f"\t{p} : {param_vals[i]}")
         print(f"obtains accuracy: {acc}")
@@ -203,7 +203,7 @@ class ClassifyAPITest(APITestCase):
                 np.unique(np.argmax(train["output"], axis=1)),
             )
         print("Finds hyperparameters:")
-        param_names, param_vals, _ = muygps.get_optim_params()
+        param_names, param_vals, _ = muygps.get_opt_params()
         for i, p in enumerate(param_names):
             print(f"\t{p} : {param_vals[i]}")
         print(f"obtains accuracy: {acc}")
@@ -313,7 +313,7 @@ class RegressionAPITest(parameterized.TestCase):
         self.assertLessEqual(mse, target_mse)
 
     def _verify_regressor(self, regressor, variance, targets, sigma_method):
-        param_names, param_vals, _ = regressor.get_optim_params()
+        param_names, param_vals, _ = regressor.get_opt_params()
         if len(param_names) > 0:
             print("finds hyperparameters:")
             for i, p in enumerate(param_names):
@@ -401,13 +401,13 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         self.assertLessEqual(mse, target_mse)
 
         if isinstance(regressor, MuyGPS):
-            param_names, param_vals, _ = regressor.get_optim_params()
+            param_names, param_vals, _ = regressor.get_opt_params()
             for i, p in enumerate(param_names):
                 print(f"\t{p} : {param_vals[i]}")
         elif isinstance(regressor, MMuyGPS):
             for i, model in enumerate(regressor.models):
                 print(f"model {i}:")
-                param_names, param_vals, _ = model.get_optim_params()
+                param_names, param_vals, _ = model.get_opt_params()
                 for i, p in enumerate(param_names):
                     print(f"\t{p} : {param_vals[i]}")
 

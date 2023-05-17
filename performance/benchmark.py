@@ -13,7 +13,7 @@ import MuyGPyS._src.math as mm
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _rank0, _print0
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.distortion import IsotropicDistortion, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -105,7 +105,7 @@ def main():
     muygps = MuyGPS(
         Matern(
             metric=IsotropicDistortion(
-                "l2", length_scale=ScalarHyperparameter(1.0, (1e-1, 1e1))
+                l2, length_scale=ScalarHyperparameter(1.0, (1e-1, 1e1))
             ),
             nu=ScalarHyperparameter(1 / 2),
         ),
@@ -154,7 +154,7 @@ class BenchmarkPipeline:
         self.values = dict()
         self.timings = dict()
         self.distortion_fn = benchmark_fn(
-            self._muygps.kernel._distortion_fn, self._params
+            self._muygps.kernel.distortion_fn, self._params
         )
         self.kernel_only_fn = benchmark_fn(
             self._muygps.kernel._kernel_fn, self._params
@@ -211,7 +211,7 @@ class BenchmarkPipeline:
             "batch pairwise distances",
             self.distortion_fn(
                 self._batch_pairwise_diffs,
-                self._muygps.kernel._distortion_fn.length_scale(),
+                self._muygps.kernel.distortion_fn.length_scale(),
             ),
         )
         self.profile(
@@ -255,7 +255,7 @@ class BenchmarkPipeline:
             "test pairwise distances",
             self.distortion_fn(
                 self._test_pairwise_diffs,
-                self._muygps.kernel._distortion_fn.length_scale(),
+                self._muygps.kernel.distortion_fn.length_scale(),
             ),
         )
         self.profile(

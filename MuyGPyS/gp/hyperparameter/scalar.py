@@ -22,7 +22,6 @@ import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math as mm
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
-from MuyGPyS.gp.hyperparameter.tensor import TensorHyperparameter
 
 
 class ScalarHyperparameter:
@@ -293,6 +292,29 @@ class ScalarHyperparameter:
         """
         return self._fixed
 
+    def apply(self, fn: Callable, name: str) -> Callable:
+        if self.fixed():
+
+            def applied_fn(*args, **kwargs):
+                kwargs.setdefault(name, self())
+                return fn(*args, **kwargs)
+
+            return applied_fn
+
+        return fn
+
+    def append_lists(
+        self,
+        name: str,
+        names: List[str],
+        params: List[float],
+        bounds: List[Tuple[float, float]],
+    ):
+        if not self.fixed():
+            names.append(name)
+            params.append(self())
+            bounds.append(self.get_bounds())
+
 
 def _init_scalar_hyperparameter(
     val_def: Union[str, float],
@@ -316,32 +338,3 @@ def _init_scalar_hyperparameter(
     val = kwargs.get("val", val_def)
     bounds = kwargs.get("bounds", bounds_def)
     return type(val, bounds)
-
-
-def apply_scalar_hyperparameter(
-    fn: Callable,
-    param: Union[TensorHyperparameter, ScalarHyperparameter],
-    name: str,
-):
-    if param.fixed():
-
-        def applied_fn(*args, **kwargs):
-            kwargs.setdefault(name, param())
-            return fn(*args, **kwargs)
-
-        return applied_fn
-
-    return fn
-
-
-def append_scalar_optim_params_list(
-    param: Union[TensorHyperparameter, ScalarHyperparameter],
-    name: str,
-    names: List[str],
-    params: List[float],
-    bounds: List[Tuple[float, float]],
-):
-    if not param.fixed():
-        names.append(name)
-        params.append(param())
-        bounds.append(param.get_bounds())

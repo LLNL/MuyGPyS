@@ -12,7 +12,6 @@ from copy import deepcopy
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
-from MuyGPyS.gp.hyperparameter import append_scalar_optim_params_list
 from MuyGPyS.gp.kernels import (
     Matern,
     RBF,
@@ -134,7 +133,7 @@ class MuyGPS:
             return False
         return True
 
-    def get_optim_params(
+    def get_opt_params(
         self,
     ) -> Tuple[List[str], mm.ndarray, mm.ndarray]:
         """
@@ -149,8 +148,8 @@ class MuyGPS:
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        names, params, bounds = self.kernel.get_optim_params()
-        append_scalar_optim_params_list(self.eps, "eps", names, params, bounds)
+        names, params, bounds = self.kernel.get_opt_params()
+        self.eps.append_lists("eps", names, params, bounds)
         return names, mm.array(params), mm.array(bounds)
 
     def fast_coefficients(
