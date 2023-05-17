@@ -6,7 +6,6 @@
 from .scalar import (
     _init_scalar_hyperparameter,
     append_scalar_optim_params_list,
-    apply_scalar_hyperparameter,
     ScalarHyperparameter,
 )
 
@@ -14,5 +13,4 @@ from .tensor import (
     TensorHyperparameter,
     _init_tensor_hyperparameter,
     append_optim_params_lists_tensor,
-    apply_tensor_hyperparameter,
 )

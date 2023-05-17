@@ -103,6 +103,17 @@ class TensorHyperparameter:
             "TensorHyperparameter does not support optimization bounds!"
         )
 
+    def apply(self, fn: Callable, name: str) -> Callable:
+        if self.fixed():
+
+            def applied_fn(*args, **kwargs):
+                kwargs.setdefault(name, self())
+                return fn(*args, **kwargs)
+
+            return applied_fn
+
+        return fn
+
 
 def _init_tensor_hyperparameter(
     val_def: mm.ndarray,
@@ -120,20 +131,6 @@ def _init_tensor_hyperparameter(
     """
     val = kwargs.get("val", val_def)
     return type(val)
-
-
-def apply_tensor_hyperparameter(
-    fn: Callable, param: TensorHyperparameter, name: str
-):
-    if param.fixed():
-
-        def applied_fn(*args, **kwargs):
-            kwargs.setdefault(name, param())
-            return fn(*args, **kwargs)
-
-        return applied_fn
-
-    return fn
 
 
 def append_optim_params_lists_tensor(

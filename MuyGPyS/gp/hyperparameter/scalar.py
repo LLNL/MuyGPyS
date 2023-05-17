@@ -293,6 +293,17 @@ class ScalarHyperparameter:
         """
         return self._fixed
 
+    def apply(self, fn: Callable, name: str) -> Callable:
+        if self.fixed():
+
+            def applied_fn(*args, **kwargs):
+                kwargs.setdefault(name, self())
+                return fn(*args, **kwargs)
+
+            return applied_fn
+
+        return fn
+
 
 def _init_scalar_hyperparameter(
     val_def: Union[str, float],
@@ -316,22 +327,6 @@ def _init_scalar_hyperparameter(
     val = kwargs.get("val", val_def)
     bounds = kwargs.get("bounds", bounds_def)
     return type(val, bounds)
-
-
-def apply_scalar_hyperparameter(
-    fn: Callable,
-    param: Union[TensorHyperparameter, ScalarHyperparameter],
-    name: str,
-):
-    if param.fixed():
-
-        def applied_fn(*args, **kwargs):
-            kwargs.setdefault(name, param())
-            return fn(*args, **kwargs)
-
-        return applied_fn
-
-    return fn
 
 
 def append_scalar_optim_params_list(

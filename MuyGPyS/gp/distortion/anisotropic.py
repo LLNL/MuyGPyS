@@ -10,7 +10,6 @@ from MuyGPyS._src.util import auto_str
 
 from MuyGPyS.gp.hyperparameter import (
     append_scalar_optim_params_list,
-    apply_scalar_hyperparameter,
     ScalarHyperparameter,
 )
 from MuyGPyS.gp.hyperparameter.experimental import (
@@ -23,10 +22,7 @@ class AnisotropicDistortion:
     def __init__(
         self,
         metric: Callable,
-        **length_scales: Union[
-            List[ScalarHyperparameter],
-            List[HierarchicalNonstationaryHyperparameter],
-        ],
+        **length_scales,
     ):
         self._dist_fn = metric
         for i, key in enumerate(length_scales.keys()):
@@ -64,7 +60,7 @@ class AnisotropicDistortion:
     @staticmethod
     def _get_length_scale_array(
         array_fn: Callable,
-        target_shape: float,
+        target_shape: mm.ndarray,
         batch_features=None,
         **length_scales,
     ) -> mm.ndarray:
@@ -131,12 +127,8 @@ class AnisotropicDistortion:
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        for key, param in self.length_scale.items():
-            fn = apply_scalar_hyperparameter(
-                fn,
-                param,
-                key,
-            )
+        for name, param in self.length_scale.items():
+            fn = param.apply(fn, name)
         opt_fn = fn
         return opt_fn
 

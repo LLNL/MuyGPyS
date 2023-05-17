@@ -11,7 +11,6 @@ from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.hyperparameter import (
     ScalarHyperparameter,
     append_scalar_optim_params_list,
-    apply_scalar_hyperparameter,
 )
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
@@ -41,7 +40,7 @@ class IsotropicDistortion:
     @staticmethod
     def _get_length_scale_array(
         array_fn: Callable,
-        target_shape: float,
+        target_shape: mm.ndarray,
         length_scale: Union[float, mm.ndarray],
     ) -> mm.ndarray:
         # make sure length_scale is broadcastable when its shape is (batch_count,)
@@ -84,9 +83,7 @@ class IsotropicDistortion:
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        opt_fn = apply_scalar_hyperparameter(
-            fn, self.length_scale, "length_scale"
-        )
+        opt_fn = self.length_scale.apply(fn, "length_scale")
         return opt_fn
 
     def populate_length_scale(self, hyperparameters: Dict) -> Dict:

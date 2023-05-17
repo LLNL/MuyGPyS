@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+from typing import Callable
+
 from scipy.stats.qmc import LatinHypercube
 
 import MuyGPyS._src.math as mm
@@ -42,6 +44,11 @@ class HierarchicalNonstationaryHyperparameter:
             _crosswise_differences(batch_features, self.knot_features)
         )
         return lower_Kcross @ self.solve
+
+    def apply(self, fn: Callable, name: str) -> Callable:
+        raise NotImplementedError(
+            "optimizing hierarchical parameters is not yet supported"
+        )
 
 
 def sample_knots(feature_count: int, knot_count: int) -> mm.ndarray:

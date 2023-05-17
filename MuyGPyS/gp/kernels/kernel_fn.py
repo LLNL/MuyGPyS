@@ -111,7 +111,7 @@ class KernelFn:
 
     @staticmethod
     def _get_opt_fn(
-        kernel_fn,
+        kernel_fn: Callable,
         distortion_fn: Union[
             AnisotropicDistortion, IsotropicDistortion, NullDistortion
         ],

@@ -11,7 +11,6 @@ from typing import Callable, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
-from MuyGPyS.gp.hyperparameter import apply_scalar_hyperparameter
 from MuyGPyS.gp.noise import (
     HeteroscedasticNoise,
     HomoscedasticNoise,
@@ -46,5 +45,5 @@ class PosteriorMean:
         mean_fn: Callable,
         eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
     ) -> Callable:
-        opt_fn = apply_scalar_hyperparameter(mean_fn, eps, "eps")
+        opt_fn = eps.apply(mean_fn, "eps")
         return opt_fn
