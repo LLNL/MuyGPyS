@@ -83,7 +83,7 @@ class AnisotropicDistortion:
                 "(Isotropic model)."
             )
 
-    def get_optim_params(
+    def get_opt_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         """

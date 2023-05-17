@@ -149,7 +149,7 @@ class Matern(KernelFn):
 
         return self._fn(diffs, nu=self.nu())
 
-    def get_optim_params(
+    def get_opt_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         """
@@ -163,7 +163,7 @@ class Matern(KernelFn):
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        names, params, bounds = super().get_optim_params()
+        names, params, bounds = super().get_opt_params()
         self.nu.append_lists("nu", names, params, bounds)
         return names, params, bounds
 

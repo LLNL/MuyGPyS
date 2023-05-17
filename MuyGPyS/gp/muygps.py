@@ -133,7 +133,7 @@ class MuyGPS:
             return False
         return True
 
-    def get_optim_params(
+    def get_opt_params(
         self,
     ) -> Tuple[List[str], mm.ndarray, mm.ndarray]:
         """
@@ -148,7 +148,7 @@ class MuyGPS:
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        names, params, bounds = self.kernel.get_optim_params()
+        names, params, bounds = self.kernel.get_opt_params()
         self.eps.append_lists("eps", names, params, bounds)
         return names, mm.array(params), mm.array(bounds)
 

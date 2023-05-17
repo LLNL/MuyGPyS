@@ -44,7 +44,7 @@ class IsotropicDistortion:
         shape = (-1,) + (1,) * (len(target_shape) - 1)
         return mm.reshape(array_fn(length_scale), shape)
 
-    def get_optim_params(
+    def get_opt_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         """

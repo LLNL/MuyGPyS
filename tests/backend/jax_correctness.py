@@ -1273,7 +1273,7 @@ class OptimTestCase(MuyGPSTestCase):
         cls.variances_heteroscedastic_j = jnp.array(
             cls.variances_heteroscedastic_n
         )
-        cls.x0_names, cls.x0_n, cls.bounds = cls.muygps.get_optim_params()
+        cls.x0_names, cls.x0_n, cls.bounds = cls.muygps.get_opt_params()
         cls.x0_j = jnp.array(cls.x0_n)
         cls.x0_map_n = {n: cls.x0_n[i] for i, n in enumerate(cls.x0_names)}
         cls.x0_map_j = {n: cls.x0_j[i] for i, n in enumerate(cls.x0_names)}

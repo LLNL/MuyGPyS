@@ -1111,7 +1111,7 @@ class OptimTestCase(MuyGPSTestCase):
         )
         cls.predictions_n = cls.predictions_t.detach().numpy()
         cls.variances_n = cls.variances_t.detach().numpy()
-        cls.x0_names, cls.x0_n, cls.bounds = cls.muygps.get_optim_params()
+        cls.x0_names, cls.x0_n, cls.bounds = cls.muygps.get_opt_params()
         cls.x0_t = torch.from_numpy(cls.x0_n)
         cls.x0_map_n = {n: cls.x0_n[i] for i, n in enumerate(cls.x0_names)}
         cls.x0_map_t = {n: cls.x0_t[i] for i, n in enumerate(cls.x0_names)}
