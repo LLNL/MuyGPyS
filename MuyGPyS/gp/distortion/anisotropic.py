@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import List, Tuple, Callable, Dict, Union
+from typing import List, Tuple, Callable, Dict
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str

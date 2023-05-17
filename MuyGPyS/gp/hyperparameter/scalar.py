@@ -22,7 +22,6 @@ import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math as mm
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
-from MuyGPyS.gp.hyperparameter.tensor import TensorHyperparameter
 
 
 class ScalarHyperparameter:
