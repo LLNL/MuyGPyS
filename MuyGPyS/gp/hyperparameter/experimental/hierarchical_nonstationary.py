@@ -53,7 +53,7 @@ class HierarchicalNonstationaryHyperparameter:
         self._knot_value_params = [
             knot_value
             if isinstance(knot_value, ScalarHyperparameter)
-            else ScalarHyperparameter(knot_value)
+            else ScalarHyperparameter(float(knot_value))
             for knot_value in knot_values
         ]
         self._kernel = kernel
@@ -66,7 +66,7 @@ class HierarchicalNonstationaryHyperparameter:
         self._solve = mm.linalg.solve(self._higher_K, self._knot_values())
 
     def _knot_values(self) -> mm.ndarray:
-        return mm.ndarray(param() for param in self._knot_value_params)
+        return mm.array([[param()] for param in self._knot_value_params])
 
     @staticmethod
     def _get_knot_key(name: str, index: int) -> str:
