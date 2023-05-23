@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from typing import Callable, Union, List, Tuple
+import re
 
 from scipy.stats.qmc import LatinHypercube
 
@@ -56,19 +57,43 @@ class HierarchicalNonstationaryHyperparameter:
             for knot_value in knot_values
         ]
         self._kernel = kernel
-        lower_K = self._kernel(_pairwise_differences(self._knot_features))
-        self._solve = mm.linalg.solve(lower_K, self._knot_values())
+        self._higher_K = self._kernel(
+            _pairwise_differences(self._knot_features)
+        )
+        self._update_solve()
+
+    def _update_solve(self):
+        self._solve = mm.linalg.solve(self._higher_K, self._knot_values())
 
     def _knot_values(self) -> mm.ndarray:
         return mm.ndarray(param() for param in self._knot_value_params)
 
-    def __call__(self, batch_features) -> mm.ndarray:
+    @staticmethod
+    def _get_knot_key(name: str, index: int) -> str:
+        return f"{name}_knot{index}"
+
+    def _update_knot_values(self, **kwargs):
+        updated = False
+        pattern = re.compile(self._get_knot_key(name=r"(\w+)", index=r"(\d+)"))
+        for key, arg in kwargs.items():
+            match = pattern.fullmatch(key)
+            if match:
+                name = match.group(0)
+                if name == self._name:
+                    index = int(match.group(1))
+                    self._knot_value_params[index]._set_val(arg)
+                    updated = True
+        if updated:
+            self._update_solve()
+
+    def __call__(self, batch_features, **kwargs) -> mm.ndarray:
         """
         Value accessor.
 
         Returns:
             The current value of the hierarchical nonstationary hyperparameter.
         """
+        self._update_knot_values(**kwargs)
         lower_Kcross = self._kernel(
             _crosswise_differences(batch_features, self._knot_features)
         )
@@ -95,11 +120,8 @@ class HierarchicalNonstationaryHyperparameter:
             "Set bounds on individual knot values instead."
         )
 
-    @staticmethod
-    def _get_knot_key(name: str, index: int) -> str:
-        return f"{name}_knot{index}"
-
     def apply(self, fn: Callable, name: str) -> Callable:
+        self._name = name
         if any(param.fixed() for param in self._knot_value_params):
 
             def applied_fn(*args, **kwargs):
