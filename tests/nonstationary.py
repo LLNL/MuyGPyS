@@ -12,6 +12,7 @@ import MuyGPyS._src.math.numpy as np
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.distortion import l2, IsotropicDistortion, AnisotropicDistortion
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
     sample_knots,
@@ -67,13 +68,16 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (feature_count, high_level_kernel, metric)
+            (feature_count, type(knot_values[0]), high_level_kernel, metric)
             for feature_count in [2, 17]
             for knot_count in [10]
             for knot_features in [
                 sample_knots(feature_count=feature_count, knot_count=knot_count)
             ]
-            for knot_values in [np.random.uniform(size=knot_count)]
+            for knot_values in [
+                np.random.uniform(size=knot_count),
+                [ScalarHyperparameter(i) for i in range(knot_count)],
+            ]
             for high_level_kernel in [RBF(), Matern()]
             for metric in [
                 IsotropicDistortion(
@@ -87,7 +91,7 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
                     **{
                         f"length_scale{i}": HierarchicalNonstationaryHyperparameter(
                             knot_features,
-                            (i + 1) * knot_values,
+                            knot_values,
                             high_level_kernel,
                         )
                         for i in range(feature_count)
@@ -99,6 +103,7 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
     def test_hierarchical_nonstationary_rbf(
         self,
         feature_count,
+        knot_values_type,
         high_level_kernel,
         metric,
     ):
