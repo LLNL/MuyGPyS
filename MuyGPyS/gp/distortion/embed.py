@@ -24,7 +24,7 @@ def apply_distortion(distortion_fn: Callable, **length_scales):
                     kwargs[key], batch_features=batch_features
                 )
                 for key in kwargs
-                if key.startswith("length_scale") and not "_knot" in key
+                if key.startswith("length_scale") and "_knot" not in key
             }
             for ls in length_scales:
                 inner_kwargs.setdefault(
