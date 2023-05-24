@@ -111,9 +111,9 @@ def make_loo_crossval_fn(
         batch_targets,
     )
 
-    def obj_fn(**kwargs):
-        K, Kcross = kernels_fn(**kwargs)
-        return predict_and_loss_fn(K, Kcross, **kwargs)
+    def obj_fn(*args, **kwargs):
+        K, Kcross = kernels_fn(*args, **kwargs)
+        return predict_and_loss_fn(K, Kcross, *args, **kwargs)
 
     return obj_fn
 
@@ -123,9 +123,9 @@ def make_kernels_fn(
     pairwise_diffs: mm.ndarray,
     crosswise_diffs: mm.ndarray,
 ) -> Callable:
-    def kernels_fn(**kwargs):
-        K = kernel_fn(pairwise_diffs, **kwargs)
-        Kcross = kernel_fn(crosswise_diffs, **kwargs)
+    def kernels_fn(*args, **kwargs):
+        K = kernel_fn(pairwise_diffs, *args, **kwargs)
+        Kcross = kernel_fn(crosswise_diffs, *args, **kwargs)
         return K, Kcross
 
     return kernels_fn
@@ -139,7 +139,7 @@ def make_raw_predict_and_loss_fn(
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
 ) -> Callable:
-    def predict_and_loss_fn(K, Kcross, **kwargs):
+    def predict_and_loss_fn(K, Kcross, *args, **kwargs):
         predictions = mean_fn(
             K,
             Kcross,
@@ -160,7 +160,7 @@ def make_var_predict_and_loss_fn(
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
 ) -> Callable:
-    def predict_and_loss_fn(K, Kcross, **kwargs):
+    def predict_and_loss_fn(K, Kcross, *args, **kwargs):
         predictions = mean_fn(
             K,
             Kcross,

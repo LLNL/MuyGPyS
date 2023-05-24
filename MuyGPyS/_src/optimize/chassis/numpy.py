@@ -24,15 +24,19 @@ def _new_muygps(muygps: MuyGPS, x0_names, bounds, opt_dict) -> MuyGPS:
             val = ub
         if key == "eps":
             ret.eps._set_val(val)
+        elif "_knot" in key:
+            loc = key.find("_knot")
+            name = key[:loc]
+            ret.kernel._hyperparameters[name]._update_knot_values(**{key: val})
         else:
             ret.kernel._hyperparameters[key]._set_val(val)
     return ret
 
 
 def _obj_fn_adapter(obj_fn, x0_names):
-    def array_obj_fn(x_array):
+    def array_obj_fn(x_array, *args):
         arr_dict = {h: x_array[i] for i, h in enumerate(x0_names)}
-        return -obj_fn(**arr_dict)
+        return -obj_fn(*args, **arr_dict)
 
     return array_obj_fn
 

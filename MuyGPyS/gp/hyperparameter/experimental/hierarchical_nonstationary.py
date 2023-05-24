@@ -142,9 +142,10 @@ class HierarchicalNonstationaryHyperparameter:
         params: List[float],
         bounds: List[Tuple[float, float]],
     ):
-        for index, param in enumerate(self._knot_value_params):
-            knot_name = self._get_knot_key(name, index)
-            param.append_lists(knot_name, names, params, bounds)
+        if not self.fixed():
+            for index, param in enumerate(self._knot_value_params):
+                knot_name = self._get_knot_key(name, index)
+                param.append_lists(knot_name, names, params, bounds)
 
 
 def sample_knots(feature_count: int, knot_count: int) -> mm.ndarray:
