@@ -45,6 +45,7 @@ def optimize_from_tensors(
     batch_nn_targets: mm.ndarray,
     crosswise_diffs: mm.ndarray,
     pairwise_diffs: mm.ndarray,
+    batch_features: Optional[mm.ndarray] = None,
     loss_method: str = "mse",
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
@@ -148,6 +149,7 @@ def optimize_from_tensors(
         crosswise_diffs,
         batch_nn_targets,
         batch_targets,
+        batch_features=batch_features,
     )
 
     return _switch_on_opt_method(

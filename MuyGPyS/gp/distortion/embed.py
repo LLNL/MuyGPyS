@@ -18,13 +18,13 @@ from MuyGPyS.gp.distortion.null import NullDistortion
 
 def apply_distortion(distortion_fn: Callable, **length_scales):
     def distortion_applier(fn: Callable):
-        def distorted_fn(diffs, *args, batch_features=None, **kwargs):
+        def distorted_fn(diffs, batch_features=None, *args, **kwargs):
             inner_kwargs = {
                 key: _optional_invoke_param(
                     kwargs[key], batch_features=batch_features
                 )
                 for key in kwargs
-                if key.startswith("length_scale")
+                if key.startswith("length_scale") and "_knot" not in key
             }
             for ls in length_scales:
                 inner_kwargs.setdefault(
