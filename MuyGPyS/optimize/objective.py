@@ -10,13 +10,13 @@ MuyGPyS includes predefined objective functions and convenience functions for
 indicating them to optimization.
 """
 
-from typing import Callable
+from typing import Callable, Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.optimize.utils import _switch_on_loss_method
 
 
-def make_obj_fn(obj_method: str, loss_method: str, *args) -> Callable:
+def make_obj_fn(obj_method: str, loss_method: str, *args, **kwargs) -> Callable:
     """
     Prepare an objective function as a function purely of the hyperparameters
     to be optimized.
@@ -37,7 +37,7 @@ def make_obj_fn(obj_method: str, loss_method: str, *args) -> Callable:
         A Callable `objective_fn`, whose format depends on `opt_method`.
     """
     if obj_method == "loo_crossval":
-        return make_loo_crossval_fn(loss_method, *args)
+        return make_loo_crossval_fn(loss_method, *args, **kwargs)
     else:
         raise ValueError(f"Unsupported objective method: {obj_method}")
 
@@ -53,6 +53,7 @@ def make_loo_crossval_fn(
     crosswise_diffs: mm.ndarray,
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
+    batch_features: Optional[mm.ndarray] = None,
 ) -> Callable:
     """
     Prepare a leave-one-out cross validation function as a function purely of
@@ -112,7 +113,7 @@ def make_loo_crossval_fn(
     )
 
     def obj_fn(*args, **kwargs):
-        K, Kcross = kernels_fn(*args, **kwargs)
+        K, Kcross = kernels_fn(*args, batch_features=batch_features, **kwargs)
         return predict_and_loss_fn(K, Kcross, *args, **kwargs)
 
     return obj_fn
