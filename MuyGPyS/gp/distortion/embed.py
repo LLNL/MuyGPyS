@@ -30,7 +30,9 @@ def apply_distortion(distortion_fn: Callable, **length_scales):
                 inner_kwargs.setdefault(
                     ls,
                     _optional_invoke_param(
-                        length_scales[ls], batch_features=batch_features
+                        length_scales[ls],
+                        batch_features=batch_features,
+                        **kwargs,
                     ),
                 )
             outer_kwargs = {
@@ -54,11 +56,12 @@ def _optional_invoke_param(
         ScalarHyperparameter, HierarchicalNonstationaryHyperparameter, float
     ],
     batch_features: Optional[mm.ndarray] = None,
+    **kwargs,
 ) -> float:
     if isinstance(param, ScalarHyperparameter):
         return param()
     if isinstance(param, HierarchicalNonstationaryHyperparameter):
-        return param(batch_features)
+        return param(batch_features, **kwargs)
     return param
 
 
