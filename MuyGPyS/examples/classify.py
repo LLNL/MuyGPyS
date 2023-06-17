@@ -447,25 +447,12 @@ def do_classify(
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...          metric=IsotropicDistortion(
+        ...         metric=IsotropicDistortion(
         ...             l2,
         ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2)),
         ...         ),
         ...     ),
         ...     "eps": HomoscedasticNoise(1e-5),
-        ... )
-        >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
-        ...         test['input'],
-        ...         train['input'],
-        ...         train['output'],
-        ...         nn_count=30,
-        ...         batch_count=200,
-        ...         loss_method="log",
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
-        ...         k_kwargs=k_kwargs,
-        ...         nn_kwargs=nn_kwargs,
-        ...         verbose=False,
         ... )
         >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
         ...         test['input'],
@@ -496,9 +483,6 @@ def do_classify(
         train_labels:
             A matrix of shape `(train_count, response_count)` whose rows consist
             of label vectors for the training data.
-        train_features:
-            A matrix of shape `(train_count, feature_count)` whose rows consist
-            of observation vectors of the testing data.
         nn_count:
             The number of nearest neighbors to employ.
         batch_count:
