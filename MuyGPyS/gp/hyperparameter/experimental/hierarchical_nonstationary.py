@@ -78,9 +78,9 @@ class HierarchicalNonstationaryHyperparameter:
         for key, arg in kwargs.items():
             match = pattern.fullmatch(key)
             if match:
-                name = match.group(0)
+                name = match.group(1)
                 if name == self._name:
-                    index = int(match.group(1))
+                    index = int(match.group(2))
                     self._knot_value_params[index]._set_val(arg)
                     updated = True
         if updated:
