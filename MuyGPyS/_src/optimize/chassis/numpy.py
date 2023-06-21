@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from copy import deepcopy
-from typing import Callable, Type
+from typing import Callable, Dict, List, Tuple
 
 from bayes_opt import BayesianOptimization
 from scipy import optimize as opt
@@ -41,17 +41,25 @@ def _obj_fn_adapter(obj_fn, x0_names):
     return array_obj_fn
 
 
+def _get_opt_lists(
+    muygps: MuyGPS,
+    verbose: bool = False,
+) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
+    x0_names, x0, bounds = muygps.get_opt_params()
+    if verbose is True:
+        print(f"parameters to be optimized: {x0_names}")
+        print(f"bounds: {bounds}")
+        print(f"initial x0: {x0}")
+    return x0_names, x0, bounds
+
+
 def _scipy_optimize(
     muygps: MuyGPS,
     obj_fn: Callable,
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:
-    x0_names, x0, bounds = muygps.get_opt_params()
-    if verbose is True:
-        print(f"parameters to be optimized: {x0_names}")
-        print(f"bounds: {bounds}")
-        print(f"initial x0: {x0}")
+    x0_names, x0, bounds = _get_opt_lists(muygps, verbose=verbose)
 
     # converting from kwargs representation to array representation
     array_obj_fn = _obj_fn_adapter(obj_fn, x0_names)
@@ -72,21 +80,7 @@ def _scipy_optimize(
     return _new_muygps(muygps, x0_names, bounds, ret_dict)
 
 
-def _bayes_opt_optimize(
-    muygps: MuyGPS,
-    obj_fn: Callable,
-    verbose: bool = False,
-    **kwargs,
-) -> MuyGPS:
-    x0_names, x0, bounds = muygps.get_opt_params()
-    if verbose is True:
-        print(f"parameters to be optimized: {x0_names}")
-        print(f"bounds: {bounds}")
-        print(f"initial x0: {x0}")
-
-    bounds_map = {n: bounds[i] for i, n in enumerate(x0_names)}
-    x0_map = {n: x0[i] for i, n in enumerate(x0_names)}
-
+def _bayes_get_kwargs(verbose: bool = False, **kwargs):
     optimizer_kwargs = {
         k: kwargs[k]
         for k in kwargs
@@ -116,6 +110,24 @@ def _bayes_opt_optimize(
             "xi",
         }
     }
+    return optimizer_kwargs, maximize_kwargs
+
+
+def _bayes_opt_optimize(
+    muygps: MuyGPS,
+    obj_fn: Callable,
+    verbose: bool = False,
+    **kwargs,
+) -> MuyGPS:
+    x0_names, x0, bounds = _get_opt_lists(muygps, verbose=verbose)
+
+    x0_map = {n: x0[i] for i, n in enumerate(x0_names)}
+    bounds_map = {n: bounds[i] for i, n in enumerate(x0_names)}
+
+    optimizer_kwargs, maximize_kwargs = _bayes_get_kwargs(
+        verbose=verbose, **kwargs
+    )
+
     # set defaults
     if "init_points" not in maximize_kwargs:
         maximize_kwargs["init_points"] = 5
