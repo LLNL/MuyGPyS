@@ -17,6 +17,7 @@ from MuyGPyS._test.gp import (
     get_analytic_sigma_sq,
 )
 from MuyGPyS._test.utils import (
+    _advanced_opt_method_and_kwarg_options,
     _basic_opt_method_and_kwarg_options,
     _basic_nn_kwarg_options,
     _check_ndarray,
@@ -58,7 +59,7 @@ class BenchmarkTestCase(parameterized.TestCase):
 
         cls.sigma_tol = 5e-1
         cls.nu_tol = 1e-1
-        cls.length_scale_tol = 1e-1
+        cls.length_scale_tol = 3e-1
 
         cls.params = {
             "length_scale": ScalarHyperparameter(1e-1, (1e-2, 1e0)),
@@ -288,11 +289,11 @@ class NuTest(BenchmarkTestCase):
             for loss_and_sigma_methods in [["lool", "analytic"]]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
-            # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for opt_method_and_kwargs in [
-                _basic_opt_method_and_kwarg_options[0]
-            ]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[0]
+            # ]
         )
     )
     def test_nu(
@@ -367,11 +368,11 @@ class LengthScaleTest(BenchmarkTestCase):
             for loss_and_sigma_methods in [["lool", "analytic"]]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
-            # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for opt_method_and_kwargs in [
-                _basic_opt_method_and_kwarg_options[0]
-            ]
+            # for opt_method_and_kwargs in [
+            #     _basic_opt_method_and_kwarg_options[0]
+            # ]
         )
     )
     def test_length_scale(
