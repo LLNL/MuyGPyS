@@ -57,3 +57,14 @@ def _lool_fn_unscaled(
         torch.divide((predictions - targets) ** 2, variances)
         + torch.log(variances)
     )
+
+
+def _pseudo_huber_fn(
+    predictions: torch.ndarray,
+    targets: torch.ndarray,
+    boundary_scale: float = 1.5,
+) -> float:
+    return boundary_scale**2 * torch.sum(
+        torch.sqrt(1 + torch.divide(targets - predictions, boundary_scale) ** 2)
+        - 1
+    )

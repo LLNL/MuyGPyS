@@ -25,7 +25,7 @@ documentation for details.
 """
 
 
-from typing import Optional
+from typing import Dict, Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.chassis import (
@@ -50,6 +50,7 @@ def optimize_from_tensors(
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
+    loss_kwargs: Dict = dict(),
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:
@@ -123,6 +124,9 @@ def optimize_from_tensors(
         sigma_method:
             The optimization method to be employed to learn the `sigma_sq`
             hyperparameter.
+        loss_kwargs:
+            A dictionary of additional keyword arguments to apply to the loss
+            function. Loss function specific.
         verbose:
             If True, print debug messages.
         kwargs:
@@ -150,6 +154,7 @@ def optimize_from_tensors(
         batch_nn_targets,
         batch_targets,
         batch_features=batch_features,
+        loss_kwargs=loss_kwargs,
     )
 
     return _switch_on_opt_method(

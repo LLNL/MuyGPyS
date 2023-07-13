@@ -55,3 +55,11 @@ def _lool_fn(
     return _lool_fn_unscaled(
         predictions, targets, np.outer(variances, sigma_sq)
     )
+
+
+def _pseudo_huber_fn(
+    predictions: np.ndarray, targets: np.ndarray, boundary_scale: float = 1.5
+) -> float:
+    return boundary_scale**2 * np.sum(
+        np.sqrt(1 + np.divide(targets - predictions, boundary_scale) ** 2) - 1
+    )

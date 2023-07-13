@@ -10,7 +10,7 @@ MuyGPyS includes predefined objective functions and convenience functions for
 indicating them to optimization.
 """
 
-from typing import Callable, Optional
+from typing import Callable, Dict, Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.optimize.utils import _switch_on_loss_method
@@ -37,7 +37,7 @@ def make_obj_fn(obj_method: str, loss_method: str, *args, **kwargs) -> Callable:
         A Callable `objective_fn`, whose format depends on `opt_method`.
     """
     if obj_method == "loo_crossval":
-        return make_loo_crossval_fn(loss_method, *args, **kwargs)
+        return make_loo_crossval_fn(loss_method, *args)
     else:
         raise ValueError(f"Unsupported objective method: {obj_method}")
 
@@ -54,6 +54,7 @@ def make_loo_crossval_fn(
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
     batch_features: Optional[mm.ndarray] = None,
+    loss_kwargs: Dict = dict(),
 ) -> Callable:
     """
     Prepare a leave-one-out cross validation function as a function purely of
@@ -94,6 +95,11 @@ def make_loo_crossval_fn(
         batch_targets:
             Matrix of floats of shape `(batch_count, response_count)` whose rows
             give the expected response for each  batch element.
+        batch_features:
+            Matrix of floats of shape `(batch_count, feature_count)` whose rows
+            give the features for each batch element.
+        loss_kwargs:
+            A dict listing any additional kwargs to pass to the loss function.
 
     Returns:
         A Callable `objective_fn`, whose format depends on `opt_method`.
@@ -104,12 +110,14 @@ def make_loo_crossval_fn(
         make_raw_predict_and_loss_fn,
         make_raw_predict_and_loss_fn,
         make_var_predict_and_loss_fn,
+        make_raw_predict_and_loss_fn,
         loss_fn,
         mean_fn,
         var_fn,
         sigma_sq_fn,
         batch_nn_targets,
         batch_targets,
+        **loss_kwargs,
     )
 
     def obj_fn(*args, **kwargs):
@@ -139,6 +147,7 @@ def make_raw_predict_and_loss_fn(
     sigma_sq_fn: Callable,
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
+    **loss_kwargs,
 ) -> Callable:
     def predict_and_loss_fn(K, Kcross, *args, **kwargs):
         predictions = mean_fn(
@@ -148,7 +157,7 @@ def make_raw_predict_and_loss_fn(
             **kwargs,
         )
 
-        return -loss_fn(predictions, batch_targets)
+        return -loss_fn(predictions, batch_targets, **loss_kwargs)
 
     return predict_and_loss_fn
 
@@ -160,6 +169,7 @@ def make_var_predict_and_loss_fn(
     sigma_sq_fn: Callable,
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
+    **loss_kwargs,
 ) -> Callable:
     def predict_and_loss_fn(K, Kcross, *args, **kwargs):
         predictions = mean_fn(
@@ -172,6 +182,8 @@ def make_var_predict_and_loss_fn(
 
         variances = var_fn(K, Kcross, **kwargs)
 
-        return -loss_fn(predictions, batch_targets, variances, sigma_sq)
+        return -loss_fn(
+            predictions, batch_targets, variances, sigma_sq, **loss_kwargs
+        )
 
     return predict_and_loss_fn

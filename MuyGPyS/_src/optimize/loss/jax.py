@@ -80,3 +80,12 @@ def _lool_fn_unscaled(
     return jnp.sum(
         jnp.divide((predictions - targets) ** 2, variances) + jnp.log(variances)
     )
+
+
+@jit
+def _pseudo_huber_fn(
+    predictions: jnp.ndarray, targets: jnp.ndarray, boundary_scale: float = 1.5
+) -> float:
+    return boundary_scale**2 * jnp.sum(
+        jnp.sqrt(1 + jnp.divide(targets - predictions, boundary_scale) ** 2) - 1
+    )
