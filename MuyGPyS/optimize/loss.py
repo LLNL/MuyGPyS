@@ -87,7 +87,11 @@ def mse_fn(
     Mean squared error function.
 
     Computes mean squared error loss of the predicted versus known response.
-    Treats multivariate outputs as interchangeable in terms of loss penalty.
+    Treats multivariate outputs as interchangeable in terms of loss penalty. The
+    function computes
+
+    .. math::
+        l(f(x), y \\mid \\sigma) = \\frac{1}{b} \\sum_{i=1}^b (f(x_i) - y)^2}
 
     Args:
         predictions:
@@ -112,7 +116,11 @@ def lool_fn(
 
     Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
     response. Treats multivariate outputs as interchangeable in terms of loss
-    penalty.
+    penalty. The function computes
+
+    .. math::
+        l(f(x), y \\mid \\sigma) = \\sum_{i=1}^b \\sum_{j=1}^s
+        \\frac{(f(x_i) - y)^2}{\\sigma_j} + \\log \\sigma_j
 
     Args:
         predictions:
@@ -140,7 +148,12 @@ def lool_fn_unscaled(
 
     Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
     response. Treats multivariate outputs as interchangeable in terms of loss
-    penalty. Unlike lool_fn, does not require sigma_sq as an argument.
+    penalty. Unlike lool_fn, does not require sigma_sq as an argument. The
+    function computes
+
+    .. math::
+        l(f(x), y \\mid \\sigma) = \\sum_{i=1}^b
+        \\frac{(f(x_i) - y)^2}{\\sigma} + \\log \\sigma
 
     Args:
         predictions:
