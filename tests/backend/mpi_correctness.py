@@ -1459,11 +1459,13 @@ class LossTest(OptimTestCase):
     @parameterized.parameters(bs for bs in [0.5, 1.0, 1.5, 2.0, 2.5])
     def test_pseudo_huber(self, boundary_scale):
         parallel_pseudo_huber = pseudo_huber_fn_m(
-            self.predictions_m, self.batch_targets_m, boundary_scale
+            self.batch_prediction_chunk,
+            self.batch_targets_chunk,
+            boundary_scale,
         )
         if rank == 0:
             serial_pseduo_huber = pseudo_huber_fn_n(
-                self.predictions_n, self.batch_targets_n, boundary_scale
+                self.batch_prediction, self.batch_targets, boundary_scale
             )
             self.assertAlmostEqual(serial_pseduo_huber, parallel_pseudo_huber)
 
