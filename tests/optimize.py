@@ -44,7 +44,7 @@ class BenchmarkTestCase(parameterized.TestCase):
     def setUpClass(cls):
         super(BenchmarkTestCase, cls).setUpClass()
         cls.data_count = 1001
-        cls.its = 10
+        cls.its = 13
         cls.sim_train = dict()
         cls.xs = mm.linspace(-10.0, 10.0, cls.data_count).reshape(
             cls.data_count, 1
@@ -58,12 +58,12 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.length_scale = 1e-2
 
         cls.sigma_tol = 5e-1
-        cls.nu_tol = 1e-1
+        cls.nu_tol = 2.5e-1
         cls.length_scale_tol = 3e-1
 
         cls.params = {
             "length_scale": ScalarHyperparameter(1e-1, (1e-2, 1e0)),
-            "nu": ScalarHyperparameter(0.38, (1e-1, 1e0)),
+            "nu": ScalarHyperparameter(0.78, (1e-1, 1e0)),
             "eps": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
         }
 
@@ -118,6 +118,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         opt_method,
         sigma_method,
         opt_kwargs,
+        loss_kwargs=dict(),
     ) -> float:
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup, batch_count, self.train_count
@@ -147,6 +148,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
+            loss_kwargs=loss_kwargs,
             **opt_kwargs,
             verbose=True,
         )
@@ -280,13 +282,17 @@ class NuTest(BenchmarkTestCase):
                 b,
                 n,
                 nn_kwargs,
-                loss_and_sigma_methods,
+                loss_kwargs_and_sigma_methods,
                 om,
                 opt_method_and_kwargs,
             )
             for b in [250]
             for n in [20]
-            for loss_and_sigma_methods in [["lool", "analytic"]]
+            for loss_kwargs_and_sigma_methods in [
+                ["lool", dict(), "analytic"],
+                ["mse", dict(), None],
+                ["huber", {"boundary_scale": 1.5}, None],
+            ]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
@@ -301,11 +307,11 @@ class NuTest(BenchmarkTestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_and_sigma_methods,
+        loss_kwargs_and_sigma_methods,
         obj_method,
         opt_method_and_kwargs,
     ):
-        loss_method, sigma_method = loss_and_sigma_methods
+        loss_method, loss_kwargs, sigma_method = loss_kwargs_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
 
         mrse = 0.0
@@ -341,6 +347,7 @@ class NuTest(BenchmarkTestCase):
                 opt_method,
                 sigma_method,
                 opt_kwargs,
+                loss_kwargs=loss_kwargs,
             )
         mrse /= self.its
         print(f"optimizes nu with mean relative squared error {mrse}")

@@ -11,6 +11,7 @@ from MuyGPyS._src.optimize.loss.numpy import (
     _mse_fn_unnormalized,
     _cross_entropy_fn as _cross_entropy_fn_n,
     _lool_fn as _lool_fn_n,
+    _pseudo_huber_fn as _pseudo_huber_fn_n,
 )
 
 world = config.mpi_state.comm_world
@@ -63,3 +64,13 @@ def _lool_fn_unscaled(
     local_likelihoods = _lool_fn_unscaled(predictions, targets, variances)
     global_likelihood = world.allreduce(local_likelihoods, op=MPI.SUM)
     return global_likelihood
+
+
+def _pseudo_huber_fn(
+    predictions: np.ndarray, targets: np.ndarray, boundary_scale: float = 1.5
+) -> float:
+    local_pseudo_huber = _pseudo_huber_fn_n(
+        predictions, targets, boundary_scale=boundary_scale
+    )
+    global_pseudo_huber = world.allreduce(local_pseudo_huber, op=MPI.SUM)
+    return global_pseudo_huber

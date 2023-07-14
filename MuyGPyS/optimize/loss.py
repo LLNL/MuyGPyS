@@ -18,6 +18,7 @@ from MuyGPyS._src.optimize.loss import (
     _cross_entropy_fn,
     _lool_fn,
     _lool_fn_unscaled,
+    _pseudo_huber_fn,
 )
 from MuyGPyS.optimize.utils import _switch_on_loss_method
 
@@ -44,7 +45,11 @@ def get_loss_func(loss_method: str) -> Callable:
             Unrecognized strings will result in an error.
     """
     return _switch_on_loss_method(
-        loss_method, lambda: cross_entropy_fn, lambda: mse_fn, lambda: lool_fn
+        loss_method,
+        lambda: cross_entropy_fn,
+        lambda: mse_fn,
+        lambda: lool_fn,
+        lambda: pseudo_huber_fn,
     )
 
 
@@ -82,7 +87,11 @@ def mse_fn(
     Mean squared error function.
 
     Computes mean squared error loss of the predicted versus known response.
-    Treats multivariate outputs as interchangeable in terms of loss penalty.
+    Treats multivariate outputs as interchangeable in terms of loss penalty. The
+    function computes
+
+    .. math::
+        l(f(x), y \\mid \\sigma) = \\frac{1}{b} \\sum_{i=1}^b (f(x_i) - y)^2}
 
     Args:
         predictions:
@@ -107,7 +116,11 @@ def lool_fn(
 
     Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
     response. Treats multivariate outputs as interchangeable in terms of loss
-    penalty.
+    penalty. The function computes
+
+    .. math::
+        l(f(x), y \\mid \\sigma) = \\sum_{i=1}^b \\sum_{j=1}^s
+        \\frac{(f(x_i) - y)^2}{\\sigma_j} + \\log \\sigma_j
 
     Args:
         predictions:
@@ -135,7 +148,12 @@ def lool_fn_unscaled(
 
     Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
     response. Treats multivariate outputs as interchangeable in terms of loss
-    penalty. Unlike lool_fn, does not require sigma_sq as an argument.
+    penalty. Unlike lool_fn, does not require sigma_sq as an argument. The
+    function computes
+
+    .. math::
+        l(f(x), y \\mid \\sigma) = \\sum_{i=1}^b
+        \\frac{(f(x_i) - y)^2}{\\sigma} + \\log \\sigma
 
     Args:
         predictions:
@@ -150,3 +168,37 @@ def lool_fn_unscaled(
         The LOOL loss of the prediction.
     """
     return _lool_fn_unscaled(predictions, targets, variances)
+
+
+def pseudo_huber_fn(
+    predictions: mm.ndarray, targets: mm.ndarray, boundary_scale: float = 1.5
+) -> float:
+    """
+    Pseudo-Huber loss function.
+
+    Computes a smooth approximation to the Huber loss function, which balances
+    sensitive squared-error loss for relatively small errors and
+    robust-to-outliers absolute loss for larger errors, so that the loss is not
+    overly sensitive to outliers. Used the form from
+    [wikipedia](https://en.wikipedia.org/wiki/Huber_loss#Pseudo-Huber_loss_function).
+    The function computes
+
+    .. math::
+        l(f(x), y \\mid \\delta) = \\delta^2 \\sum_{i=1}^b \\left ( \\sqrt{
+            \\left ( 1 + \\frac{y_i - f(x_i)}{\\delta} \\right )^2
+            } - 1 \\right )
+
+    Args:
+        predictions:
+            The predicted response of shape `(batch_count, response_count)`.
+        targets:
+            The expected response of shape `(batch_count, response_count)`.
+        boundary_scale:
+            The boundary value for the residual beyond which the loss becomes
+            approximately linear. Useful values depend on the scale of the
+            response.
+
+    Returns:
+        The sum of pseudo-Huber losses of the predictions.
+    """
+    return _pseudo_huber_fn(predictions, targets, boundary_scale=boundary_scale)
