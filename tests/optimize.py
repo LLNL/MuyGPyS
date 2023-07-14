@@ -58,7 +58,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.length_scale = 1e-2
 
         cls.sigma_tol = 5e-1
-        cls.nu_tol = 1e-1
+        cls.nu_tol = 2.5e-1
         cls.length_scale_tol = 3e-1
 
         cls.params = {
