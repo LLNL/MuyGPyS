@@ -37,7 +37,7 @@ def make_obj_fn(obj_method: str, loss_method: str, *args, **kwargs) -> Callable:
         A Callable `objective_fn`, whose format depends on `opt_method`.
     """
     if obj_method == "loo_crossval":
-        return make_loo_crossval_fn(loss_method, *args)
+        return make_loo_crossval_fn(loss_method, *args, **kwargs)
     else:
         raise ValueError(f"Unsupported objective method: {obj_method}")
 
