@@ -122,7 +122,10 @@ class BenchmarkTestCase(parameterized.TestCase):
             batch_indices,
             batch_nn_indices,
         )
-        batch_pairwise_diffs = pairwise_tensor(self.train_features, batch_nn_indices)
+        batch_pairwise_diffs = pairwise_tensor(
+            self.train_features,
+            batch_nn_indices,
+        )
         batch_targets = _consistent_chunk_tensor(
             self.train_responses[itr, batch_indices, :]
         )
@@ -223,7 +226,8 @@ class SigmaSqTest(BenchmarkTestCase):
     def test_sigma_sq(self):
         mrse = 0.0
         pairwise_diffs = _pairwise_differences(self.train_features)
-        K = self.gp.kernel(pairwise_diffs) + self.gp.eps() * mm.eye(self.feature_count)
+        K = self.gp.kernel(pairwise_diffs)
+        +self.gp.eps() * mm.eye(self.feature_count)
         for i in range(self.its):
             ss = get_analytic_sigma_sq(K, self.train_features)
             mrse += _sq_rel_err(self.gp.sigma_sq(), ss)

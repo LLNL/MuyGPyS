@@ -43,7 +43,10 @@ from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 from MuyGPyS.optimize.objective import make_obj_fn
 from MuyGPyS.optimize.loss import get_loss_func
-from MuyGPyS.optimize.sigma_sq import make_sigma_sq_optim, muygps_sigma_sq_optim
+from MuyGPyS.optimize.sigma_sq import (
+    make_sigma_sq_optim,
+    muygps_sigma_sq_optim,
+)
 
 
 def optimize_from_tensors(
@@ -104,21 +107,21 @@ def optimize_from_tensors(
         muygps:
             The model to be optimized.
         batch_targets:
-            Matrix of floats of shape `(batch_count, response_count)` whose rows
-            give the expected response for each batch element.
+            Matrix of floats of shape `(batch_count, response_count)` whose
+            rows give the expected response for each batch element.
         batch_nn_targets:
             Tensor of floats of shape `(batch_count, nn_count, response_count)`
             containing the expected response for each nearest neighbor of each
             batch element.
         crosswise_diffs:
             A tensor of shape `(batch_count, nn_count, feature_count)` whose
-            last two dimensions list the difference between each feature of each
-            batch element element and its nearest neighbors.
+            last two dimensions list the difference between each feature of
+            each batch element element and its nearest neighbors.
         pairwise_diffs:
-            A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
-            containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
-            nearest neighbor difference tensors corresponding to each of the
-            batch elements.
+            A tensor of shape `(batch_count, nn_count, nn_count,
+            feature_count)` containing the `(nn_count, nn_count,
+            feature_count)`-shaped pairwise nearest neighbor difference
+            tensors corresponding to each of the batch elements.
         loss_method:
             Indicates the loss function to be used.
         obj_method:
@@ -207,7 +210,8 @@ def optimize_from_tensors_mini_batch(
         >>> batch_count=100
         >>> train_count=sampler.train_count
         >>> num_epochs=int(sampler.train_count / batch_count)
-        >>> from MuyGPyS.optimize.chassis import optimize_from_tensors_mini_batch
+        >>> from MuyGPyS.optimize.chassis import
+        >>>     optimize_from_tensors_mini_batch
         >>> muygps = optimize_from_tensors_mini_batch(
         ...     muygps,
         ...     train_features,
@@ -307,7 +311,10 @@ def optimize_from_tensors_mini_batch(
     x0_names, x0, bounds = _get_opt_lists(muygps, verbose=verbose)
     x0_map = {n: x0[i] for i, n in enumerate(x0_names)}
     bounds_map = {n: bounds[i] for i, n in enumerate(x0_names)}
-    optimizer_kwargs, maximize_kwargs = _bayes_get_kwargs(verbose=verbose, **kwargs)
+    optimizer_kwargs, maximize_kwargs = _bayes_get_kwargs(
+        verbose=verbose,
+        **kwargs,
+    )
     if num_epochs > 1:
         optimizer_kwargs["allow_duplicate_points"] = True
     if "init_points" not in maximize_kwargs:
@@ -374,7 +381,7 @@ def optimize_from_tensors_mini_batch(
 
     # Print max param per epoch
     if verbose:
-        print(f"\nepoch\tprobe point\n-----\t-----------")
+        print("\nepoch\tprobe point\n-----\t-----------")
         for epoch in range(num_epochs):
             print(f"{epoch}, {to_probe[epoch].get('nu')}")
 
