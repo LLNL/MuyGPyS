@@ -7,6 +7,7 @@
 MuyGPs PyTorch implementation
 """
 import MuyGPyS._src.math.torch as torch
+from MuyGPyS import config
 from MuyGPyS._src.math.torch import nn
 from MuyGPyS.gp.tensors import (
     pairwise_tensor,
@@ -14,6 +15,13 @@ from MuyGPyS.gp.tensors import (
 )
 
 from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
+
+if config.state.backend != "torch":
+    import warnings
+
+    warnings.warn(
+        f"torch-only code cannot be run in {config.state.backend} mode"
+    )
 
 
 class MultivariateMuyGPs_layer(nn.Module):

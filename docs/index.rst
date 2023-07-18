@@ -38,6 +38,7 @@ If you use MuyGPyS in a research paper, please reference our article::
    :caption: Examples:
 
    examples/univariate_regression_tutorial.ipynb
+   examples/torch_tutorial.ipynb
    examples/fast_regression_tutorial.ipynb
 
 .. toctree::

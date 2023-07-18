@@ -40,7 +40,8 @@ if config.state.ftype != "32":
     import warnings
 
     warnings.warn(
-        f"torch-only code cannot be run in {config.state.backend} mode"
+        "torch optimization only supports 32-bit floats, not "
+        f"{config.state.ftype}-bit"
     )
 
 
