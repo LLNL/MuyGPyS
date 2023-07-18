@@ -63,7 +63,7 @@ class BenchmarkTestCase(parameterized.TestCase):
 
         cls.params = {
             "length_scale": ScalarHyperparameter(1e-1, (1e-2, 1e0)),
-            "nu": ScalarHyperparameter(0.78, (1e-1, 1e0)),
+            "nu": ScalarHyperparameter(0.78, (1e-1, 2e0)),
             "eps": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
         }
 
@@ -292,7 +292,7 @@ class NuTest(BenchmarkTestCase):
                 ["lool", dict(), "analytic"],
                 ["mse", dict(), None],
                 ["huber", {"boundary_scale": 1.5}, None],
-                ["looph", {"boundary_scale": 1.5}, None],
+                ["looph", {"boundary_scale": 1.5}, "analytic"],
             ]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
