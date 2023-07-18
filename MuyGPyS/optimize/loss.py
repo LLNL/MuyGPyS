@@ -245,4 +245,6 @@ def looph_fn(
     Returns:
         The sum of pseudo-Huber losses of the predictions.
     """
-    return _pseudo_huber_fn(predictions, targets, boundary_scale=boundary_scale)
+    return _looph_fn(
+        predictions, targets, variances, sigma_sq, boundary_scale=boundary_scale
+    )
