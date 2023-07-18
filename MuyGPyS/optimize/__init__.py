@@ -3,7 +3,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .chassis import (
-    optimize_from_tensors,
-    optimize_from_tensors_mini_batch,
-)
+from .chassis import optimize_from_tensors

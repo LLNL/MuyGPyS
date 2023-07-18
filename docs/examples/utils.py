@@ -71,7 +71,10 @@ class UnivariateSampler:
             label="perturbed train response",
         )
         axes[0].plot(
-            self.test_features, self.test_responses, "g-", label="test response"
+            self.test_features,
+            self.test_responses,
+            "g-",
+            label="test response",
         )
         axes[0].legend(fontsize=20)
 
@@ -118,7 +121,10 @@ class UnivariateSampler:
             label="perturbed train response",
         )
         ax.plot(
-            self.test_features, self.test_responses, "g-", label="test response"
+            self.test_features,
+            self.test_responses,
+            "g-",
+            label="test response",
         )
 
     def plot_model(self, ax, name, predictions, confidence_intervals):

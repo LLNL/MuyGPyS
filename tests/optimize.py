@@ -31,15 +31,17 @@ from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize import (
-    optimize_from_tensors,
+from MuyGPyS.optimize import optimize_from_tensors
+from MuyGPyS.optimize.batch import sample_batch
+from MuyGPyS.optimize.experiment.chassis import (
     optimize_from_tensors_mini_batch,
 )
-from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 
 if config.state.backend != "numpy":
-    raise ValueError("optimize.py only supports the numpy backend at this time")
+    raise ValueError(
+        "optimize.py only supports the numpy backend at this time"
+    )
 
 
 class BenchmarkTestCase(parameterized.TestCase):
@@ -49,7 +51,9 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.data_count = 1001
         cls.its = 13
         cls.sim_train = dict()
-        cls.xs = mm.linspace(-10.0, 10.0, cls.data_count).reshape(cls.data_count, 1)
+        cls.xs = mm.linspace(-10.0, 10.0, cls.data_count).reshape(
+            cls.data_count, 1
+        )
         cls.train_features = cls.xs[::2, :]
         cls.test_features = cls.xs[1::2, :]
         cls.train_count, _ = cls.train_features.shape
@@ -73,17 +77,25 @@ class BenchmarkTestCase(parameterized.TestCase):
                 nu=ScalarHyperparameter(cls.params["nu"]()),
                 metric=IsotropicDistortion(
                     metric=l2,
-                    length_scale=ScalarHyperparameter(cls.params["length_scale"]()),
+                    length_scale=ScalarHyperparameter(
+                        cls.params["length_scale"]()
+                    ),
                 ),
             ),
             eps=HomoscedasticNoise(cls.params["eps"]()),
         )
         cls.gp.sigma_sq._set(mm.array([5.0]))
         cls.ys = mm.zeros((cls.its, cls.data_count, cls.response_count))
-        cls.train_responses = mm.zeros((cls.its, cls.train_count, cls.response_count))
-        cls.test_responses = mm.zeros((cls.its, cls.test_count, cls.response_count))
+        cls.train_responses = mm.zeros(
+            (cls.its, cls.train_count, cls.response_count)
+        )
+        cls.test_responses = mm.zeros(
+            (cls.its, cls.test_count, cls.response_count)
+        )
         for i in range(cls.its):
-            ys = benchmark_sample_full(cls.gp, cls.test_features, cls.train_features)
+            ys = benchmark_sample_full(
+                cls.gp, cls.test_features, cls.train_features
+            )
             cls.train_responses = mm.assign(
                 cls.train_responses,
                 ys[cls.test_count :, :],
@@ -350,7 +362,9 @@ class NuTest(BenchmarkTestCase):
             # set up MuyGPS object
             muygps = MuyGPS(
                 kernel=Matern(
-                    nu=ScalarHyperparameter("sample", self.params["nu"].get_bounds()),
+                    nu=ScalarHyperparameter(
+                        "sample", self.params["nu"].get_bounds()
+                    ),
                     metric=IsotropicDistortion(
                         metric=l2,
                         length_scale=ScalarHyperparameter(
@@ -398,7 +412,9 @@ class NuTest(BenchmarkTestCase):
                 ["huber", {"boundary_scale": 1.5}, None],
             ]
             for om in ["loo_crossval"]
-            for opt_method_and_kwargs in [_basic_opt_method_and_kwarg_options[1]]
+            for opt_method_and_kwargs in [
+                _basic_opt_method_and_kwarg_options[1]
+            ]
         )
     )
     def test_nu_mini_batch(
@@ -422,7 +438,9 @@ class NuTest(BenchmarkTestCase):
             # set up MuyGPS object
             muygps = MuyGPS(
                 kernel=Matern(
-                    nu=ScalarHyperparameter("sample", self.params["nu"].get_bounds()),
+                    nu=ScalarHyperparameter(
+                        "sample", self.params["nu"].get_bounds()
+                    ),
                     metric=IsotropicDistortion(
                         metric=l2,
                         length_scale=ScalarHyperparameter(
@@ -545,7 +563,9 @@ class LengthScaleTest(BenchmarkTestCase):
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for loss_kwargs_and_sigma_methods in [["lool", dict(), "analytic"]]
             for om in ["loo_crossval"]
-            for opt_method_and_kwargs in [_advanced_opt_method_and_kwarg_options[1]]
+            for opt_method_and_kwargs in [
+                _advanced_opt_method_and_kwarg_options[1]
+            ]
         )
     )
     def test_length_scale_mini_batch(
