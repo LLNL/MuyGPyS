@@ -19,15 +19,15 @@ DEV_REQUIRES = [
 ]
 
 DOCS_REQUIRES = [
-    "sphinx==4.2.0",
-    "sphinx-rtd-theme==0.5.2",
-    "sphinx-autodoc-typehints==1.12.0",
+    "sphinx==6.2.1",
+    "sphinx-rtd-theme==1.2.2",
+    "sphinx-autodoc-typehints==1.22",
     "matplotlib>=3.2.1",
-    "nbsphinx==0.8.7",
+    "nbsphinx==0.9.2",
     "pandoc==2.3.0",
     "pandocfilters==1.5.0",
-    "ipython==7.30.1",
-    "ipykernel==6.6.0",
+    "ipython==8.14.0",
+    "ipykernel==6.24.0",
     "torchvision>=0.14.1",
 ]
 
