@@ -68,3 +68,37 @@ def _pseudo_huber_fn(
         torch.sqrt(1 + torch.divide(targets - predictions, boundary_scale) ** 2)
         - 1
     )
+
+
+def _looph_fn_unscaled(
+    predictions: torch.ndarray,
+    targets: torch.ndarray,
+    variances: torch.ndarray,
+    boundary_scale: float = 1.5,
+) -> float:
+    boundary_scale_sq = boundary_scale**2
+    return torch.sum(
+        boundary_scale_sq
+        * torch.sqrt(
+            1
+            + torch.divide(targets - predictions, variances * boundary_scale)
+            ** 2
+        )
+        - boundary_scale_sq
+        + torch.log(variances)
+    )
+
+
+def _looph_fn(
+    predictions: torch.ndarray,
+    targets: torch.ndarray,
+    variances: torch.ndarray,
+    sigma_sq: torch.ndarray,
+    boundary_scale: float = 1.5,
+) -> float:
+    return _looph_fn_unscaled(
+        predictions,
+        targets,
+        torch.outer(variances, sigma_sq),
+        boundary_scale=boundary_scale,
+    )

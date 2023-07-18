@@ -67,12 +67,14 @@ from MuyGPyS._src.optimize.loss.numpy import (
     _lool_fn as lool_fn_n,
     _mse_fn as mse_fn_n,
     _pseudo_huber_fn as pseudo_huber_fn_n,
+    _looph_fn as looph_fn_n,
 )
 from MuyGPyS._src.optimize.loss.mpi import (
     _cross_entropy_fn as cross_entropy_fn_m,
     _lool_fn as lool_fn_m,
     _mse_fn as mse_fn_m,
     _pseudo_huber_fn as pseudo_huber_fn_m,
+    _looph_fn as looph_fn_m,
 )
 from MuyGPyS._src.optimize.chassis.numpy import (
     _bayes_opt_optimize as bayes_optimize_n,
@@ -1468,6 +1470,25 @@ class LossTest(OptimTestCase):
                 self.batch_prediction, self.batch_targets, boundary_scale
             )
             self.assertAlmostEqual(serial_pseduo_huber, parallel_pseudo_huber)
+
+    @parameterized.parameters(bs for bs in [0.5, 1.0, 1.5, 2.0, 2.5])
+    def test_looph(self, boundary_scale):
+        parallel_looph = looph_fn_m(
+            self.batch_prediction_chunk,
+            self.batch_targets_chunk,
+            self.batch_variance_chunk,
+            self.batch_sigma_sq,
+            boundary_scale=boundary_scale,
+        )
+        if rank == 0:
+            serial_looph = looph_fn_n(
+                self.batch_prediction,
+                self.batch_targets,
+                self.batch_variance,
+                self.batch_sigma_sq,
+                boundary_scale=boundary_scale,
+            )
+            self.assertAlmostEqual(serial_looph, parallel_looph)
 
     def test_lool(self):
         parallel_lool = lool_fn_m(

@@ -78,12 +78,14 @@ from MuyGPyS._src.optimize.loss.numpy import (
     _cross_entropy_fn as cross_entropy_fn_n,
     _lool_fn as lool_fn_n,
     _pseudo_huber_fn as pseudo_huber_fn_n,
+    _looph_fn as looph_fn_n,
 )
 from MuyGPyS._src.optimize.loss.jax import (
     _mse_fn as mse_fn_j,
     _cross_entropy_fn as cross_entropy_fn_j,
     _lool_fn as lool_fn_j,
     _pseudo_huber_fn as pseudo_huber_fn_j,
+    _looph_fn as looph_fn_j,
 )
 from MuyGPyS._src.optimize.sigma_sq.numpy import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
@@ -1518,6 +1520,27 @@ class ObjectiveTest(OptimTestCase):
                 ),
                 pseudo_huber_fn_j(
                     self.predictions_j, self.batch_targets_j, boundary_scale
+                ),
+            )
+        )
+
+    @parameterized.parameters(bs for bs in [0.5, 1.0, 1.5, 2.0, 2.5])
+    def test_looph(self, boundary_scale):
+        self.assertTrue(
+            np.isclose(
+                looph_fn_n(
+                    self.predictions_n,
+                    self.batch_targets_n,
+                    self.variances_n,
+                    self.sigma_sq_n,
+                    boundary_scale=boundary_scale,
+                ),
+                looph_fn_j(
+                    self.predictions_j,
+                    self.batch_targets_j,
+                    self.variances_j,
+                    self.sigma_sq_j,
+                    boundary_scale=boundary_scale,
                 ),
             )
         )

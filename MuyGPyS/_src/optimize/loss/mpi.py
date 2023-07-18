@@ -12,6 +12,7 @@ from MuyGPyS._src.optimize.loss.numpy import (
     _cross_entropy_fn as _cross_entropy_fn_n,
     _lool_fn as _lool_fn_n,
     _pseudo_huber_fn as _pseudo_huber_fn_n,
+    _looph_fn as _looph_fn_n,
 )
 
 world = config.mpi_state.comm_world
@@ -74,3 +75,17 @@ def _pseudo_huber_fn(
     )
     global_pseudo_huber = world.allreduce(local_pseudo_huber, op=MPI.SUM)
     return global_pseudo_huber
+
+
+def _looph_fn(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    variances: np.ndarray,
+    sigma_sq: np.ndarray,
+    boundary_scale: float = 1.5,
+) -> float:
+    local_looph = _looph_fn_n(
+        predictions, targets, variances, sigma_sq, boundary_scale=boundary_scale
+    )
+    global_looph = world.allreduce(local_looph, op=MPI.SUM)
+    return global_looph
