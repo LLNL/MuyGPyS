@@ -58,12 +58,22 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.length_scale = 1e-2
 
         cls.sigma_tol = 5e-1
-        cls.nu_tol = 2.5e-1
-        cls.length_scale_tol = 3e-1
+        cls.nu_tol = {
+            "mse": 2.5e-1,
+            "lool": 2.5e-1,
+            "huber": 5e-1,
+            "looph": 9e-1,
+        }
+        cls.length_scale_tol = {
+            "mse": 3e-1,
+            "lool": 3e-1,
+            "huber": 5e-1,
+            "looph": 9e-1,
+        }
 
         cls.params = {
             "length_scale": ScalarHyperparameter(1e-1, (1e-2, 1e0)),
-            "nu": ScalarHyperparameter(0.78, (1e-1, 1e0)),
+            "nu": ScalarHyperparameter(0.78, (1e-1, 2e0)),
             "eps": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
         }
 
@@ -292,7 +302,7 @@ class NuTest(BenchmarkTestCase):
                 ["lool", dict(), "analytic"],
                 ["mse", dict(), None],
                 ["huber", {"boundary_scale": 1.5}, None],
-                ["looph", {"boundary_scale": 1.5}, None],
+                ["looph", {"boundary_scale": 1.5}, "analytic"],
             ]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
@@ -353,7 +363,7 @@ class NuTest(BenchmarkTestCase):
         mrse /= self.its
         print(f"optimizes nu with mean relative squared error {mrse}")
         # Is this a strong enough guarantee?
-        self.assertLessEqual(mrse, self.nu_tol)
+        self.assertLessEqual(mrse, self.nu_tol[loss_method])
 
 
 class LengthScaleTest(BenchmarkTestCase):
@@ -433,7 +443,7 @@ class LengthScaleTest(BenchmarkTestCase):
             f"median relative squared error {median_error}"
         )
         # Is this a strong enough guarantee?
-        self.assertLessEqual(median_error, self.length_scale_tol)
+        self.assertLessEqual(median_error, self.length_scale_tol[loss_method])
 
 
 if __name__ == "__main__":

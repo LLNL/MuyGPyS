@@ -38,7 +38,7 @@ def _switch_on_loss_method(
     elif loss_method in ["huber", "pseudo-huber", "pseudo_huber"]:
         return pseudo_huber_func(*args, **kwargs)
     elif loss_method in ["looph"]:
-        return pseudo_huber_func(*args, **kwargs)
+        return looph_func(*args, **kwargs)
     else:
         raise NotImplementedError(
             f"Loss function {loss_method} is not implemented."
