@@ -33,7 +33,7 @@ from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.experiment.chassis import (
+from MuyGPyS.optimize.experimental.chassis import (
     optimize_from_tensors_mini_batch,
 )
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
