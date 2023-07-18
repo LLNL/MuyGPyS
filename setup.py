@@ -26,8 +26,8 @@ DOCS_REQUIRES = [
     "nbsphinx==0.9.2",
     "pandoc==2.3.0",
     "pandocfilters==1.5.0",
-    "ipython==8.14.0",
-    "ipykernel==6.24.0",
+    "ipython==7.30.1",
+    "ipykernel==6.6.0",
     "torchvision>=0.14.1",
 ]
 
