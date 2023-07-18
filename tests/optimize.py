@@ -318,6 +318,7 @@ class NuTest(BenchmarkTestCase):
                 ["lool", dict(), "analytic"],
                 ["mse", dict(), None],
                 ["huber", {"boundary_scale": 1.5}, None],
+                ["looph", {"boundary_scale": 1.5}, None],
             ]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options

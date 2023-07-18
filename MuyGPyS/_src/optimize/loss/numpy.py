@@ -63,3 +63,36 @@ def _pseudo_huber_fn(
     return boundary_scale**2 * np.sum(
         np.sqrt(1 + np.divide(targets - predictions, boundary_scale) ** 2) - 1
     )
+
+
+def _looph_fn_unscaled(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    variances: np.ndarray,
+    boundary_scale: float = 1.5,
+) -> float:
+    boundary_scale_sq = boundary_scale**2
+    return np.sum(
+        boundary_scale_sq
+        * np.sqrt(
+            1
+            + np.divide(targets - predictions, variances * boundary_scale) ** 2
+        )
+        - boundary_scale_sq
+        + np.log(variances)
+    )
+
+
+def _looph_fn(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    variances: np.ndarray,
+    sigma_sq: np.ndarray,
+    boundary_scale: float = 1.5,
+) -> float:
+    return _looph_fn_unscaled(
+        predictions,
+        targets,
+        np.outer(variances, sigma_sq),
+        boundary_scale=boundary_scale,
+    )

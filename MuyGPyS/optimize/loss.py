@@ -19,6 +19,7 @@ from MuyGPyS._src.optimize.loss import (
     _lool_fn,
     _lool_fn_unscaled,
     _pseudo_huber_fn,
+    _looph_fn,
 )
 from MuyGPyS.optimize.utils import _switch_on_loss_method
 
@@ -50,6 +51,7 @@ def get_loss_func(loss_method: str) -> Callable:
         lambda: mse_fn,
         lambda: lool_fn,
         lambda: pseudo_huber_fn,
+        lambda: looph_fn,
     )
 
 
@@ -202,3 +204,47 @@ def pseudo_huber_fn(
         The sum of pseudo-Huber losses of the predictions.
     """
     return _pseudo_huber_fn(predictions, targets, boundary_scale=boundary_scale)
+
+
+def looph_fn(
+    predictions: mm.ndarray,
+    targets: mm.ndarray,
+    variances: mm.ndarray,
+    sigma_sq: mm.ndarray,
+    boundary_scale: float = 1.5,
+) -> float:
+    """
+    Variance-regularized pseudo-Huber loss function.
+
+    Computes a smooth approximation to the Huber loss function, similar to
+    :func:`pseudo_huber_fn`, with the addition of both a variance scaling and a
+    additive logarithmic variance regularization term to avoid exploding the
+    variance. The function computes
+
+    .. math::
+        l(f(x), y \\mid \\delta) = \\delta^2 \\sum_{i=1}^b \\left ( \\sqrt{
+            \\left ( 1 + \\frac{y_i - f(x_i)}{\\sigma_i \\delta} \\right )^2
+            } - 1 \\right ) + \\log \\sigma_i
+
+    Args:
+        predictions:
+            The predicted response of shape `(batch_count, response_count)`.
+        targets:
+            The expected response of shape `(batch_count, response_count)`.
+        variances:
+            The unscaled variance of the predicted responses of shape
+            `(batch_count, response_count)`.
+        sigma_sq:
+            The sigma_sq variance scaling parameter of shape
+            `(response_count,)`.
+        boundary_scale:
+            The boundary value for the residual beyond which the loss becomes
+            approximately linear. Useful values depend on the scale of the
+            response.
+
+    Returns:
+        The sum of pseudo-Huber losses of the predictions.
+    """
+    return _looph_fn(
+        predictions, targets, variances, sigma_sq, boundary_scale=boundary_scale
+    )

@@ -30,12 +30,18 @@ from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.torch import MultivariateMuyGPs_layer
 
 if config.state.backend != "torch":
-    raise ValueError(
+    import warnings
+
+    warnings.warn(
         f"torch-only code cannot be run in {config.state.backend} mode"
     )
 
 if config.state.ftype != "32":
-    raise ValueError("Example torch code must run in 32-bit mode")
+    import warnings
+
+    warnings.warn(
+        f"torch-only code cannot be run in {config.state.backend} mode"
+    )
 
 
 mse_loss = torch.nn.MSELoss()
