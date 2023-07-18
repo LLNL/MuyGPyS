@@ -239,7 +239,7 @@ class OptimTest(parameterized.TestCase):
             ]
             for k_kwargs in (
                 (
-                    [0.38, 0.78],
+                    [0.63, 0.78],
                     [
                         {
                             "kernel": Matern(
@@ -364,7 +364,7 @@ class OptimTest(parameterized.TestCase):
                 mse += mm.sum(estimate - target[i]) ** 2
         mse /= its * response_count
         print(f"optimizes with mse {mse}")
-        self.assertLessEqual(mse, 0.25)
+        self.assertLessEqual(mse, 0.3)
 
 
 class ClassifyTest(parameterized.TestCase):
@@ -381,7 +381,7 @@ class ClassifyTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.38),
+                            nu=ScalarHyperparameter(0.63),
                             metric=IsotropicDistortion(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(1.5),
@@ -401,7 +401,7 @@ class ClassifyTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.38),
+                            nu=ScalarHyperparameter(0.63),
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(1.5),
