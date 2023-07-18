@@ -30,11 +30,13 @@ from typing import Dict, Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.chassis import (
+    _scipy_optimize,
+    _bayes_opt_optimize,
+)
+from MuyGPyS._src.optimize.chassis.numpy import (
     _new_muygps,
     _get_opt_lists,
-    _scipy_optimize,
     _bayes_get_kwargs,
-    _bayes_opt_optimize,
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.tensors import make_train_tensors
