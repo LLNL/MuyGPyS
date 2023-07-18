@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from copy import deepcopy
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, List, Tuple
 
 from bayes_opt import BayesianOptimization
 from scipy import optimize as opt
@@ -125,7 +125,8 @@ def _bayes_opt_optimize(
     bounds_map = {n: bounds[i] for i, n in enumerate(x0_names)}
 
     optimizer_kwargs, maximize_kwargs = _bayes_get_kwargs(
-        verbose=verbose, **kwargs
+        verbose=verbose,
+        **kwargs,
     )
 
     # set defaults

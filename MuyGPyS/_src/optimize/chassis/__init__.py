@@ -5,7 +5,10 @@
 
 from MuyGPyS._src.util import _collect_implementation
 
-_scipy_optimize, _bayes_opt_optimize = _collect_implementation(
+(
+    _scipy_optimize,
+    _bayes_opt_optimize,
+) = _collect_implementation(
     "MuyGPyS._src.optimize.chassis",
     "_scipy_optimize",
     "_bayes_opt_optimize",
