@@ -24,6 +24,7 @@ def _switch_on_loss_method(
     mse_func: Callable,
     lool_func: Callable,
     pseudo_huber_func: Callable,
+    looph_func: Callable,
     *args,
     **kwargs,
 ):
@@ -35,6 +36,8 @@ def _switch_on_loss_method(
     elif loss_method == "lool":
         return lool_func(*args, **kwargs)
     elif loss_method in ["huber", "pseudo-huber", "pseudo_huber"]:
+        return pseudo_huber_func(*args, **kwargs)
+    elif loss_method in ["looph"]:
         return pseudo_huber_func(*args, **kwargs)
     else:
         raise NotImplementedError(

@@ -11,6 +11,7 @@ from MuyGPyS._src.util import _collect_implementation
     _lool_fn,
     _lool_fn_unscaled,
     _pseudo_huber_fn,
+    _looph_fn,
 ) = _collect_implementation(
     "MuyGPyS._src.optimize.loss",
     "_mse_fn",
@@ -18,4 +19,5 @@ from MuyGPyS._src.util import _collect_implementation
     "_lool_fn",
     "_lool_fn_unscaled",
     "_pseudo_huber_fn",
+    "_looph_fn",
 )

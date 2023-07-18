@@ -111,6 +111,7 @@ def make_loo_crossval_fn(
         make_raw_predict_and_loss_fn,
         make_var_predict_and_loss_fn,
         make_raw_predict_and_loss_fn,
+        make_var_predict_and_loss_fn,
         loss_fn,
         mean_fn,
         var_fn,
