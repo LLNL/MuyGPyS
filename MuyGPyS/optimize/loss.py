@@ -93,7 +93,7 @@ def mse_fn(
     function computes
 
     .. math::
-        l(f(x), y \\mid \\sigma) = \\frac{1}{b} \\sum_{i=1}^b (f(x_i) - y)^2}
+        l(f(x), y \\mid \\sigma) = \\frac{1}{b} \\sum_{i=1}^b (f(x_i) - y)^2
 
     Args:
         predictions:
@@ -187,7 +187,7 @@ def pseudo_huber_fn(
 
     .. math::
         l(f(x), y \\mid \\delta) = \\delta^2 \\sum_{i=1}^b \\left ( \\sqrt{
-            \\left ( 1 + \\frac{y_i - f(x_i)}{\\delta} \\right )^2
+            1 + \\left ( \\frac{y_i - f(x_i)}{\\delta} \\right )^2
             } - 1 \\right )
 
     Args:
@@ -223,7 +223,7 @@ def looph_fn(
 
     .. math::
         l(f(x), y \\mid \\delta) = \\delta^2 \\sum_{i=1}^b \\left ( \\sqrt{
-            \\left ( 1 + \\frac{y_i - f(x_i)}{\\sigma_i \\delta} \\right )^2
+            1 + \\left ( \\frac{y_i - f(x_i)}{\\sigma_i \\delta} \\right )^2
             } - 1 \\right ) + \\log \\sigma_i
 
     Args:
