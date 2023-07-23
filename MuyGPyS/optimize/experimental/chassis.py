@@ -50,7 +50,7 @@ def optimize_from_tensors_mini_batch(
     muygps: MuyGPS,
     train_features: mm.ndarray,
     train_responses: mm.ndarray,
-    nbrs_lookup: NN_Wrapper,
+    nn_count: int,
     batch_count: int,
     train_count: int,
     num_epochs: int = 1,
@@ -64,17 +64,17 @@ def optimize_from_tensors_mini_batch(
 ) -> MuyGPS:
     """
     Find the optimal model using:
-    1. Nearest neighbor distance difference matrices
+    1. scikit learn Nearest Neighbors
     2. Bayes Optimization
     3. numpy math backend
 
-    See the following example, where we have already constructed exact
+    #TODO See the following example, where we have already constructed exact
     or approximate KNN data lookups a `nbrs_lookup` data structure using
     :class:`MuyGPyS.neighbors.NN_Wrapper`, initialized a
     :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps`, created a
     :class:`utils.UnivariateSampler` instance `sampler`.
 
-    Example:
+    #TODO Example:
         >>> batch_count=100
         >>> train_count=sampler.train_count
         >>> num_epochs=int(sampler.train_count / batch_count)
@@ -138,8 +138,8 @@ def optimize_from_tensors_mini_batch(
             Explanatory variables used to train model.
         train_responses:
             Labels corresponding to features used to train model.
-        nbrs_lookup:
-            Trained nearest neighbor query data structure.
+        nn_count:
+            The number of nearest neighbors to return in queries.
         batch_count:
             The number of batch elements to sample.
         train_count:
@@ -190,7 +190,12 @@ def optimize_from_tensors_mini_batch(
     if "n_iter" not in maximize_kwargs:
         maximize_kwargs["n_iter"] = 20
 
-    # Initialize list of points to probe
+    # Initialize nearest neighbors lookup and list of points to probe
+    nn_count = 30
+    # TODO apply anistropic distance function using learned dist scale hps
+    nbrs_lookup = NN_Wrapper(
+        train_features, nn_count, nn_method="exact", algorithm="ball_tree"
+    )
     to_probe = [x0_map]
 
     # Run optimization loop
