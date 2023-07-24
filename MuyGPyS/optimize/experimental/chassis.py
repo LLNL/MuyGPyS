@@ -35,6 +35,7 @@ from MuyGPyS._src.optimize.chassis.numpy import (
     _bayes_get_kwargs,
 )
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.distortion import AnisotropicDistortion
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
@@ -53,6 +54,7 @@ def optimize_from_tensors_mini_batch(
     nn_count: int,
     batch_count: int,
     train_count: int,
+    length_scaled: bool,
     num_epochs: int = 1,
     batch_features: Optional[mm.ndarray] = None,
     loss_method: str = "mse",
@@ -68,13 +70,12 @@ def optimize_from_tensors_mini_batch(
     2. Bayes Optimization
     3. numpy math backend
 
-    #TODO See the following example, where we have already constructed exact
-    or approximate KNN data lookups a `nbrs_lookup` data structure using
-    :class:`MuyGPyS.neighbors.NN_Wrapper`, initialized a
-    :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps`, created a
-    :class:`utils.UnivariateSampler` instance `sampler`.
+    See the following example, where we have already initialized a
+    :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps` and created a
+    :class:`utils.UnivariateSampler` or :class:`utils.UnivariateSampler2D`
+    instance `sampler`.
 
-    #TODO Example:
+    Example:
         >>> batch_count=100
         >>> train_count=sampler.train_count
         >>> num_epochs=int(sampler.train_count / batch_count)
@@ -87,6 +88,7 @@ def optimize_from_tensors_mini_batch(
         ...     nbrs_lookup,
         ...     batch_count=batch_count,
         ...     train_count=train_count,
+        ...     length_scaled=False,
         ...     num_epochs=num_epochs,
         ...     batch_features=None,
         ...     loss_method='lool',
@@ -144,6 +146,8 @@ def optimize_from_tensors_mini_batch(
             The number of batch elements to sample.
         train_count:
             The total number of training examples.
+        length_scaled:
+            If True, update neighborhoods using the learned length scales.
         num_epochs:
             The number of iterations for optimization loop.
         batch_features:
@@ -190,13 +194,12 @@ def optimize_from_tensors_mini_batch(
     if "n_iter" not in maximize_kwargs:
         maximize_kwargs["n_iter"] = 20
 
-    # Initialize nearest neighbors lookup and list of points to probe
+    # Initialize list of points to probe and nearest neighbors lookup
+    to_probe = [x0_map]
     nn_count = 30
-    # TODO apply anistropic distance function using learned dist scale hps
     nbrs_lookup = NN_Wrapper(
         train_features, nn_count, nn_method="exact", algorithm="ball_tree"
     )
-    to_probe = [x0_map]
 
     # Run optimization loop
     for epoch in range(num_epochs):
@@ -235,6 +238,7 @@ def optimize_from_tensors_mini_batch(
             loss_kwargs=loss_kwargs,
         )
 
+        # TODO replace with reused instance initiated pre loop
         # Create the Bayes optimizer
         optimizer = BayesianOptimization(
             f=obj_fn,
@@ -251,6 +255,28 @@ def optimize_from_tensors_mini_batch(
 
         # Add explored points to be probed
         to_probe.append(optimizer.max["params"])
+
+        # Update neighborhoods using the learned length scales
+        # TODO verify if anisotropic dist func and multiple length scales
+        train_features_scaled = train_features
+        if length_scaled:
+            length_scale0 = optimizer.max["params"]["length_scale0"]
+            length_scale1 = optimizer.max["params"]["length_scale1"]
+            length_scales = AnisotropicDistortion._get_length_scale_array(
+                mm.array,
+                train_features.shape,
+                length_scale0=length_scale0,
+                length_scale1=length_scale1,
+            )
+            print(f"epoch {epoch} distance length scales {length_scales}")
+            train_features_scaled = train_features / length_scales
+
+        nbrs_lookup = NN_Wrapper(
+            train_features_scaled,
+            nn_count,
+            nn_method="exact",
+            algorithm="ball_tree",
+        )
 
     # Print max param per epoch
     if verbose:

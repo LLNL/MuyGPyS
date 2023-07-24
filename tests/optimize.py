@@ -176,7 +176,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         muygps,
         name,
         itr,
-        nbrs_lookup,
+        nn_count,
         batch_count,
         loss_method,
         obj_method,
@@ -188,9 +188,10 @@ class BenchmarkTestCase(parameterized.TestCase):
             muygps,
             self.train_features,
             self.train_responses[itr, :, :],
-            nbrs_lookup,
+            nn_count,
             batch_count,
             self.train_count,
+            length_scaled=False,
             num_epochs=1,  # Optimizing over one epoch (for now)
             batch_features=None,
             loss_method=loss_method,
@@ -408,14 +409,12 @@ class NuTest(BenchmarkTestCase):
             (
                 b,
                 n,
-                nn_kwargs,
                 loss_kwargs_and_sigma_methods,
                 om,
                 opt_method_and_kwargs,
             )
             for b in [250]
             for n in [20]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for loss_kwargs_and_sigma_methods in [
                 ["lool", dict(), "analytic"],
                 ["mse", dict(), None],
@@ -431,7 +430,6 @@ class NuTest(BenchmarkTestCase):
         self,
         batch_count,
         nn_count,
-        nn_kwargs,
         loss_kwargs_and_sigma_methods,
         obj_method,
         opt_method_and_kwargs,
@@ -440,9 +438,6 @@ class NuTest(BenchmarkTestCase):
         _, opt_kwargs = opt_method_and_kwargs
 
         mrse = 0.0
-
-        # compute nearest neighbor structure
-        nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
 
         for i in range(self.its):
             # set up MuyGPS object
@@ -465,7 +460,7 @@ class NuTest(BenchmarkTestCase):
                 muygps,
                 "nu",
                 i,
-                nbrs_lookup,
+                nn_count,
                 batch_count,
                 loss_method,
                 obj_method,
@@ -476,82 +471,7 @@ class NuTest(BenchmarkTestCase):
         mrse /= self.its
         print(f"optimizes nu with mean relative squared error {mrse}")
         # Is this a strong enough guarantee?
-        self.assertLessEqual(mrse, self.nu_tol)
-
-    @parameterized.parameters(
-        (
-            (
-                b,
-                n,
-                nn_kwargs,
-                loss_kwargs_and_sigma_methods,
-                om,
-                opt_method_and_kwargs,
-            )
-            for b in [250]
-            for n in [20]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for loss_kwargs_and_sigma_methods in [
-                ["lool", dict(), "analytic"],
-                ["mse", dict(), None],
-                ["huber", {"boundary_scale": 1.5}, None],
-            ]
-            for om in ["loo_crossval"]
-            for opt_method_and_kwargs in [
-                _basic_opt_method_and_kwarg_options[1]
-            ]
-        )
-    )
-    def test_nu_mini_batch(
-        self,
-        batch_count,
-        nn_count,
-        nn_kwargs,
-        loss_kwargs_and_sigma_methods,
-        obj_method,
-        opt_method_and_kwargs,
-    ):
-        loss_method, loss_kwargs, sigma_method = loss_kwargs_and_sigma_methods
-        _, opt_kwargs = opt_method_and_kwargs
-
-        mrse = 0.0
-
-        # compute nearest neighbor structure
-        nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
-
-        for i in range(self.its):
-            # set up MuyGPS object
-            muygps = MuyGPS(
-                kernel=Matern(
-                    nu=ScalarHyperparameter(
-                        "sample", self.params["nu"].get_bounds()
-                    ),
-                    metric=IsotropicDistortion(
-                        metric=l2,
-                        length_scale=ScalarHyperparameter(
-                            self.params["length_scale"]()
-                        ),
-                    ),
-                ),
-                eps=HomoscedasticNoise(self.params["eps"]()),
-            )
-
-            mrse += self._optim_chassis_mini_batch(
-                muygps,
-                "nu",
-                i,
-                nbrs_lookup,
-                batch_count,
-                loss_method,
-                obj_method,
-                sigma_method,
-                loss_kwargs,
-                opt_kwargs,
-            )
-        mrse /= self.its
-        print(f"optimizes nu with mean relative squared error {mrse}")
-        # Is this a strong enough guarantee?
-        self.assertLessEqual(mrse, self.nu_tol)
+        self.assertLessEqual(mrse, self.nu_tol[loss_method])
 
 
 class LengthScaleTest(BenchmarkTestCase):
@@ -638,14 +558,12 @@ class LengthScaleTest(BenchmarkTestCase):
             (
                 b,
                 n,
-                nn_kwargs,
                 loss_kwargs_and_sigma_methods,
                 om,
                 opt_method_and_kwargs,
             )
             for b in [250]
             for n in [20]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for loss_kwargs_and_sigma_methods in [["lool", dict(), "analytic"]]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in [
@@ -657,7 +575,6 @@ class LengthScaleTest(BenchmarkTestCase):
         self,
         batch_count,
         nn_count,
-        nn_kwargs,
         loss_kwargs_and_sigma_methods,
         obj_method,
         opt_method_and_kwargs,
@@ -666,9 +583,6 @@ class LengthScaleTest(BenchmarkTestCase):
         _, opt_kwargs = opt_method_and_kwargs
 
         error_vector = mm.zeros((self.its,))
-
-        # compute nearest neighbor structure
-        nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
 
         for i in range(self.its):
             # set up MuyGPS object
@@ -689,7 +603,7 @@ class LengthScaleTest(BenchmarkTestCase):
                 muygps,
                 "length_scale",
                 i,
-                nbrs_lookup,
+                nn_count,
                 batch_count,
                 loss_method,
                 obj_method,
@@ -703,79 +617,7 @@ class LengthScaleTest(BenchmarkTestCase):
             f"median relative squared error {median_error}"
         )
         # Is this a strong enough guarantee?
-        self.assertLessEqual(median_error, self.length_scale_tol)
-
-    @parameterized.parameters(
-        (
-            (
-                b,
-                n,
-                nn_kwargs,
-                loss_kwargs_and_sigma_methods,
-                om,
-                opt_method_and_kwargs,
-            )
-            for b in [250]
-            for n in [20]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for loss_kwargs_and_sigma_methods in [["lool", dict(), "analytic"]]
-            for om in ["loo_crossval"]
-            for opt_method_and_kwargs in [
-                _advanced_opt_method_and_kwarg_options[1]
-            ]
-        )
-    )
-    def test_length_scale_mini_batch(
-        self,
-        batch_count,
-        nn_count,
-        nn_kwargs,
-        loss_kwargs_and_sigma_methods,
-        obj_method,
-        opt_method_and_kwargs,
-    ):
-        loss_method, loss_kwargs, sigma_method = loss_kwargs_and_sigma_methods
-        _, opt_kwargs = opt_method_and_kwargs
-
-        error_vector = mm.zeros((self.its,))
-
-        # compute nearest neighbor structure
-        nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
-
-        for i in range(self.its):
-            # set up MuyGPS object
-            muygps = MuyGPS(
-                kernel=Matern(
-                    nu=ScalarHyperparameter(self.params["nu"]()),
-                    metric=IsotropicDistortion(
-                        metric=l2,
-                        length_scale=ScalarHyperparameter(
-                            "sample", self.params["length_scale"].get_bounds()
-                        ),
-                    ),
-                ),
-                eps=HomoscedasticNoise(self.params["eps"]()),
-            )
-
-            error_vector[i] = self._optim_chassis_mini_batch(
-                muygps,
-                "length_scale",
-                i,
-                nbrs_lookup,
-                batch_count,
-                loss_method,
-                obj_method,
-                sigma_method,
-                loss_kwargs,
-                opt_kwargs,
-            )
-        median_error = mm.median(error_vector)
-        print(
-            "optimizes length_scale with "
-            f"median relative squared error {median_error}"
-        )
-        # Is this a strong enough guarantee?
-        self.assertLessEqual(median_error, self.length_scale_tol)
+        self.assertLessEqual(median_error, self.length_scale_tol[loss_method])
 
 
 if __name__ == "__main__":
