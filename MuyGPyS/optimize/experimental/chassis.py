@@ -26,6 +26,8 @@ documentation for details.
 
 
 from bayes_opt import BayesianOptimization
+from bayes_opt.target_space import TargetSpace
+from bayes_opt.bayesian_optimization import Queue
 from typing import Dict, Optional
 
 import MuyGPyS._src.math as mm
@@ -55,6 +57,7 @@ def optimize_from_tensors_mini_batch(
     batch_count: int,
     train_count: int,
     length_scaled: bool,
+    keep_state: bool = False,
     num_epochs: int = 1,
     batch_features: Optional[mm.ndarray] = None,
     loss_method: str = "mse",
@@ -89,6 +92,7 @@ def optimize_from_tensors_mini_batch(
         ...     batch_count=batch_count,
         ...     train_count=train_count,
         ...     length_scaled=False,
+        ...     keep_state=False,
         ...     num_epochs=num_epochs,
         ...     batch_features=None,
         ...     loss_method='lool',
@@ -127,11 +131,11 @@ def optimize_from_tensors_mini_batch(
         ...
         epoch	probe point
         -----	-----------
-        0, 0.4935585846939505
-        1, 1.8520552693068661
-        2, 1.862615982964366
-        3, 1.8596379807155798
-        4, 1.8104353512478297
+        0, {'nu': 0.4935585846939505}
+        1, {'nu': 2.0153664487151066}
+        2, {'nu': 1.9821713002046035}
+        3, {'nu': 1.9744962201179712}
+        4, {'nu': 2.048927092852563}
 
     Args:
         muygps:
@@ -148,6 +152,8 @@ def optimize_from_tensors_mini_batch(
             The total number of training examples.
         length_scaled:
             If True, update neighborhoods using the learned length scales.
+        keep_state:
+            If True, maintain optimizer target space and explored points.
         num_epochs:
             The number of iterations for optimization loop.
         batch_features:
@@ -166,7 +172,8 @@ def optimize_from_tensors_mini_batch(
         verbose:
             If True, print debug messages.
         kwargs:
-            Additional keyword arguments to be passed to the wrapper optimizer.
+            Additional keyword arguments to be passed to the wrapper
+            optimizer.
 
     Returns:
         A new MuyGPs model whose specified hyperparameters have been optimized.
@@ -193,6 +200,13 @@ def optimize_from_tensors_mini_batch(
         maximize_kwargs["init_points"] = 5
     if "n_iter" not in maximize_kwargs:
         maximize_kwargs["n_iter"] = 20
+
+    # Create Bayes optimizer
+    optimizer = BayesianOptimization(
+        f=None,
+        pbounds=bounds_map,
+        **optimizer_kwargs,
+    )
 
     # Initialize list of points to probe and nearest neighbors lookup
     to_probe = [x0_map]
@@ -238,17 +252,28 @@ def optimize_from_tensors_mini_batch(
             loss_kwargs=loss_kwargs,
         )
 
-        # TODO replace with reused instance initiated pre loop
-        # Create the Bayes optimizer
-        optimizer = BayesianOptimization(
-            f=obj_fn,
-            pbounds=bounds_map,
-            **optimizer_kwargs,
-        )
+        # Setting the function to be optimized for this epoch
+        if keep_state:
+            optimizer._space.target_func = obj_fn
+            # TODO optimizer._space = TargetSpace(
+            #     obj_fn,
+            #     bounds_map,
+            #     random_state=optimizer_kwargs["random_state"],
+            #     allow_duplicate_points=optimizer_kwargs[
+            #         "allow_duplicate_points"
+            #     ],
+            # )
+        else:
+            optimizer = BayesianOptimization(
+                f=obj_fn,
+                pbounds=bounds_map,
+                **optimizer_kwargs,
+            )
 
         # Probe all explored points
-        for point in to_probe:
-            optimizer.probe(point, lazy=True)
+        if not keep_state or (keep_state and epoch == 0):
+            for point in to_probe:
+                optimizer.probe(point, lazy=True)
 
         # Find maximum of the acquisition function
         optimizer.maximize(**maximize_kwargs)
@@ -258,31 +283,30 @@ def optimize_from_tensors_mini_batch(
 
         # Update neighborhoods using the learned length scales
         # TODO verify if anisotropic dist func and multiple length scales
-        train_features_scaled = train_features
-        if length_scaled:
-            length_scale0 = optimizer.max["params"]["length_scale0"]
-            length_scale1 = optimizer.max["params"]["length_scale1"]
-            length_scales = AnisotropicDistortion._get_length_scale_array(
-                mm.array,
-                train_features.shape,
-                length_scale0=length_scale0,
-                length_scale1=length_scale1,
+        if epoch < (num_epochs - 1):
+            train_features_scaled = train_features
+            if length_scaled:
+                length_scale0 = optimizer.max["params"]["length_scale0"]
+                length_scale1 = optimizer.max["params"]["length_scale1"]
+                length_scales = AnisotropicDistortion._get_length_scale_array(
+                    mm.array,
+                    train_features.shape,
+                    length_scale0=length_scale0,
+                    length_scale1=length_scale1,
+                )
+                train_features_scaled = train_features / length_scales
+            nbrs_lookup = NN_Wrapper(
+                train_features_scaled,
+                nn_count,
+                nn_method="exact",
+                algorithm="ball_tree",
             )
-            print(f"epoch {epoch} distance length scales {length_scales}")
-            train_features_scaled = train_features / length_scales
-
-        nbrs_lookup = NN_Wrapper(
-            train_features_scaled,
-            nn_count,
-            nn_method="exact",
-            algorithm="ball_tree",
-        )
 
     # Print max param per epoch
     if verbose:
         print("\nepoch\tprobe point\n-----\t-----------")
         for epoch in range(num_epochs):
-            print(f"{epoch}, {to_probe[epoch].get('nu')}")
+            print(f"{epoch}, {to_probe[epoch]}")
 
     # Compute optimal variance scaling hyperparameter
     ret = muygps_sigma_sq_optim(
