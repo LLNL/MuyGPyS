@@ -200,6 +200,9 @@ def optimize_from_tensors_mini_batch(
         maximize_kwargs["init_points"] = 5
     if "n_iter" not in maximize_kwargs:
         maximize_kwargs["n_iter"] = 20
+    is_anisotropic = False
+    if isinstance(muygps.kernel.distortion_fn, AnisotropicDistortion):
+        is_anisotropic = True
 
     # Create Bayes optimizer
     optimizer = BayesianOptimization(
@@ -282,19 +285,15 @@ def optimize_from_tensors_mini_batch(
         to_probe.append(optimizer.max["params"])
 
         # Update neighborhoods using the learned length scales
-        # TODO verify if anisotropic dist func and multiple length scales
-        if epoch < (num_epochs - 1):
+        if is_anisotropic and length_scaled and epoch < (num_epochs - 1):
             train_features_scaled = train_features
-            if length_scaled:
-                length_scale0 = optimizer.max["params"]["length_scale0"]
-                length_scale1 = optimizer.max["params"]["length_scale1"]
-                length_scales = AnisotropicDistortion._get_length_scale_array(
-                    mm.array,
-                    train_features.shape,
-                    length_scale0=length_scale0,
-                    length_scale1=length_scale1,
-                )
-                train_features_scaled = train_features / length_scales
+            length_scales = AnisotropicDistortion._get_length_scale_array(
+                mm.array,
+                train_features_scaled.shape,
+                None,
+                **optimizer.max["params"],
+            )
+            train_features_scaled = train_features_scaled / length_scales
             nbrs_lookup = NN_Wrapper(
                 train_features_scaled,
                 nn_count,
