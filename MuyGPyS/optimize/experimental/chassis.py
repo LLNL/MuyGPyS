@@ -56,11 +56,11 @@ def optimize_from_tensors_mini_batch(
     nn_count: int,
     batch_count: int,
     train_count: int,
-    length_scaled: bool,
-    keep_state: bool = False,
     num_epochs: int = 1,
+    keep_state: bool = False,
+    probe_previous: bool = False,
     batch_features: Optional[mm.ndarray] = None,
-    loss_method: str = "mse",
+    loss_method: str = "lool",
     obj_method: str = "loo_crossval",
     sigma_method: Optional[str] = "analytic",
     loss_kwargs: Dict = dict(),
@@ -91,9 +91,9 @@ def optimize_from_tensors_mini_batch(
         ...     nbrs_lookup,
         ...     batch_count=batch_count,
         ...     train_count=train_count,
-        ...     length_scaled=False,
-        ...     keep_state=False,
-        ...     num_epochs=num_epochs,
+        ...     num_epochs: int = 1,
+        ...     keep_state: bool = False,
+        ...     probe_previous: bool = True,
         ...     batch_features=None,
         ...     loss_method='lool',
         ...     obj_method='loo_crossval',
@@ -150,12 +150,12 @@ def optimize_from_tensors_mini_batch(
             The number of batch elements to sample.
         train_count:
             The total number of training examples.
-        length_scaled:
-            If True, update neighborhoods using the learned length scales.
-        keep_state:
-            If True, maintain optimizer target space and explored points.
         num_epochs:
             The number of iterations for optimization loop.
+        keep_state:
+            If True, maintain optimizer target space and explored points.
+        probe_previous:
+            If True, store max params to probe in next loop iteration.
         batch_features:
             Set to None, ignore hierarchical stuff for now.
         loss_method:
@@ -211,19 +211,26 @@ def optimize_from_tensors_mini_batch(
         **optimizer_kwargs,
     )
 
-    # Initialize list of points to probe and nearest neighbors lookup
-    to_probe = [x0_map]
+    # Initialize nearest neighbors lookup
     nn_count = 30
     nbrs_lookup = NN_Wrapper(
         train_features, nn_count, nn_method="exact", algorithm="ball_tree"
     )
 
-    # Run optimization loop
-    for epoch in range(num_epochs):
-        # Sample a batch of points
+    # Sample a batch of points
+    if keep_state:
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup, batch_count, train_count
         )
+
+    # Run optimization loop
+    to_probe = [x0_map]
+    for epoch in range(num_epochs):
+        # Sample a batch of points
+        if not keep_state:
+            batch_indices, batch_nn_indices = sample_batch(
+                nbrs_lookup, batch_count, train_count
+            )
 
         # Coalesce distance and target tensors
         (
@@ -234,7 +241,7 @@ def optimize_from_tensors_mini_batch(
         ) = make_train_tensors(
             batch_indices,
             batch_nn_indices,
-            train_features,
+            train_features,  # TODO should these be scaled features?
             train_responses,
         )
 
@@ -258,14 +265,6 @@ def optimize_from_tensors_mini_batch(
         # Setting the function to be optimized for this epoch
         if keep_state:
             optimizer._space.target_func = obj_fn
-            # TODO optimizer._space = TargetSpace(
-            #     obj_fn,
-            #     bounds_map,
-            #     random_state=optimizer_kwargs["random_state"],
-            #     allow_duplicate_points=optimizer_kwargs[
-            #         "allow_duplicate_points"
-            #     ],
-            # )
         else:
             optimizer = BayesianOptimization(
                 f=obj_fn,
@@ -273,39 +272,36 @@ def optimize_from_tensors_mini_batch(
                 **optimizer_kwargs,
             )
 
-        # Probe all explored points
-        if not keep_state or (keep_state and epoch == 0):
+        # Probe explored points
+        if probe_previous:
             for point in to_probe:
                 optimizer.probe(point, lazy=True)
+        elif epoch == 0:
+            optimizer.probe(to_probe[0], lazy=True)
 
         # Find maximum of the acquisition function
         optimizer.maximize(**maximize_kwargs)
 
         # Add explored points to be probed
         to_probe.append(optimizer.max["params"])
+        if verbose:
+            print(f"{epoch}, {optimizer.max['params']}")
 
         # Update neighborhoods using the learned length scales
-        if is_anisotropic and length_scaled and epoch < (num_epochs - 1):
-            train_features_scaled = train_features
+        if is_anisotropic and epoch < (num_epochs - 1):
             length_scales = AnisotropicDistortion._get_length_scale_array(
                 mm.array,
-                train_features_scaled.shape,
+                train_features.shape,
                 None,
                 **optimizer.max["params"],
             )
-            train_features_scaled = train_features_scaled / length_scales
+            train_features_scaled = train_features / length_scales
             nbrs_lookup = NN_Wrapper(
                 train_features_scaled,
                 nn_count,
                 nn_method="exact",
                 algorithm="ball_tree",
             )
-
-    # Print max param per epoch
-    if verbose:
-        print("\nepoch\tprobe point\n-----\t-----------")
-        for epoch in range(num_epochs):
-            print(f"{epoch}, {to_probe[epoch]}")
 
     # Compute optimal variance scaling hyperparameter
     ret = muygps_sigma_sq_optim(
