@@ -26,9 +26,7 @@ documentation for details.
 
 
 from bayes_opt import BayesianOptimization
-from bayes_opt.target_space import TargetSpace
-from bayes_opt.bayesian_optimization import Queue
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.chassis.numpy import (
@@ -66,7 +64,7 @@ def optimize_from_tensors_mini_batch(
     loss_kwargs: Dict = dict(),
     verbose: bool = False,
     **kwargs,
-) -> MuyGPS:
+) -> Tuple[MuyGPS, NN_Wrapper]:
     """
     Find the optimal model using:
     1. scikit learn Nearest Neighbors
@@ -177,6 +175,13 @@ def optimize_from_tensors_mini_batch(
 
     Returns:
         A new MuyGPs model whose specified hyperparameters have been optimized.
+
+    Returns
+    -------
+        MuyGPS:
+            A new MuyGPs model with optimized hyperparameters.
+        NN_Wrapper:
+            Trained nearest neighbor query data structure.
     """
 
     # Get objective function components
@@ -311,4 +316,4 @@ def optimize_from_tensors_mini_batch(
         sigma_method=sigma_method,
     )
 
-    return ret
+    return ret, nbrs_lookup
