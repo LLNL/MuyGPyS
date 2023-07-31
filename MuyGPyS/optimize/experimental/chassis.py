@@ -29,6 +29,7 @@ from bayes_opt import BayesianOptimization
 from typing import Dict, Optional, Tuple
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.optimize.chassis.numpy import (
     _new_muygps,
     _get_opt_lists,
@@ -64,7 +65,7 @@ def optimize_from_tensors_mini_batch(
     loss_kwargs: Dict = dict(),
     verbose: bool = False,
     **kwargs,
-) -> Tuple[MuyGPS, NN_Wrapper]:
+) -> Tuple[MuyGPS, NN_Wrapper, mm.ndarray]:
     """
     Find the optimal model using:
     1. scikit learn Nearest Neighbors
@@ -182,6 +183,9 @@ def optimize_from_tensors_mini_batch(
             A new MuyGPs model with optimized hyperparameters.
         NN_Wrapper:
             Trained nearest neighbor query data structure.
+        mm.ndarray:
+            The full training data of shape `(train_count, feature_count)` that
+            will construct the nearest neighbor query datastructure.
     """
 
     # Get objective function components
@@ -221,12 +225,14 @@ def optimize_from_tensors_mini_batch(
     nbrs_lookup = NN_Wrapper(
         train_features, nn_count, nn_method="exact", algorithm="ball_tree"
     )
+    # train_features_scaled = np.copy(train_features)  # TODO test config #1,#2
 
     # Sample a batch of points
     if keep_state:
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup, batch_count, train_count
         )
+    new_nbrs_lookup = nbrs_lookup
 
     # Run optimization loop
     to_probe = [x0_map]
@@ -234,10 +240,11 @@ def optimize_from_tensors_mini_batch(
         # Sample a batch of points
         if not keep_state:
             batch_indices, batch_nn_indices = sample_batch(
-                nbrs_lookup, batch_count, train_count
+                new_nbrs_lookup, batch_count, train_count
             )
 
         # Coalesce distance and target tensors
+        train_features_scaled = np.copy(train_features)  # TODO test config #3
         (
             batch_crosswise_diffs,
             batch_pairwise_diffs,
@@ -246,7 +253,7 @@ def optimize_from_tensors_mini_batch(
         ) = make_train_tensors(
             batch_indices,
             batch_nn_indices,
-            train_features,  # TODO should these be scaled features?
+            train_features_scaled,
             train_responses,
         )
 
@@ -293,15 +300,20 @@ def optimize_from_tensors_mini_batch(
             print(f"{epoch}, {optimizer.max['params']}")
 
         # Update neighborhoods using the learned length scales
-        if is_anisotropic and epoch < (num_epochs - 1):
+        if is_anisotropic and (epoch < (num_epochs - 1)):
             length_scales = AnisotropicDistortion._get_length_scale_array(
                 mm.array,
                 train_features.shape,
                 None,
                 **optimizer.max["params"],
             )
-            train_features_scaled = train_features / length_scales
-            nbrs_lookup = NN_Wrapper(
+            # train_features_scaled = ( # TODO test config #1
+            #     train_features_scaled / length_scales
+            # )
+            train_features_scaled = (
+                train_features / length_scales  # TODO test config #2,#3
+            )
+            new_nbrs_lookup = NN_Wrapper(
                 train_features_scaled,
                 nn_count,
                 nn_method="exact",
@@ -309,11 +321,11 @@ def optimize_from_tensors_mini_batch(
             )
 
     # Compute optimal variance scaling hyperparameter
-    ret = muygps_sigma_sq_optim(
+    new_muygpys = muygps_sigma_sq_optim(
         _new_muygps(muygps, x0_names, bounds, optimizer.max["params"]),
         batch_pairwise_diffs,
         batch_nn_targets,
         sigma_method=sigma_method,
     )
 
-    return ret, nbrs_lookup
+    return new_muygpys, new_nbrs_lookup, train_features_scaled  # TODO
