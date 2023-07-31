@@ -25,11 +25,11 @@ documentation for details.
 """
 
 
-from bayes_opt import BayesianOptimization
+from copy import deepcopy
 from typing import Dict, Optional, Tuple
 
+from bayes_opt import BayesianOptimization
 import MuyGPyS._src.math as mm
-import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.optimize.chassis.numpy import (
     _new_muygps,
     _get_opt_lists,
@@ -72,12 +72,12 @@ def optimize_from_tensors_mini_batch(
     2. Bayes Optimization
     3. numpy math backend
 
-    See the following example, where we have already initialized a
+    # TODO See the following example, where we have already initialized a
     :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps` and created a
     :class:`utils.UnivariateSampler` or :class:`utils.UnivariateSampler2D`
     instance `sampler`.
 
-    Example:
+    # TODO Example:
         >>> batch_count=100
         >>> train_count=sampler.train_count
         >>> num_epochs=int(sampler.train_count / batch_count)
@@ -225,26 +225,19 @@ def optimize_from_tensors_mini_batch(
     nbrs_lookup = NN_Wrapper(
         train_features, nn_count, nn_method="exact", algorithm="ball_tree"
     )
-    # train_features_scaled = np.copy(train_features)  # TODO test config #1,#2
-
-    # Sample a batch of points
-    if keep_state:
-        batch_indices, batch_nn_indices = sample_batch(
-            nbrs_lookup, batch_count, train_count
-        )
-    new_nbrs_lookup = nbrs_lookup
+    # train_features_scaled = deepcopy(train_features)  # TODO test-llsh #1,#2
+    new_nbrs_lookup = deepcopy(nbrs_lookup)
 
     # Run optimization loop
     to_probe = [x0_map]
     for epoch in range(num_epochs):
         # Sample a batch of points
-        if not keep_state:
-            batch_indices, batch_nn_indices = sample_batch(
-                new_nbrs_lookup, batch_count, train_count
-            )
+        batch_indices, batch_nn_indices = sample_batch(
+            new_nbrs_lookup, batch_count, train_count
+        )
 
         # Coalesce distance and target tensors
-        train_features_scaled = np.copy(train_features)  # TODO test config #3
+        train_features_scaled = deepcopy(train_features)  # TODO test-llsh #3
         (
             batch_crosswise_diffs,
             batch_pairwise_diffs,
@@ -307,11 +300,11 @@ def optimize_from_tensors_mini_batch(
                 None,
                 **optimizer.max["params"],
             )
-            # train_features_scaled = ( # TODO test config #1
+            # train_features_scaled = (  # TODO test-llsh #1
             #     train_features_scaled / length_scales
             # )
             train_features_scaled = (
-                train_features / length_scales  # TODO test config #2,#3
+                train_features / length_scales  # TODO test-llsh #2,#3
             )
             new_nbrs_lookup = NN_Wrapper(
                 train_features_scaled,
@@ -328,4 +321,18 @@ def optimize_from_tensors_mini_batch(
         sigma_method=sigma_method,
     )
 
-    return new_muygpys, new_nbrs_lookup, train_features_scaled  # TODO
+    # return (
+    #     new_muygpys,
+    #     new_nbrs_lookup,
+    #     train_features_scaled,
+    # )  # TODO test-i #1
+    return (
+        new_muygpys,
+        nbrs_lookup,
+        train_features,
+    )  # TODO test-i #2
+    # return (
+    #     new_muygpys,
+    #     new_nbrs_lookup,
+    #     train_features,
+    # )  # TODO test-i #3
