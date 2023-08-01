@@ -10,13 +10,13 @@ MuyGPyS includes predefined objective functions and convenience functions for
 indicating them to optimization.
 """
 
+from inspect import signature
 from typing import Callable, Dict, Optional
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.optimize.utils import _switch_on_loss_method
 
 
-def make_obj_fn(obj_method: str, loss_method: str, *args, **kwargs) -> Callable:
+def make_obj_fn(obj_method: str, *args, **kwargs) -> Callable:
     """
     Prepare an objective function as a function purely of the hyperparameters
     to be optimized.
@@ -30,20 +30,17 @@ def make_obj_fn(obj_method: str, loss_method: str, *args, **kwargs) -> Callable:
             The name of the objective function to be minimized.
         opt_method:
             The name of the optimization method to be utilized.
-        loss_method:
-            Indicates the loss function to be used.
 
     Returns:
         A Callable `objective_fn`, whose format depends on `opt_method`.
     """
     if obj_method == "loo_crossval":
-        return make_loo_crossval_fn(loss_method, *args, **kwargs)
+        return make_loo_crossval_fn(*args, **kwargs)
     else:
         raise ValueError(f"Unsupported objective method: {obj_method}")
 
 
 def make_loo_crossval_fn(
-    loss_method: str,
     loss_fn: Callable,
     kernel_fn: Callable,
     mean_fn: Callable,
@@ -65,8 +62,8 @@ def make_loo_crossval_fn(
     depends on the `opt_method` argument.
 
     Args:
-        loss_method:
-            Indicates the loss function to be used.
+        loss_fn:
+            The loss functor used to evaluate model performance.
         kernel_fn:
             A function that realizes kernel tensors given a list of the free
             parameters.
@@ -105,21 +102,27 @@ def make_loo_crossval_fn(
         A Callable `objective_fn`, whose format depends on `opt_method`.
     """
     kernels_fn = make_kernels_fn(kernel_fn, pairwise_diffs, crosswise_diffs)
-    predict_and_loss_fn = _switch_on_loss_method(
-        loss_method,
-        make_raw_predict_and_loss_fn,
-        make_raw_predict_and_loss_fn,
-        make_var_predict_and_loss_fn,
-        make_raw_predict_and_loss_fn,
-        make_var_predict_and_loss_fn,
-        loss_fn,
-        mean_fn,
-        var_fn,
-        sigma_sq_fn,
-        batch_nn_targets,
-        batch_targets,
-        **loss_kwargs,
-    )
+    # This is ad-hoc, and might need to be revisited.
+    if "variances" in signature(loss_fn).parameters.keys():
+        predict_and_loss_fn = make_var_predict_and_loss_fn(
+            loss_fn,
+            mean_fn,
+            var_fn,
+            sigma_sq_fn,
+            batch_nn_targets,
+            batch_targets,
+            **loss_kwargs,
+        )
+    else:
+        predict_and_loss_fn = make_raw_predict_and_loss_fn(
+            loss_fn,
+            mean_fn,
+            var_fn,
+            sigma_sq_fn,
+            batch_nn_targets,
+            batch_targets,
+            **loss_kwargs,
+        )
 
     def obj_fn(*args, **kwargs):
         K, Kcross = kernels_fn(*args, batch_features=batch_features, **kwargs)

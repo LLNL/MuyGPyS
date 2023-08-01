@@ -36,6 +36,7 @@ from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import get_balanced_batch
+from MuyGPyS.optimize.loss import cross_entropy_fn
 
 
 example_lambdas = [
@@ -62,7 +63,7 @@ def do_classify_uq(
     nn_count: int = 30,
     opt_batch_count: int = 200,
     uq_batch_count: int = 500,
-    loss_method: str = "log",
+    loss_fn: Callable = cross_entropy_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     uq_objectives: Union[
@@ -102,7 +103,7 @@ def do_classify_uq(
         ...         train['output'],
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="log",
+        ...         loss_fn=cross_entropy_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
@@ -136,11 +137,9 @@ def do_classify_uq(
             The batch size for hyperparameter optimization.
         uq_batch_count:
             The batch size for uncertainty quantification calibration.
-        loss_method:
-            The loss method to use in hyperparameter optimization. Ignored if
-            all of the parameters specified by `k_kwargs` are fixed. Currently
-            supports only `"log"` (also known as `"cross_entropy"`) and `"mse"`
-            for classification.
+        loss_fn:
+            The loss functor to use in hyperparameter optimization. Ignored if
+            all of the parameters specified by `k_kwargs` are fixed.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -191,7 +190,7 @@ def do_classify_uq(
         train_labels,
         nn_count=nn_count,
         batch_count=opt_batch_count,
-        loss_method=loss_method,
+        loss_fn=loss_fn,
         obj_method=obj_method,
         opt_method=opt_method,
         k_kwargs=k_kwargs,

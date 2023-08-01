@@ -9,7 +9,7 @@ Convenience wrapper for GP prediction from indices.
 
 import numpy as np
 
-from typing import Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Union
 
 from MuyGPyS.gp.tensors import (
     crosswise_tensor,
@@ -18,6 +18,7 @@ from MuyGPyS.gp.tensors import (
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize import optimize_from_tensors
+from MuyGPyS.optimize.loss import lool_fn
 
 
 def tensors_from_indices(
@@ -123,7 +124,7 @@ def optimize_from_indices(
     batch_nn_indices: np.ndarray,
     train_features: np.ndarray,
     train_targets: np.ndarray,
-    loss_method: str = "mse",
+    loss_fn: Callable = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
@@ -150,7 +151,7 @@ def optimize_from_indices(
         ...         train_features,
         ...         train_features,
         ...         train_responses,
-        ...         loss_method='mse',
+        ...         loss_fn=lool_fn,
         ...         obj_method='loo_crossval',
         ...         opt_method='scipy',
         ...         verbose=True,
@@ -185,8 +186,8 @@ def optimize_from_indices(
         train_targets:
             A matrix of shape `(train_count, feature_count)` whose rows are
             vector-valued responses for each training element.
-        loss_method:
-            Indicates the loss function to be used.
+        loss_fn:
+            Indicates the loss functor to be used.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -222,7 +223,7 @@ def optimize_from_indices(
         batch_nn_targets,
         crosswise_diffs,
         pairwise_diffs,
-        loss_method=loss_method,
+        loss_fn=loss_fn,
         obj_method=obj_method,
         opt_method=opt_method,
         sigma_method=sigma_method,

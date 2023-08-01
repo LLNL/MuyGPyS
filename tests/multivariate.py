@@ -38,6 +38,7 @@ from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
+from MuyGPyS.optimize.loss import mse_fn
 from MuyGPyS.optimize.sigma_sq import mmuygps_sigma_sq_optim
 
 
@@ -229,7 +230,7 @@ class OptimTest(parameterized.TestCase):
             )
             for b in [250]
             for n in [20]
-            for loss_and_sigma_methods in [["mse", None]]
+            for loss_and_sigma_methods in [[mse_fn, None]]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
             # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
@@ -286,7 +287,7 @@ class OptimTest(parameterized.TestCase):
             )
             return
         target, args = k_kwargs
-        loss_method, sigma_method = loss_and_sigma_methods
+        loss_fn, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
@@ -354,7 +355,7 @@ class OptimTest(parameterized.TestCase):
                     b_nn_t,
                     crosswise_diffs,
                     pairwise_diffs,
-                    loss_method=loss_method,
+                    loss_fn=loss_fn,
                     obj_method=obj_method,
                     opt_method=opt_method,
                     sigma_method=sigma_method,
@@ -572,14 +573,14 @@ class MakeClassifierTest(parameterized.TestCase):
                 b,
                 n,
                 nn_kwargs,
-                lm,
+                lf,
                 opt_method_and_kwargs,
                 args,
             )
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for lm in ["mse"]
+            for lf in [mse_fn]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for args in (
                 (
@@ -635,7 +636,7 @@ class MakeClassifierTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_fn,
         opt_method_and_kwargs,
         args,
     ):
@@ -660,7 +661,7 @@ class MakeClassifierTest(parameterized.TestCase):
             train["output"],
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             opt_method=opt_method,
             nn_kwargs=nn_kwargs,
             k_args=args,
@@ -692,7 +693,7 @@ class MakeRegressorTest(parameterized.TestCase):
                 b,
                 n,
                 nn_kwargs,
-                lm,
+                lf,
                 opt_method_and_kwargs,
                 ssm,
                 args,
@@ -700,7 +701,7 @@ class MakeRegressorTest(parameterized.TestCase):
             for b in [250]
             for n in [10]
             for nn_kwargs in _basic_nn_kwarg_options
-            for lm in ["mse"]
+            for lf in [mse_fn]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for ssm in ["analytic", None]
             for args in (
@@ -757,7 +758,7 @@ class MakeRegressorTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_fn,
         opt_method_and_kwargs,
         sigma_method,
         args,
@@ -786,7 +787,7 @@ class MakeRegressorTest(parameterized.TestCase):
             train["output"],
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             opt_method=opt_method,
             sigma_method=sigma_method,
             nn_kwargs=nn_kwargs,

@@ -1328,7 +1328,6 @@ class OptimTestCase(MuyGPSTestCase):
     # Numpy objective functions
     def _get_obj_fn_n(self):
         return make_loo_crossval_fn(
-            "mse",
             mse_fn_n,
             self._get_kernel_fn_n(),
             self._get_mean_fn_n(),
@@ -1342,7 +1341,6 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_obj_fn_heteroscedastic_n(self):
         return make_loo_crossval_fn(
-            "mse",
             mse_fn_n,
             self._get_kernel_fn_n(),
             self._get_mean_fn_heteroscedastic_n(),
@@ -1356,7 +1354,6 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_obj_fn_anisotropic_n(self):
         return make_loo_crossval_fn(
-            "mse",
             mse_fn_n,
             self._get_kernel_fn_anisotropic_n(),
             self._get_mean_fn_n(),
@@ -1371,7 +1368,6 @@ class OptimTestCase(MuyGPSTestCase):
     # MPI objective functions
     def _get_obj_fn_m(self):
         return make_loo_crossval_fn(
-            "mse",
             mse_fn_m,
             self._get_kernel_fn_m(),
             self._get_mean_fn_m(),
@@ -1385,7 +1381,6 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_obj_fn_heteroscedastic_m(self):
         return make_loo_crossval_fn(
-            "mse",
             mse_fn_m,
             self._get_kernel_fn_m(),
             self._get_mean_fn_heteroscedastic_m(),
@@ -1399,7 +1394,6 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_obj_fn_anisotropic_m(self):
         return make_loo_crossval_fn(
-            "mse",
             mse_fn_m,
             self._get_kernel_fn_anisotropic_m(),
             self._get_mean_fn_m(),
