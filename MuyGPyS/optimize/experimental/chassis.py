@@ -24,8 +24,9 @@ See the `BayesianOptimization <https://github.com/fmfn/BayesianOptimization>`_
 documentation for details.
 """
 
-
 from copy import deepcopy
+import numpy as np
+from time import perf_counter
 from typing import Dict, Optional, Tuple
 
 from bayes_opt import BayesianOptimization
@@ -186,6 +187,10 @@ def optimize_from_tensors_mini_batch(
         mm.ndarray:
             The full training data of shape `(train_count, feature_count)` that
             will construct the nearest neighbor query datastructure.
+        float:
+            Total time in loop execution.
+        int:
+            Total number of points probed.
     """
 
     # Get objective function components
@@ -220,24 +225,30 @@ def optimize_from_tensors_mini_batch(
         **optimizer_kwargs,
     )
 
-    # Initialize nearest neighbors lookup
+    # Initialize nearest neighbors lookup and sample a batch of points
     nn_count = 30
     nbrs_lookup = NN_Wrapper(
         train_features, nn_count, nn_method="exact", algorithm="ball_tree"
     )
-    # train_features_scaled = deepcopy(train_features)  # TODO test-llsh #1,#2
+    batch_indices, batch_nn_indices = sample_batch(
+        nbrs_lookup, batch_count, train_count
+    )
     new_nbrs_lookup = deepcopy(nbrs_lookup)
 
     # Run optimization loop
     to_probe = [x0_map]
+    probe_count = num_epochs * maximize_kwargs["init_points"]
+    time_start = perf_counter()
     for epoch in range(num_epochs):
-        # Sample a batch of points
-        batch_indices, batch_nn_indices = sample_batch(
-            new_nbrs_lookup, batch_count, train_count
-        )
+        # Get NN indices
+        if not keep_state:
+            batch_indices = mm.iarray(
+                np.random.choice(train_count, batch_count, replace=False)
+            )
+        batch_nn_indices, _ = new_nbrs_lookup.get_batch_nns(batch_indices)
 
         # Coalesce distance and target tensors
-        train_features_scaled = deepcopy(train_features)  # TODO test-llsh #3
+        train_features_scaled = deepcopy(train_features)
         (
             batch_crosswise_diffs,
             batch_pairwise_diffs,
@@ -281,8 +292,10 @@ def optimize_from_tensors_mini_batch(
         if probe_previous:
             for point in to_probe:
                 optimizer.probe(point, lazy=True)
+                probe_count += 1
         elif epoch == 0:
             optimizer.probe(to_probe[0], lazy=True)
+            probe_count += 1
 
         # Find maximum of the acquisition function
         optimizer.maximize(**maximize_kwargs)
@@ -300,18 +313,14 @@ def optimize_from_tensors_mini_batch(
                 None,
                 **optimizer.max["params"],
             )
-            # train_features_scaled = (  # TODO test-llsh #1
-            #     train_features_scaled / length_scales
-            # )
-            train_features_scaled = (
-                train_features / length_scales  # TODO test-llsh #2,#3
-            )
+            train_features_scaled = train_features / length_scales
             new_nbrs_lookup = NN_Wrapper(
                 train_features_scaled,
                 nn_count,
                 nn_method="exact",
                 algorithm="ball_tree",
             )
+    time_stop = perf_counter()
 
     # Compute optimal variance scaling hyperparameter
     new_muygpys = muygps_sigma_sq_optim(
@@ -321,18 +330,10 @@ def optimize_from_tensors_mini_batch(
         sigma_method=sigma_method,
     )
 
-    # return (
-    #     new_muygpys,
-    #     new_nbrs_lookup,
-    #     train_features_scaled,
-    # )  # TODO test-i #1
     return (
         new_muygpys,
         nbrs_lookup,
         train_features,
-    )  # TODO test-i #2
-    # return (
-    #     new_muygpys,
-    #     new_nbrs_lookup,
-    #     train_features,
-    # )  # TODO test-i #3
+        (time_stop - time_start),
+        probe_count,
+    )

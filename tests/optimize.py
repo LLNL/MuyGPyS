@@ -184,15 +184,22 @@ class BenchmarkTestCase(parameterized.TestCase):
         loss_kwargs,
         opt_kwargs,
     ) -> float:
-        muygps = optimize_from_tensors_mini_batch(
+        (
+            muygps,
+            _,
+            _,
+            _,
+            _,
+        ) = optimize_from_tensors_mini_batch(
             muygps,
             self.train_features,
             self.train_responses[itr, :, :],
             nn_count,
             batch_count,
             self.train_count,
-            length_scaled=False,
             num_epochs=1,  # Optimizing over one epoch (for now)
+            keep_state=False,
+            probe_previous=False,
             batch_features=None,
             loss_method=loss_method,
             obj_method=obj_method,
@@ -201,7 +208,6 @@ class BenchmarkTestCase(parameterized.TestCase):
             verbose=False,  # TODO True,
             **opt_kwargs,
         )
-
         estimate = muygps.kernel._hyperparameters[name]()
         return _sq_rel_err(self.params[name](), estimate)
 
