@@ -350,9 +350,6 @@ class UnivariateSampler2D(SamplerBase):
         pred_im = np.zeros(self.data_count)
         pred_im[self._test_mask(), None] = predictions
 
-        vmin = np.nanmin([np.nanmin(test_im), np.nanmin(pred_im)])
-        vmax = np.nanmax([np.nanmax(test_im), np.nanmax(pred_im)])
-
         resl_im = test_im - pred_im
 
         conf_im = np.zeros(self.data_count)
@@ -398,7 +395,7 @@ class UnivariateSampler2D(SamplerBase):
             vmax=covr_mag,
             cmap="coolwarm",
         )
-        cbar2 = fig.colorbar(im2, ax=axes[2])
+        fig.colorbar(im2, ax=axes[2])
 
         plt.tight_layout()
         plt.show()
