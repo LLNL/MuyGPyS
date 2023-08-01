@@ -21,15 +21,16 @@ It calls the maker APIs above and
 """
 
 from time import perf_counter
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
+from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.examples.from_indices import fast_posterior_mean_from_indices
 from MuyGPyS.examples.regress import _decide_and_make_regressor
-from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.tensors import fast_nn_update
-from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.gp.tensors import pairwise_tensor
+from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.loss import lool_fn
 
 
 def make_fast_regressor(
@@ -38,7 +39,6 @@ def make_fast_regressor(
     train_features: mm.ndarray,
     train_targets: mm.ndarray,
 ) -> Tuple[mm.ndarray, mm.ndarray]:
-
     """
     Convenience function for creating precomputed coefficient matrix and neighbor lookup data
     structure.
@@ -88,7 +88,6 @@ def make_fast_multivariate_regressor(
     train_features: mm.ndarray,
     train_targets: mm.ndarray,
 ) -> Tuple[mm.ndarray, mm.ndarray]:
-
     """
     Convenience function for creating precomputed coefficient matrix and neighbor lookup data
     structure.
@@ -161,7 +160,7 @@ def do_fast_posterior_mean(
     train_targets: mm.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_method: str = "lool",
+    loss_fn: Callable = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
@@ -201,7 +200,7 @@ def do_fast_posterior_mean(
         ...         train['output'],
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="mse",
+        ...         loss_fn=lool_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
@@ -223,10 +222,9 @@ def do_fast_posterior_mean(
         batch_count:
             The number of elements to sample batch for hyperparameter
             optimization.
-        loss_method:
-            The loss method to use in hyperparameter optimization. Ignored if
+        loss_fn:
+            The loss functor to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-            Currently supports only `"mse"` for posterior mean inference.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -281,7 +279,7 @@ def do_fast_posterior_mean(
         train_targets,
         nn_count=nn_count,
         batch_count=batch_count,
-        loss_method=loss_method,
+        loss_fn=loss_fn,
         obj_method=obj_method,
         opt_method=opt_method,
         sigma_method=sigma_method,
@@ -318,7 +316,6 @@ def fast_posterior_mean_any(
     nbrs_lookup: NN_Wrapper,
     train_targets: mm.ndarray,
 ) -> Tuple[mm.ndarray, mm.ndarray, Dict]:
-
     """
     Convenience function performing fast posterior mean inference using a
     pre-trained model.

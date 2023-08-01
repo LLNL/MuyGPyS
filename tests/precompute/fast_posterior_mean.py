@@ -18,6 +18,7 @@ from MuyGPyS.gp.distortion import IsotropicDistortion, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.optimize.loss import mse_fn
 
 if config.state.backend in ["mpi", "torch"]:
     raise ValueError("This test only supports numpy and jax!")
@@ -26,11 +27,11 @@ if config.state.backend in ["mpi", "torch"]:
 class MakeFastRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lf, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for lm in ["mse"]
+            for lf in [mse_fn]
             # for ssm in ["analytic"]
             # for rt in [True]
             for k_kwargs in (
@@ -54,7 +55,7 @@ class MakeFastRegressorTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_fn,
         k_kwargs,
     ):
         # skip if we are using the MPI implementation
@@ -81,7 +82,7 @@ class MakeFastRegressorTest(parameterized.TestCase):
             train["output"],
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             opt_method="bayes",
             opt_kwargs={
                 "allow_duplicate_points": True,
@@ -108,7 +109,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                 b,
                 n,
                 nn_kwargs,
-                lm,
+                lf,
                 opt_method_and_kwargs,
                 ssm,
                 k_kwargs,
@@ -116,7 +117,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
             for b in [250]
             for n in [10]
             for nn_kwargs in _basic_nn_kwarg_options
-            for lm in ["mse"]
+            for lf in [mse_fn]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for ssm in ["analytic", None]
             for k_kwargs in (
@@ -151,7 +152,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_fn,
         opt_method_and_kwargs,
         sigma_method,
         k_kwargs,
@@ -181,7 +182,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
             train["output"],
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             opt_method=opt_method,
             sigma_method=sigma_method,
             k_kwargs=k_kwargs,

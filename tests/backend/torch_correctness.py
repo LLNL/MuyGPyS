@@ -1232,7 +1232,6 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_obj_fn_n(self):
         return make_loo_crossval_fn(
-            "mse",
             mse_fn_n,
             self._get_kernel_fn_n(),
             self._get_mean_fn_n(),
@@ -1246,7 +1245,6 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_obj_fn_heteroscedastic_n(self):
         return make_loo_crossval_fn(
-            "mse",
             mse_fn_n,
             self._get_kernel_fn_n(),
             self._get_mean_fn_heteroscedastic_n(),
@@ -1260,7 +1258,6 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_obj_fn_t(self):
         return make_loo_crossval_fn(
-            "mse",
             mse_fn_t,
             self._get_kernel_fn_t(),
             self._get_mean_fn_t(),
@@ -1274,7 +1271,6 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_obj_fn_heteroscedastic_t(self):
         return make_loo_crossval_fn(
-            "mse",
             mse_fn_t,
             self._get_kernel_fn_t(),
             self._get_mean_fn_heteroscedastic_t(),

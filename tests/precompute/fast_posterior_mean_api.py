@@ -29,6 +29,7 @@ from MuyGPyS.gp.distortion import (
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.optimize.loss import mse_fn
 
 if config.state.backend in ["mpi", "torch"]:
     raise ValueError("This test only supports numpy and jax backends!")
@@ -57,10 +58,10 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lf, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for lm in ["mse"]
+            for lf in [mse_fn]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
@@ -98,7 +99,7 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
         self,
         nn_count,
         batch_count,
-        loss_method,
+        loss_fn,
         obj_method,
         opt_method_and_kwargs,
         nn_kwargs,
@@ -113,7 +114,7 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
             target_mse=target_mse,
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             nn_kwargs=nn_kwargs,
@@ -136,10 +137,10 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lf, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for lm in ["mse"]
+            for lf in [mse_fn]
             for om in ["loo_crossval"]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for opt_method_and_kwargs in [
@@ -201,7 +202,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
         self,
         nn_count,
         batch_count,
-        loss_method,
+        loss_fn,
         obj_method,
         opt_method_and_kwargs,
         nn_kwargs,
@@ -218,7 +219,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
             target_mse=target_mse,
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             nn_kwargs=nn_kwargs,
@@ -241,10 +242,10 @@ class StargalFastTest(FastPosteriorMeanAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lf, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for lm in ["mse"]
+            for lf in [mse_fn]
             for om in ["loo_crossval"]
             for nn_kwargs in _basic_nn_kwarg_options
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
@@ -283,7 +284,7 @@ class StargalFastTest(FastPosteriorMeanAPITest):
         self,
         nn_count,
         batch_count,
-        loss_method,
+        loss_fn,
         obj_method,
         opt_method_and_kwargs,
         nn_kwargs,
@@ -300,7 +301,7 @@ class StargalFastTest(FastPosteriorMeanAPITest):
             target_mse=target_mse,
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             nn_kwargs=nn_kwargs,
