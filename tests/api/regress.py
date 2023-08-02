@@ -29,6 +29,7 @@ from MuyGPyS.gp.distortion import (
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.optimize.loss import mse_fn
 
 if config.state.backend == "torch":
     ValueError("MuyGPyS.examples.regress does not support torch!")
@@ -68,10 +69,10 @@ class MultivariateStargalRegressTest(RegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lf, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for lm in ["mse"]
+            for lf in [mse_fn]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
             # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
@@ -135,7 +136,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         self,
         nn_count,
         batch_count,
-        loss_method,
+        loss_fn,
         obj_method,
         opt_method_and_kwargs,
         nn_kwargs,
@@ -154,7 +155,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             target_mse=target_mse,
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
@@ -174,10 +175,10 @@ class HeatonTest(RegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lf, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
-            for lm in ["mse"]
+            for lf in [mse_fn]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
@@ -229,7 +230,7 @@ class HeatonTest(RegressionAPITest):
         self,
         nn_count,
         batch_count,
-        loss_method,
+        loss_fn,
         obj_method,
         opt_method_and_kwargs,
         nn_kwargs,
@@ -246,7 +247,7 @@ class HeatonTest(RegressionAPITest):
             target_mse=target_mse,
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,

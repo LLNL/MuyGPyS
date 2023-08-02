@@ -20,7 +20,7 @@ above and :func:`~MuyGPyS.examples.classify.classify_any`.
 import numpy as np
 
 from time import perf_counter
-from typing import Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 from MuyGPyS.examples.from_indices import posterior_mean_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
@@ -28,6 +28,7 @@ from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import get_balanced_batch
+from MuyGPyS.optimize.loss import cross_entropy_fn
 
 
 def make_classifier(
@@ -35,7 +36,7 @@ def make_classifier(
     train_labels: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_method: str = "log",
+    loss_fn: Callable = cross_entropy_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     k_kwargs: Dict = dict(),
@@ -67,7 +68,7 @@ def make_classifier(
         ...         train['output'],
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="log",
+        ...         loss_fn=cross_entropy_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
@@ -79,7 +80,7 @@ def make_classifier(
         ...         train['output'],
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="log",
+        ...         loss_fn=cross_entropy_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
@@ -99,11 +100,9 @@ def make_classifier(
         batch_count:
             The number of elements to sample batch for hyperparameter
             optimization.
-        loss_method:
-            The loss method to use in hyperparameter optimization. Ignored if
+        loss_fn:
+            The loss functor to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-            Currently supports only `"log"` (or `"cross-entropy"`) and `"mse"`
-            for classification.
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
@@ -174,7 +173,7 @@ def make_classifier(
             batch_nn_targets,
             crosswise_diffs,
             pairwise_diffs,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=None,
@@ -197,7 +196,7 @@ def make_multivariate_classifier(
     train_labels: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_method: str = "mse",
+    loss_fn: Callable = cross_entropy_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
@@ -233,7 +232,7 @@ def make_multivariate_classifier(
         ...         train['output'],
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="mse",
+        ...         loss_fn=cross_entropy_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         k_args=k_args,
@@ -245,7 +244,7 @@ def make_multivariate_classifier(
         ...         train['output'],
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="mse",
+        ...         loss_fn=cross_entropy_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         k_args=k_args,
@@ -265,10 +264,9 @@ def make_multivariate_classifier(
         batch_count:
             The number of elements to sample batch for hyperparameter
             optimization.
-        loss_method:
-            The loss method to use in hyperparameter optimization. Ignored if
+        loss_fn:
+            The loss functor to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-            Currently supports only `"log"` for classification.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -349,7 +347,7 @@ def make_multivariate_classifier(
                     ),
                     crosswise_diffs,
                     pairwise_diffs,
-                    loss_method=loss_method,
+                    loss_fn=loss_fn,
                     obj_method=obj_method,
                     opt_method=opt_method,
                     sigma_method=None,
@@ -372,7 +370,7 @@ def _decide_and_make_classifier(
     train_labels: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_method: str = "log",
+    loss_fn: Callable = cross_entropy_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
@@ -386,7 +384,7 @@ def _decide_and_make_classifier(
             train_labels,
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             k_args=k_kwargs,
@@ -401,7 +399,7 @@ def _decide_and_make_classifier(
                 train_labels,
                 nn_count=nn_count,
                 batch_count=batch_count,
-                loss_method=loss_method,
+                loss_fn=loss_fn,
                 obj_method=obj_method,
                 opt_method=opt_method,
                 k_kwargs=k_kwargs,
@@ -423,7 +421,7 @@ def do_classify(
     train_labels: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_method: str = "log",
+    loss_fn: Callable = cross_entropy_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
@@ -460,7 +458,7 @@ def do_classify(
         ...         train['output'],
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="log",
+        ...         loss_fn=cross_entropy_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
@@ -487,11 +485,9 @@ def do_classify(
             The number of nearest neighbors to employ.
         batch_count:
             The batch size for hyperparameter optimization.
-        loss_method:
-            The loss method to use in hyperparameter optimization. Ignored if
-            all of the parameters specified by `k_kwargs` are fixed. Currently
-            supports only `"log"` (also known as `"cross_entropy"`) and `"mse"`
-            for classification.
+        loss_fn:
+            The loss functor to use in hyperparameter optimization. Ignored if
+            all of the parameters specified by `k_kwargs` are fixed.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -533,7 +529,7 @@ def do_classify(
         train_labels,
         nn_count=nn_count,
         batch_count=batch_count,
-        loss_method=loss_method,
+        loss_fn=loss_fn,
         obj_method=obj_method,
         opt_method=opt_method,
         k_kwargs=k_kwargs,

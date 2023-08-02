@@ -33,8 +33,11 @@ from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.experimental.chassis import (
-    optimize_from_tensors_mini_batch,
+from MuyGPyS.optimize.loss import (
+    lool_fn,
+    mse_fn,
+    pseudo_huber_fn,
+    looph_fn,
 )
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 
@@ -128,7 +131,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         itr,
         nbrs_lookup,
         batch_count,
-        loss_method,
+        loss_fn,
         obj_method,
         opt_method,
         sigma_method,
@@ -160,53 +163,13 @@ class BenchmarkTestCase(parameterized.TestCase):
             batch_nn_targets,
             batch_crosswise_diffs,
             batch_pairwise_diffs,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
             loss_kwargs=loss_kwargs,
             **opt_kwargs,
             verbose=False,  # TODO True,
-        )
-        estimate = muygps.kernel._hyperparameters[name]()
-        return _sq_rel_err(self.params[name](), estimate)
-
-    def _optim_chassis_mini_batch(
-        self,
-        muygps,
-        name,
-        itr,
-        nn_count,
-        batch_count,
-        loss_method,
-        obj_method,
-        sigma_method,
-        loss_kwargs,
-        opt_kwargs,
-    ) -> float:
-        (
-            muygps,
-            _,
-            _,
-            _,
-            _,
-        ) = optimize_from_tensors_mini_batch(
-            muygps,
-            self.train_features,
-            self.train_responses[itr, :, :],
-            nn_count,
-            batch_count,
-            self.train_count,
-            num_epochs=1,  # Optimizing over one epoch (for now)
-            keep_state=False,
-            probe_previous=False,
-            batch_features=None,
-            loss_method=loss_method,
-            obj_method=obj_method,
-            sigma_method=sigma_method,
-            loss_kwargs=loss_kwargs,
-            verbose=False,  # TODO True,
-            **opt_kwargs,
         )
         estimate = muygps.kernel._hyperparameters[name]()
         return _sq_rel_err(self.params[name](), estimate)
@@ -344,10 +307,10 @@ class NuTest(BenchmarkTestCase):
             for b in [250]
             for n in [20]
             for loss_kwargs_and_sigma_methods in [
-                ["lool", dict(), "analytic"],
-                ["mse", dict(), None],
-                ["huber", {"boundary_scale": 1.5}, None],
-                ["looph", {"boundary_scale": 1.5}, "analytic"],
+                ["lool", lool_fn, dict(), "analytic"],
+                ["mse", mse_fn, dict(), None],
+                ["huber", pseudo_huber_fn, {"boundary_scale": 1.5}, None],
+                ["looph", looph_fn, {"boundary_scale": 1.5}, "analytic"],
             ]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
@@ -367,7 +330,12 @@ class NuTest(BenchmarkTestCase):
         obj_method,
         opt_method_and_kwargs,
     ):
-        loss_method, loss_kwargs, sigma_method = loss_kwargs_and_sigma_methods
+        (
+            loss_name,
+            loss_fn,
+            loss_kwargs,
+            sigma_method,
+        ) = loss_kwargs_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
 
         mrse = 0.0
@@ -398,7 +366,7 @@ class NuTest(BenchmarkTestCase):
                 i,
                 nbrs_lookup,
                 batch_count,
-                loss_method,
+                loss_fn,
                 obj_method,
                 opt_method,
                 sigma_method,
@@ -408,76 +376,7 @@ class NuTest(BenchmarkTestCase):
         mrse /= self.its
         print(f"optimizes nu with mean relative squared error {mrse}")
         # Is this a strong enough guarantee?
-        self.assertLessEqual(mrse, self.nu_tol[loss_method])
-
-    @parameterized.parameters(
-        (
-            (
-                b,
-                n,
-                loss_kwargs_and_sigma_methods,
-                om,
-                opt_method_and_kwargs,
-            )
-            for b in [250]
-            for n in [20]
-            for loss_kwargs_and_sigma_methods in [
-                ["lool", dict(), "analytic"],
-                ["mse", dict(), None],
-                ["huber", {"boundary_scale": 1.5}, None],
-            ]
-            for om in ["loo_crossval"]
-            for opt_method_and_kwargs in [
-                _basic_opt_method_and_kwarg_options[1]
-            ]
-        )
-    )
-    def test_nu_mini_batch(
-        self,
-        batch_count,
-        nn_count,
-        loss_kwargs_and_sigma_methods,
-        obj_method,
-        opt_method_and_kwargs,
-    ):
-        loss_method, loss_kwargs, sigma_method = loss_kwargs_and_sigma_methods
-        _, opt_kwargs = opt_method_and_kwargs
-
-        mrse = 0.0
-
-        for i in range(self.its):
-            # set up MuyGPS object
-            muygps = MuyGPS(
-                kernel=Matern(
-                    nu=ScalarHyperparameter(
-                        "sample", self.params["nu"].get_bounds()
-                    ),
-                    metric=IsotropicDistortion(
-                        metric=l2,
-                        length_scale=ScalarHyperparameter(
-                            self.params["length_scale"]()
-                        ),
-                    ),
-                ),
-                eps=HomoscedasticNoise(self.params["eps"]()),
-            )
-
-            mrse += self._optim_chassis_mini_batch(
-                muygps,
-                "nu",
-                i,
-                nn_count,
-                batch_count,
-                loss_method,
-                obj_method,
-                sigma_method,
-                loss_kwargs,
-                opt_kwargs,
-            )
-        mrse /= self.its
-        print(f"optimizes nu with mean relative squared error {mrse}")
-        # Is this a strong enough guarantee?
-        self.assertLessEqual(mrse, self.nu_tol[loss_method])
+        self.assertLessEqual(mrse, self.nu_tol[loss_name])
 
 
 class LengthScaleTest(BenchmarkTestCase):
@@ -497,7 +396,7 @@ class LengthScaleTest(BenchmarkTestCase):
             )
             for b in [250]
             for n in [20]
-            for loss_and_sigma_methods in [["lool", "analytic"]]
+            for loss_and_sigma_methods in [["lool", lool_fn, "analytic"]]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
             for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
@@ -516,7 +415,7 @@ class LengthScaleTest(BenchmarkTestCase):
         obj_method,
         opt_method_and_kwargs,
     ):
-        loss_method, sigma_method = loss_and_sigma_methods
+        loss_name, loss_fn, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
 
         error_vector = mm.zeros((self.its,))
@@ -545,7 +444,7 @@ class LengthScaleTest(BenchmarkTestCase):
                 i,
                 nbrs_lookup,
                 batch_count,
-                loss_method,
+                loss_fn,
                 obj_method,
                 opt_method,
                 sigma_method,
@@ -557,73 +456,7 @@ class LengthScaleTest(BenchmarkTestCase):
             f"median relative squared error {median_error}"
         )
         # Is this a strong enough guarantee?
-        self.assertLessEqual(median_error, self.length_scale_tol[loss_method])
-
-    @parameterized.parameters(
-        (
-            (
-                b,
-                n,
-                loss_kwargs_and_sigma_methods,
-                om,
-                opt_method_and_kwargs,
-            )
-            for b in [250]
-            for n in [20]
-            for loss_kwargs_and_sigma_methods in [["lool", dict(), "analytic"]]
-            for om in ["loo_crossval"]
-            for opt_method_and_kwargs in [
-                _advanced_opt_method_and_kwarg_options[1]
-            ]
-        )
-    )
-    def test_length_scale_mini_batch(
-        self,
-        batch_count,
-        nn_count,
-        loss_kwargs_and_sigma_methods,
-        obj_method,
-        opt_method_and_kwargs,
-    ):
-        loss_method, loss_kwargs, sigma_method = loss_kwargs_and_sigma_methods
-        _, opt_kwargs = opt_method_and_kwargs
-
-        error_vector = mm.zeros((self.its,))
-
-        for i in range(self.its):
-            # set up MuyGPS object
-            muygps = MuyGPS(
-                kernel=Matern(
-                    nu=ScalarHyperparameter(self.params["nu"]()),
-                    metric=IsotropicDistortion(
-                        metric=l2,
-                        length_scale=ScalarHyperparameter(
-                            "sample", self.params["length_scale"].get_bounds()
-                        ),
-                    ),
-                ),
-                eps=HomoscedasticNoise(self.params["eps"]()),
-            )
-
-            error_vector[i] = self._optim_chassis_mini_batch(
-                muygps,
-                "length_scale",
-                i,
-                nn_count,
-                batch_count,
-                loss_method,
-                obj_method,
-                sigma_method,
-                loss_kwargs,
-                opt_kwargs,
-            )
-        median_error = mm.median(error_vector)
-        print(
-            "optimizes length_scale with "
-            f"median relative squared error {median_error}"
-        )
-        # Is this a strong enough guarantee?
-        self.assertLessEqual(median_error, self.length_scale_tol[loss_method])
+        self.assertLessEqual(median_error, self.length_scale_tol[loss_name])
 
 
 if __name__ == "__main__":

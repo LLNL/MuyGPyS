@@ -18,7 +18,7 @@ above and :func:`~MuyGPyS.examples.regress.regress_any`.
 """
 import numpy as np
 from time import perf_counter
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
@@ -26,6 +26,7 @@ from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
+from MuyGPyS.optimize.loss import lool_fn
 from MuyGPyS.optimize.sigma_sq import (
     muygps_sigma_sq_optim,
     mmuygps_sigma_sq_optim,
@@ -37,7 +38,7 @@ def make_regressor(
     train_targets: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_method: str = "mse",
+    loss_fn: Callable = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
@@ -70,7 +71,7 @@ def make_regressor(
         ...         train_responses,
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="mse",
+        ...         loss_fn=lool_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         sigma_method="analytic",
@@ -83,7 +84,7 @@ def make_regressor(
         ...         train_responses,
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="mse",
+        ...         loss_fn=lool_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         sigma_method="analytic",
@@ -104,10 +105,9 @@ def make_regressor(
         batch_count:
             The number of elements to sample batch for hyperparameter
             optimization.
-        loss_method:
+        loss_fn:
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-            Currently supports only `"mse"` for regression.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -192,7 +192,7 @@ def make_regressor(
                 batch_nn_targets,
                 crosswise_diffs,
                 pairwise_diffs,
-                loss_method=loss_method,
+                loss_fn=loss_fn,
                 obj_method=obj_method,
                 opt_method=opt_method,
                 sigma_method=sigma_method,
@@ -227,7 +227,7 @@ def make_multivariate_regressor(
     train_targets: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_method: str = "mse",
+    loss_fn: Callable = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
@@ -264,7 +264,7 @@ def make_multivariate_regressor(
         ...         train_responses,
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="mse",
+        ...         loss_fn=lool_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         sigma_method="analytic",
@@ -277,7 +277,7 @@ def make_multivariate_regressor(
         ...         train_responses,
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="mse",
+        ...         loss_fn=lool_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         sigma_method="analytic",
@@ -298,10 +298,9 @@ def make_multivariate_regressor(
         batch_count:
             The number of elements to sample batch for hyperparameter
             optimization.
-        loss_method:
+        loss_fn:
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-            Currently supports only `"mse"` for regression.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -395,7 +394,7 @@ def make_multivariate_regressor(
                         ),
                         crosswise_diffs,
                         pairwise_diffs,
-                        loss_method=loss_method,
+                        loss_fn=loss_fn,
                         obj_method=obj_method,
                         opt_method=opt_method,
                         sigma_method=sigma_method,
@@ -464,7 +463,7 @@ def _decide_and_make_regressor(
     train_targets: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_method: str = "mse",
+    loss_fn: Callable = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
@@ -479,7 +478,7 @@ def _decide_and_make_regressor(
             train_targets,
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             sigma_method=sigma_method,
@@ -495,7 +494,7 @@ def _decide_and_make_regressor(
                 train_targets,
                 nn_count=nn_count,
                 batch_count=batch_count,
-                loss_method=loss_method,
+                loss_fn=loss_fn,
                 obj_method=obj_method,
                 opt_method=opt_method,
                 sigma_method=sigma_method,
@@ -518,7 +517,7 @@ def do_regress(
     train_targets: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_method: str = "mse",
+    loss_fn: Callable = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
@@ -555,7 +554,7 @@ def do_regress(
         ...         train['output'],
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="mse",
+        ...         loss_fn=lool_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
@@ -568,7 +567,7 @@ def do_regress(
         ...         train['output'],
         ...         nn_count=30,
         ...         batch_count=200,
-        ...         loss_method="mse",
+        ...         loss_fn=lool_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
         ...         k_kwargs=k_kwargs,
@@ -594,10 +593,9 @@ def do_regress(
         batch_count:
             The number of elements to sample batch for hyperparameter
             optimization.
-        loss_method:
-            The loss method to use in hyperparameter optimization. Ignored if
+        loss_fn:
+            The loss functor to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-            Currently supports only `"mse"` for regression.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -648,7 +646,7 @@ def do_regress(
         train_targets,
         nn_count=nn_count,
         batch_count=batch_count,
-        loss_method=loss_method,
+        loss_fn=loss_fn,
         obj_method=obj_method,
         opt_method=opt_method,
         sigma_method=sigma_method,

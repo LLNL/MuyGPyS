@@ -46,6 +46,9 @@ jobs:
       - name: Optimize Tests
         if: matrix.test-group == 'optimize'
         run: python tests/optimize.py
+      # - name: Optimize Tests - experimental
+      #   if: matrix.test-group == 'optimize-experimental'
+        # run: python tests/mini_batch.py
       - name: Multivariate Tests
         if: matrix.test-group == 'multivariate'
         run: python tests/multivariate.py

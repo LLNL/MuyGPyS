@@ -24,6 +24,7 @@ from MuyGPyS.examples.two_class_classify_uq import example_lambdas
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.optimize.loss import cross_entropy_fn, mse_fn
 
 if config.state.backend == "torch":
     ValueError("MuyGPyS.examples.classify does not support torch!")
@@ -71,11 +72,11 @@ class MNISTTest(ClassifyAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lf, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
             for om in ["loo_crossval"]
-            for lm in ["log", "mse"]
+            for lf in [cross_entropy_fn, mse_fn]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
             # for lm in ["log"]
@@ -113,7 +114,7 @@ class MNISTTest(ClassifyAPITest):
         self,
         nn_count,
         batch_count,
-        loss_method,
+        loss_fn,
         obj_method,
         opt_method_and_kwargs,
         nn_kwargs,
@@ -136,7 +137,7 @@ class MNISTTest(ClassifyAPITest):
             target_acc=target_accuracy,
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             nn_kwargs=nn_kwargs,
@@ -165,14 +166,13 @@ class StargalTest(ClassifyAPITest):
 class StargalClassifyTest(StargalTest):
     @parameterized.parameters(
         (
-            (nn, bs, lm, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lf, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
             for om in ["loo_crossval"]
-            for lm in ["log", "mse"]
+            for lf in [cross_entropy_fn, mse_fn]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
-            # for lm in ["log"]
             # for opt_method_and_kwargs in [
             #     _basic_opt_method_and_kwarg_options[0]
             # ]
@@ -212,7 +212,7 @@ class StargalClassifyTest(StargalTest):
         self,
         nn_count,
         batch_count,
-        loss_method,
+        loss_fn,
         obj_method,
         opt_method_and_kwargs,
         nn_kwargs,
@@ -228,7 +228,7 @@ class StargalClassifyTest(StargalTest):
             target_acc=target_accuracy,
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             nn_kwargs=nn_kwargs,
@@ -245,7 +245,7 @@ class StargalUQTest(StargalTest):
                 nn,
                 obs,
                 ubs,
-                lm,
+                lf,
                 om,
                 opt_method_and_kwargs,
                 uq,
@@ -257,7 +257,7 @@ class StargalUQTest(StargalTest):
             for ubs in [500]
             for om in ["loo_crossval"]
             for uq in [example_lambdas]
-            for lm in ["log", "mse"]
+            for lf in [cross_entropy_fn, mse_fn]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
             # for lm in ["log"]
@@ -299,7 +299,7 @@ class StargalUQTest(StargalTest):
         nn_count,
         opt_batch_count,
         uq_batch_count,
-        loss_method,
+        loss_fn,
         obj_method,
         opt_method_and_kwargs,
         uq_objectives,
@@ -317,7 +317,7 @@ class StargalUQTest(StargalTest):
             nn_count=nn_count,
             opt_batch_count=opt_batch_count,
             uq_batch_count=uq_batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             uq_objectives=uq_objectives,
@@ -338,7 +338,7 @@ class MultivariateStargalClassifyTest(StargalTest):
             # for lm in ["mse", "log"]
             # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
             # for nn_kwargs in _basic_nn_kwarg_options
-            for lm in ["mse"]
+            for lm in [mse_fn]
             for opt_method_and_kwargs in [
                 _basic_opt_method_and_kwarg_options[1]
             ]
@@ -403,7 +403,7 @@ class MultivariateStargalClassifyTest(StargalTest):
         self,
         nn_count,
         batch_count,
-        loss_method,
+        loss_fn,
         obj_method,
         opt_method_and_kwargs,
         nn_kwargs,
@@ -419,7 +419,7 @@ class MultivariateStargalClassifyTest(StargalTest):
             target_acc=target_accuracy,
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
             nn_kwargs=nn_kwargs,

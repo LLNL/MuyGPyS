@@ -42,6 +42,7 @@ from MuyGPyS.gp.tensors import (
     make_predict_tensors,
 )
 from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize.loss import mse_fn
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 
 
@@ -613,11 +614,11 @@ class GPDiagonalVariance(GPTestCase):
 class MakeClassifierTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lf, kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for lm in ["mse"]
+            for lf in [mse_fn]
             for kwargs in (
                 {
                     "kernel": Matern(
@@ -636,7 +637,7 @@ class MakeClassifierTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_fn,
         k_kwargs,
     ):
         if config.state.backend == "torch":
@@ -656,7 +657,7 @@ class MakeClassifierTest(parameterized.TestCase):
             train["output"],
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             opt_method="bayes",
@@ -685,11 +686,11 @@ class MakeClassifierTest(parameterized.TestCase):
 class MakeRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lm, ssm, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lf, ssm, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for lm in ["mse"]
+            for lf in [mse_fn]
             # for ssm in ["analytic"]
             for ssm in ["analytic", None]
             for k_kwargs in (
@@ -710,7 +711,7 @@ class MakeRegressorTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_method,
+        loss_fn,
         sigma_method,
         k_kwargs,
     ):
@@ -732,7 +733,7 @@ class MakeRegressorTest(parameterized.TestCase):
             train["output"],
             nn_count=nn_count,
             batch_count=batch_count,
-            loss_method=loss_method,
+            loss_fn=loss_fn,
             sigma_method=sigma_method,
             opt_method="bayes",
             opt_kwargs={
