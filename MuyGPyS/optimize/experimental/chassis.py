@@ -207,13 +207,7 @@ def optimize_from_tensors_mini_batch(
         verbose=verbose,
         **kwargs,
     )
-    if num_epochs > 1:
-        optimizer_kwargs["allow_duplicate_points"] = True
-    if "init_points" not in maximize_kwargs:
-        maximize_kwargs["init_points"] = 5
     probe_count = num_epochs * maximize_kwargs["init_points"]
-    if "n_iter" not in maximize_kwargs:
-        maximize_kwargs["n_iter"] = 20
 
     # Create Bayes optimizer
     optimizer = BayesianOptimization(
@@ -222,11 +216,6 @@ def optimize_from_tensors_mini_batch(
         **optimizer_kwargs,
     )
     optimized_values = ["\r\n"]
-
-    # Determine distance distortion metric
-    is_anisotropic = False
-    if isinstance(muygps.kernel.distortion_fn, AnisotropicDistortion):
-        is_anisotropic = True
 
     # Initialize nearest neighbors lookup and get batch indices
     nbrs_lookup = NN_Wrapper(
@@ -301,7 +290,9 @@ def optimize_from_tensors_mini_batch(
         optimized_values.append(f"{epoch}, {optimizer.max['params']}")
 
         # Update neighborhoods using the learned length scales
-        if is_anisotropic and (epoch < (num_epochs - 1)):
+        if isinstance(muygps.kernel.distortion_fn, AnisotropicDistortion) and (
+            epoch < (num_epochs - 1)
+        ):
             length_scales = AnisotropicDistortion._get_length_scale_array(
                 mm.array,
                 train_features.shape,

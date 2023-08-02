@@ -10,8 +10,6 @@ import MuyGPyS._src.math as mm
 
 from MuyGPyS import config
 from MuyGPyS._test.utils import (
-    _advanced_opt_method_and_kwarg_options,
-    _basic_opt_method_and_kwarg_options,
     _check_ndarray,
     _sq_rel_err,
 )
