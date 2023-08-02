@@ -40,9 +40,8 @@ from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import AnisotropicDistortion
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_obj_fn
-from MuyGPyS.optimize.loss import lool_fn, get_loss_func
+from MuyGPyS.optimize.loss import lool_fn
 from MuyGPyS.optimize.sigma_sq import (
     make_sigma_sq_optim,
     muygps_sigma_sq_optim,
@@ -63,7 +62,7 @@ def optimize_from_tensors_mini_batch(
     loss_fn: Callable = lool_fn,
     obj_method: str = "loo_crossval",
     sigma_method: Optional[str] = "analytic",
-    loss_kwargs: Dict = dict(),
+    loss_kwargs: Optional[Dict] = dict(),
     verbose: bool = False,
     **kwargs,
 ) -> Tuple[MuyGPS, NN_Wrapper, mm.ndarray]:
@@ -202,6 +201,7 @@ def optimize_from_tensors_mini_batch(
     # Create bayes_opt kwargs
     x0_names, x0, bounds = _get_opt_lists(muygps, verbose=verbose)
     x0_map = {n: x0[i] for i, n in enumerate(x0_names)}
+    to_probe = [x0_map]
     bounds_map = {n: bounds[i] for i, n in enumerate(x0_names)}
     optimizer_kwargs, maximize_kwargs = _bayes_get_kwargs(
         verbose=verbose,
@@ -211,11 +211,9 @@ def optimize_from_tensors_mini_batch(
         optimizer_kwargs["allow_duplicate_points"] = True
     if "init_points" not in maximize_kwargs:
         maximize_kwargs["init_points"] = 5
+    probe_count = num_epochs * maximize_kwargs["init_points"]
     if "n_iter" not in maximize_kwargs:
         maximize_kwargs["n_iter"] = 20
-    is_anisotropic = False
-    if isinstance(muygps.kernel.distortion_fn, AnisotropicDistortion):
-        is_anisotropic = True
 
     # Create Bayes optimizer
     optimizer = BayesianOptimization(
@@ -225,22 +223,23 @@ def optimize_from_tensors_mini_batch(
     )
     optimized_values = ["\r\n"]
 
-    # Initialize nearest neighbors lookup and sample a batch of points
+    # Determine distance distortion metric
+    is_anisotropic = False
+    if isinstance(muygps.kernel.distortion_fn, AnisotropicDistortion):
+        is_anisotropic = True
+
+    # Initialize nearest neighbors lookup and get batch indices
     nbrs_lookup = NN_Wrapper(
         train_features, nn_count, nn_method="exact", algorithm="ball_tree"
     )
-    batch_indices, batch_nn_indices = sample_batch(
-        nbrs_lookup, batch_count, train_count
-    )
     new_nbrs_lookup = deepcopy(nbrs_lookup)
+    batch_indices = mm.arange(train_count, dtype=mm.itype)
 
     # Run optimization loop
-    to_probe = [x0_map]
-    probe_count = num_epochs * maximize_kwargs["init_points"]
     time_start = perf_counter()
     for epoch in range(num_epochs):
-        # Get NN indices
-        if not keep_state:
+        # Get batch nearest neighbors indices
+        if not keep_state and train_count > batch_count:
             batch_indices = mm.iarray(
                 np.random.choice(train_count, batch_count, replace=False)
             )
@@ -317,6 +316,8 @@ def optimize_from_tensors_mini_batch(
                 algorithm="ball_tree",
             )
     time_stop = perf_counter()
+
+    # Print outcomes
     if verbose:
         for line in optimized_values:
             print(line)
