@@ -86,6 +86,9 @@ class RBF(KernelFn):
     ):
         super().__init__(metric=metric)
         self._kernel_fn = _rbf_fn
+
+    def _make(self):
+        super()._make_base()
         self._fn = embed_with_distortion_model(
             self._kernel_fn,
             self.distortion_fn,

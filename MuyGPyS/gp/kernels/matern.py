@@ -123,6 +123,10 @@ class Matern(KernelFn):
     ):
         super().__init__(metric=metric)
         self.nu = nu
+        self._make()
+
+    def _make(self):
+        super()._make_base()
         self._hyperparameters["nu"] = self.nu
         self._kernel_fn = _set_matern_fn(self.nu)
         self._fn = embed_with_distortion_model(
