@@ -256,29 +256,19 @@ class UnivariateSampler2D(SamplerBase):
         vmin = np.nanmin(self.ys)
         vmax = np.nanmax(self.ys)
 
-        axes[0].set_title("Sampled Surface", fontsize=24)
-        axes[0].set_xlabel("Axis 0", fontsize=20)
-        axes[0].set_ylabel("Axis 1", fontsize=20)
+        self._label_ax(axes[0], "Sampled Surface")
         im0 = axes[0].imshow(
             self._make_im(self.ys, mode="all"), vmin=vmin, vmax=vmax
         )
 
-        axes[1].set_title("Training Points", fontsize=24)
-        axes[1].set_xlabel("Axis 0", fontsize=20)
-        axes[1].set_ylabel("Axis 1", fontsize=20)
-        # train_im = np.zeros(self.data_count)
-        # train_im[self._train_mask, None] = self.train_responses
+        self._label_ax(axes[1], "Training Points")
         axes[1].imshow(
             self._make_im(self.train_responses, mode="train"),
             vmin=vmin,
             vmax=vmax,
         )
 
-        axes[2].set_title("Testing Points", fontsize=24)
-        axes[2].set_xlabel("Axis 0", fontsize=20)
-        axes[2].set_ylabel("Axis 1", fontsize=20)
-        # test_im = np.zeros(self.data_count)
-        # test_im[self._test_mask, None] = self.test_responses
+        self._label_ax(axes[2], "Testing Points")
         axes[2].imshow(self._make_im(self.test_responses), vmin=vmin, vmax=vmax)
         fig.colorbar(im0, ax=axes.ravel().tolist())
 
@@ -315,9 +305,7 @@ class UnivariateSampler2D(SamplerBase):
         vmin = np.min([tvmin, pvmin])
         vmax = np.max([tvmax, pvmax])
 
-        axes[0].set_title("Expected Surface", fontsize=24)
-        axes[0].set_xlabel("Axis 0", fontsize=20)
-        axes[0].set_ylabel("Axis 1", fontsize=20)
+        self._label_ax(axes[0], "Expected Surface")
         im0 = axes[0].imshow(
             test_im,
             vmin=vmin,
@@ -326,9 +314,7 @@ class UnivariateSampler2D(SamplerBase):
         )
         fig.colorbar(im0, ax=axes[0])
 
-        axes[1].set_title("Predicted Surface", fontsize=24)
-        axes[1].set_xlabel("Axis 0", fontsize=20)
-        axes[1].set_ylabel("Axis 1", fontsize=20)
+        self._label_ax(axes[1], "Predicted Surface")
         im1 = axes[1].imshow(
             pred_im,
             vmin=vmin,
@@ -340,6 +326,20 @@ class UnivariateSampler2D(SamplerBase):
         plt.tight_layout()
         plt.show()
 
+    def _get_images(self, predictions, confidence_intervals):
+        resl_im, resl_min, resl_max = self._make_im(
+            self.test_responses - predictions, range=True
+        )
+        conf_im, _, conf_mag = self._make_im(confidence_intervals, range=True)
+        covr_im, covr_min, covr_max = self._make_im(
+            np.abs(self.test_responses - predictions) - confidence_intervals,
+            range=True,
+        )
+
+        resl_mag = np.max([np.abs(resl_min), np.abs(resl_max)])
+        covr_mag = np.max([np.abs(covr_min), np.abs(covr_max)])
+        return resl_im, conf_im, covr_im, resl_mag, conf_mag, covr_mag
+
     def plot_errors(self, *args):
         if len(args) % 3 != 0:
             raise ValueError("Only invocable on prediction/CI pairs!")
@@ -349,62 +349,99 @@ class UnivariateSampler2D(SamplerBase):
         fig, axes = plt.subplots(row_count, 3, figsize=(13, 4 * row_count))
         if row_count == 1:
             name, predictions, confidence_intervals = args
-            self.plot_error(fig, axes, name, predictions, confidence_intervals)
+            (
+                resl_im,
+                conf_im,
+                covr_im,
+                resl_mag,
+                conf_mag,
+                covr_mag,
+            ) = self._get_images(predictions, confidence_intervals)
+            self.plot_error(
+                fig,
+                axes,
+                name,
+                resl_im,
+                conf_im,
+                covr_im,
+                resl_mag,
+                conf_mag,
+                covr_mag,
+            )
         else:
+            resl_ims = []
+            conf_ims = []
+            covr_ims = []
+            resl_mag = 0.0
+            conf_mag = 0.0
+            covr_mag = 0.0
             for i in range(row_count):
-                name = args[3 * i]
                 predictions = args[3 * i + 1]
                 confidence_intervals = args[3 * i + 2]
+                (
+                    resl_im,
+                    conf_im,
+                    covr_im,
+                    resl_mag_,
+                    conf_mag_,
+                    covr_mag_,
+                ) = self._get_images(predictions, confidence_intervals)
+                resl_ims.append(resl_im)
+                conf_ims.append(conf_im)
+                covr_ims.append(covr_im)
+                resl_mag = np.max([resl_mag, resl_mag_])
+                conf_mag = np.max([conf_mag, conf_mag_])
+                covr_mag = np.max([covr_mag, covr_mag_])
+            for i in range(row_count):
+                name = args[3 * i]
                 self.plot_error(
                     fig,
                     axes[i, :],
                     name,
-                    predictions,
-                    confidence_intervals,
+                    resl_ims[i],
+                    conf_ims[i],
+                    covr_ims[i],
+                    resl_mag,
+                    conf_mag,
+                    covr_mag,
                 )
         plt.tight_layout()
         plt.show()
+
+    def _label_ax(self, ax, title):
+        ax.set_title(title, fontsize=18)
+        ax.set_xlabel("Axis 0", fontsize=14)
+        ax.set_ylabel("Axis 1", fontsize=14)
+        ax.set_xticks([])
+        ax.set_yticks([])
 
     def plot_error(
         self,
         fig,
         axes,
         name,
-        predictions,
-        confidence_intervals,
+        resl_im,
+        conf_im,
+        covr_im,
+        resl_mag,
+        conf_mag,
+        covr_mag,
     ):
-        resl_im = self._make_im(
-            self.test_responses - predictions, add_inf=False
+        self._label_ax(axes[0], f"{name} residual")
+        im0 = axes[0].imshow(
+            resl_im, vmin=-resl_mag, vmax=resl_mag, cmap="coolwarm"
         )
-        conf_im = self._make_im(confidence_intervals, add_inf=False)
-        covr_im = self._make_im(
-            np.abs(self.test_responses - predictions) - confidence_intervals,
-            add_inf=False,
-        )
+        fig.colorbar(im0, ax=axes[0])
 
-        covr_mag = np.max(
-            [np.abs(np.nanmax(covr_im)), np.abs(np.nanmin(covr_im))]
-        )
+        self._label_ax(axes[1], f"{name} CI Magnitude")
+        im1 = axes[1].imshow(conf_im, vmin=0.0, vmax=conf_mag, cmap="inferno")
+        fig.colorbar(im1, ax=axes[1])
 
-        axes[0].set_title(f"{name} residual", fontsize=18)
-        axes[0].set_xlabel("Axis 0", fontsize=14)
-        axes[0].set_ylabel("Axis 1", fontsize=14)
-        im0 = axes[0].imshow(resl_im, cmap="coolwarm")
-        cb1 = fig.colorbar(im0, ax=axes[0])
-
-        axes[1].set_title(f"{name} CI Magnitude", fontsize=18)
-        axes[1].set_xlabel("Axis 0", fontsize=14)
-        axes[1].set_ylabel("Axis 1", fontsize=14)
-        im1 = axes[1].imshow(conf_im, cmap="inferno")
-        cb2 = fig.colorbar(im1, ax=axes[1])
-
-        axes[2].set_title(f"{name} |Residual| - CI", fontsize=18)
-        axes[2].set_xlabel("Axis 0", fontsize=14)
-        axes[2].set_ylabel("Axis 1", fontsize=14)
+        self._label_ax(axes[2], f"{name} |Residual| - CI")
         im2 = axes[2].imshow(
             covr_im, vmin=-covr_mag, vmax=covr_mag, cmap="coolwarm"
         )
-        cb2 = fig.colorbar(im2, ax=axes[2])
+        fig.colorbar(im2, ax=axes[2])
 
 
 def print_results(
