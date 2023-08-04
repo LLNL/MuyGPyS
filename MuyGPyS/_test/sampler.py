@@ -7,8 +7,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy.stats.qmc import LatinHypercube
-
 from MuyGPyS._test.gp import benchmark_sample, BenchmarkGP
 from MuyGPyS.gp.distortion import IsotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
