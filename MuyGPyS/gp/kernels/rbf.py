@@ -86,6 +86,7 @@ class RBF(KernelFn):
     ):
         super().__init__(metric=metric)
         self._kernel_fn = _rbf_fn
+        self._make()
 
     def _make(self):
         super()._make_base()
