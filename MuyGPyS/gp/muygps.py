@@ -99,6 +99,10 @@ class MuyGPS:
         self.kernel = kernel
         self.sigma_sq = SigmaSq(response_count)
         self.eps = eps
+        self._make()
+
+    def _make(self) -> None:
+        self.kernel._make()
         self._mean_fn = PosteriorMean(self.eps)
         self._var_fn = PosteriorVariance(self.eps, self.sigma_sq)
         self._fast_posterior_mean_fn = FastPosteriorMean()

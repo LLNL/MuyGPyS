@@ -30,6 +30,7 @@ def _new_muygps(muygps: MuyGPS, x0_names, bounds, opt_dict) -> MuyGPS:
             ret.kernel._hyperparameters[name]._update_knot_values(**{key: val})
         else:
             ret.kernel._hyperparameters[key]._set_val(val)
+    ret._make()
     return ret
 
 
