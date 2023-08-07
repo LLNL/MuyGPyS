@@ -24,10 +24,12 @@ See the `BayesianOptimization <https://github.com/fmfn/BayesianOptimization>`_
 documentation for details.
 """
 
+from copy import deepcopy
+import numpy as np
+from time import process_time
+from typing import Callable, Dict, Optional, Tuple
 
 from bayes_opt import BayesianOptimization
-from typing import Dict, Optional
-
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.chassis.numpy import (
     _new_muygps,
@@ -35,11 +37,11 @@ from MuyGPyS._src.optimize.chassis.numpy import (
     _bayes_get_kwargs,
 )
 from MuyGPyS.gp import MuyGPS
+from MuyGPyS.gp.distortion import AnisotropicDistortion
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.objective import make_obj_fn
-from MuyGPyS.optimize.loss import get_loss_func
+from MuyGPyS.optimize.loss import lool_fn
 from MuyGPyS.optimize.sigma_sq import (
     make_sigma_sq_optim,
     muygps_sigma_sq_optim,
@@ -50,86 +52,91 @@ def optimize_from_tensors_mini_batch(
     muygps: MuyGPS,
     train_features: mm.ndarray,
     train_responses: mm.ndarray,
-    nbrs_lookup: NN_Wrapper,
+    nn_count: int,
     batch_count: int,
     train_count: int,
     num_epochs: int = 1,
+    keep_state: bool = False,
+    probe_previous: bool = False,
     batch_features: Optional[mm.ndarray] = None,
-    loss_method: str = "mse",
+    loss_fn: Callable = lool_fn,
     obj_method: str = "loo_crossval",
     sigma_method: Optional[str] = "analytic",
-    loss_kwargs: Dict = dict(),
+    loss_kwargs: Optional[Dict] = dict(),
     verbose: bool = False,
     **kwargs,
-) -> MuyGPS:
+) -> Tuple[MuyGPS, NN_Wrapper, float, int, int]:
     """
     Find the optimal model using:
-    1. Nearest neighbor distance difference matrices
+    1. Exact KNN using scikit learn
     2. Bayes Optimization
     3. numpy math backend
 
-    See the following example, where we have already constructed exact
-    or approximate KNN data lookups a `nbrs_lookup` data structure using
-    :class:`MuyGPyS.neighbors.NN_Wrapper`, initialized a
-    :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps`, created a
-    :class:`utils.UnivariateSampler` instance `sampler`.
+    See the following example, where we have already initialized a
+    :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps` and created a
+    :class:`utils.UnivariateSampler` or :class:`utils.UnivariateSampler2D`
+    instance `sampler`.
 
     Example:
-        >>> batch_count=100
-        >>> train_count=sampler.train_count
-        >>> num_epochs=int(sampler.train_count / batch_count)
-        >>> from MuyGPyS.optimize.chassis import
-        >>>     optimize_from_tensors_mini_batch
-        >>> muygps = optimize_from_tensors_mini_batch(
+        >>> (
+        >>>     muygps_optloop,
+        >>>     nbrs_lookup_final,
+        >>>     exec_time,
+        >>>     probe_count,
+        >>>     opt_steps,
+        >>> ) = optimize_from_tensors_mini_batch(
         ...     muygps,
         ...     train_features,
         ...     train_responses,
-        ...     nbrs_lookup,
-        ...     batch_count=batch_count,
-        ...     train_count=train_count,
-        ...     num_epochs=num_epochs,
-        ...     batch_features=None,
-        ...     loss_method='lool',
-        ...     obj_method='loo_crossval',
-        ...     sigma_method='analytic',
+        ...     nn_count=30,
+        ...     batch_count=sampler.train_count,
+        ...     train_count=sampler.train_count,
+        ...     num_epochs=1,
+        ...     keep_state=False,
+        ...     probe_previous=False,
+        ...     loss_fn=lool_fn,
+        ...     obj_method="loo_crossval",
         ...     verbose=True,
         ...     random_state=1,
         ...     init_points=5,
         ...     n_iter=20,
+        ...     allow_duplicate_points=True,
         ... )
-        parameters to be optimized: ['nu']
-        bounds: [[0.1 5. ]]
-        initial x0: [0.49355858]
-        |   iter    |  target   |    nu     |
-        -------------------------------------
-        | 1         | 538.9     | 0.4936    |
-        | 2         | 1.063e+03 | 2.143     |
-        | 3         | 726.4     | 3.63      |
-        | 4         | 237.9     | 0.1006    |
-        | 5         | 1.06e+03  | 1.581     |
-        | 6         | 732.3     | 0.8191    |
-        | 7         | 362.2     | 5.0       |
-        | 8         | 945.4     | 2.772     |
-        | 9         | 1.088e+03 | 1.856     |
-        | 10        | 1.085e+03 | 1.772     |
-        | 11        | 1.087e+03 | 1.907     |
-        | 12        | 1.088e+03 | 1.848     |
-        | 13        | 1.088e+03 | 1.849     |
-        | 14        | 1.088e+03 | 1.85      |
-        | 15        | 1.088e+03 | 1.85      |
-        | 16        | 1.088e+03 | 1.85      |
-        | 17        | 1.088e+03 | 1.851     |
-        | 18        | 1.088e+03 | 1.851     |
-        | 19        | 1.088e+03 | 1.852     |
-        | 20        | 1.088e+03 | 1.852     |
-        ...
-        epoch	probe point
-        -----	-----------
-        0, 0.4935585846939505
-        1, 1.8520552693068661
-        2, 1.862615982964366
-        3, 1.8596379807155798
-        4, 1.8104353512478297
+        parameters to be optimized: ['length_scale0', 'length_scale1']
+        bounds: [[0.01 1.  ]
+        [0.01 1.  ]]
+        initial x0: [0.09718538 0.42218699]
+        |   iter    |  target   | length... | length... |
+        -------------------------------------------------
+        | 1         | 793.7     | 0.09719   | 0.4222    |
+        | 2         | 425.1     | 0.4229    | 0.7231    |
+        | 3         | 39.33     | 0.01011   | 0.3093    |
+        | 4         | 83.32     | 0.1553    | 0.1014    |
+        | 5         | 480.6     | 0.1944    | 0.3521    |
+        | 6         | 277.1     | 0.4028    | 0.5434    |
+        | 7         | 790.1     | 0.09769   | 0.4123    |
+        | 8         | 685.2     | 0.1737    | 0.4721    |
+        | 9         | 792.9     | 0.09583   | 0.4147    |
+        | 10        | 513.9     | 0.03333   | 0.6004    |
+        | 11        | -444.6    | 1.0       | 0.01      |
+        | 12        | 803.1     | 0.187     | 0.9781    |
+        | 13        | -181.9    | 0.01      | 1.0       |
+        | 14        | 707.7     | 0.3298    | 0.9882    |
+        | 15        | 234.0     | 0.5577    | 0.705     |
+        | 16        | 675.0     | 0.157     | 0.4126    |
+        | 17        | 755.4     | 0.2337    | 0.8346    |
+        | 18        | 107.2     | 1.0       | 1.0       |
+        | 19        | -108.3    | 1.0       | 0.5391    |
+        | 20        | -205.5    | 0.5192    | 0.01      |
+        | 21        | 411.2     | 0.5939    | 1.0       |
+        | 22        | 729.1     | 0.2109    | 0.6687    |
+        | 23        | -98.07    | 0.673     | 0.3635    |
+        | 24        | 797.6     | 0.1144    | 0.775     |
+        | 25        | 761.3     | 0.2273    | 0.8345    |
+        | 26        | 147.3     | 0.7809    | 0.845     |
+        =================================================
+
+        0, {'length_scale0': 0.1869..., 'length_scale1': 0.9781...}
 
     Args:
         muygps:
@@ -138,18 +145,22 @@ def optimize_from_tensors_mini_batch(
             Explanatory variables used to train model.
         train_responses:
             Labels corresponding to features used to train model.
-        nbrs_lookup:
-            Trained nearest neighbor query data structure.
+        nn_count:
+            The number of nearest neighbors to return in queries.
         batch_count:
             The number of batch elements to sample.
         train_count:
             The total number of training examples.
         num_epochs:
             The number of iterations for optimization loop.
+        keep_state:
+            If True, maintain optimizer target space and explored points.
+        probe_previous:
+            If True, store max params to probe in next loop iteration.
         batch_features:
             Set to None, ignore hierarchical stuff for now.
-        loss_method:
-            Indicates the loss function to be used.
+        loss_fn:
+            The loss functor used to evaluate model performance.
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
@@ -162,14 +173,27 @@ def optimize_from_tensors_mini_batch(
         verbose:
             If True, print debug messages.
         kwargs:
-            Additional keyword arguments to be passed to the wrapper optimizer.
+            Additional keyword arguments to be passed to the wrapper
+            optimizer.
 
     Returns:
         A new MuyGPs model whose specified hyperparameters have been optimized.
+
+    Returns
+    -------
+        MuyGPS:
+            A new MuyGPs model with optimized hyperparameters.
+        NN_Wrapper:
+            Trained nearest neighbor query data structure.
+        float:
+            Total cpu and system time in loop execution.
+        int:
+            Total points probed (exploration).
+        int:
+            Total iterations of bayes optimization (exploitation).
     """
 
     # Get objective function components
-    loss_fn = get_loss_func(loss_method)
     kernel_fn = muygps.kernel.get_opt_fn()
     mean_fn = muygps.get_opt_mean_fn()
     var_fn = muygps.get_opt_var_fn()
@@ -178,27 +202,39 @@ def optimize_from_tensors_mini_batch(
     # Create bayes_opt kwargs
     x0_names, x0, bounds = _get_opt_lists(muygps, verbose=verbose)
     x0_map = {n: x0[i] for i, n in enumerate(x0_names)}
+    to_probe = [x0_map]
     bounds_map = {n: bounds[i] for i, n in enumerate(x0_names)}
     optimizer_kwargs, maximize_kwargs = _bayes_get_kwargs(
         verbose=verbose,
         **kwargs,
     )
-    if num_epochs > 1:
-        optimizer_kwargs["allow_duplicate_points"] = True
-    if "init_points" not in maximize_kwargs:
-        maximize_kwargs["init_points"] = 5
-    if "n_iter" not in maximize_kwargs:
-        maximize_kwargs["n_iter"] = 20
+    total_pts_probed = num_epochs * maximize_kwargs["init_points"]
+    total_opt_steps = num_epochs * maximize_kwargs["n_iter"]
 
-    # Initialize list of points to probe
-    to_probe = [x0_map]
+    # Create Bayes optimizer
+    optimizer = BayesianOptimization(
+        f=None,
+        pbounds=bounds_map,
+        **optimizer_kwargs,
+    )
+    optimized_values = ["\r\n"]
+
+    # Initialize nearest neighbors lookup and get batch indices
+    nbrs_lookup = NN_Wrapper(
+        train_features, nn_count, nn_method="exact", algorithm="ball_tree"
+    )
+    new_nbrs_lookup = deepcopy(nbrs_lookup)
+    batch_indices = mm.arange(train_count, dtype=mm.itype)
 
     # Run optimization loop
+    time_start = process_time()
     for epoch in range(num_epochs):
-        # Sample a batch of points
-        batch_indices, batch_nn_indices = sample_batch(
-            nbrs_lookup, batch_count, train_count
-        )
+        # Get batch nearest neighbors indices
+        if not keep_state and train_count > batch_count:
+            batch_indices = mm.iarray(
+                np.random.choice(train_count, batch_count, replace=False)
+            )
+        batch_nn_indices, _ = new_nbrs_lookup.get_batch_nns(batch_indices)
 
         # Coalesce distance and target tensors
         (
@@ -216,7 +252,6 @@ def optimize_from_tensors_mini_batch(
         # Generate the objective function
         obj_fn = make_obj_fn(
             obj_method,
-            loss_method,
             loss_fn,
             kernel_fn,
             mean_fn,
@@ -230,35 +265,68 @@ def optimize_from_tensors_mini_batch(
             loss_kwargs=loss_kwargs,
         )
 
-        # Create the Bayes optimizer
-        optimizer = BayesianOptimization(
-            f=obj_fn,
-            pbounds=bounds_map,
-            **optimizer_kwargs,
-        )
+        # Setting the function to be optimized for this epoch
+        if keep_state:
+            optimizer._space.target_func = obj_fn
+        else:
+            optimizer = BayesianOptimization(
+                f=obj_fn,
+                pbounds=bounds_map,
+                **optimizer_kwargs,
+            )
 
-        # Probe all explored points
-        for point in to_probe:
-            optimizer.probe(point, lazy=True)
+        # Probe explored points
+        if probe_previous:
+            for point in to_probe:
+                optimizer.probe(point, lazy=True)
+                total_pts_probed += 1
+        elif epoch == 0:
+            optimizer.probe(to_probe[0], lazy=True)
+            total_pts_probed += 1
 
         # Find maximum of the acquisition function
         optimizer.maximize(**maximize_kwargs)
 
         # Add explored points to be probed
         to_probe.append(optimizer.max["params"])
+        optimized_values.append(f"{epoch}, {optimizer.max['params']}")
 
-    # Print max param per epoch
+        # Update neighborhoods using the learned length scales
+        if isinstance(muygps.kernel.distortion_fn, AnisotropicDistortion) and (
+            epoch < (num_epochs - 1)
+        ):
+            length_scales = AnisotropicDistortion._get_length_scale_array(
+                mm.array,
+                train_features.shape,
+                None,
+                **optimizer.max["params"],
+            )
+            train_features_scaled = train_features / length_scales
+            new_nbrs_lookup = NN_Wrapper(
+                train_features_scaled,
+                nn_count,
+                nn_method="exact",
+                algorithm="ball_tree",
+            )
+    time_stop = process_time()
+
+    # Print outcomes
     if verbose:
-        print("\nepoch\tprobe point\n-----\t-----------")
-        for epoch in range(num_epochs):
-            print(f"{epoch}, {to_probe[epoch].get('nu')}")
+        for line in optimized_values:
+            print(line)
 
     # Compute optimal variance scaling hyperparameter
-    ret = muygps_sigma_sq_optim(
+    new_muygpys = muygps_sigma_sq_optim(
         _new_muygps(muygps, x0_names, bounds, optimizer.max["params"]),
         batch_pairwise_diffs,
         batch_nn_targets,
         sigma_method=sigma_method,
     )
 
-    return ret
+    return (
+        new_muygpys,
+        nbrs_lookup,
+        (time_stop - time_start),
+        total_pts_probed,
+        total_opt_steps,
+    )

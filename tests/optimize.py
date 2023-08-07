@@ -42,7 +42,9 @@ from MuyGPyS.optimize.loss import (
 from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 
 if config.state.backend != "numpy":
-    raise ValueError("optimize.py only supports the numpy backend at this time")
+    raise ValueError(
+        "optimize.py only supports the numpy backend at this time"
+    )
 
 
 class BenchmarkTestCase(parameterized.TestCase):
