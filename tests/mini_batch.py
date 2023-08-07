@@ -60,6 +60,7 @@ class MiniBatchBenchmarkTestCase(BenchmarkTestCase):
             _,
             _,
             _,
+            _,
         ) = optimize_from_tensors_mini_batch(
             muygps,
             self.train_features,

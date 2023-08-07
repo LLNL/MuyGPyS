@@ -26,7 +26,7 @@ documentation for details.
 
 from copy import deepcopy
 import numpy as np
-from time import perf_counter
+from time import process_time
 from typing import Callable, Dict, Optional, Tuple
 
 from bayes_opt import BayesianOptimization
@@ -65,7 +65,7 @@ def optimize_from_tensors_mini_batch(
     loss_kwargs: Optional[Dict] = dict(),
     verbose: bool = False,
     **kwargs,
-) -> Tuple[MuyGPS, NN_Wrapper, mm.ndarray]:
+) -> Tuple[MuyGPS, NN_Wrapper, float, int, int]:
     """
     Find the optimal model using:
     1. Exact KNN using scikit learn
@@ -77,12 +77,13 @@ def optimize_from_tensors_mini_batch(
     :class:`utils.UnivariateSampler` or :class:`utils.UnivariateSampler2D`
     instance `sampler`.
 
-    TODO Example:
+    Example:
         >>> (
         >>>     muygps_optloop,
         >>>     nbrs_lookup_final,
         >>>     exec_time,
         >>>     probe_count,
+        >>>     opt_steps,
         >>> ) = optimize_from_tensors_mini_batch(
         ...     muygps,
         ...     train_features,
@@ -93,10 +94,8 @@ def optimize_from_tensors_mini_batch(
         ...     num_epochs=1,
         ...     keep_state=False,
         ...     probe_previous=False,
-        ...     batch_features=None,
-        ...     loss_method="lool",
+        ...     loss_fn=lool_fn,
         ...     obj_method="loo_crossval",
-        ...     sigma_method="analytic",
         ...     verbose=True,
         ...     random_state=1,
         ...     init_points=5,
@@ -187,9 +186,11 @@ def optimize_from_tensors_mini_batch(
         NN_Wrapper:
             Trained nearest neighbor query data structure.
         float:
-            Total time in loop execution.
+            Total cpu and system time in loop execution.
         int:
-            Total number of points probed.
+            Total points probed (exploration).
+        int:
+            Total iterations of bayes optimization (exploitation).
     """
 
     # Get objective function components
@@ -207,7 +208,8 @@ def optimize_from_tensors_mini_batch(
         verbose=verbose,
         **kwargs,
     )
-    probe_count = num_epochs * maximize_kwargs["init_points"]
+    total_pts_probed = num_epochs * maximize_kwargs["init_points"]
+    total_opt_steps = num_epochs * maximize_kwargs["n_iter"]
 
     # Create Bayes optimizer
     optimizer = BayesianOptimization(
@@ -225,7 +227,7 @@ def optimize_from_tensors_mini_batch(
     batch_indices = mm.arange(train_count, dtype=mm.itype)
 
     # Run optimization loop
-    time_start = perf_counter()
+    time_start = process_time()
     for epoch in range(num_epochs):
         # Get batch nearest neighbors indices
         if not keep_state and train_count > batch_count:
@@ -277,10 +279,10 @@ def optimize_from_tensors_mini_batch(
         if probe_previous:
             for point in to_probe:
                 optimizer.probe(point, lazy=True)
-                probe_count += 1
+                total_pts_probed += 1
         elif epoch == 0:
             optimizer.probe(to_probe[0], lazy=True)
-            probe_count += 1
+            total_pts_probed += 1
 
         # Find maximum of the acquisition function
         optimizer.maximize(**maximize_kwargs)
@@ -306,7 +308,7 @@ def optimize_from_tensors_mini_batch(
                 nn_method="exact",
                 algorithm="ball_tree",
             )
-    time_stop = perf_counter()
+    time_stop = process_time()
 
     # Print outcomes
     if verbose:
@@ -325,5 +327,6 @@ def optimize_from_tensors_mini_batch(
         new_muygpys,
         nbrs_lookup,
         (time_stop - time_start),
-        probe_count,
+        total_pts_probed,
+        total_opt_steps,
     )
