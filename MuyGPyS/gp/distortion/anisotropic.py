@@ -61,6 +61,9 @@ class AnisotropicDistortion:
         batch_features=None,
         **length_scales,
     ) -> mm.ndarray:
+        # NOTE[MWP] THIS WILL NOT WORK WITH TORCH OPTIMIZATION.
+        # We need to eliminate the implicit copy. Will need indirection.
+        # We should make this whole workflow ifless.
         AnisotropicDistortion._lengths_agree(
             len(length_scales), target_shape[-1]
         )

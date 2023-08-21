@@ -91,3 +91,7 @@ arange = fix_function_type(itype, _arange)
 diagonal, eye, full, linspace, ones, zeros = fix_function_types(
     ftype, _diagonal, _eye, _full, _linspace, _ones, _zeros
 )
+
+
+def parameter(x):
+    return x
