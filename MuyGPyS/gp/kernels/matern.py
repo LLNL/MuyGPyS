@@ -150,7 +150,6 @@ class Matern(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-
         return self._fn(diffs, nu=self.nu())
 
     def get_opt_params(
