@@ -42,6 +42,7 @@ from MuyGPyS._src.util import _collect_implementation
     ndarray,
     ones,
     outer,
+    parameter,
     repeat,
     reshape,
     sqrt,
@@ -89,6 +90,7 @@ from MuyGPyS._src.util import _collect_implementation
     "ndarray",
     "ones",
     "outer",
+    "parameter",
     "repeat",
     "reshape",
     "sqrt",
@@ -99,3 +101,10 @@ from MuyGPyS._src.util import _collect_implementation
     "where",
     "zeros",
 )
+
+
+def promote(x):
+    if isinstance(x, ndarray):
+        return x
+    else:
+        return array(x)

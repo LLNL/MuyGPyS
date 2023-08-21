@@ -201,7 +201,7 @@ class ScalarHyperparameter:
                     f"Hyperparameter value {val} is greater than the "
                     f"optimization upper bound {self._bounds[1]}"
                 )
-        self._val = val
+        self._val = mm.parameter(val)
 
     def _set_bounds(
         self,

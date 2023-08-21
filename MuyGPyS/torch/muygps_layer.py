@@ -8,12 +8,14 @@ MuyGPs PyTorch implementation
 """
 from MuyGPyS import config
 from MuyGPyS._src.math.torch import nn
+from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.tensors import (
     pairwise_tensor,
     crosswise_tensor,
 )
 
-from MuyGPyS.gp.muygps import MuyGPS
 
 if config.state.backend != "torch":
     import warnings
@@ -105,7 +107,23 @@ class MuyGPs_layer(nn.Module):
         batch_nn_targets,
     ):
         super().__init__()
+        if not isinstance(
+            muygps_model.kernel.distortion_fn, IsotropicDistortion
+        ):
+            raise NotImplementedError(
+                "MuyGPyS/torch optimization does not support "
+                f"{type(muygps_model.kernel.distortion_fn)} distortions"
+            )
+        if not isinstance(
+            muygps_model.kernel.distortion_fn.length_scale, ScalarHyperparameter
+        ):
+            raise NotImplementedError(
+                "MuyGPyS/torch optimization does not support "
+                f"{type(muygps_model.kernel.distortion_fn.length_scale)} "
+                "length scales"
+            )
         self.muygps_model = muygps_model
+        self.length_scale = muygps_model.kernel.distortion_fn.length_scale._val
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
@@ -124,6 +142,7 @@ class MuyGPs_layer(nn.Module):
             A torch.ndarray of shape `(batch_count,response_count)`
             consisting of the diagonal elements of the posterior variance.
         """
+        self.muygps_model._make()
 
         crosswise_diffs = crosswise_tensor(
             x,

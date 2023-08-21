@@ -30,19 +30,19 @@ class IsotropicDistortion:
         self, diffs: mm.ndarray, length_scale: Union[float, mm.ndarray]
     ) -> mm.ndarray:
         length_scale_array = self._get_length_scale_array(
-            mm.array, diffs.shape, length_scale
+            diffs.shape, length_scale
         )
         return self._dist_fn(diffs / length_scale_array)
 
     @staticmethod
     def _get_length_scale_array(
-        array_fn: Callable,
         target_shape: mm.ndarray,
         length_scale: Union[float, mm.ndarray],
     ) -> mm.ndarray:
         # make sure length_scale is broadcastable when its shape is (batch_count,)
+        # NOTE[MWP] there is probably a better way to do this
         shape = (-1,) + (1,) * (len(target_shape) - 1)
-        return mm.reshape(array_fn(length_scale), shape)
+        return mm.reshape(mm.promote(length_scale), shape)
 
     def get_opt_params(
         self,
