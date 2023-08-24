@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: MIT
 
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 from MuyGPyS._test.gp import benchmark_sample, BenchmarkGP
 from MuyGPyS.gp.distortion import IsotropicDistortion
@@ -26,6 +27,9 @@ class SamplerBase:
             idx = np.random.choice(sfl[i * interval : (i + 1) * interval])
             self._train_mask[idx] = True
         self._test_mask = np.invert(self._train_mask)
+        self._title_fsize = 18
+        self._axis_fsize = 14
+        self._legend_fsize = 12
 
 
 class UnivariateSampler(SamplerBase):
@@ -60,6 +64,8 @@ class UnivariateSampler(SamplerBase):
         self.test_interval = self.get_interval(
             view_lb, view_ub, self.test_features
         )
+        self._target_color = "#7570b3"
+        self._predict_colors = ["#d95f02", "#1b9e77"]
 
     def features(self):
         return self.train_features, self.test_features
@@ -73,11 +79,11 @@ class UnivariateSampler(SamplerBase):
         return self.train_responses, self.test_responses
 
     def plot_sample(self):
-        _, axes = plt.subplots(2, 1, figsize=(15, 11))
+        _, axes = plt.subplots(2, 1, figsize=(8, 7))
 
-        axes[0].set_title("Sampled Curve", fontsize=24)
-        axes[0].set_xlabel("Feature Domain", fontsize=20)
-        axes[0].set_ylabel("Response Range", fontsize=20)
+        axes[0].set_title("Sampled Curve", fontsize=self._title_fsize)
+        axes[0].set_xlabel("Feature Domain", fontsize=self._axis_fsize)
+        axes[0].set_ylabel("Response Range", fontsize=self._axis_fsize)
         axes[0].plot(
             self.train_features,
             self.train_responses,
@@ -87,10 +93,11 @@ class UnivariateSampler(SamplerBase):
         axes[0].plot(
             self.test_features,
             self.test_responses,
-            "g-",
+            "-",
+            color=self._target_color,
             label="test response",
         )
-        axes[0].legend(fontsize=20)
+        axes[0].legend(fontsize=self._legend_fsize)
 
         self.plot_target_sub(axes[1])
 
@@ -100,34 +107,40 @@ class UnivariateSampler(SamplerBase):
 
     def plot_results(
         self,
-        scipy_predictions,
-        scipy_confidence_intervals,
-        bayes_predictions,
-        bayes_confidence_intervals,
+        *args,
     ):
-        _, axes = plt.subplots(3, 1, figsize=(15, 16))
+        plot_count = len(args)
+
+        _, axes = plt.subplots(2, 1, figsize=(8, 8))
 
         self.plot_target(axes[0])
-        self.plot_model(
-            axes[0], "Bayes", bayes_predictions, bayes_confidence_intervals
-        )
         self.plot_target_sub(axes[1])
-        self.plot_model_sub(
-            axes[1], "scipy", scipy_predictions, scipy_confidence_intervals
-        )
-        self.plot_target_sub(axes[2])
-        self.plot_model_sub(
-            axes[2], "Bayes", bayes_predictions, bayes_confidence_intervals
-        )
+        for i, (name, predictions, confidence_intervals) in enumerate(args):
+            # if i == 0:
+            self.plot_model(
+                axes[0],
+                name,
+                predictions,
+                confidence_intervals,
+                color=self._predict_colors[i],
+            )
+
+            self.plot_model_sub(
+                axes[1],
+                name,
+                predictions,
+                confidence_intervals,
+                color=self._predict_colors[i],
+            )
 
         plt.tight_layout()
 
         plt.show()
 
     def plot_target(self, ax):
-        ax.set_title("Sampled Curve", fontsize=24)
-        ax.set_xlabel("Feature Domain", fontsize=20)
-        ax.set_ylabel("Response Range", fontsize=20)
+        ax.set_title("Sampled Curve", fontsize=self._title_fsize)
+        ax.set_xlabel("Feature Domain", fontsize=self._axis_fsize)
+        ax.set_ylabel("Response Range", fontsize=self._axis_fsize)
         ax.plot(
             self.train_features,
             self.train_responses,
@@ -137,28 +150,42 @@ class UnivariateSampler(SamplerBase):
         ax.plot(
             self.test_features,
             self.test_responses,
-            "g-",
+            "-",
+            color=self._target_color,
             label="test response",
         )
 
-    def plot_model(self, ax, name, predictions, confidence_intervals):
+    def plot_model(
+        self,
+        ax,
+        name,
+        predictions,
+        confidence_intervals,
+        color=None,
+    ):
+        if color is None:
+            color = self._predict_colors[0]
         confidence_intervals = confidence_intervals.reshape(self.test_count)
-        ax.set_title(f"Sampled Curve with {name} optimized model", fontsize=24)
+        ax.set_title(
+            f"Sampled Curve with {name} model",
+            fontsize=self._title_fsize,
+        )
         ax.plot(
             self.test_features,
             predictions,
-            "r--",
-            label="test predictions",
+            "--",
+            color=color,
+            label=f"{name} predictions",
         )
         ax.fill_between(
             self.test_features[:, 0],
             (predictions[:, 0] - confidence_intervals),
             (predictions[:, 0] + confidence_intervals),
-            facecolor="red",
+            facecolor=color,
             alpha=0.25,
-            label="95% Confidence Interval",
+            label=f"{name} 95% Confidence Interval",
         )
-        ax.legend(fontsize=20)
+        ax.legend(fontsize=self._legend_fsize)
 
     def get_interval(self, lb, ub, ys):
         return np.array(
@@ -166,9 +193,9 @@ class UnivariateSampler(SamplerBase):
         )
 
     def plot_target_sub(self, ax):
-        ax.set_title("Sampled Curve (subset)", fontsize=24)
-        ax.set_xlabel("Feature Domain", fontsize=20)
-        ax.set_ylabel("Response Range", fontsize=20)
+        ax.set_title("Sampled Curve (subset)", fontsize=20)
+        ax.set_xlabel("Feature Domain", fontsize=16)
+        ax.set_ylabel("Response Range", fontsize=16)
         ax.plot(
             self.train_features[self.train_interval],
             self.train_responses[self.train_interval],
@@ -178,30 +205,37 @@ class UnivariateSampler(SamplerBase):
         ax.plot(
             self.test_features[self.test_interval],
             self.test_responses[self.test_interval],
-            "g-",
+            "-",
+            color=self._target_color,
             label="test response",
         )
 
-    def plot_model_sub(self, ax, name, predictions, confidence_intervals):
+    def plot_model_sub(
+        self, ax, name, predictions, confidence_intervals, color=None
+    ):
+        if color is None:
+            color = self._predict_colors[0]
         confidence_intervals = confidence_intervals.reshape(self.test_count)
         ax.set_title(
-            f"Sampled Curve (subset) with {name} optimized model", fontsize=24
+            f"Sampled Curve (subset) with {name} model",
+            fontsize=self._title_fsize,
         )
         ax.plot(
             self.test_features[self.test_interval],
             predictions[self.test_interval],
-            "b--",
-            label="test predictions",
+            "--",
+            color=color,
+            label=f"{name} predictions",
         )
         ax.fill_between(
             self.test_features[self.test_interval][:, 0],
             (predictions[:, 0] - confidence_intervals)[self.test_interval],
             (predictions[:, 0] + confidence_intervals)[self.test_interval],
-            facecolor="blue",
+            facecolor=color,
             alpha=0.25,
-            label="95% Confidence Interval",
+            label=f"{name} 95% Confidence Interval",
         )
-        ax.legend(fontsize=20)
+        ax.legend(fontsize=self._legend_fsize)
 
 
 class UnivariateSampler2D(SamplerBase):
@@ -295,13 +329,21 @@ class UnivariateSampler2D(SamplerBase):
                 vmax,
             )
 
-    def plot_predictions(self, predictions):
-        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+    def plot_predictions(self, *args):
+        pred_count = len(args)
+        fig, axes = plt.subplots(
+            1, pred_count + 1, figsize=(4 * (pred_count + 1), 4)
+        )
 
-        test_im, tvmin, tvmax = self._make_im(self.test_responses, range=True)
-        pred_im, pvmin, pvmax = self._make_im(predictions, range=True)
-        vmin = np.min([tvmin, pvmin])
-        vmax = np.max([tvmax, pvmax])
+        test_im, vmin, vmax = self._make_im(self.test_responses, range=True)
+        pred_ims = list()
+        names = list()
+        for name, predictions in args:
+            pred_im, pvmin, pvmax = self._make_im(predictions, range=True)
+            pred_ims.append(pred_im)
+            names.append(name)
+            vmin = np.min([vmin, pvmin])
+            vmax = np.max([vmax, pvmax])
 
         self._label_ax(axes[0], "Expected Surface")
         im0 = axes[0].imshow(
@@ -312,14 +354,15 @@ class UnivariateSampler2D(SamplerBase):
         )
         fig.colorbar(im0, ax=axes[0])
 
-        self._label_ax(axes[1], "Predicted Surface")
-        im1 = axes[1].imshow(
-            pred_im,
-            vmin=vmin,
-            vmax=vmax,
-            cmap="viridis",
-        )
-        fig.colorbar(im1, ax=axes[1])
+        for i, pred_im in enumerate(pred_ims):
+            self._label_ax(axes[i + 1], f"{names[i]} Surface")
+            im1 = axes[i + 1].imshow(
+                pred_im,
+                vmin=vmin,
+                vmax=vmax,
+                cmap="viridis",
+            )
+            fig.colorbar(im1, ax=axes[i + 1])
 
         plt.tight_layout()
         plt.show()
@@ -339,14 +382,11 @@ class UnivariateSampler2D(SamplerBase):
         return resl_im, conf_im, covr_im, resl_mag, conf_mag, covr_mag
 
     def plot_errors(self, *args):
-        if len(args) % 3 != 0:
-            raise ValueError("Only invocable on prediction/CI pairs!")
-
-        row_count = int(len(args) / 3)
+        row_count = len(args)
 
         fig, axes = plt.subplots(row_count, 3, figsize=(13, 4 * row_count))
         if row_count == 1:
-            name, predictions, confidence_intervals = args
+            name, predictions, confidence_intervals = args[0]
             (
                 resl_im,
                 conf_im,
@@ -373,9 +413,7 @@ class UnivariateSampler2D(SamplerBase):
             resl_mag = 0.0
             conf_mag = 0.0
             covr_mag = 0.0
-            for i in range(row_count):
-                predictions = args[3 * i + 1]
-                confidence_intervals = args[3 * i + 2]
+            for i, (_, predictions, confidence_intervals) in enumerate(args):
                 (
                     resl_im,
                     conf_im,
@@ -390,8 +428,7 @@ class UnivariateSampler2D(SamplerBase):
                 resl_mag = np.max([resl_mag, resl_mag_])
                 conf_mag = np.max([conf_mag, conf_mag_])
                 covr_mag = np.max([covr_mag, covr_mag_])
-            for i in range(row_count):
-                name = args[3 * i]
+            for i, (name, _, _) in enumerate(args):
                 self.plot_error(
                     fig,
                     axes[i, :],
@@ -407,9 +444,9 @@ class UnivariateSampler2D(SamplerBase):
         plt.show()
 
     def _label_ax(self, ax, title):
-        ax.set_title(title, fontsize=18)
-        ax.set_xlabel("Axis 0", fontsize=14)
-        ax.set_ylabel("Axis 1", fontsize=14)
+        ax.set_title(title, fontsize=self._title_fsize)
+        ax.set_xlabel("Axis 0", fontsize=self._axis_fsize)
+        ax.set_ylabel("Axis 1", fontsize=self._axis_fsize)
         ax.set_xticks([])
         ax.set_yticks([])
 
@@ -442,13 +479,77 @@ class UnivariateSampler2D(SamplerBase):
         fig.colorbar(im2, ax=axes[2])
 
 
-def print_results(
-    name, targets, means, variances, confidence_intervals, coverage
-):
-    print(f"{name} results:")
-    print(f"\tRMSE: {np.sqrt(mse_fn(means, targets))}")
-    print(f"\tmean diagonal variance: {np.mean(variances)}")
-    print(
-        f"\tmean confidence interval size: {np.mean(confidence_intervals * 2)}"
-    )
-    print(f"\tcoverage: {coverage}")
+def get_length_scale(muygps):
+    ls = muygps.kernel.distortion_fn.length_scale
+    if isinstance(ls, dict):
+        return np.array([ls[x]() for x in ls])
+    else:
+        return ls()
+
+
+def print_results(targets, *args, **kwargs):
+    table = list()
+    for arg in args:
+        (
+            name,
+            muygps,
+            means,
+            variances,
+            confidence_intervals,
+            coverage,
+        ) = arg
+        table.append(
+            [
+                name,
+                muygps.kernel.nu(),
+                get_length_scale(muygps),
+                muygps.eps(),
+                muygps.sigma_sq()[0],
+                np.sqrt(mse_fn(means, targets)),
+                np.mean(variances),
+                np.mean(confidence_intervals),
+                coverage,
+            ]
+        )
+    return pd.DataFrame(
+        table,
+        columns=[
+            "name",
+            "nu",
+            "length scale",
+            "$\\varepsilon$",
+            "$\\sigma^2$",
+            "rmse",
+            "mean variance",
+            "mean confidence interval",
+            "coverage",
+        ],
+    ).style.hide(axis="index")
+
+
+def print_fast_results(targets, *args, **kwargs):
+    table = list()
+    for arg in args:
+        (
+            name,
+            time,
+            muygps,
+            means,
+        ) = arg
+        table.append(
+            [
+                name,
+                np.sqrt(mse_fn(means, targets)),
+                time,
+                muygps.eps(),
+            ]
+        )
+    return pd.DataFrame(
+        table,
+        columns=[
+            "name",
+            "rmse",
+            "timing results",
+            "$\\varepsilon$",
+        ],
+    ).style.hide(axis="index")
