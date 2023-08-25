@@ -16,6 +16,29 @@ from MuyGPyS.gp.hyperparameter.experimental import (
 
 @auto_str
 class AnisotropicDistortion:
+    """
+    An isotropic distance model.
+
+    IsotropicDistortion parameterizes a scaled elementwise distance function
+    :math:`d(\\cdot, \\cdot)`, and is paramterized by a vector-valued
+    :math:`\\mathbf{\\ell}>0` length scale hyperparameter.
+
+    .. math::
+         d_\\ell(\\mathbf{x}, \\mathbf{y}) =
+         \\sum_{i=0}^d \\frac{d(\\mathbf{x}_i, \\mathbf{y}_i)}{\ell_i}
+
+    Args:
+        metric:
+            A callable metric function that takes a tensor of shape
+            `(..., feature_count)` whose last dimension lists the elementwise
+            differences between a pair of feature vectors and returns a tensor
+            of shape `(...)`, having collapsed the last dimension into a
+            scalar difference.
+        length_scales:
+            Keyword arguments `length_scale#`, mapping to scalar
+            hyperparameters.
+    """
+
     def __init__(
         self,
         metric: Callable,
@@ -49,6 +72,29 @@ class AnisotropicDistortion:
     def __call__(
         self, diffs: mm.ndarray, batch_features=None, **length_scales
     ) -> mm.ndarray:
+        """
+        Apply anisotropic distortion to an elementwise difference tensor.
+
+        This function is not intended to be invoked directly by a user. It is
+        instead functionally incorporated into some
+        :class:`MuyGPyS.gp.kernels.KernelFn` in its constructor.
+
+        Args:
+            diffs:
+                A tensor of pairwise differences of shape
+                `(..., feature_count)`.
+            batch_features:
+                A `(batch_count, feature_count)` matrix of features to be used
+                with a hierarchical hyperparameter. `None` otherwise.
+            length_scale:
+                A floating point length scale, or a vector of `(knot_count,)`
+                knot length scales.
+        Returns:
+            A crosswise distance matrix of shape `(data_count, nn_count)` or a
+            pairwise distance tensor of shape
+            `(data_count, nn_count, nn_count)` whose last two dimensions are
+            pairwise distance matrices.
+        """
         length_scale_array = self._get_length_scale_array(
             mm.array, diffs.shape, batch_features, **length_scales
         )
@@ -132,8 +178,8 @@ class AnisotropicDistortion:
         `self.length_scales` of the AnisotropicDistortion object.
 
         Args:
-        hyperparameters:
-            A dict containing the hyperparameters of a KernelFn object.
+            hyperparameters:
+                A dict containing the hyperparameters of a KernelFn object.
         """
         for key, param in self.length_scale.items():
             hyperparameters[key] = param

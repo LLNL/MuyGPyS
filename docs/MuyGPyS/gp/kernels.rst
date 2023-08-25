@@ -11,9 +11,11 @@ kernels
   :inherited-members:
 
 .. default-role:: code
-.. autoclass:: MuyGPyS.gp.kernels.rbf
+.. autoclass:: MuyGPyS.gp.kernels.rbf.RBF
   :members:
+  :special-members: __call__
 
 .. default-role:: code
-.. autoclass:: MuyGPyS.gp.kernels.matern
+.. autoclass:: MuyGPyS.gp.kernels.matern.Matern
   :members:
+  :special-members: __call__

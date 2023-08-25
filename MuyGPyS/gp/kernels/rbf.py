@@ -16,7 +16,6 @@ object. Other kernel functors are similar, but require different
 hyperparameters.
 
 Example:
-    >>> from MuyGPyS.gp.kernels import RBF
     >>> kernel_fn = RBF(
     ...     metric=IsotropicDistortion(
     ...         l2,
@@ -58,16 +57,13 @@ class RBF(KernelFn):
     """
     The radial basis function (RBF) or squared-exponential kernel.
 
-    The RBF kernel includes a single explicit length scale parameter
-    :math:`\\ell>0`, and depends upon a distance function
-    :math:`d(\\cdot, \\cdot)`.
-    NOTE[bwp] We currently assume that the kernel is isotropic, so
-    :math:`|\\ell| = 1`.
+    The RBF kernel includes a parameterized scaled distance function
+    :math:`d_\\ell(\\cdot, \\cdot)`.
 
     The kernel is defined by
 
     .. math::
-        K(x_i, x_j) = \\exp\\left(- \\frac{d(x_i, x_j)}{2\\ell^2}\\right).
+        K(x_i, x_j) = \\exp\\left(- d_\\ell(x_i, x_j)\\right).
 
     Typically, :math:`d(\\cdot,\\cdot)` is the squared Euclidean distance
     or second frequency moment of the difference of the operands.
