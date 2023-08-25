@@ -122,13 +122,13 @@ def _l2(diffs: np.ndarray) -> np.ndarray:
 
 
 def _fast_nn_update(
-    nn_indices: np.ndarray,
+    train_nn_indices: np.ndarray,
 ) -> np.ndarray:
-    train_count, _ = nn_indices.shape
+    train_count, _ = train_nn_indices.shape
     new_nn_indices = np.concatenate(
         (
             np.expand_dims(np.arange(0, train_count), axis=1),
-            nn_indices[:, :-1],
+            train_nn_indices[:, :-1],
         ),
         axis=1,
     )
