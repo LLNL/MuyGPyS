@@ -24,6 +24,7 @@ DOCS_REQUIRES = [
     "sphinx-autodoc-typehints==1.22",
     "matplotlib>=3.2.1",
     "nbsphinx==0.9.2",
+    "pandas==1.5.2",
     "pandoc==2.3.0",
     "pandocfilters==1.5.0",
     "ipython==7.30.1",

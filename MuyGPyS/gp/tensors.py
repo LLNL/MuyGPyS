@@ -38,7 +38,6 @@ Example:
     ...         batch_indices,
     ...         batch_nn_indices,
     ... )
-    )
 
 See also the following example computing the crosswise differences between a
 test dataset and their nearest neighors in the training data.
@@ -89,36 +88,6 @@ from MuyGPyS._src.gp.tensors import (
 )
 
 
-def make_noise_tensor(
-    measurement_noise: mm.ndarray,
-    nn_indices: mm.ndarray,
-) -> mm.ndarray:
-    """
-    Create the heteroscedastic noise tensor for nonuniform noise values for
-    prediction of test data. Can also be used to produce the noise tensor
-    needed during batched training.
-
-    Creates `eps_tensor` tensor required by heteroscedastic MuyGPs models.
-
-    Args:
-        test:
-        measurement_noise:
-            A matrix of floats of shape `(train_count)` providing the noise
-            corresponding to the response variable at each input value in the
-            data.
-        nn_indices:
-            The indices of the nearest neighbors of the test points.
-
-    Returns
-    -------
-    eps_tensor:
-        A matrix of floats of shape `(test_count, nn_count)` providing the
-        noise corresponding to the nearest neighbor responses for all
-        observations in the test set.
-    """
-    return _make_heteroscedastic_tensor(measurement_noise, nn_indices)
-
-
 def make_heteroscedastic_tensor(
     measurement_noise: mm.ndarray,
     batch_nn_indices: mm.ndarray,
@@ -126,7 +95,9 @@ def make_heteroscedastic_tensor(
     """
     Create the heteroscedastic noise tensor for nonuniform noise values.
 
-    Creates `eps_tensor` tensor required by heteroscedastic MuyGPs models.
+    Used to produce the noise tensor needed during batched training and
+    prediction. Creates the `eps_tensor` tensor required by heteroscedastic
+    MuyGPs models.
 
     Args:
         measurement_noise:
@@ -138,9 +109,7 @@ def make_heteroscedastic_tensor(
             listing the measurement noise for the nearest neighbors for all
             observations in the batch.
 
-    Returns
-    -------
-    eps_tensor:
+    Returns:
         A matrix of floats of shape `(batch_count, nn_count)` providing the
         noise corresponding to the nearest neighbor responses for all
         observations in the batch.
@@ -149,9 +118,44 @@ def make_heteroscedastic_tensor(
 
 
 def fast_nn_update(
-    batch_nn_indices: mm.ndarray,
+    train_nn_indices: mm.ndarray,
 ) -> mm.ndarray:
-    return _fast_nn_update(batch_nn_indices)
+    """
+    Modify the nearest neighbor indices of the training data to include self.
+
+    This function is only intended for use in concert with
+    :func:~MuyGPyS.gp.tensors.make_fast_predict_tensors` and
+    :func:`MuyGPyS.gp.muygps.MuyGPS.fast_coefficients`.
+
+    Example:
+        >>> train_nn_indices, _ = nbrs_lookup.get_nns(train_features)
+        >>> train_nn_indices = fast_nn_update(train_nn_indices)
+        >>> pairwise_diffs, nn_targets = make_fast_predict_tensors(
+        ...     train_nn_indices,
+        ...     train_features,
+        ...     train_responses,
+        ... )
+        >>> K = muygps_fast.kernel(pairwise_diffs)
+        >>> precomputed_coefficients_matrix = muygps_fast.fast_coefficients(
+        ...     K, nn_targets
+        ... )
+        >>> # Late on, once test data is encountered
+        >>> test_indices = np.arange(test_count)
+        >>> test_nn_indices, _ = nbrs_lookup.get_nns(test_features)
+        >>> closest_neighbor = test_nn_indices[:, 0]
+        >>> closest_set = train_nn_indices[closest_neighbor, :]
+
+    Args:
+        train_nn_indices:
+            A matrix of integers of shape `(train_count, nn_count)` listing the
+            nearest neighbor indices for all observations in the batch.
+
+    Returns:
+        An integral matrix of shape `(train_count, nn_count)` that is similar
+        to the input, but the most distant neighbor index is removed and the
+        ``self'' index has been inserted.
+    """
+    return _fast_nn_update(train_nn_indices)
 
 
 def make_fast_predict_tensors(
@@ -163,7 +167,7 @@ def make_fast_predict_tensors(
     Create the difference and target tensors for fast posterior mean inference.
 
     Creates `pairwise_diffs` and `batch_nn_targets` tensors required by
-    :func:`~MuyGPyS.gp.muygps.MuyGPS.fast_posterior_mean`.
+    :func:`MuyGPyS.gp.muygps.MuyGPS.fast_posterior_mean`.
 
     Args:
         batch_nn_indices:

@@ -81,31 +81,30 @@ def _set_matern_fn(nu: ScalarHyperparameter):
 @auto_str
 class Matern(KernelFn):
     """
-    The Màtern kernel.
+    The Matérn kernel.
 
-    The Màtern kernel includes a length scale parameter :math:`\\ell>0` and an
-    additional smoothness parameter :math:`\\nu>0`. :math:`\\nu` is
-    proportional to the smoothness of the resulting function. The Màtern kernel
-    also depends upon a distance function :math:`d(\\cdot, \\cdot)`.
-    As :math:`\\nu\\rightarrow\\infty`, the kernel becomes equivalent to
-    the :class:`RBF` kernel. When :math:`\\nu = 1/2`, the Matérn kernel
-    becomes identical to the absolute exponential kernel.
-    Important intermediate values are
-    :math:`\\nu=1.5` (once differentiable functions)
-    and :math:`\\nu=2.5` (twice differentiable functions).
-    NOTE[bwp] We currently assume that the kernel is isotropic, so
-    :math:`|\\ell| = 1`.
+    The Màtern kernel includes a parameterized distortion model
+    :math:`d_\\ell(\\cdot, \\cdot)` and an additional smoothness parameter
+    :math:`\\nu>0`. :math:`\\nu` is proportional to the smoothness of the
+    resulting function. As :math:`\\nu\\rightarrow\\infty`, the kernel becomes
+    equivalent to the :class:`RBF` kernel. When :math:`\\nu = 1/2`, the Matérn
+    kernel is identical to the absolute exponential kernel. Important
+    intermediate values are :math:`\\nu=1.5` (once differentiable functions) and
+    :math:`\\nu=2.5` (twice differentiable functions).
 
     The kernel is defined by
+
     .. math::
          k(x_i, x_j) =  \\frac{1}{\\Gamma(\\nu)2^{\\nu-1}}\\Bigg(
-         \\frac{\\sqrt{2\\nu}}{l} d(x_i , x_j )
+         \\frac{\\sqrt{2\\nu}}{l} d_\\ell(x_i , x_j )
          \\Bigg)^\\nu K_\\nu\\Bigg(
          \\frac{\\sqrt{2\\nu}}{l} d(x_i , x_j )\\Bigg),
+
     where :math:`K_{\\nu}(\\cdot)` is a modified Bessel function and
     :math:`\\Gamma(\\cdot)` is the gamma function.
     Typically, :math:`d(\\cdot,\\cdot)` is the Euclidean distance or
     :math:`\\ell_2` norm of the difference of the operands.
+
     Args:
         nu:
             A hyperparameter dict defining the length_scale parameter.
@@ -138,8 +137,10 @@ class Matern(KernelFn):
     def __call__(self, diffs):
         """
         Compute Matern kernels from distance tensor.
+
         Takes inspiration from
         [scikit-learn](https://github.com/scikit-learn/scikit-learn/blob/95119c13a/sklearn/gaussian_process/kernels.py#L1529)
+
         Args:
             diffs:
                 A tensor of pairwise differences of shape
@@ -157,6 +158,7 @@ class Matern(KernelFn):
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         """
         Report lists of unfixed hyperparameter names, values, and bounds.
+
         Returns
         -------
             names:
@@ -176,6 +178,7 @@ class Matern(KernelFn):
         This function is designed for use with
         :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
         that optimization parameters will be passed as keyword arguments.
+
         Returns:
             A function implementing the kernel where all fixed parameters are
             set. The function expects keyword arguments corresponding to current

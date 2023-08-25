@@ -125,13 +125,13 @@ def _l2(diffs: torch.ndarray) -> torch.ndarray:
 
 
 def _fast_nn_update(
-    nn_indices: torch.ndarray,
+    train_nn_indices: torch.ndarray,
 ) -> torch.ndarray:
-    train_count, _ = nn_indices.shape
+    train_count, _ = train_nn_indices.shape
     new_nn_indices = torch.cat(
         (
             torch.unsqueeze(torch.arange(0, train_count), dim=1),
-            nn_indices[:, :-1],
+            train_nn_indices[:, :-1],
         ),
         dim=1,
     )

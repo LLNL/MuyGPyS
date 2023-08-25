@@ -11,6 +11,7 @@ gp
    
    gp/distortion
    gp/tensors
+   gp/hyperparameter
    gp/kernels
    gp/MuyGPS
    gp/MultivariateMuyGPS

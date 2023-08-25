@@ -139,13 +139,13 @@ def _l2(diffs: jnp.ndarray) -> jnp.ndarray:
 
 @jit
 def _fast_nn_update(
-    nn_indices: jnp.ndarray,
+    train_nn_indices: jnp.ndarray,
 ) -> jnp.ndarray:
-    train_count, _ = nn_indices.shape
+    train_count, _ = train_nn_indices.shape
     new_nn_indices = jnp.concatenate(
         (
             jnp.expand_dims(jnp.arange(0, train_count), axis=1),
-            nn_indices[:, :-1],
+            train_nn_indices[:, :-1],
         ),
         axis=1,
     )
