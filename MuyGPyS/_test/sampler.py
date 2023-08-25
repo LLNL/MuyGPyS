@@ -109,8 +109,6 @@ class UnivariateSampler(SamplerBase):
         self,
         *args,
     ):
-        plot_count = len(args)
-
         _, axes = plt.subplots(2, 1, figsize=(8, 8))
 
         self.plot_target(axes[0])

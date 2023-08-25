@@ -25,7 +25,7 @@ class AnisotropicDistortion:
 
     .. math::
          d_\\ell(\\mathbf{x}, \\mathbf{y}) =
-         \\sum_{i=0}^d \\frac{d(\\mathbf{x}_i, \\mathbf{y}_i)}{\ell_i}
+         \\sum_{i=0}^d \\frac{d(\\mathbf{x}_i, \\mathbf{y}_i)}{\\ell_i}
 
     Args:
         metric:

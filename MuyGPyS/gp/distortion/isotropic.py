@@ -25,7 +25,7 @@ class IsotropicDistortion:
 
     .. math::
          d_\\ell(\\mathbf{x}, \\mathbf{y}) =
-         \\sum_{i=0}^d \\frac{d(\\mathbf{x}_i, \\mathbf{y}_i)}{\ell}
+         \\sum_{i=0}^d \\frac{d(\\mathbf{x}_i, \\mathbf{y}_i)}{\\ell}
 
     Args:
         metric:
