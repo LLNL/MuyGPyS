@@ -42,6 +42,7 @@ from numpy import (
     ndarray,
     number,
     outer,
+    prod,
     random,
     repeat,
     reshape,

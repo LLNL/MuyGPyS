@@ -34,6 +34,7 @@ from torch import (
     numel,
     optim,
     outer,
+    prod,
     rand,
     reshape,
     sqrt,

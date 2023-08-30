@@ -39,6 +39,7 @@ from jax.numpy import (
     ndarray,
     newaxis,
     outer,
+    prod,
     repeat,
     reshape,
     sqrt,
