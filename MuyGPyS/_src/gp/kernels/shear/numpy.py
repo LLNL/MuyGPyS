@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Union
-
 import MuyGPyS._src.math.numpy as np
 
 

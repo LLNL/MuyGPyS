@@ -42,7 +42,7 @@ functor
 from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._test.shear import _shear_fn
+from MuyGPyS._src.gp.kernels.shear import _shear_fn
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.distortion import (
     IsotropicDistortion,
