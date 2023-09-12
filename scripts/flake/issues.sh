@@ -9,4 +9,4 @@
 # $ cd ${MUYGPYS_ROOT}
 # $ sh ./scripts/flake_lint
 
-flake8 . --count --max-complexity=10 --max-line-length=127 --statistics --ignore=W503,E203 --per-file-ignores="__init__.py:F401 jax.py:F401 mpi.py:F401,F403 numpy.py:F401 torch.py:F401"
+flake8 . --count --max-complexity=10 --max-line-length=127 --statistics --ignore=W503,E203 --per-file-ignores="__init__.py:F401 jax.py:F401 mpi.py:F401,F403 numpy.py:F401 torch.py:F401 shear.py:E402"
