@@ -8,7 +8,7 @@ from typing import Union
 import MuyGPyS._src.math.numpy as np
 
 
-def kk_f(sum_sq_diffs, prod_sq_diffs, sum_quad_diffs, a=1, length_scale=1):
+def _kk_fn(sum_sq_diffs, prod_sq_diffs, sum_quad_diffs, a=1, length_scale=1):
     return (
         1
         / 4
@@ -26,7 +26,7 @@ def kk_f(sum_sq_diffs, prod_sq_diffs, sum_quad_diffs, a=1, length_scale=1):
     )
 
 
-def kg1_f(
+def _kg1_fn(
     sum_sq_diffs,
     diff_xy_quad_diffs,
     diff_yx_sq_diffs,
@@ -45,7 +45,7 @@ def kg1_f(
     )
 
 
-def kg2_f(sum_sq_diffs, prod_diffs, a=1, length_scale=1):
+def _kg2_fn(sum_sq_diffs, prod_diffs, a=1, length_scale=1):
     return (
         1
         / 4
@@ -60,7 +60,7 @@ def kg2_f(sum_sq_diffs, prod_diffs, a=1, length_scale=1):
     )
 
 
-def g1g1_f(sum_sq_diffs, sum_quad_diffs, prod_sq_diffs, a=1, length_scale=1):
+def _g1g1_fn(sum_sq_diffs, sum_quad_diffs, prod_sq_diffs, a=1, length_scale=1):
     return (
         1
         / 4
@@ -78,7 +78,7 @@ def g1g1_f(sum_sq_diffs, sum_quad_diffs, prod_sq_diffs, a=1, length_scale=1):
     )
 
 
-def g1g2_f(sum_sq_diffs, diff_xy_sq_diffs, prod_diffs, a=1, length_scale=1):
+def _g1g2_fn(sum_sq_diffs, diff_xy_sq_diffs, prod_diffs, a=1, length_scale=1):
     return (
         1
         / 4
@@ -93,7 +93,7 @@ def g1g2_f(sum_sq_diffs, diff_xy_sq_diffs, prod_diffs, a=1, length_scale=1):
     )
 
 
-def g2g2_f(sum_sq_diffs, prod_sq_diffs, a=1, length_scale=1):
+def _g2g2_fn(sum_sq_diffs, prod_sq_diffs, a=1, length_scale=1):
     return (
         1
         / 4
@@ -108,7 +108,7 @@ def g2g2_f(sum_sq_diffs, prod_sq_diffs, a=1, length_scale=1):
 
 
 # compute the full covariance matrix
-def shear_kernel(diffs, a=1, length_scale=1):
+def _shear_fn(diffs, a=1, length_scale=1):
     shape = np.array(diffs.shape[:-1], dtype=int)
     shape[-1] *= 3
     shape[-2] *= 3
@@ -125,22 +125,22 @@ def shear_kernel(diffs, a=1, length_scale=1):
     diff_xy_sq_diffs = sq_diffs[..., 0] - sq_diffs[..., 1]
     diff_xy_quad_diffs = quad_diffs[..., 0] - quad_diffs[..., 1]
 
-    full_m[..., 0::3, 0::3] = kk_f(
+    full_m[..., 0::3, 0::3] = _kk_fn(
         sum_sq_diffs, prod_sq_diffs, sum_quad_diffs, a, length_scale
     )
-    full_m[..., 0::3, 1::3] = full_m[..., 1::3, 0::3] = kg1_f(
+    full_m[..., 0::3, 1::3] = full_m[..., 1::3, 0::3] = _kg1_fn(
         sum_sq_diffs, diff_xy_quad_diffs, diff_yx_sq_diffs, a, length_scale
     )
-    full_m[..., 0::3, 2::3] = full_m[..., 2::3, 0::3] = kg2_f(
+    full_m[..., 0::3, 2::3] = full_m[..., 2::3, 0::3] = _kg2_fn(
         sum_sq_diffs, prod_diffs, a, length_scale
     )
-    full_m[..., 1::3, 1::3] = g1g1_f(
+    full_m[..., 1::3, 1::3] = _g1g1_fn(
         sum_sq_diffs, sum_quad_diffs, prod_sq_diffs, a, length_scale
     )
-    full_m[..., 1::3, 2::3] = full_m[..., 2::3, 1::3] = g1g2_f(
+    full_m[..., 1::3, 2::3] = full_m[..., 2::3, 1::3] = _g1g2_fn(
         sum_sq_diffs, diff_xy_sq_diffs, prod_diffs, a, length_scale
     )
-    full_m[..., 2::3, 2::3] = g2g2_f(
+    full_m[..., 2::3, 2::3] = _g2g2_fn(
         sum_sq_diffs, prod_sq_diffs, a, length_scale
     )
 

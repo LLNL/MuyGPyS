@@ -39,13 +39,12 @@ Note that the :class:`~MuyGPyS.gp.kernels.experimental.shear.ShearKernel`
 functor
 """
 
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._test.shear import shear_kernel
+from MuyGPyS._test.shear import _shear_fn
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.distortion import (
-    embed_with_distortion_model,
     IsotropicDistortion,
     F2,
 )
@@ -83,7 +82,7 @@ class ShearKernel(KernelFn):
             raise ValueError(
                 f"ShearKernel only supports isotropic metrics, not {type(metric)}"
             )
-        self._fn = shear_kernel
+        self._fn = _shear_fn
         self._make()
 
     def _make(self):
