@@ -93,7 +93,7 @@ def mse_fn(
     function computes
 
     .. math::
-        l(f(x), y \\mid \\sigma) = \\frac{1}{b} \\sum_{i=1}^b (f(x_i) - y)^2
+        \\ell_\\textrm{MSE}(f(x), y) = \\frac{1}{b} \\sum_{i=1}^b (f(x_i) - y)^2
 
     Args:
         predictions:
@@ -121,8 +121,9 @@ def lool_fn(
     penalty. The function computes
 
     .. math::
-        l(f(x), y \\mid \\sigma) = \\sum_{i=1}^b \\sum_{j=1}^s
-        \\frac{(f(x_i) - y)^2}{\\sigma_j} + \\log \\sigma_j
+        \\ell_\\textrm{lool}(f(x), y \\mid \\sigma^2) =
+        \\sum_{i=1}^b \\sum_{j=1}^s
+        \\left ( \\frac{(f(x_i) - y)}{\\sigma_j} \\right )^2 + \\log \\sigma_j^2
 
     Args:
         predictions:
@@ -154,8 +155,8 @@ def lool_fn_unscaled(
     function computes
 
     .. math::
-        l(f(x), y \\mid \\sigma) = \\sum_{i=1}^b
-        \\frac{(f(x_i) - y)^2}{\\sigma} + \\log \\sigma
+        \\ell_\\textrm{lool}(f(x), y \\mid \\sigma^2) = \\sum_{i=1}^b
+        \\left ( \\frac{(f(x_i) - y)}{\\sigma_i} \\right )^2 + \\log \\sigma_i^2
 
     Args:
         predictions:
@@ -186,7 +187,8 @@ def pseudo_huber_fn(
     The function computes
 
     .. math::
-        l(f(x), y \\mid \\delta) = \\delta^2 \\sum_{i=1}^b \\left ( \\sqrt{
+        \\ell_\\textrm{Pseudo-Huber}(f(x), y \\mid \\delta) =
+            \\sum_{i=1}^b \\delta^2 \\left ( \\sqrt{
             1 + \\left ( \\frac{y_i - f(x_i)}{\\delta} \\right )^2
             } - 1 \\right )
 
@@ -222,9 +224,10 @@ def looph_fn(
     variance. The function computes
 
     .. math::
-        l(f(x), y \\mid \\delta) = \\delta^2 \\sum_{i=1}^b \\left ( \\sqrt{
-            1 + \\left ( \\frac{y_i - f(x_i)}{\\sigma_i \\delta} \\right )^2
-            } - 1 \\right ) + \\log \\sigma_i
+        \\ell_\\textrm{lool}(f(x), y \\mid \\delta, \\sigma^2) =
+            \\sum_{i=1}^b \\delta^2 \\left ( \\sqrt{
+            1 + \\left ( \\frac{y_i - f(x_i)}{\\delta \\sigma_i^2} \\right )^2
+            } - 1 \\right ) + \\log \\sigma_i^2
 
     Args:
         predictions:
