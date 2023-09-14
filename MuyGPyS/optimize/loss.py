@@ -131,8 +131,9 @@ class cross_entropy_fn(LossFn):
         cls,
         predictions: mm.ndarray,
         targets: mm.ndarray,
+        ll_eps=1e-6,
     ) -> float:
-        return _cross_entropy_fn(predictions, targets, ll_eps=1e-6)
+        return _cross_entropy_fn(predictions, targets, ll_eps=ll_eps)
 
     @staticmethod
     def make_predict_and_loss_fn(*args, **kwargs):
