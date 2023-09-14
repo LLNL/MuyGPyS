@@ -9,6 +9,7 @@ from absl.testing import parameterized
 import MuyGPyS._src.math as mm
 
 from MuyGPyS import config
+from MuyGPyS._test.optimize import BenchmarkTestCase
 from MuyGPyS._test.utils import (
     _check_ndarray,
     _sq_rel_err,
@@ -29,12 +30,8 @@ from MuyGPyS.optimize.loss import (
     looph_fn,
 )
 
-from optimize import BenchmarkTestCase
-
 if config.state.backend != "numpy":
-    raise ValueError(
-        "optimize.py only supports the numpy backend at this time"
-    )
+    raise ValueError("optimize.py only supports the numpy backend at this time")
 
 
 class MiniBatchBenchmarkTestCase(BenchmarkTestCase):
