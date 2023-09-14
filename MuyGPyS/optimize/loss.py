@@ -21,44 +21,91 @@ from MuyGPyS._src.optimize.loss import (
     _pseudo_huber_fn,
     _looph_fn,
 )
-from MuyGPyS.optimize.utils import _switch_on_loss_method
 
 
-def get_loss_func(loss_method: str) -> Callable:
+class LossFn:
     """
-    Select a loss function based upon string key.
+    Loss function base class.
 
-    Currently supports strings `"log"` or `"cross-entropy"` for
-    :func:`MuyGPyS.optimize.objective.cross_entropy_fn` and `"mse"` for
-    :func:`MuyGPyS.optimize.objective.mse_fn`.
+    MuyGPyS-compatible loss functions should inherit from this class, and
+    possess the following static methods:
 
-    Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
+    * A `__new__` method taking predictions and target vectors, optionally
+        a variance vector and sigma_sq vector, and optionally additional keyword
+        arguments that produces a float.
+    * A `make_predict_and_loss_fn method`, for example
+        :func:`_make_raw_predict_and_loss_fn` or
+        :func:`_make_raw_predict_and_loss_fn`, or a new function with the same
+        signature.
 
-    Returns:
-        The loss function Callable.
-
-    Raises:
-        NotImplementedError:
-            Unrecognized strings will result in an error.
+    These LossFn classes act like global functions with a member function, in
+    that it is impossible to instantiate objects of their type and
+    "initializing" the class produces a float instead of an object of that type.
+    This depends on an abuse of the `__new__` semantics, and might stop working
+    in future versions of Python.
     """
-    return _switch_on_loss_method(
-        loss_method,
-        lambda: cross_entropy_fn,
-        lambda: mse_fn,
-        lambda: lool_fn,
-        lambda: pseudo_huber_fn,
-        lambda: looph_fn,
-    )
+
+    @staticmethod
+    def __new__(*args, **kwargs):
+        raise ValueError("Base loss functor cannot be called!")
+
+    @staticmethod
+    def make_predict_and_loss_fn(*args, **kwargs):
+        raise ValueError(
+            "Base loss functor cannot produce predict_and_loss_fn!"
+        )
 
 
-def cross_entropy_fn(
-    predictions: mm.ndarray,
-    targets: mm.ndarray,
-) -> float:
+def _make_raw_predict_and_loss_fn(
+    loss_fn: LossFn,
+    mean_fn: Callable,
+    var_fn: Callable,
+    sigma_sq_fn: Callable,
+    batch_nn_targets: mm.ndarray,
+    batch_targets: mm.ndarray,
+    **loss_kwargs,
+) -> Callable:
+    def predict_and_loss_fn(K, Kcross, *args, **kwargs):
+        predictions = mean_fn(
+            K,
+            Kcross,
+            batch_nn_targets,
+            **kwargs,
+        )
+
+        return -loss_fn(predictions, batch_targets, **loss_kwargs)
+
+    return predict_and_loss_fn
+
+
+def _make_var_predict_and_loss_fn(
+    loss_fn: LossFn,
+    mean_fn: Callable,
+    var_fn: Callable,
+    sigma_sq_fn: Callable,
+    batch_nn_targets: mm.ndarray,
+    batch_targets: mm.ndarray,
+    **loss_kwargs,
+) -> Callable:
+    def predict_and_loss_fn(K, Kcross, *args, **kwargs):
+        predictions = mean_fn(
+            K,
+            Kcross,
+            batch_nn_targets,
+            **kwargs,
+        )
+        sigma_sq = sigma_sq_fn(K, batch_nn_targets, **kwargs)
+
+        variances = var_fn(K, Kcross, **kwargs)
+
+        return -loss_fn(
+            predictions, batch_targets, variances, sigma_sq, **loss_kwargs
+        )
+
+    return predict_and_loss_fn
+
+
+class cross_entropy_fn(LossFn):
     """
     Cross entropy function.
 
@@ -78,13 +125,22 @@ def cross_entropy_fn(
     Returns:
         The cross-entropy loss of the prediction.
     """
-    return _cross_entropy_fn(predictions, targets, ll_eps=1e-6)
+
+    @staticmethod
+    def __new__(  # type: ignore
+        cls,
+        predictions: mm.ndarray,
+        targets: mm.ndarray,
+        ll_eps=1e-6,
+    ) -> float:
+        return _cross_entropy_fn(predictions, targets, ll_eps=ll_eps)
+
+    @staticmethod
+    def make_predict_and_loss_fn(*args, **kwargs):
+        return _make_raw_predict_and_loss_fn(cross_entropy_fn, *args, **kwargs)
 
 
-def mse_fn(
-    predictions: mm.ndarray,
-    targets: mm.ndarray,
-) -> float:
+class mse_fn(LossFn):
     """
     Mean squared error function.
 
@@ -104,15 +160,21 @@ def mse_fn(
     Returns:
         The mse loss of the prediction.
     """
-    return _mse_fn(predictions, targets)
+
+    @staticmethod
+    def __new__(  # type: ignore
+        cls,
+        predictions: mm.ndarray,
+        targets: mm.ndarray,
+    ) -> float:
+        return _mse_fn(predictions, targets)
+
+    @staticmethod
+    def make_predict_and_loss_fn(*args, **kwargs):
+        return _make_raw_predict_and_loss_fn(mse_fn, *args, **kwargs)
 
 
-def lool_fn(
-    predictions: mm.ndarray,
-    targets: mm.ndarray,
-    variances: mm.ndarray,
-    sigma_sq: mm.ndarray,
-) -> float:
+class lool_fn(LossFn):
     """
     Leave-one-out likelihood function.
 
@@ -140,12 +202,23 @@ def lool_fn(
     Returns:
         The LOOL loss of the prediction.
     """
-    return _lool_fn(predictions, targets, variances, sigma_sq)
+
+    @staticmethod
+    def __new__(  # type: ignore
+        cls,
+        predictions: mm.ndarray,
+        targets: mm.ndarray,
+        variances: mm.ndarray,
+        sigma_sq: mm.ndarray,
+    ) -> float:
+        return _lool_fn(predictions, targets, variances, sigma_sq)
+
+    @staticmethod
+    def make_predict_and_loss_fn(*args, **kwargs):
+        return _make_var_predict_and_loss_fn(lool_fn, *args, **kwargs)
 
 
-def lool_fn_unscaled(
-    predictions: mm.ndarray, targets: mm.ndarray, variances: mm.ndarray
-) -> float:
+class lool_fn_unscaled(LossFn):
     """
     Leave-one-out likelihood function.
 
@@ -170,12 +243,19 @@ def lool_fn_unscaled(
     Returns:
         The LOOL loss of the prediction.
     """
-    return _lool_fn_unscaled(predictions, targets, variances)
+
+    @staticmethod
+    def __new__(  # type: ignore
+        cls, predictions: mm.ndarray, targets: mm.ndarray, variances: mm.ndarray
+    ) -> float:
+        return _lool_fn_unscaled(predictions, targets, variances)
+
+    @staticmethod
+    def make_predict_and_loss_fn(*args, **kwargs):
+        return _make_var_predict_and_loss_fn(lool_fn_unscaled, *args, **kwargs)
 
 
-def pseudo_huber_fn(
-    predictions: mm.ndarray, targets: mm.ndarray, boundary_scale: float = 1.5
-) -> float:
+class pseudo_huber_fn(LossFn):
     """
     Pseudo-Huber loss function.
 
@@ -205,16 +285,24 @@ def pseudo_huber_fn(
     Returns:
         The sum of pseudo-Huber losses of the predictions.
     """
-    return _pseudo_huber_fn(predictions, targets, boundary_scale=boundary_scale)
+
+    @staticmethod
+    def __new__(  # type: ignore
+        cls,
+        predictions: mm.ndarray,
+        targets: mm.ndarray,
+        boundary_scale: float = 1.5,
+    ) -> float:
+        return _pseudo_huber_fn(
+            predictions, targets, boundary_scale=boundary_scale
+        )
+
+    @staticmethod
+    def make_predict_and_loss_fn(*args, **kwargs):
+        return _make_raw_predict_and_loss_fn(pseudo_huber_fn, *args, **kwargs)
 
 
-def looph_fn(
-    predictions: mm.ndarray,
-    targets: mm.ndarray,
-    variances: mm.ndarray,
-    sigma_sq: mm.ndarray,
-    boundary_scale: float = 1.5,
-) -> float:
+class looph_fn(LossFn):
     """
     Variance-regularized pseudo-Huber loss function.
 
@@ -248,6 +336,24 @@ def looph_fn(
     Returns:
         The sum of pseudo-Huber losses of the predictions.
     """
-    return _looph_fn(
-        predictions, targets, variances, sigma_sq, boundary_scale=boundary_scale
-    )
+
+    @staticmethod
+    def __new__(  # type: ignore
+        cls,
+        predictions: mm.ndarray,
+        targets: mm.ndarray,
+        variances: mm.ndarray,
+        sigma_sq: mm.ndarray,
+        boundary_scale: float = 1.5,
+    ) -> float:
+        return _looph_fn(
+            predictions,
+            targets,
+            variances,
+            sigma_sq,
+            boundary_scale=boundary_scale,
+        )
+
+    @staticmethod
+    def make_predict_and_loss_fn(*args, **kwargs):
+        return _make_var_predict_and_loss_fn(looph_fn, *args, **kwargs)

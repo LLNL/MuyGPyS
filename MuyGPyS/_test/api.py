@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 from absl.testing import parameterized
 
@@ -20,7 +20,7 @@ from MuyGPyS.examples.regress import do_regress
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.optimize.loss import mse_fn
+from MuyGPyS.optimize.loss import mse_fn, LossFn
 
 
 class APITestCase(parameterized.TestCase):
@@ -36,7 +36,7 @@ class ClassifyAPITest(APITestCase):
         target_acc: float,
         nn_count: int,
         batch_count: int,
-        loss_fn: Callable,
+        loss_fn: Type[LossFn],
         obj_method: str,
         opt_method: str,
         nn_kwargs: Dict,
@@ -100,7 +100,7 @@ class ClassifyAPITest(APITestCase):
         test: Dict[str, np.ndarray],
         nn_count: int,
         batch_count: int,
-        loss_fn: Callable,
+        loss_fn: Type[LossFn],
         obj_method: str,
         opt_method: str,
         nn_kwargs: Dict,
@@ -155,7 +155,7 @@ class ClassifyAPITest(APITestCase):
         nn_count: int,
         opt_batch_count: int,
         uq_batch_count: int,
-        loss_fn: Callable,
+        loss_fn: Type[LossFn],
         obj_method: str,
         opt_method: str,
         uq_objectives: Union[List[Callable], Tuple[Callable, ...]],
@@ -231,7 +231,7 @@ class ClassifyAPITest(APITestCase):
         nn_count: int,
         opt_batch_count: int,
         uq_batch_count: int,
-        loss_fn: Callable,
+        loss_fn: Type[LossFn],
         obj_method: str,
         opt_method: str,
         uq_objectives: Union[List[Callable], Tuple[Callable, ...]],
@@ -272,7 +272,7 @@ class RegressionAPITest(parameterized.TestCase):
         target_mse: float,
         nn_count: int,
         batch_count: int,
-        loss_fn: Callable,
+        loss_fn: Type[LossFn],
         obj_method: str,
         opt_method: str,
         sigma_method: Optional[str],
@@ -335,7 +335,7 @@ class RegressionAPITest(parameterized.TestCase):
         test: Dict[str, np.ndarray],
         nn_count: int,
         batch_count: int,
-        loss_fn: Callable,
+        loss_fn: Type[LossFn],
         obj_method: str,
         opt_method: str,
         sigma_method: Optional[str],
@@ -364,7 +364,7 @@ class RegressionAPITest(parameterized.TestCase):
         predictions = _consistent_unchunk_tensor(predictions)
         variance = _consistent_unchunk_tensor(variance)
         mse = mse_fn(predictions, test["output"])
-        return (regressor, predictions, mse, variance)
+        return (regressor, predictions, mse, variance)  # type: ignore
 
 
 class FastPosteriorMeanAPITest(parameterized.TestCase):
@@ -375,7 +375,7 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         target_mse: float,
         nn_count: int,
         batch_count: int,
-        loss_fn: Callable,
+        loss_fn: Type[LossFn],
         obj_method: str,
         opt_method: str,
         nn_kwargs: Dict,
@@ -417,7 +417,7 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         test: Dict[str, np.ndarray],
         nn_count: int,
         batch_count: int,
-        loss_fn: Callable,
+        loss_fn: Type[LossFn],
         obj_method: str,
         opt_method: str,
         nn_kwargs: Dict,
@@ -450,5 +450,5 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         return (
             regressor,
             predictions,
-            mse,
+            mse,  # type: ignore
         )

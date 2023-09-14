@@ -20,7 +20,7 @@ above and :func:`~MuyGPyS.examples.classify.classify_any`.
 import numpy as np
 
 from time import perf_counter
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Type, Union
 
 from MuyGPyS.examples.from_indices import posterior_mean_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
@@ -28,7 +28,7 @@ from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import get_balanced_batch
-from MuyGPyS.optimize.loss import cross_entropy_fn
+from MuyGPyS.optimize.loss import LossFn, cross_entropy_fn
 
 
 def make_classifier(
@@ -36,7 +36,7 @@ def make_classifier(
     train_labels: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_fn: Callable = cross_entropy_fn,
+    loss_fn: Type[LossFn] = cross_entropy_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     k_kwargs: Dict = dict(),
@@ -196,7 +196,7 @@ def make_multivariate_classifier(
     train_labels: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_fn: Callable = cross_entropy_fn,
+    loss_fn: Type[LossFn] = cross_entropy_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
@@ -370,7 +370,7 @@ def _decide_and_make_classifier(
     train_labels: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_fn: Callable = cross_entropy_fn,
+    loss_fn: Type[LossFn] = cross_entropy_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
@@ -421,7 +421,7 @@ def do_classify(
     train_labels: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_fn: Callable = cross_entropy_fn,
+    loss_fn: Type[LossFn] = cross_entropy_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),

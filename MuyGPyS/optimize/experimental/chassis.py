@@ -27,7 +27,7 @@ documentation for details.
 from copy import deepcopy
 import numpy as np
 from time import process_time
-from typing import Callable, Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Type
 
 from bayes_opt import BayesianOptimization
 import MuyGPyS._src.math as mm
@@ -41,7 +41,7 @@ from MuyGPyS.gp.distortion import AnisotropicDistortion
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.objective import make_obj_fn
-from MuyGPyS.optimize.loss import lool_fn
+from MuyGPyS.optimize.loss import LossFn, lool_fn
 from MuyGPyS.optimize.sigma_sq import (
     make_sigma_sq_optim,
     muygps_sigma_sq_optim,
@@ -59,7 +59,7 @@ def optimize_from_tensors_mini_batch(
     keep_state: bool = False,
     probe_previous: bool = False,
     batch_features: Optional[mm.ndarray] = None,
-    loss_fn: Callable = lool_fn,
+    loss_fn: Type[LossFn] = lool_fn,
     obj_method: str = "loo_crossval",
     sigma_method: Optional[str] = "analytic",
     loss_kwargs: Optional[Dict] = dict(),
