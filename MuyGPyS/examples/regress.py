@@ -18,7 +18,7 @@ above and :func:`~MuyGPyS.examples.regress.regress_any`.
 """
 import numpy as np
 from time import perf_counter
-from typing import Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS

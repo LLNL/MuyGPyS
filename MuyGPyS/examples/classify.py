@@ -20,7 +20,7 @@ above and :func:`~MuyGPyS.examples.classify.classify_any`.
 import numpy as np
 
 from time import perf_counter
-from typing import Callable, Dict, List, Tuple, Type, Union
+from typing import Dict, List, Tuple, Type, Union
 
 from MuyGPyS.examples.from_indices import posterior_mean_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
