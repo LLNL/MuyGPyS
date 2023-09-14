@@ -10,8 +10,6 @@ MuyGPyS includes predefined loss functions and convenience functions for
 indicating them to optimization.
 """
 
-from typing import Callable
-
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.loss import (
     _mse_fn,
@@ -21,38 +19,6 @@ from MuyGPyS._src.optimize.loss import (
     _pseudo_huber_fn,
     _looph_fn,
 )
-from MuyGPyS.optimize.utils import _switch_on_loss_method
-
-
-def get_loss_func(loss_method: str) -> Callable:
-    """
-    Select a loss function based upon string key.
-
-    Currently supports strings `"log"` or `"cross-entropy"` for
-    :func:`MuyGPyS.optimize.objective.cross_entropy_fn` and `"mse"` for
-    :func:`MuyGPyS.optimize.objective.mse_fn`.
-
-    Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
-
-    Returns:
-        The loss function Callable.
-
-    Raises:
-        NotImplementedError:
-            Unrecognized strings will result in an error.
-    """
-    return _switch_on_loss_method(
-        loss_method,
-        lambda: cross_entropy_fn,
-        lambda: mse_fn,
-        lambda: lool_fn,
-        lambda: pseudo_huber_fn,
-        lambda: looph_fn,
-    )
 
 
 def cross_entropy_fn(
