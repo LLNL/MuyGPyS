@@ -10,10 +10,11 @@ MuyGPyS includes predefined objective functions and convenience functions for
 indicating them to optimization.
 """
 
-from inspect import signature
 from typing import Callable, Dict, Optional
 
 import MuyGPyS._src.math as mm
+
+from MuyGPyS.optimize.loss import LossFn
 
 
 def make_obj_fn(obj_method: str, *args, **kwargs) -> Callable:
@@ -41,7 +42,7 @@ def make_obj_fn(obj_method: str, *args, **kwargs) -> Callable:
 
 
 def make_loo_crossval_fn(
-    loss_fn: Callable,
+    loss_fn: LossFn,
     kernel_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
@@ -103,26 +104,14 @@ def make_loo_crossval_fn(
     """
     kernels_fn = make_kernels_fn(kernel_fn, pairwise_diffs, crosswise_diffs)
     # This is ad-hoc, and might need to be revisited.
-    if "variances" in signature(loss_fn).parameters.keys():
-        predict_and_loss_fn = make_var_predict_and_loss_fn(
-            loss_fn,
-            mean_fn,
-            var_fn,
-            sigma_sq_fn,
-            batch_nn_targets,
-            batch_targets,
-            **loss_kwargs,
-        )
-    else:
-        predict_and_loss_fn = make_raw_predict_and_loss_fn(
-            loss_fn,
-            mean_fn,
-            var_fn,
-            sigma_sq_fn,
-            batch_nn_targets,
-            batch_targets,
-            **loss_kwargs,
-        )
+    predict_and_loss_fn = loss_fn.make_predict_and_loss_fn(
+        mean_fn,
+        var_fn,
+        sigma_sq_fn,
+        batch_nn_targets,
+        batch_targets,
+        **loss_kwargs,
+    )
 
     def obj_fn(*args, **kwargs):
         K, Kcross = kernels_fn(*args, batch_features=batch_features, **kwargs)
@@ -142,52 +131,3 @@ def make_kernels_fn(
         return K, Kcross
 
     return kernels_fn
-
-
-def make_raw_predict_and_loss_fn(
-    loss_fn: Callable,
-    mean_fn: Callable,
-    var_fn: Callable,
-    sigma_sq_fn: Callable,
-    batch_nn_targets: mm.ndarray,
-    batch_targets: mm.ndarray,
-    **loss_kwargs,
-) -> Callable:
-    def predict_and_loss_fn(K, Kcross, *args, **kwargs):
-        predictions = mean_fn(
-            K,
-            Kcross,
-            batch_nn_targets,
-            **kwargs,
-        )
-
-        return -loss_fn(predictions, batch_targets, **loss_kwargs)
-
-    return predict_and_loss_fn
-
-
-def make_var_predict_and_loss_fn(
-    loss_fn: Callable,
-    mean_fn: Callable,
-    var_fn: Callable,
-    sigma_sq_fn: Callable,
-    batch_nn_targets: mm.ndarray,
-    batch_targets: mm.ndarray,
-    **loss_kwargs,
-) -> Callable:
-    def predict_and_loss_fn(K, Kcross, *args, **kwargs):
-        predictions = mean_fn(
-            K,
-            Kcross,
-            batch_nn_targets,
-            **kwargs,
-        )
-        sigma_sq = sigma_sq_fn(K, batch_nn_targets, **kwargs)
-
-        variances = var_fn(K, Kcross, **kwargs)
-
-        return -loss_fn(
-            predictions, batch_targets, variances, sigma_sq, **loss_kwargs
-        )
-
-    return predict_and_loss_fn

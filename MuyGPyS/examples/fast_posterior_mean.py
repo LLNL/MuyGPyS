@@ -21,7 +21,7 @@ It calls the maker APIs above and
 """
 
 from time import perf_counter
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
@@ -30,7 +30,7 @@ from MuyGPyS.examples.regress import _decide_and_make_regressor
 from MuyGPyS.gp.tensors import fast_nn_update
 from MuyGPyS.gp.tensors import pairwise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.loss import lool_fn
+from MuyGPyS.optimize.loss import LossFn, lool_fn
 
 
 def make_fast_regressor(
@@ -160,7 +160,7 @@ def do_fast_posterior_mean(
     train_targets: mm.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_fn: Callable = lool_fn,
+    loss_fn: Type[LossFn] = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",

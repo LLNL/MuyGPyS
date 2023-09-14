@@ -9,7 +9,7 @@ Convenience wrapper for GP prediction from indices.
 
 import numpy as np
 
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Type, Union
 
 from MuyGPyS.gp.tensors import (
     crosswise_tensor,
@@ -18,7 +18,7 @@ from MuyGPyS.gp.tensors import (
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize import optimize_from_tensors
-from MuyGPyS.optimize.loss import lool_fn
+from MuyGPyS.optimize.loss import LossFn, lool_fn
 
 
 def tensors_from_indices(
@@ -124,7 +124,7 @@ def optimize_from_indices(
     batch_nn_indices: np.ndarray,
     train_features: np.ndarray,
     train_targets: np.ndarray,
-    loss_fn: Callable = lool_fn,
+    loss_fn: Type[LossFn] = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
