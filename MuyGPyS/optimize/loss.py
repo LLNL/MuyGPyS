@@ -310,8 +310,8 @@ Pseudo-Huber loss function.
 Computes a smooth approximation to the Huber loss function, which balances
 sensitive squared-error loss for relatively small errors and robust-to-outliers
 absolute loss for larger errors, so that the loss is not overly sensitive to
-outliers. Used the form from
-[wikipedia](https://en.wikipedia.org/wiki/Huber_loss#Pseudo-Huber_loss_function).
+outliers. Uses the form from
+`wikipedia <https://en.wikipedia.org/wiki/Huber_loss#Pseudo-Huber_loss_function>`_.
 The function computes
 
 .. math::
