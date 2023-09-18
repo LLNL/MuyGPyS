@@ -27,7 +27,7 @@ the confidence intervals associated with each supplied objective function.
 import numpy as np
 
 from time import perf_counter
-from typing import Callable, Dict, List, Tuple, Type, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 from MuyGPyS.examples.classify import (
     make_classifier,
@@ -63,7 +63,7 @@ def do_classify_uq(
     nn_count: int = 30,
     opt_batch_count: int = 200,
     uq_batch_count: int = 500,
-    loss_fn: Type[LossFn] = cross_entropy_fn,
+    loss_fn: LossFn = cross_entropy_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     uq_objectives: Union[

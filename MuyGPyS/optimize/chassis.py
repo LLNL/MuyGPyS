@@ -25,7 +25,7 @@ documentation for details.
 """
 
 
-from typing import Dict, Optional, Type
+from typing import Dict, Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.chassis import (
@@ -46,7 +46,7 @@ def optimize_from_tensors(
     crosswise_diffs: mm.ndarray,
     pairwise_diffs: mm.ndarray,
     batch_features: Optional[mm.ndarray] = None,
-    loss_fn: Type[LossFn] = lool_fn,
+    loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",

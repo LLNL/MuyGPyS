@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from absl.testing import parameterized
 
@@ -36,7 +36,7 @@ class ClassifyAPITest(APITestCase):
         target_acc: float,
         nn_count: int,
         batch_count: int,
-        loss_fn: Type[LossFn],
+        loss_fn: LossFn,
         obj_method: str,
         opt_method: str,
         nn_kwargs: Dict,
@@ -100,7 +100,7 @@ class ClassifyAPITest(APITestCase):
         test: Dict[str, np.ndarray],
         nn_count: int,
         batch_count: int,
-        loss_fn: Type[LossFn],
+        loss_fn: LossFn,
         obj_method: str,
         opt_method: str,
         nn_kwargs: Dict,
@@ -155,7 +155,7 @@ class ClassifyAPITest(APITestCase):
         nn_count: int,
         opt_batch_count: int,
         uq_batch_count: int,
-        loss_fn: Type[LossFn],
+        loss_fn: LossFn,
         obj_method: str,
         opt_method: str,
         uq_objectives: Union[List[Callable], Tuple[Callable, ...]],
@@ -231,7 +231,7 @@ class ClassifyAPITest(APITestCase):
         nn_count: int,
         opt_batch_count: int,
         uq_batch_count: int,
-        loss_fn: Type[LossFn],
+        loss_fn: LossFn,
         obj_method: str,
         opt_method: str,
         uq_objectives: Union[List[Callable], Tuple[Callable, ...]],
@@ -272,7 +272,7 @@ class RegressionAPITest(parameterized.TestCase):
         target_mse: float,
         nn_count: int,
         batch_count: int,
-        loss_fn: Type[LossFn],
+        loss_fn: LossFn,
         obj_method: str,
         opt_method: str,
         sigma_method: Optional[str],
@@ -335,7 +335,7 @@ class RegressionAPITest(parameterized.TestCase):
         test: Dict[str, np.ndarray],
         nn_count: int,
         batch_count: int,
-        loss_fn: Type[LossFn],
+        loss_fn: LossFn,
         obj_method: str,
         opt_method: str,
         sigma_method: Optional[str],
@@ -375,7 +375,7 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         target_mse: float,
         nn_count: int,
         batch_count: int,
-        loss_fn: Type[LossFn],
+        loss_fn: LossFn,
         obj_method: str,
         opt_method: str,
         nn_kwargs: Dict,
@@ -417,7 +417,7 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         test: Dict[str, np.ndarray],
         nn_count: int,
         batch_count: int,
-        loss_fn: Type[LossFn],
+        loss_fn: LossFn,
         obj_method: str,
         opt_method: str,
         nn_kwargs: Dict,

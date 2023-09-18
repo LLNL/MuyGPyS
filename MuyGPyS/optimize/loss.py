@@ -23,41 +23,8 @@ from MuyGPyS._src.optimize.loss import (
 )
 
 
-class LossFn:
-    """
-    Loss function base class.
-
-    MuyGPyS-compatible loss functions should inherit from this class, and
-    possess the following static methods:
-
-    * A `__new__` method taking predictions and target vectors, optionally
-        a variance vector and sigma_sq vector, and optionally additional keyword
-        arguments that produces a float.
-    * A `make_predict_and_loss_fn method`, for example
-        :func:`_make_raw_predict_and_loss_fn` or
-        :func:`_make_raw_predict_and_loss_fn`, or a new function with the same
-        signature.
-
-    These LossFn classes act like global functions with a member function, in
-    that it is impossible to instantiate objects of their type and
-    "initializing" the class produces a float instead of an object of that type.
-    This depends on an abuse of the `__new__` semantics, and might stop working
-    in future versions of Python.
-    """
-
-    @staticmethod
-    def __new__(*args, **kwargs):
-        raise ValueError("Base loss functor cannot be called!")
-
-    @staticmethod
-    def make_predict_and_loss_fn(*args, **kwargs):
-        raise ValueError(
-            "Base loss functor cannot produce predict_and_loss_fn!"
-        )
-
-
-def _make_raw_predict_and_loss_fn(
-    loss_fn: LossFn,
+def make_raw_predict_and_loss_fn(
+    loss_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
     sigma_sq_fn: Callable,
@@ -65,6 +32,51 @@ def _make_raw_predict_and_loss_fn(
     batch_targets: mm.ndarray,
     **loss_kwargs,
 ) -> Callable:
+    """
+    Make a predict_and_loss function that depends only on the posterior mean.
+
+    Assembles a new function with signature `(K, Kcross, *args, **kwargs)` that
+    computes the posterior mean and uses the passed `loss_fn` to score it
+    against the batch targets.
+
+    Args:
+        loss_fn:
+            A loss function Callable with signature
+            `(predictions, responses, **kwargs)`, where `predictions` and
+            `targets` are matrices of shape `(batch_count, response_count)`.
+        mean_fn:
+            A MuyGPS posterior mean function Callable with signature
+            `(K, Kcross, batch_nn_targets)`, which are tensors of shape
+            `(batch_count, nn_count, nn_count)`, `(batch_count, nn_count)`, and
+            `(batch_count, nn_count, response_count)`, respectively.
+        var_fn:
+            A MuyGPS posterior variance function Callable with signature
+            `(K, Kcross)`, which are tensors of shape
+            `(batch_count, nn_count, nn_count)` and `(batch_count, nn_count)`,
+            respectively. Unused by this function, but still required by the
+            signature.
+        sigma_sq_fn:
+            A MuyGPS `sigma_sq` optimization function Callable with signature
+            `(K, batch_nn_targets)`, which are tensors of shape
+            `(batch_count, nn_count, nn_count)` and
+            `(batch_count, nn_count, response_count)`, respectively. Unused by
+            this function, but still required by the signature.
+        batch_nn_targets:
+            A tensor of shape `(batch_count, nn_count, response_count)`
+            containing the expected response of the nearest neighbors of each
+            batch element.
+        batch_targets:
+            A matrix of shape `(batch_count, response_count)` containing the
+            expected response of each batch element.
+        loss_kwargs:
+            Additionall keyword arguments used by the loss function.
+
+    Returns:
+        A Callable with signature `(K, Kcross, *args, **kwargs) -> float` that
+        computes the posterior mean and applies the loss function to it and the
+        `batch_targets`.
+    """
+
     def predict_and_loss_fn(K, Kcross, *args, **kwargs):
         predictions = mean_fn(
             K,
@@ -78,8 +90,8 @@ def _make_raw_predict_and_loss_fn(
     return predict_and_loss_fn
 
 
-def _make_var_predict_and_loss_fn(
-    loss_fn: LossFn,
+def make_var_predict_and_loss_fn(
+    loss_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
     sigma_sq_fn: Callable,
@@ -87,6 +99,50 @@ def _make_var_predict_and_loss_fn(
     batch_targets: mm.ndarray,
     **loss_kwargs,
 ) -> Callable:
+    """
+    Make a predict_and_loss function that depends on the posterior mean and
+    variance.
+
+    Assembles a new function with signature `(K, Kcross, *args, **kwargs)` that
+    computes the posterior mean and variance and uses the passed `loss_fn` to
+    score them against the batch targets.
+
+    Args:
+        loss_fn:
+            A loss function Callable with signature
+            `(predictions, responses, **kwargs)`, where `predictions` and
+            `targets` are matrices of shape `(batch_count, response_count)`.
+        mean_fn:
+            A MuyGPS posterior mean function Callable with signature
+            `(K, Kcross, batch_nn_targets)`, which are tensors of shape
+            `(batch_count, nn_count, nn_count)`, `(batch_count, nn_count)`, and
+            `(batch_count, nn_count, response_count)`, respectively.
+        var_fn:
+            A MuyGPS posterior variance function Callable with signature
+            `(K, Kcross)`, which are tensors of shape
+            `(batch_count, nn_count, nn_count)` and `(batch_count, nn_count)`,
+            respectively.
+        sigma_sq_fn:
+            A MuyGPS `sigma_sq` optimization function Callable with signature
+            `(K, batch_nn_targets)`, which are tensors of shape
+            `(batch_count, nn_count, nn_count)` and
+            `(batch_count, nn_count, response_count)`, respectively.
+        batch_nn_targets:
+            A tensor of shape `(batch_count, nn_count, response_count)`
+            containing the expected response of the nearest neighbors of each
+            batch element.
+        batch_targets:
+            A matrix of shape `(batch_count, response_count)` containing the
+            expected response of each batch element.
+        loss_kwargs:
+            Additionall keyword arguments used by the loss function.
+
+    Returns:
+        A Callable with signature `(K, Kcross, *args, **kwargs) -> float` that
+        computes the posterior mean and applies the loss function to it and the
+        `batch_targets`.
+    """
+
     def predict_and_loss_fn(K, Kcross, *args, **kwargs):
         predictions = mean_fn(
             K,
@@ -105,255 +161,207 @@ def _make_var_predict_and_loss_fn(
     return predict_and_loss_fn
 
 
-class cross_entropy_fn(LossFn):
+class LossFn:
     """
-    Cross entropy function.
+    Loss functor class.
 
-    Computes the cross entropy loss the predicted versus known response.
-    Transforms `predictions` to be row-stochastic, and ensures that `targets`
-    contains no negative elements.
-
-    @NOTE[bwp] I don't remember why we hard-coded eps=1e-6. Might need to
-    revisit.
+    MuyGPyS-compatible loss functions are objects of this class. Creating a new
+    loss function is as simple as instantiation a new `LossFn` object.
 
     Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
+        loss_fn:
+            A Callable with signature `(predictions, targets, **kwargs)` or
+            `(predictions, targets, variances, sigma_sq, **kwargs)` tha computes
+            a floating-point loss score of a set of predictions given posterior
+            means and possibly posterior variances. Individual loss functions
+            can implement different `kwargs` as needed.
+        make_precit_and_loss_fn:
+            A Callable with signature
+            `(loss_fn, mean_fn, var_fn, sigma_sq_fn, batch_nn_targets, batch_targets, **loss_kwargs)`
+            that produces a function that computes posterior predictions and
+            scores them using the loss function.
+            :func:~MuyGPyS.optimize.loss._make_raw_predict_and_loss_fn` and
+            :func:~MuyGPyS.optimize.loss._make_var_predict_and_loss_fn` are two
+            candidates.
 
     Returns:
-        The cross-entropy loss of the prediction.
+        A floating-point loss.
     """
 
-    @staticmethod
-    def __new__(  # type: ignore
-        cls,
-        predictions: mm.ndarray,
-        targets: mm.ndarray,
-        ll_eps=1e-6,
-    ) -> float:
-        return _cross_entropy_fn(predictions, targets, ll_eps=ll_eps)
+    def __init__(self, loss_fn: Callable, make_predict_and_loss_fn: Callable):
+        self._fn = loss_fn
+        self._make_predict_and_loss_fn = make_predict_and_loss_fn
 
-    @staticmethod
-    def make_predict_and_loss_fn(*args, **kwargs):
-        return _make_raw_predict_and_loss_fn(cross_entropy_fn, *args, **kwargs)
+    def __call__(self, *args, **kwargs):
+        return self._fn(*args, **kwargs)
+
+    def make_predict_and_loss_fn(self, *args, **kwargs):
+        return self._make_predict_and_loss_fn(self._fn, *args, **kwargs)
 
 
-class mse_fn(LossFn):
-    """
-    Mean squared error function.
+cross_entropy_fn = LossFn(_cross_entropy_fn, make_raw_predict_and_loss_fn)
+"""
+Cross entropy function.
 
-    Computes mean squared error loss of the predicted versus known response.
-    Treats multivariate outputs as interchangeable in terms of loss penalty. The
-    function computes
+Computes the cross entropy loss the predicted versus known response. Transforms
+`predictions` to be row-stochastic, and ensures that `targets` contains no
+negative elements. Only defined for two or more labels.
+For a sample with true labels :math:`y_i \\in \\{0, 1\\}` and estimates
+:math:`f(x_i) = \\textrm{Pr}(y = 1)`, the function computes
 
-    .. math::
-        \\ell_\\textrm{MSE}(f(x), y) = \\frac{1}{b} \\sum_{i=1}^b (f(x_i) - y)^2
+.. math::
+    \\ell_\\textrm{cross-entropy}(f(x), y) =
+        \\sum_{i=1}^{b} y_i \\log(f(x_i)) - (1 - y_i) \\log(1 - f(x_i))
 
-    Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
+The numpy backend uses
+`sklearn's implementation <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`_.
 
-    Returns:
-        The mse loss of the prediction.
-    """
+Args:
+    predictions:
+        The predicted response of shape `(batch_count, response_count)`.
+    targets:
+        The expected response of shape `(batch_count, response_count)`.
+    ll_eps:
+        Probabilities are clipped to the range `[ll_eps, 1 - ll_eps]`.
 
-    @staticmethod
-    def __new__(  # type: ignore
-        cls,
-        predictions: mm.ndarray,
-        targets: mm.ndarray,
-    ) -> float:
-        return _mse_fn(predictions, targets)
+Returns:
+    The cross-entropy loss of the prediction.
+"""
 
-    @staticmethod
-    def make_predict_and_loss_fn(*args, **kwargs):
-        return _make_raw_predict_and_loss_fn(mse_fn, *args, **kwargs)
+mse_fn = LossFn(_mse_fn, make_raw_predict_and_loss_fn)
+"""
+Mean squared error function.
 
+Computes mean squared error loss of the predicted versus known response. Treats
+multivariate outputs as interchangeable in terms of loss penalty. The function
+computes
 
-class lool_fn(LossFn):
-    """
-    Leave-one-out likelihood function.
+.. math::
+    \\ell_\\textrm{MSE}(f(x), y) = \\frac{1}{b} \\sum_{i=1}^b (f(x_i) - y)^2
 
-    Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
-    response. Treats multivariate outputs as interchangeable in terms of loss
-    penalty. The function computes
+Args:
+    predictions:
+        The predicted response of shape `(batch_count, response_count)`.
+    targets:
+        The expected response of shape `(batch_count, response_count)`.
 
-    .. math::
-        \\ell_\\textrm{lool}(f(x), y \\mid \\sigma^2) =
-        \\sum_{i=1}^b \\sum_{j=1}^s
-        \\left ( \\frac{(f(x_i) - y)}{\\sigma_j} \\right )^2 + \\log \\sigma_j^2
+Returns:
+    The mse loss of the prediction.
+"""
 
-    Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
-        variances:
-            The unscaled variance of the predicted responses of shape
-            `(batch_count, response_count)`.
-        sigma_sq:
-            The sigma_sq variance scaling parameter of shape
-            `(response_count,)`.
+lool_fn = LossFn(_lool_fn, make_var_predict_and_loss_fn)
+"""
+Leave-one-out likelihood function.
 
-    Returns:
-        The LOOL loss of the prediction.
-    """
+Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
+response. Treats multivariate outputs as interchangeable in terms of loss
+penalty. The function computes
 
-    @staticmethod
-    def __new__(  # type: ignore
-        cls,
-        predictions: mm.ndarray,
-        targets: mm.ndarray,
-        variances: mm.ndarray,
-        sigma_sq: mm.ndarray,
-    ) -> float:
-        return _lool_fn(predictions, targets, variances, sigma_sq)
+.. math::
+    \\ell_\\textrm{lool}(f(x), y \\mid \\sigma^2) =
+    \\sum_{i=1}^b \\sum_{j=1}^s
+    \\left ( \\frac{(f(x_i) - y)}{\\sigma_j} \\right )^2 + \\log \\sigma_j^2
 
-    @staticmethod
-    def make_predict_and_loss_fn(*args, **kwargs):
-        return _make_var_predict_and_loss_fn(lool_fn, *args, **kwargs)
+Args:
+    predictions:
+        The predicted response of shape `(batch_count, response_count)`.
+    targets:
+        The expected response of shape `(batch_count, response_count)`.
+    variances:
+        The unscaled variance of the predicted responses of shape
+        `(batch_count, response_count)`.
+    sigma_sq:
+        The sigma_sq variance scaling parameter of shape `(response_count,)`.
 
+Returns:
+    The LOOL loss of the prediction.
+"""
 
-class lool_fn_unscaled(LossFn):
-    """
-    Leave-one-out likelihood function.
+lool_fn_unscaled = LossFn(_lool_fn_unscaled, make_var_predict_and_loss_fn)
+"""
+Leave-one-out likelihood function.
 
-    Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
-    response. Treats multivariate outputs as interchangeable in terms of loss
-    penalty. Unlike lool_fn, does not require sigma_sq as an argument. The
-    function computes
+Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
+response. Treats multivariate outputs as interchangeable in terms of loss
+penalty. Unlike lool_fn, does not require sigma_sq as an argument. The function
+computes
 
-    .. math::
-        \\ell_\\textrm{lool}(f(x), y \\mid \\sigma^2) = \\sum_{i=1}^b
-        \\left ( \\frac{(f(x_i) - y)}{\\sigma_i} \\right )^2 + \\log \\sigma_i^2
+.. math::
+    \\ell_\\textrm{lool}(f(x), y \\mid \\sigma^2) = \\sum_{i=1}^b
+    \\left ( \\frac{(f(x_i) - y)}{\\sigma_i} \\right )^2 + \\log \\sigma_i^2
 
-    Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
-        variances:
-            The unscaled variance of the predicted responses of shape
-            `(batch_count, response_count)`.
+Args:
+    predictions:
+        The predicted response of shape `(batch_count, response_count)`.
+    targets:
+        The expected response of shape `(batch_count, response_count)`.
+    variances:
+        The unscaled variance of the predicted responses of shape
+        `(batch_count, response_count)`.
 
-    Returns:
-        The LOOL loss of the prediction.
-    """
+Returns:
+    The LOOL loss of the prediction.
+"""
 
-    @staticmethod
-    def __new__(  # type: ignore
-        cls, predictions: mm.ndarray, targets: mm.ndarray, variances: mm.ndarray
-    ) -> float:
-        return _lool_fn_unscaled(predictions, targets, variances)
+pseudo_huber_fn = LossFn(_pseudo_huber_fn, make_raw_predict_and_loss_fn)
+"""
+Pseudo-Huber loss function.
 
-    @staticmethod
-    def make_predict_and_loss_fn(*args, **kwargs):
-        return _make_var_predict_and_loss_fn(lool_fn_unscaled, *args, **kwargs)
+Computes a smooth approximation to the Huber loss function, which balances
+sensitive squared-error loss for relatively small errors and robust-to-outliers
+absolute loss for larger errors, so that the loss is not overly sensitive to
+outliers. Used the form from
+[wikipedia](https://en.wikipedia.org/wiki/Huber_loss#Pseudo-Huber_loss_function).
+The function computes
 
+.. math::
+    \\ell_\\textrm{Pseudo-Huber}(f(x), y \\mid \\delta) =
+        \\sum_{i=1}^b \\delta^2 \\left ( \\sqrt{
+        1 + \\left ( \\frac{y_i - f(x_i)}{\\delta} \\right )^2
+        } - 1 \\right )
 
-class pseudo_huber_fn(LossFn):
-    """
-    Pseudo-Huber loss function.
+Args:
+    predictions:
+        The predicted response of shape `(batch_count, response_count)`.
+    targets:
+        The expected response of shape `(batch_count, response_count)`.
+    boundary_scale:
+        The boundary value for the residual beyond which the loss becomes
+        approximately linear. Useful values depend on the scale of the response.
 
-    Computes a smooth approximation to the Huber loss function, which balances
-    sensitive squared-error loss for relatively small errors and
-    robust-to-outliers absolute loss for larger errors, so that the loss is not
-    overly sensitive to outliers. Used the form from
-    [wikipedia](https://en.wikipedia.org/wiki/Huber_loss#Pseudo-Huber_loss_function).
-    The function computes
+Returns:
+    The sum of pseudo-Huber losses of the predictions.
+"""
 
-    .. math::
-        \\ell_\\textrm{Pseudo-Huber}(f(x), y \\mid \\delta) =
-            \\sum_{i=1}^b \\delta^2 \\left ( \\sqrt{
-            1 + \\left ( \\frac{y_i - f(x_i)}{\\delta} \\right )^2
-            } - 1 \\right )
+looph_fn = LossFn(_looph_fn, make_var_predict_and_loss_fn)
+"""
+Variance-regularized pseudo-Huber loss function.
 
-    Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
-        boundary_scale:
-            The boundary value for the residual beyond which the loss becomes
-            approximately linear. Useful values depend on the scale of the
-            response.
+Computes a smooth approximation to the Huber loss function, similar to
+:func:`pseudo_huber_fn`, with the addition of both a variance scaling and a
+additive logarithmic variance regularization term to avoid exploding the
+variance. The function computes
 
-    Returns:
-        The sum of pseudo-Huber losses of the predictions.
-    """
+.. math::
+    \\ell_\\textrm{lool}(f(x), y \\mid \\delta, \\sigma^2) =
+        \\sum_{i=1}^b \\delta^2 \\left ( \\sqrt{
+        1 + \\left ( \\frac{y_i - f(x_i)}{\\delta \\sigma_i^2} \\right )^2
+        } - 1 \\right ) + \\log \\sigma_i^2
 
-    @staticmethod
-    def __new__(  # type: ignore
-        cls,
-        predictions: mm.ndarray,
-        targets: mm.ndarray,
-        boundary_scale: float = 1.5,
-    ) -> float:
-        return _pseudo_huber_fn(
-            predictions, targets, boundary_scale=boundary_scale
-        )
+Args:
+    predictions:
+        The predicted response of shape `(batch_count, response_count)`.
+    targets:
+        The expected response of shape `(batch_count, response_count)`.
+    variances:
+        The unscaled variance of the predicted responses of shape
+        `(batch_count, response_count)`.
+    sigma_sq:
+        The sigma_sq variance scaling parameter of shape `(response_count,)`.
+    boundary_scale:
+        The boundary value for the residual beyond which the loss becomes
+        approximately linear. Useful values depend on the scale of the response.
 
-    @staticmethod
-    def make_predict_and_loss_fn(*args, **kwargs):
-        return _make_raw_predict_and_loss_fn(pseudo_huber_fn, *args, **kwargs)
-
-
-class looph_fn(LossFn):
-    """
-    Variance-regularized pseudo-Huber loss function.
-
-    Computes a smooth approximation to the Huber loss function, similar to
-    :func:`pseudo_huber_fn`, with the addition of both a variance scaling and a
-    additive logarithmic variance regularization term to avoid exploding the
-    variance. The function computes
-
-    .. math::
-        \\ell_\\textrm{lool}(f(x), y \\mid \\delta, \\sigma^2) =
-            \\sum_{i=1}^b \\delta^2 \\left ( \\sqrt{
-            1 + \\left ( \\frac{y_i - f(x_i)}{\\delta \\sigma_i^2} \\right )^2
-            } - 1 \\right ) + \\log \\sigma_i^2
-
-    Args:
-        predictions:
-            The predicted response of shape `(batch_count, response_count)`.
-        targets:
-            The expected response of shape `(batch_count, response_count)`.
-        variances:
-            The unscaled variance of the predicted responses of shape
-            `(batch_count, response_count)`.
-        sigma_sq:
-            The sigma_sq variance scaling parameter of shape
-            `(response_count,)`.
-        boundary_scale:
-            The boundary value for the residual beyond which the loss becomes
-            approximately linear. Useful values depend on the scale of the
-            response.
-
-    Returns:
-        The sum of pseudo-Huber losses of the predictions.
-    """
-
-    @staticmethod
-    def __new__(  # type: ignore
-        cls,
-        predictions: mm.ndarray,
-        targets: mm.ndarray,
-        variances: mm.ndarray,
-        sigma_sq: mm.ndarray,
-        boundary_scale: float = 1.5,
-    ) -> float:
-        return _looph_fn(
-            predictions,
-            targets,
-            variances,
-            sigma_sq,
-            boundary_scale=boundary_scale,
-        )
-
-    @staticmethod
-    def make_predict_and_loss_fn(*args, **kwargs):
-        return _make_var_predict_and_loss_fn(looph_fn, *args, **kwargs)
+Returns:
+    The sum of leave-one-out pseudo-Huber losses of the predictions.
+"""
