@@ -78,7 +78,6 @@ from MuyGPyS._src.optimize.sigma_sq.numpy import (
 from MuyGPyS._src.optimize.sigma_sq.torch import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_t,
 )
-from MuyGPyS._test.loss import _make_backend_loss
 from MuyGPyS._test.utils import (
     _exact_nn_kwarg_options,
     _make_gaussian_matrix,
@@ -103,13 +102,14 @@ from MuyGPyS.gp.noise import (
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import (
+    LossFn,
     mse_fn as mse_fn_n,
     cross_entropy_fn as cross_entropy_fn_n,
     lool_fn as lool_fn_n,
     pseudo_huber_fn as pseudo_huber_fn_n,
     looph_fn as looph_fn_n,
-    _make_raw_predict_and_loss_fn,
-    _make_var_predict_and_loss_fn,
+    make_raw_predict_and_loss_fn,
+    make_var_predict_and_loss_fn,
 )
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
@@ -125,15 +125,11 @@ if config.state.backend != "numpy":
     )
 
 # make torch loss functor aliases
-mse_fn_t = _make_backend_loss(mse_fn_t, _make_raw_predict_and_loss_fn)
-cross_entropy_fn_t = _make_backend_loss(
-    cross_entropy_fn_t, _make_raw_predict_and_loss_fn
-)
-lool_fn_t = _make_backend_loss(lool_fn_t, _make_var_predict_and_loss_fn)
-pseudo_huber_fn_t = _make_backend_loss(
-    pseudo_huber_fn_t, _make_raw_predict_and_loss_fn
-)
-looph_fn_t = _make_backend_loss(looph_fn_t, _make_var_predict_and_loss_fn)
+mse_fn_t = LossFn(mse_fn_t, make_raw_predict_and_loss_fn)
+cross_entropy_fn_t = LossFn(cross_entropy_fn_t, make_raw_predict_and_loss_fn)
+lool_fn_t = LossFn(lool_fn_t, make_var_predict_and_loss_fn)
+pseudo_huber_fn_t = LossFn(pseudo_huber_fn_t, make_raw_predict_and_loss_fn)
+looph_fn_t = LossFn(looph_fn_t, make_var_predict_and_loss_fn)
 
 
 def isotropic_F2_n(diffs, length_scale):

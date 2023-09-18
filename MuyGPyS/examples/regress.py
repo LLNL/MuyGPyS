@@ -18,7 +18,7 @@ above and :func:`~MuyGPyS.examples.regress.regress_any`.
 """
 import numpy as np
 from time import perf_counter
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
@@ -38,7 +38,7 @@ def make_regressor(
     train_targets: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_fn: Type[LossFn] = lool_fn,
+    loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
@@ -227,7 +227,7 @@ def make_multivariate_regressor(
     train_targets: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_fn: Type[LossFn] = lool_fn,
+    loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
@@ -463,7 +463,7 @@ def _decide_and_make_regressor(
     train_targets: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_fn: Type[LossFn] = lool_fn,
+    loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",
@@ -517,7 +517,7 @@ def do_regress(
     train_targets: np.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_fn: Type[LossFn] = lool_fn,
+    loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",

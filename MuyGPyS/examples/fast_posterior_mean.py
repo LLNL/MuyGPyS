@@ -21,7 +21,7 @@ It calls the maker APIs above and
 """
 
 from time import perf_counter
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
@@ -160,7 +160,7 @@ def do_fast_posterior_mean(
     train_targets: mm.ndarray,
     nn_count: int = 30,
     batch_count: int = 200,
-    loss_fn: Type[LossFn] = lool_fn,
+    loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
     sigma_method: Optional[str] = "analytic",

@@ -84,7 +84,6 @@ from MuyGPyS._src.optimize.chassis.mpi import (
     _bayes_opt_optimize as bayes_optimize_m,
     _scipy_optimize as scipy_optimize_m,
 )
-from MuyGPyS._test.loss import _make_backend_loss
 from MuyGPyS._test.utils import (
     _exact_nn_kwarg_options,
     _make_gaussian_data,
@@ -108,8 +107,9 @@ from MuyGPyS.gp.sigma_sq import sigma_sq_scale
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import (
-    _make_raw_predict_and_loss_fn,
-    _make_var_predict_and_loss_fn,
+    LossFn,
+    make_raw_predict_and_loss_fn,
+    make_var_predict_and_loss_fn,
 )
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
 
@@ -124,27 +124,19 @@ if config.state.backend != "mpi":
 
 
 # make numpy loss functor aliases
-mse_fn_n = _make_backend_loss(mse_fn_n, _make_raw_predict_and_loss_fn)
-cross_entropy_fn_n = _make_backend_loss(
-    cross_entropy_fn_n, _make_raw_predict_and_loss_fn
-)
-lool_fn_n = _make_backend_loss(lool_fn_n, _make_var_predict_and_loss_fn)
-pseudo_huber_fn_n = _make_backend_loss(
-    pseudo_huber_fn_n, _make_raw_predict_and_loss_fn
-)
-looph_fn_n = _make_backend_loss(looph_fn_n, _make_var_predict_and_loss_fn)
+mse_fn_n = LossFn(mse_fn_n, make_raw_predict_and_loss_fn)
+cross_entropy_fn_n = LossFn(cross_entropy_fn_n, make_raw_predict_and_loss_fn)
+lool_fn_n = LossFn(lool_fn_n, make_var_predict_and_loss_fn)
+pseudo_huber_fn_n = LossFn(pseudo_huber_fn_n, make_raw_predict_and_loss_fn)
+looph_fn_n = LossFn(looph_fn_n, make_var_predict_and_loss_fn)
 
 
 # make mpi loss functor aliases
-mse_fn_m = _make_backend_loss(mse_fn_m, _make_raw_predict_and_loss_fn)
-cross_entropy_fn_m = _make_backend_loss(
-    cross_entropy_fn_m, _make_raw_predict_and_loss_fn
-)
-lool_fn_m = _make_backend_loss(lool_fn_m, _make_var_predict_and_loss_fn)
-pseudo_huber_fn_m = _make_backend_loss(
-    pseudo_huber_fn_m, _make_raw_predict_and_loss_fn
-)
-looph_fn_m = _make_backend_loss(looph_fn_m, _make_var_predict_and_loss_fn)
+mse_fn_m = LossFn(mse_fn_m, make_raw_predict_and_loss_fn)
+cross_entropy_fn_m = LossFn(cross_entropy_fn_m, make_raw_predict_and_loss_fn)
+lool_fn_m = LossFn(lool_fn_m, make_var_predict_and_loss_fn)
+pseudo_huber_fn_m = LossFn(pseudo_huber_fn_m, make_raw_predict_and_loss_fn)
+looph_fn_m = LossFn(looph_fn_m, make_var_predict_and_loss_fn)
 
 
 def isotropic_F2_n(diffs, length_scale):
