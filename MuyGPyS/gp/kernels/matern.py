@@ -139,7 +139,8 @@ class Matern(KernelFn):
         Compute Matern kernels from distance tensor.
 
         Takes inspiration from
-        `scikit-learn's implementation <https://github.com/scikit-learn/scikit-learn/blob/95119c13a/sklearn/gaussian_process/kernels.py#L1529>`_.
+        `scikit-learn's implementation
+        <https://github.com/scikit-learn/scikit-learn/blob/95119c13a/sklearn/gaussian_process/kernels.py#L1529>`_.
 
         Args:
             diffs:
