@@ -335,7 +335,11 @@ class TensorsTestCase(parameterized.TestCase):
             _backend_var_fn=muygps_diagonal_variance_n,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_n,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_n,
-            _backend_math=np,
+            _backend_ones=np.ones,
+            _backend_ndarray=np.ndarray,
+            _backend_ftype=np.ftype,
+            _backend_farray=np.farray,
+            _backend_outer=np.outer,
         )
         cls.muygps_j = MuyGPS(
             kernel=Matern(
@@ -351,7 +355,11 @@ class TensorsTestCase(parameterized.TestCase):
             _backend_var_fn=muygps_diagonal_variance_j,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_j,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_j,
-            _backend_math=jnp,
+            _backend_ones=jnp.ones,
+            _backend_ndarray=jnp.ndarray,
+            _backend_ftype=jnp.ftype,
+            _backend_farray=jnp.farray,
+            _backend_outer=jnp.outer,
         )
         cls.muygps_heteroscedastic_n = MuyGPS(
             kernel=Matern(
@@ -367,7 +375,11 @@ class TensorsTestCase(parameterized.TestCase):
             _backend_var_fn=muygps_diagonal_variance_n,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_n,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_n,
-            _backend_math=np,
+            _backend_ones=np.ones,
+            _backend_ndarray=np.ndarray,
+            _backend_ftype=np.ftype,
+            _backend_farray=np.farray,
+            _backend_outer=np.outer,
         )
         cls.muygps_heteroscedastic_j = MuyGPS(
             kernel=Matern(
@@ -383,7 +395,11 @@ class TensorsTestCase(parameterized.TestCase):
             _backend_var_fn=muygps_diagonal_variance_j,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_j,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_j,
-            _backend_math=jnp,
+            _backend_ones=jnp.ones,
+            _backend_ndarray=jnp.ndarray,
+            _backend_ftype=jnp.ftype,
+            _backend_farray=jnp.farray,
+            _backend_outer=jnp.outer,
         )
 
         cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(

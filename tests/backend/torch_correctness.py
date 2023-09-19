@@ -311,7 +311,11 @@ class TensorsTestCase(parameterized.TestCase):
             _backend_var_fn=muygps_diagonal_variance_n,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_n,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_n,
-            _backend_math=np,
+            _backend_ones=np.ones,
+            _backend_ndarray=np.ndarray,
+            _backend_ftype=np.ftype,
+            _backend_farray=np.farray,
+            _backend_outer=np.outer,
         )
         cls.muygps_t = MuyGPS(
             kernel=Matern(
@@ -327,7 +331,11 @@ class TensorsTestCase(parameterized.TestCase):
             _backend_var_fn=muygps_diagonal_variance_t,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_t,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_t,
-            _backend_math=torch,
+            _backend_ones=torch.ones,
+            _backend_ndarray=torch.ndarray,
+            _backend_ftype=torch.ftype,
+            _backend_farray=torch.farray,
+            _backend_outer=torch.outer,
         )
         cls.muygps_heteroscedastic_n = MuyGPS(
             kernel=Matern(
@@ -343,7 +351,11 @@ class TensorsTestCase(parameterized.TestCase):
             _backend_var_fn=muygps_diagonal_variance_n,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_n,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_n,
-            _backend_math=np,
+            _backend_ones=np.ones,
+            _backend_ndarray=np.ndarray,
+            _backend_ftype=np.ftype,
+            _backend_farray=np.farray,
+            _backend_outer=np.outer,
         )
         cls.muygps_heteroscedastic_t = MuyGPS(
             kernel=Matern(
@@ -359,7 +371,11 @@ class TensorsTestCase(parameterized.TestCase):
             _backend_var_fn=muygps_diagonal_variance_t,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_t,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_t,
-            _backend_math=torch,
+            _backend_ones=torch.ones,
+            _backend_ndarray=torch.ndarray,
+            _backend_ftype=torch.ftype,
+            _backend_farray=torch.farray,
+            _backend_outer=torch.outer,
         )
         cls.muygps_heteroscedastic_train_n = MuyGPS(
             kernel=Matern(
