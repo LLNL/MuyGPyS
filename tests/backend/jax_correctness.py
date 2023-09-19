@@ -837,7 +837,7 @@ class MuyGPSTestCase(KernelTestCase):
         cls.heteroscedastic_K_n = cls.muygps_heteroscedastic_n.eps.perturb(
             cls.K_n,
         )
-        cls.heteroscedastic_K_j = cls.muygps_heteroscedastic_j.eps.perturb_j(
+        cls.heteroscedastic_K_j = cls.muygps_heteroscedastic_j.eps.perturb(
             cls.K_j
         )
         cls.Kcross_n = matern_gen_isotropic_fn_n(
