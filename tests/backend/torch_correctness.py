@@ -710,19 +710,15 @@ class MuyGPSTestCase(KernelTestCase):
         cls.K_t = matern_05_isotropic_fn_t(
             cls.pairwise_diffs_t, length_scale=cls.length_scale
         )
-        cls.homoscedastic_K_n = homoscedastic_perturb_n(
-            cls.K_n, cls.muygps_n.eps()
+        cls.homoscedastic_K_n = cls.muygps_n.eps.perturb(cls.K_n)
+
+        cls.heteroscedastic_K_n = cls.muygps_heteroscedastic_n.eps.perturb(
+            cls.K_n,
         )
 
-        cls.heteroscedastic_K_n = heteroscedastic_perturb_n(
-            cls.K_n, cls.muygps_heteroscedastic_n.eps()
-        )
-
-        cls.homoscedastic_K_t = homoscedastic_perturb_t(
-            cls.K_t, cls.muygps_t.eps()
-        )
-        cls.heteroscedastic_K_t = heteroscedastic_perturb_t(
-            cls.K_t, cls.muygps_heteroscedastic_t.eps()
+        cls.homoscedastic_K_t = cls.muygps_t.eps.perturb(cls.K_t)
+        cls.heteroscedastic_K_t = cls.muygps_heteroscedastic_t.eps.perturb(
+            cls.K_t
         )
 
         cls.Kcross_n = matern_05_isotropic_fn_n(
@@ -845,11 +841,11 @@ class FastPredictTest(MuyGPSTestCase):
             cls.train_responses_n,
         )
 
-        cls.homoscedastic_K_fast_n = homoscedastic_perturb_n(
-            l2_n(cls.K_fast_n), cls.muygps_n.eps()
+        cls.homoscedastic_K_fast_n = cls.muygps_n.eps.perturb(
+            l2_n(cls.K_fast_n)
         )
-        cls.heteroscedastic_K_fast_n = heteroscedastic_perturb_n(
-            l2_n(cls.K_fast_n), cls.muygps_heteroscedastic_train_n.eps()
+        cls.heteroscedastic_K_fast_n = (
+            cls.muygps_heteroscedastic_train_n.eps.perturb(l2_n(cls.K_fast_n))
         )
         cls.fast_regress_coeffs_n = muygps_fast_posterior_mean_precompute_n(
             cls.homoscedastic_K_fast_n, cls.train_nn_targets_fast_n
@@ -891,11 +887,11 @@ class FastPredictTest(MuyGPSTestCase):
             cls.train_responses_t,
         )
 
-        cls.homoscedastic_K_fast_t = homoscedastic_perturb_t(
-            l2_t(cls.K_fast_t), cls.muygps_t.eps()
+        cls.homoscedastic_K_fast_t = cls.muygps_t.eps.perturb(
+            l2_t(cls.K_fast_t)
         )
-        cls.heteroscedastic_K_fast_t = heteroscedastic_perturb_t(
-            l2_t(cls.K_fast_t), cls.muygps_heteroscedastic_train_t.eps()
+        cls.heteroscedastic_K_fast_t = (
+            cls.muygps_heteroscedastic_train_t.eps.perturb(l2_t(cls.K_fast_t))
         )
         cls.fast_regress_coeffs_t = muygps_fast_posterior_mean_precompute_t(
             cls.homoscedastic_K_fast_t, cls.train_nn_targets_fast_t
