@@ -6,6 +6,9 @@
 """
 MuyGPs implementation
 """
+
+from typing import Callable
+
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import (
     _muygps_fast_posterior_mean,
@@ -13,10 +16,8 @@ from MuyGPyS._src.gp.muygps import (
 
 
 class FastPosteriorMean:
-    def __init__(
-        self,
-    ):
-        self._fn = _muygps_fast_posterior_mean
+    def __init__(self, _backend_fn: Callable = _muygps_fast_posterior_mean):
+        self._fn = _backend_fn
 
     def __call__(
         self,

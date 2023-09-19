@@ -18,7 +18,6 @@ import MuyGPyS._src.math as mm
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
 from MuyGPyS.optimize.utils import _switch_on_sigma_method
-from MuyGPyS.gp.noise.perturbation import select_perturb_fn
 
 
 def muygps_sigma_sq_optim(
@@ -113,7 +112,6 @@ def make_sigma_sq_optim(
         make_none_sigma_sq_optim,
         muygps,
         _analytic_sigma_sq_optim,
-        select_perturb_fn(muygps.eps),
     )
 
 
@@ -121,18 +119,9 @@ def make_none_sigma_sq_optim(muygps: MuyGPS, *args) -> Callable:
     return lambda: lambda K, nn_targets, **kwargs: muygps.sigma_sq()
 
 
-def make_analytic_sigma_sq_optim(
-    muygps: MuyGPS, analytic_optim_fn, perturb_fn: Callable
-) -> Callable:
-    if not muygps.eps.fixed():
-
-        def ss_opt_fn(K, nn_targets, **kwargs):
-            return analytic_optim_fn(perturb_fn(K, kwargs["eps"]), nn_targets)
-
-    else:
-
-        def ss_opt_fn(K, nn_targets, **kwargs):
-            return analytic_optim_fn(perturb_fn(K, muygps.eps()), nn_targets)
+def make_analytic_sigma_sq_optim(muygps: MuyGPS, analytic_optim_fn) -> Callable:
+    def ss_opt_fn(K, nn_targets, eps=None, **kwargs):
+        return analytic_optim_fn(muygps.eps.perturb(K, eps=eps), nn_targets)
 
     return ss_opt_fn
 
@@ -173,9 +162,8 @@ def muygps_analytic_sigma_sq_optim(
         A new MuyGPs model whose sigma_sq parameter has been optimized.
     """
     ret = deepcopy(muygps)
-    perturb_fn = select_perturb_fn(ret.eps)
     K = ret.kernel(pairwise_diffs)
-    ss = _analytic_sigma_sq_optim(perturb_fn(K, ret.eps()), nn_targets)
+    ss = _analytic_sigma_sq_optim(ret.eps.perturb(K), nn_targets)
     ret.sigma_sq._set(ss)
     return ret
 
@@ -225,10 +213,9 @@ def mmuygps_analytic_sigma_sq_optim(
 
     sigma_sqs = mm.zeros((response_count,))
     for i, model in enumerate(ret.models):
-        perturb_fn = select_perturb_fn(model.eps)
         K = model.kernel(pairwise_diffs)
         new_sigma_val = _analytic_sigma_sq_optim(
-            perturb_fn(K, model.eps()),
+            model.eps.perturb(K),
             nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
         )[0]
         sigma_sqs = mm.assign(sigma_sqs, new_sigma_val, i)

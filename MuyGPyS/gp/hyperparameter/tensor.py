@@ -14,6 +14,10 @@ from typing import Callable, Optional, Tuple, Type
 
 import MuyGPyS._src.math as mm
 
+from MuyGPyS._src.math.jax import ndarray as jax_ndarray
+from MuyGPyS._src.math.numpy import ndarray as numpy_ndarray
+from MuyGPyS._src.math.torch import ndarray as torch_ndarray
+
 
 class TensorHyperparameter:
     """
@@ -70,9 +74,19 @@ class TensorHyperparameter:
                 "TensorHyperparameter class does not support strings."
             )
         if not isinstance(val, mm.ndarray):
-            raise ValueError(
-                f"Non-array tensor hyperparameter value {val} is not allowed."
-            )
+            if type(val) not in [numpy_ndarray, torch_ndarray, jax_ndarray]:
+                raise ValueError(
+                    f"Non-array tensor hyperparameter type {type(val)} is not "
+                    f"allowed. Expected {mm.ndarray}"
+                )
+            else:
+                import warnings
+
+                warnings.warn(
+                    f"Expected tensor hyperparameter type {mm.ndarray}, not "
+                    f"{type(val)}. This is most likely not intended except in "
+                    "backend tests"
+                )
         if self.fixed() is False:
             raise ValueError(
                 "TensorHyperparameters objects do not support optimization."
