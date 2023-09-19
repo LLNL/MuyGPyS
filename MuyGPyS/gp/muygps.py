@@ -12,10 +12,7 @@ from copy import deepcopy
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
-from MuyGPyS.gp.kernels import (
-    Matern,
-    RBF,
-)
+from MuyGPyS.gp.kernels import KernelFn
 from MuyGPyS.gp.mean import _muygps_posterior_mean, PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import _muygps_diagonal_variance, PosteriorVariance
@@ -93,7 +90,7 @@ class MuyGPS:
 
     def __init__(
         self,
-        kernel: Union[Matern, RBF],
+        kernel: KernelFn,
         eps: NoiseFn = HomoscedasticNoise(0.0, "fixed"),
         response_count: int = 1,
         _backend_mean_fn: Callable = _muygps_posterior_mean,
