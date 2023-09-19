@@ -77,6 +77,9 @@ class KernelFn:
     def _make_base(self):
         self.distortion_fn.populate_length_scale(self._hyperparameters)
 
+    def _make(self):
+        raise NotImplementedError("_make is not implemented for base KernelFn")
+
     def set_params(self, **kwargs) -> None:
         """
         Reset hyperparameters using hyperparameter dict(s).
