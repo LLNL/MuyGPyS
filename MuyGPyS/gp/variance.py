@@ -12,12 +12,7 @@ from typing import Callable, Union
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
 from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_scale, sigma_sq_apply
-from MuyGPyS.gp.noise import (
-    HomoscedasticNoise,
-    HeteroscedasticNoise,
-    NullNoise,
-    perturb_with_noise_model,
-)
+from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise, NullNoise
 
 
 class PosteriorVariance:
@@ -25,15 +20,16 @@ class PosteriorVariance:
         self,
         eps: Union[HomoscedasticNoise, HeteroscedasticNoise, NullNoise],
         sigma_sq: SigmaSq,
-        apply_sigma_sq=True,
-        **kwargs,
+        apply_sigma_sq: bool = True,
+        _backend_fn: Callable = _muygps_diagonal_variance,
+        **_backend_kwargs,
     ):
         self.eps = eps
         self.sigma_sq = sigma_sq
-        self._fn = _muygps_diagonal_variance
-        self._fn = perturb_with_noise_model(self._fn, self.eps)
+        self._fn = _backend_fn
+        self._fn = self.eps.perturb_fn(self._fn)
         if apply_sigma_sq is True:
-            self._fn = sigma_sq_scale(self._fn)
+            self._fn = sigma_sq_scale(self._fn, **_backend_kwargs)
 
     def __call__(
         self,

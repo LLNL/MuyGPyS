@@ -12,7 +12,6 @@ from MuyGPyS._src.gp.muygps import _mmuygps_fast_posterior_mean
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.noise import HeteroscedasticNoise
-from MuyGPyS.gp.noise.perturbation import select_perturb_fn
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
 
@@ -253,11 +252,10 @@ class MultivariateMuyGPS:
 
         for i, model in enumerate(self.models):
             K = model.kernel(pairwise_diffs_fast)
-            perturb_fn = select_perturb_fn(model.eps)
             mm.assign(
                 coeffs_tensor,
                 model.fast_coefficients(
-                    perturb_fn(K, model.eps()),
+                    model.eps.perturb(K),
                     train_nn_targets_fast[:, :, i],
                 ),
                 slice(None),

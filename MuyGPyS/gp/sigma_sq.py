@@ -7,7 +7,7 @@
 Sigma Square hyperparameter
 """
 
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Type
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import _fullname
@@ -29,9 +29,21 @@ class SigmaSq:
             The integer number of response dimensions.
     """
 
-    def __init__(self, response_count: int = 1):
-        self.val = mm.ones(response_count)
+    def __init__(
+        self,
+        response_count: int = 1,
+        _backend_ones: Callable = mm.ones,
+        _backend_ndarray: Type = mm.ndarray,
+        _backend_ftype: Type = mm.ftype,
+        _backend_farray: Callable = mm.farray,
+        **kwargs,
+    ):
+        self.val = _backend_ones(response_count)
         self._trained = False
+
+        self._backend_ndarray = _backend_ndarray
+        self._backend_ftype = _backend_ftype
+        self._backend_farray = _backend_farray
 
     def __str__(self, **kwargs):
         return f"{type(self).__name__}({self.val})"
@@ -44,18 +56,18 @@ class SigmaSq:
             val:
                 The new value of the hyperparameter.
         """
-        if not isinstance(val, mm.ndarray):
+        if not isinstance(val, self._backend_ndarray):
             raise ValueError(
-                f"Expected {_fullname(mm.ndarray)} for SigmaSq value update, "
-                f"not {_fullname(val.__class__)}"
+                f"Expected {_fullname(self._backend_ndarray)} for SigmaSq "
+                f"value update, not {_fullname(val.__class__)}"
             )
         if self.val.shape != val.shape:
             raise ValueError(
                 f"Bad attempt to assign SigmaSq of shape {self.val.shape} a "
                 f"value of shape {val.shape}"
             )
-        if val.dtype != mm.ftype:
-            val = mm.farray(val)
+        if val.dtype != self._backend_ftype:
+            val = self._backend_farray(val)
         self.val = val
         self._trained = True
 
@@ -89,9 +101,11 @@ class SigmaSq:
         return self.val.shape
 
 
-def sigma_sq_scale(fn: Callable) -> Callable:
+def sigma_sq_scale(
+    fn: Callable, _backend_outer_fn=mm.outer, **kwargs
+) -> Callable:
     def scaled_fn(*args, sigma_sq=[1.0], **kwargs):
-        return mm.outer(fn(*args, **kwargs), sigma_sq)
+        return _backend_outer_fn(fn(*args, **kwargs), sigma_sq)
 
     return scaled_fn
 

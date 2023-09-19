@@ -11,23 +11,19 @@ from typing import Callable, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
-from MuyGPyS.gp.noise import (
-    HeteroscedasticNoise,
-    HomoscedasticNoise,
-    NullNoise,
-    perturb_with_noise_model,
-)
+from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
 
 
 class PosteriorMean:
     def __init__(
         self,
         eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
-        **kwargs
+        _backend_fn: Callable = _muygps_posterior_mean,
+        **kwargs,
     ):
         self.eps = eps
-        self._fn = _muygps_posterior_mean
-        self._fn = perturb_with_noise_model(self._fn, self.eps)
+        self._fn = _backend_fn
+        self._fn = self.eps.perturb_fn(self._fn)
 
     def __call__(
         self,

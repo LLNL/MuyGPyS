@@ -13,5 +13,6 @@ gp
    gp/tensors
    gp/hyperparameter
    gp/kernels
+   gp/noise
    gp/MuyGPS
    gp/MultivariateMuyGPS

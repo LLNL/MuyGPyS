@@ -16,12 +16,15 @@ from MuyGPyS.gp.kernels import (
     Matern,
     RBF,
 )
-from MuyGPyS.gp.mean import PosteriorMean
+from MuyGPyS.gp.mean import _muygps_posterior_mean, PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
-from MuyGPyS.gp.variance import PosteriorVariance
+from MuyGPyS.gp.variance import _muygps_diagonal_variance, PosteriorVariance
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
-from MuyGPyS.gp.fast_mean import FastPosteriorMean
-from MuyGPyS.gp.fast_precompute import FastPrecomputeCoefficients
+from MuyGPyS.gp.fast_mean import _muygps_fast_posterior_mean, FastPosteriorMean
+from MuyGPyS.gp.fast_precompute import (
+    _muygps_fast_posterior_mean_precompute,
+    FastPrecomputeCoefficients,
+)
 
 
 @auto_str
@@ -95,18 +98,40 @@ class MuyGPS:
             NullNoise, HomoscedasticNoise, HeteroscedasticNoise
         ] = HomoscedasticNoise(0.0, "fixed"),
         response_count: int = 1,
+        _backend_mean_fn: Callable = _muygps_posterior_mean,
+        _backend_var_fn: Callable = _muygps_diagonal_variance,
+        _backend_fast_mean_fn: Callable = _muygps_fast_posterior_mean,
+        _backend_fast_precompute_fn: Callable = _muygps_fast_posterior_mean_precompute,
+        **_backend_kwargs,
     ):
+        self._backend_kwargs = _backend_kwargs
+
         self.kernel = kernel
-        self.sigma_sq = SigmaSq(response_count)
+        self.sigma_sq = SigmaSq(response_count, **_backend_kwargs)
         self.eps = eps
+        self._backend_mean_fn = _backend_mean_fn
+        self._backend_var_fn = _backend_var_fn
+        self._backend_fast_mean_fn = _backend_fast_mean_fn
+        self._backend_fast_precompute_fn = _backend_fast_precompute_fn
         self._make()
 
     def _make(self) -> None:
         self.kernel._make()
-        self._mean_fn = PosteriorMean(self.eps)
-        self._var_fn = PosteriorVariance(self.eps, self.sigma_sq)
-        self._fast_posterior_mean_fn = FastPosteriorMean()
-        self._fast_precompute_fn = FastPrecomputeCoefficients(self.eps)
+        self._mean_fn = PosteriorMean(
+            self.eps, _backend_fn=self._backend_mean_fn
+        )
+        self._var_fn = PosteriorVariance(
+            self.eps,
+            self.sigma_sq,
+            _backend_fn=self._backend_var_fn,
+            **self._backend_kwargs,
+        )
+        self._fast_posterior_mean_fn = FastPosteriorMean(
+            _backend_fn=self._backend_fast_mean_fn
+        )
+        self._fast_precompute_fn = FastPrecomputeCoefficients(
+            self.eps, _backend_fn=self._backend_fast_precompute_fn
+        )
 
     def set_eps(self, **eps) -> None:
         """
@@ -183,12 +208,14 @@ class MuyGPS:
 
         Args:
             K:
-                The full pairwise kernel tensor of shape
-                `(train_count, nn_count, nn_count)`.
-            train_nn_targets_fast:
-                The nearest neighbor response of each
-                training points of shape
-                `(train_count, nn_count, response_count)`.
+                A tensor of shape `(batch_count, nn_count, nn_count)` containing
+                the `(nn_count, nn_count)`-shaped kernel matrices corresponding
+                to each of the batch elements.
+            Kcross:
+                A matrix of shape `(batch_count, nn_count)` whose rows consist
+                of `(1, nn_count)`-shaped cross-covariance vector corresponding
+                to each of the batch elements and its nearest neighbors.
+
         Returns:
             A matrix of shape `(train_count, nn_count)` whose rows are
             the precomputed coefficients for fast posterior mean inference.
@@ -236,12 +263,12 @@ class MuyGPS:
         Args:
             K:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count` -shaped kernel matrices corresponding
+                the `(nn_count, nn_count)`-shaped kernel matrices corresponding
                 to each of the batch elements.
             Kcross:
-                A matrix of shape `(batch_count, nn_count)` containing the
-                `1 x nn_count` -shaped cross-covariance matrix corresponding
-                to each of the batch elements.
+                A matrix of shape `(batch_count, nn_count)` whose rows consist
+                of `(1, nn_count)`-shaped cross-covariance vector corresponding
+                to each of the batch elements and its nearest neighbors.
             batch_nn_targets:
                 A tensor of shape `(batch_count, nn_count, response_count)`
                 whose last dimension lists the vector-valued responses for the
@@ -276,12 +303,12 @@ class MuyGPS:
         Args:
             K:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count` -shaped kernel matrices corresponding
+                the `(nn_count, nn_count)`-shaped kernel matrices corresponding
                 to each of the batch elements.
             Kcross:
-                A matrix of shape `(batch_count, nn_count)` containing the
-                `1 x nn_count` -shaped cross-covariance matrix corresponding
-                to each of the batch elements.
+                A matrix of shape `(batch_count, nn_count)` whose rows consist
+                of `(1, nn_count)`-shaped cross-covariance vector corresponding
+                to each of the batch elements and its nearest neighbors.
 
         Returns:
             A vector of shape `(batch_count, response_count)` consisting of the
@@ -319,9 +346,9 @@ class MuyGPS:
 
         Args:
             Kcross:
-                A matrix of shape `(batch_count, nn_count)` containing the
-                `1 x nn_count` -shaped cross-covariance vector corresponding
-                to each of the batch elements.
+                A matrix of shape `(batch_count, nn_count)` whose rows consist
+                of `(1, nn_count)`-shaped cross-covariance vector corresponding
+                to each of the batch elements and its nearest neighbors.
             coeffs_tensor:
                 A matrix of shape `(batch_count, nn_count, response_count)`
                 whose rows are given by precomputed coefficients.
