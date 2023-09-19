@@ -23,13 +23,13 @@ class FastPrecomputeCoefficients:
         _backend_fn: Callable = _muygps_fast_posterior_mean_precompute,
         **kwargs,
     ):
-        self.eps = eps
         self._fn = _backend_fn
-        self._fn = self.eps.perturb_fn(self._fn)
+        self._fn = eps.perturb_fn(self._fn)
 
     def __call__(
         self,
         K: mm.ndarray,
         train_nn_targets_fast: mm.ndarray,
+        **kwargs,
     ) -> mm.ndarray:
-        return self._fn(K, train_nn_targets_fast, eps=self.eps())
+        return self._fn(K, train_nn_targets_fast, **kwargs)

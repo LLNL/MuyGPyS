@@ -23,10 +23,8 @@ class PosteriorVariance:
         apply_sigma_sq: bool = True,
         _backend_fn: Callable = _muygps_diagonal_variance,
     ):
-        self.eps = eps
-        self.sigma_sq = sigma_sq
         self._fn = _backend_fn
-        self._fn = self.eps.perturb_fn(self._fn)
+        self._fn = eps.perturb_fn(self._fn)
         if apply_sigma_sq is True:
             self._fn = sigma_sq.scale_fn(self._fn)
 
@@ -34,17 +32,9 @@ class PosteriorVariance:
         self,
         K: mm.ndarray,
         Kcross: mm.ndarray,
+        **kwargs,
     ) -> mm.ndarray:
-        return self._fn(K, Kcross, eps=self.eps(), sigma_sq=self.sigma_sq())
+        return self._fn(K, Kcross, **kwargs)
 
     def get_opt_fn(self) -> Callable:
-        return self._get_opt_fn(self._fn, self.eps, self.sigma_sq)
-
-    @staticmethod
-    def _get_opt_fn(
-        var_fn: Callable,
-        eps: Union[HomoscedasticNoise, HeteroscedasticNoise, NullNoise],
-        sigma_sq: SigmaSq,
-    ) -> Callable:
-        opt_fn = eps.apply(var_fn, "eps")
-        return opt_fn
+        return self._fn
