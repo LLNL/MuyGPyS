@@ -121,10 +121,7 @@ class MuyGPS:
             self.eps, _backend_fn=self._backend_mean_fn
         )
         self._var_fn = PosteriorVariance(
-            self.eps,
-            self.sigma_sq,
-            _backend_fn=self._backend_var_fn,
-            **self._backend_kwargs,
+            self.eps, self.sigma_sq, _backend_fn=self._backend_var_fn
         )
         self._fast_posterior_mean_fn = FastPosteriorMean(
             _backend_fn=self._backend_fast_mean_fn

@@ -36,6 +36,7 @@ class SigmaSq:
         _backend_ndarray: Type = mm.ndarray,
         _backend_ftype: Type = mm.ftype,
         _backend_farray: Callable = mm.farray,
+        _backend_outer: Callable = mm.outer,
         **kwargs,
     ):
         self.val = _backend_ones(response_count)
@@ -44,6 +45,7 @@ class SigmaSq:
         self._backend_ndarray = _backend_ndarray
         self._backend_ftype = _backend_ftype
         self._backend_farray = _backend_farray
+        self._backend_outer = _backend_outer
 
     def __str__(self, **kwargs):
         return f"{type(self).__name__}({self.val})"
@@ -100,14 +102,22 @@ class SigmaSq:
         """
         return self.val.shape
 
+    def scale_fn(self, fn: Callable) -> Callable:
+        """
+        Modify a function to outer product its output with `sigma_sq`.
 
-def sigma_sq_scale(
-    fn: Callable, _backend_outer_fn=mm.outer, **kwargs
-) -> Callable:
-    def scaled_fn(*args, sigma_sq=[1.0], **kwargs):
-        return _backend_outer_fn(fn(*args, **kwargs), sigma_sq)
+        Args:
+            fn:
+                A function.
 
-    return scaled_fn
+        Returns:
+            A function that returns the outer product of the output of `fn`
+        """
+
+        def scaled_fn(*args, sigma_sq=self(), **kwargs):
+            return self._backend_outer(fn(*args, **kwargs), sigma_sq)
+
+        return scaled_fn
 
 
 def sigma_sq_apply(fn: Callable, sigma_sq: SigmaSq) -> Callable:
