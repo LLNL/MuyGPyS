@@ -11,7 +11,7 @@ from typing import Callable, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
-from MuyGPyS.gp.sigma_sq import SigmaSq, sigma_sq_apply
+from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise, NullNoise
 
 
@@ -47,5 +47,4 @@ class PosteriorVariance:
         sigma_sq: SigmaSq,
     ) -> Callable:
         opt_fn = eps.apply(var_fn, "eps")
-        opt_fn = sigma_sq_apply(opt_fn, sigma_sq)
         return opt_fn

@@ -118,10 +118,3 @@ class SigmaSq:
             return self._backend_outer(fn(*args, **kwargs), sigma_sq)
 
         return scaled_fn
-
-
-def sigma_sq_apply(fn: Callable, sigma_sq: SigmaSq) -> Callable:
-    def scaled_fn(*args, **kwargs):
-        return fn(*args, sigma_sq=sigma_sq(), **kwargs)
-
-    return scaled_fn
