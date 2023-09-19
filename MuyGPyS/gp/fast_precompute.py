@@ -7,19 +7,19 @@
 MuyGPs implementation
 """
 
-from typing import Callable, Union
+from typing import Callable
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import (
     _muygps_fast_posterior_mean_precompute,
 )
-from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise, NullNoise
+from MuyGPyS.gp.noise import NoiseFn
 
 
 class FastPrecomputeCoefficients:
     def __init__(
         self,
-        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
+        eps: NoiseFn,
         _backend_fn: Callable = _muygps_fast_posterior_mean_precompute,
         **kwargs,
     ):

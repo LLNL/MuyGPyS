@@ -14,9 +14,10 @@ from typing import Callable
 import MuyGPyS._src.math as mm
 
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.noise.noise_fn import NoiseFn
 
 
-class NullNoise(ScalarHyperparameter):
+class NullNoise(ScalarHyperparameter, NoiseFn):
     """
     A zero noise assumption model.
     """

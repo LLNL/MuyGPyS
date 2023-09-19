@@ -7,17 +7,17 @@
 MuyGPs implementation
 """
 
-from typing import Callable, Union
+from typing import Callable
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
-from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
+from MuyGPyS.gp.noise import NoiseFn
 
 
 class PosteriorMean:
     def __init__(
         self,
-        eps: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
+        eps: NoiseFn,
         _backend_fn: Callable = _muygps_posterior_mean,
         **kwargs,
     ):

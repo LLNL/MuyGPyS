@@ -7,18 +7,18 @@
 MuyGPs implementation
 """
 
-from typing import Callable, Union
+from typing import Callable
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
 from MuyGPyS.gp.sigma_sq import SigmaSq
-from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise, NullNoise
+from MuyGPyS.gp.noise import NoiseFn
 
 
 class PosteriorVariance:
     def __init__(
         self,
-        eps: Union[HomoscedasticNoise, HeteroscedasticNoise, NullNoise],
+        eps: NoiseFn,
         sigma_sq: SigmaSq,
         apply_sigma_sq: bool = True,
         _backend_fn: Callable = _muygps_diagonal_variance,

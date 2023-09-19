@@ -19,7 +19,7 @@ from MuyGPyS.gp.kernels import (
 from MuyGPyS.gp.mean import _muygps_posterior_mean, PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import _muygps_diagonal_variance, PosteriorVariance
-from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
 from MuyGPyS.gp.fast_mean import _muygps_fast_posterior_mean, FastPosteriorMean
 from MuyGPyS.gp.fast_precompute import (
     _muygps_fast_posterior_mean_precompute,
@@ -94,9 +94,7 @@ class MuyGPS:
     def __init__(
         self,
         kernel: Union[Matern, RBF],
-        eps: Union[
-            NullNoise, HomoscedasticNoise, HeteroscedasticNoise
-        ] = HomoscedasticNoise(0.0, "fixed"),
+        eps: NoiseFn = HomoscedasticNoise(0.0, "fixed"),
         response_count: int = 1,
         _backend_mean_fn: Callable = _muygps_posterior_mean,
         _backend_var_fn: Callable = _muygps_diagonal_variance,
@@ -129,18 +127,6 @@ class MuyGPS:
         self._fast_precompute_fn = FastPrecomputeCoefficients(
             self.eps, _backend_fn=self._backend_fast_precompute_fn
         )
-
-    def set_eps(self, **eps) -> None:
-        """
-        Reset :math:`\\varepsilon` value or bounds.
-
-        Uses existing value and bounds as defaults.
-
-        Args:
-            eps:
-                A hyperparameter dict.
-        """
-        self.eps._set(**eps)
 
     def fixed(self) -> bool:
         """
@@ -357,10 +343,7 @@ class MuyGPS:
         """
         return self._fast_posterior_mean_fn(Kcross, coeffs_tensor)
 
-    def apply_new_noise(
-        self,
-        new_noise: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
-    ):
+    def apply_new_noise(self, new_noise: NoiseFn):
         """
         Updates the homo/heteroscedastic noise parameter(s) of a MuyGPs model.
         To be used when the MuyGPs model has been trained and needs to be
