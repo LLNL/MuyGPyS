@@ -1684,8 +1684,8 @@ class OptimTest(OptimTestCase):
         obj_fn_het_j = self._get_obj_fn_heteroscedastic_j()
         obj_fn_het_n = self._get_obj_fn_heteroscedastic_n()
 
-        mopt_n = scipy_optimize_n(self.muygps, obj_fn_n, **self.sopt_kwargs)
-        mopt_j = scipy_optimize_j(self.muygps, obj_fn_j, **self.sopt_kwargs)
+        mopt_n = scipy_optimize_n(self.muygps_n, obj_fn_n, **self.sopt_kwargs)
+        mopt_j = scipy_optimize_j(self.muygps_j, obj_fn_j, **self.sopt_kwargs)
         mopt_het_j = scipy_optimize_j(
             self.muygps_heteroscedastic, obj_fn_het_j, **self.sopt_kwargs
         )
@@ -1721,8 +1721,8 @@ class BayesOptimTest(OptimTestCase):
         obj_fn_het_j = self._get_obj_fn_heteroscedastic_j()
         obj_fn_het_n = self._get_obj_fn_heteroscedastic_n()
 
-        mopt_n = bayes_optimize_n(self.muygps, obj_fn_n, **self.bopt_kwargs)
-        mopt_j = bayes_optimize_j(self.muygps, obj_fn_j, **self.bopt_kwargs)
+        mopt_n = bayes_optimize_n(self.muygps_n, obj_fn_n, **self.bopt_kwargs)
+        mopt_j = bayes_optimize_j(self.muygps_j, obj_fn_j, **self.bopt_kwargs)
         mopt_het_j = bayes_optimize_j(
             self.muygps_heteroscedastic, obj_fn_het_j, **self.bopt_kwargs
         )

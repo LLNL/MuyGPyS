@@ -1249,26 +1249,22 @@ class OptimTestCase(MuyGPSTestCase):
 
     def _get_sigma_sq_fn_n(self):
         return make_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_n, homoscedastic_perturb_n
+            self.muygps, analytic_sigma_sq_optim_n
         )
 
     def _get_sigma_sq_fn_heteroscedastic_n(self):
         return make_analytic_sigma_sq_optim(
-            self.muygps_heteroscedastic,
-            analytic_sigma_sq_optim_n,
-            heteroscedastic_perturb_n,
+            self.muygps_heteroscedastic, analytic_sigma_sq_optim_n
         )
 
     def _get_sigma_sq_fn_m(self):
         return make_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_m, homoscedastic_perturb_m
+            self.muygps, analytic_sigma_sq_optim_m
         )
 
     def _get_sigma_sq_fn_heteroscedastic_m(self):
         return make_analytic_sigma_sq_optim(
-            self.muygps_heteroscedastic_chunk,
-            analytic_sigma_sq_optim_m,
-            heteroscedastic_perturb_m,
+            self.muygps_heteroscedastic_chunk, analytic_sigma_sq_optim_m
         )
 
     # Numpy objective functions
