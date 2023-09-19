@@ -14,9 +14,16 @@ from typing import Callable, Optional, Tuple, Type
 
 import MuyGPyS._src.math as mm
 
-from MuyGPyS._src.math.jax import ndarray as jax_ndarray
 from MuyGPyS._src.math.numpy import ndarray as numpy_ndarray
-from MuyGPyS._src.math.torch import ndarray as torch_ndarray
+
+try:
+    from MuyGPyS._src.math.jax import ndarray as jax_ndarray
+except Exception:
+    from MuyGPyS._src.math.numpy import ndarray as jax_ndarray  # type: ignore
+try:
+    from MuyGPyS._src.math.torch import ndarray as torch_ndarray
+except Exception:
+    from MuyGPyS._src.math.numpy import ndarray as torch_ndarray  # type: ignore
 
 
 class TensorHyperparameter:
