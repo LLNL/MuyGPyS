@@ -34,6 +34,7 @@ from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
@@ -113,6 +114,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": SigmaSq(1),
                     },
                     {
                         "kernel": Matern(
@@ -123,6 +125,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
+                        "sigma_sq": SigmaSq(1),
                     },
                     {
                         "kernel": Matern(
@@ -133,6 +136,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
+                        "sigma_sq": SigmaSq(1),
                     },
                     {
                         "kernel": Matern(
@@ -143,6 +147,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": SigmaSq(1),
                     },
                     {
                         "kernel": Matern(
@@ -153,6 +158,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
+                        "sigma_sq": SigmaSq(1),
                     },
                     {
                         "kernel": Matern(
@@ -163,6 +169,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
+                        "sigma_sq": SigmaSq(1),
                     },
                 ],
             )
@@ -197,18 +204,18 @@ class SigmaSqTest(parameterized.TestCase):
 
         K = mm.zeros((data_count, nn_count, nn_count))
         nn_targets = _consistent_unchunk_tensor(nn_targets)
-        for i, muygps in enumerate(mmuygps.models):
-            K = _consistent_unchunk_tensor(muygps.kernel(pairwise_diffs))
+        for i, model in enumerate(mmuygps.models):
+            K = _consistent_unchunk_tensor(model.kernel(pairwise_diffs))
             sigmas = _get_sigma_sq_series(
                 K,
                 nn_targets[:, :, i].reshape(data_count, nn_count, 1),
-                muygps.eps(),
+                model.eps(),
             )
             _check_ndarray(self.assertEqual, sigmas, mm.ftype)
-            _check_ndarray(self.assertEqual, muygps.sigma_sq(), mm.ftype)
+            _check_ndarray(self.assertEqual, model.sigma_sq(), mm.ftype)
             self.assertEqual(sigmas.shape, (data_count,))
             self.assertAlmostEqual(
-                np.array(muygps.sigma_sq()[0]),
+                np.array(model.sigma_sq()[0]),
                 np.mean(np.array(sigmas)),
                 5,
             )
@@ -715,6 +722,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": SigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -725,6 +733,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": SigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -735,6 +744,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": SigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -745,6 +755,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": SigmaSq(),
                     },
                 ),
             )

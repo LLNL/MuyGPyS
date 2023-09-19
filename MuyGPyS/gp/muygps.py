@@ -92,17 +92,14 @@ class MuyGPS:
         self,
         kernel: KernelFn,
         eps: NoiseFn = HomoscedasticNoise(0.0, "fixed"),
-        response_count: int = 1,
+        sigma_sq: SigmaSq = SigmaSq(response_count=1),
         _backend_mean_fn: Callable = _muygps_posterior_mean,
         _backend_var_fn: Callable = _muygps_diagonal_variance,
         _backend_fast_mean_fn: Callable = _muygps_fast_posterior_mean,
         _backend_fast_precompute_fn: Callable = _muygps_fast_posterior_mean_precompute,
-        **_backend_kwargs,
     ):
-        self._backend_kwargs = _backend_kwargs
-
         self.kernel = kernel
-        self.sigma_sq = SigmaSq(response_count, **_backend_kwargs)
+        self.sigma_sq = sigma_sq
         self.eps = eps
         self._backend_mean_fn = _backend_mean_fn
         self._backend_var_fn = _backend_var_fn

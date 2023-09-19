@@ -22,6 +22,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
@@ -159,7 +160,7 @@ def make_regressor(
     time_nn = perf_counter()
 
     # create MuyGPs object
-    muygps = MuyGPS(**k_kwargs, response_count=response_count)
+    muygps = MuyGPS(**k_kwargs, sigma_sq=SigmaSq(response_count=response_count))
 
     skip_opt = muygps.fixed()
     if skip_opt is False or sigma_method is not None:

@@ -37,6 +37,7 @@ from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
+from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.tensors import (
     make_train_tensors,
     make_predict_tensors,
@@ -799,7 +800,9 @@ class GPSigmaSqTest(GPTestCase):
         nn_kwargs,
         k_kwargs,
     ):
-        muygps = MuyGPS(response_count=response_count, **k_kwargs)
+        muygps = MuyGPS(
+            sigma_sq=SigmaSq(response_count=response_count), **k_kwargs
+        )
 
         # prepare data
         data = _make_gaussian_dict(data_count, feature_count, response_count)

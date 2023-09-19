@@ -65,7 +65,7 @@ class MultivariateMuyGPS:
         *model_args,
     ):
         self.models = [MuyGPS(**args) for args in model_args]
-        self.sigma_sq = SigmaSq(len(self.models))
+        self.sigma_sq = SigmaSq(response_count=len(self.models))
 
     def fixed(self) -> bool:
         """
