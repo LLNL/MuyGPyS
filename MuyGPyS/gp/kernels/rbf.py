@@ -37,15 +37,15 @@ Example:
     >>> Kcross = kernel_fn(crosswise_diffs)
 """
 
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import _rbf_fn
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.distortion import (
-    embed_with_distortion_model,
-    AnisotropicDistortion,
+    DistortionFn,
     IsotropicDistortion,
+    embed_with_distortion_model,
     F2,
 )
 from MuyGPyS.gp.kernels import KernelFn
@@ -76,9 +76,9 @@ class RBF(KernelFn):
 
     def __init__(
         self,
-        metric: Union[
-            AnisotropicDistortion, IsotropicDistortion
-        ] = IsotropicDistortion(F2, length_scale=ScalarHyperparameter(1.0)),
+        metric: DistortionFn = IsotropicDistortion(
+            F2, length_scale=ScalarHyperparameter(1.0)
+        ),
     ):
         super().__init__(metric=metric)
         self._kernel_fn = _rbf_fn

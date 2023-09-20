@@ -3,41 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Dict, Callable, Union
-
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
-from MuyGPyS.gp.hyperparameter.experimental import (
-    HierarchicalNonstationaryHyperparameter,
-)
+from MuyGPyS.gp.distortion.distortion_fn import DistortionFn
 
 
-class NullDistortion:
-    def __init__(
-        self,
-        metric: Callable,
-        length_scale: Union[
-            ScalarHyperparameter, HierarchicalNonstationaryHyperparameter
-        ],
-    ):
-        self.length_scale = length_scale
-        self._dist_fn = metric
-
-    def __call__(self, *args, **kwargs):
-        raise NotImplementedError("NullDistortion cannot be called!")
-
-    def populate_length_scale(
-        self, hyperparameters: Dict, *args, **kwargs
-    ) -> None:
-        """
-        A no-op placeholder function for NullDistortion objects.
-        """
-
-    def get_opt_fn(self, *args, **kwargs):
-        raise NotImplementedError(
-            "NullDistortion cannot be used in optimization!"
-        )
-
-    def get_opt_params(self, *args, **kwargs):
-        raise NotImplementedError(
-            "NullDistortion cannot be used in optimization!"
-        )
+class NullDistortion(DistortionFn):
+    pass

@@ -8,6 +8,7 @@ from typing import List, Tuple, Callable, Dict
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
 
+from MuyGPyS.gp.distortion.distortion_fn import DistortionFn
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
@@ -15,11 +16,11 @@ from MuyGPyS.gp.hyperparameter.experimental import (
 
 
 @auto_str
-class AnisotropicDistortion:
+class AnisotropicDistortion(DistortionFn):
     """
     An isotropic distance model.
 
-    IsotropicDistortion parameterizes a scaled elementwise distance function
+    AnisotropicDistortion parameterizes a scaled elementwise distance function
     :math:`d(\\cdot, \\cdot)`, and is paramterized by a vector-valued
     :math:`\\mathbf{\\ell}>0` length scale hyperparameter.
 

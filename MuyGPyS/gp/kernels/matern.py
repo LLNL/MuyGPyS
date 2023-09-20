@@ -37,7 +37,7 @@ Example:
     >>> Kcross = kern(crosswise_diffs)
 """
 
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import (
@@ -50,10 +50,9 @@ from MuyGPyS._src.gp.kernels import (
 
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.distortion import (
-    embed_with_distortion_model,
-    AnisotropicDistortion,
+    DistortionFn,
     IsotropicDistortion,
-    NullDistortion,
+    embed_with_distortion_model,
     l2,
 )
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
@@ -116,9 +115,9 @@ class Matern(KernelFn):
     def __init__(
         self,
         nu: ScalarHyperparameter = ScalarHyperparameter(0.5),
-        metric: Union[
-            AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion(l2, length_scale=ScalarHyperparameter(1.0)),
+        metric: DistortionFn = IsotropicDistortion(
+            l2, length_scale=ScalarHyperparameter(1.0)
+        ),
     ):
         super().__init__(metric=metric)
         self.nu = nu
@@ -190,9 +189,7 @@ class Matern(KernelFn):
     @staticmethod
     def _get_opt_fn(
         matern_fn: Callable,
-        distortion_fn: Union[
-            AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ],
+        distortion_fn: DistortionFn,
         nu: ScalarHyperparameter,
     ) -> Callable:
         opt_fn = KernelFn._get_opt_fn(matern_fn, distortion_fn)

@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
+from MuyGPyS.gp.distortion.distortion_fn import DistortionFn
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
@@ -15,7 +16,7 @@ from MuyGPyS.gp.hyperparameter.experimental import (
 
 
 @auto_str
-class IsotropicDistortion:
+class IsotropicDistortion(DistortionFn):
     """
     An isotropic distance model.
 
