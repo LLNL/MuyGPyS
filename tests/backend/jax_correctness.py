@@ -764,7 +764,7 @@ class MuyGPSTestCase(KernelTestCase):
         )
 
         cls.Kcross_n = cls.muygps_gen_n.kernel(cls.crosswise_diffs_n)
-        cls.Kcorss_j = cls.muygps_gen_j.kernel(cls.crosswise_diffs_j)
+        cls.Kcross_j = cls.muygps_gen_j.kernel(cls.crosswise_diffs_j)
 
 
 class MuyGPSTest(MuyGPSTestCase):
@@ -1341,10 +1341,10 @@ class OptimTestCase(MuyGPSTestCase):
         )
 
 
-class ObjectiveTest(OptimTestCase):
+class LossTest(OptimTestCase):
     @classmethod
     def setUpClass(cls):
-        super(ObjectiveTest, cls).setUpClass()
+        super(LossTest, cls).setUpClass()
 
         cls.sigma_sq_n = cls.muygps_gen_n.sigma_sq()
         cls.sigma_sq_j = jnp.array(cls.muygps_gen_j.sigma_sq())
@@ -1436,13 +1436,22 @@ class ObjectiveTest(OptimTestCase):
             )
         )
 
+
+class ObjectivePartsTest(OptimTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(ObjectivePartsTest, cls).setUpClass()
+
+        cls.sigma_sq_n = cls.muygps_gen_n.sigma_sq()
+        cls.sigma_sq_j = jnp.array(cls.muygps_gen_j.sigma_sq())
+
     def test_kernel_fn(self):
         self.assertTrue(
             allclose_gen(
-                self.muygps_gen_n.kernel(
+                self.muygps_gen_n.kernel.get_opt_fn()(
                     self.pairwise_diffs_n, **self.x0_map_n
                 ),
-                self.muygps_gen_j.kernel(
+                self.muygps_gen_j.kernel.get_opt_fn()(
                     self.pairwise_diffs_j, **self.x0_map_j
                 ),
             )
@@ -1559,6 +1568,15 @@ class ObjectiveTest(OptimTestCase):
                 ),
             )
         )
+
+
+class ObjectiveTest(OptimTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(ObjectiveTest, cls).setUpClass()
+
+        cls.sigma_sq_n = cls.muygps_gen_n.sigma_sq()
+        cls.sigma_sq_j = jnp.array(cls.muygps_gen_j.sigma_sq())
 
     def test_loo_crossval(self):
         obj_fn_n = self._get_obj_fn_n()
