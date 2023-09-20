@@ -7,19 +7,16 @@
 MuyGPs implementation
 """
 
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Tuple
 from copy import deepcopy
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
-from MuyGPyS.gp.kernels import (
-    Matern,
-    RBF,
-)
+from MuyGPyS.gp.kernels import KernelFn
 from MuyGPyS.gp.mean import _muygps_posterior_mean, PosteriorMean
 from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import _muygps_diagonal_variance, PosteriorVariance
-from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
 from MuyGPyS.gp.fast_mean import _muygps_fast_posterior_mean, FastPosteriorMean
 from MuyGPyS.gp.fast_precompute import (
     _muygps_fast_posterior_mean_precompute,
@@ -93,21 +90,16 @@ class MuyGPS:
 
     def __init__(
         self,
-        kernel: Union[Matern, RBF],
-        eps: Union[
-            NullNoise, HomoscedasticNoise, HeteroscedasticNoise
-        ] = HomoscedasticNoise(0.0, "fixed"),
-        response_count: int = 1,
+        kernel: KernelFn,
+        eps: NoiseFn = HomoscedasticNoise(0.0, "fixed"),
+        sigma_sq: SigmaSq = SigmaSq(response_count=1),
         _backend_mean_fn: Callable = _muygps_posterior_mean,
         _backend_var_fn: Callable = _muygps_diagonal_variance,
         _backend_fast_mean_fn: Callable = _muygps_fast_posterior_mean,
         _backend_fast_precompute_fn: Callable = _muygps_fast_posterior_mean_precompute,
-        **_backend_kwargs,
     ):
-        self._backend_kwargs = _backend_kwargs
-
         self.kernel = kernel
-        self.sigma_sq = SigmaSq(response_count, **_backend_kwargs)
+        self.sigma_sq = sigma_sq
         self.eps = eps
         self._backend_mean_fn = _backend_mean_fn
         self._backend_var_fn = _backend_var_fn
@@ -121,10 +113,7 @@ class MuyGPS:
             self.eps, _backend_fn=self._backend_mean_fn
         )
         self._var_fn = PosteriorVariance(
-            self.eps,
-            self.sigma_sq,
-            _backend_fn=self._backend_var_fn,
-            **self._backend_kwargs,
+            self.eps, self.sigma_sq, _backend_fn=self._backend_var_fn
         )
         self._fast_posterior_mean_fn = FastPosteriorMean(
             _backend_fn=self._backend_fast_mean_fn
@@ -132,18 +121,6 @@ class MuyGPS:
         self._fast_precompute_fn = FastPrecomputeCoefficients(
             self.eps, _backend_fn=self._backend_fast_precompute_fn
         )
-
-    def set_eps(self, **eps) -> None:
-        """
-        Reset :math:`\\varepsilon` value or bounds.
-
-        Uses existing value and bounds as defaults.
-
-        Args:
-            eps:
-                A hyperparameter dict.
-        """
-        self.eps._set(**eps)
 
     def fixed(self) -> bool:
         """
@@ -360,10 +337,7 @@ class MuyGPS:
         """
         return self._fast_posterior_mean_fn(Kcross, coeffs_tensor)
 
-    def apply_new_noise(
-        self,
-        new_noise: Union[HeteroscedasticNoise, HomoscedasticNoise, NullNoise],
-    ):
+    def apply_new_noise(self, new_noise: NoiseFn):
         """
         Updates the homo/heteroscedastic noise parameter(s) of a MuyGPs model.
         To be used when the MuyGPs model has been trained and needs to be
@@ -416,6 +390,15 @@ class MuyGPS:
             values for unfixed parameters.
         """
         return self._var_fn.get_opt_fn()
+
+    def optimize_sigma_sq(
+        self, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
+    ):
+        K = self.kernel(pairwise_diffs)
+        opt_fn = self.sigma_sq.get_opt_fn(self)
+        self.sigma_sq._set(opt_fn(K, nn_targets))
+        self._make()
+        return self
 
     def __eq__(self, rhs) -> bool:
         if isinstance(rhs, self.__class__):

@@ -37,13 +37,13 @@ from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
+from MuyGPyS.gp.sigma_sq import SigmaSq, AnalyticSigmaSq
 from MuyGPyS.gp.tensors import (
     make_train_tensors,
     make_predict_tensors,
 )
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.loss import mse_fn
-from MuyGPyS.optimize.sigma_sq import muygps_sigma_sq_optim
 
 
 class GPInitTest(parameterized.TestCase):
@@ -686,19 +686,26 @@ class MakeClassifierTest(parameterized.TestCase):
 class MakeRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lf, ssm, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lf, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lf in [mse_fn]
             # for ssm in ["analytic"]
-            for ssm in ["analytic", None]
             for k_kwargs in (
                 {
                     "kernel": Matern(
                         nu=ScalarHyperparameter("sample", (1e-1, 1e0))
                     ),
                     "eps": HomoscedasticNoise(1e-5),
+                    "sigma_sq": SigmaSq(),
+                },
+                {
+                    "kernel": Matern(
+                        nu=ScalarHyperparameter("sample", (1e-1, 1e0))
+                    ),
+                    "eps": HomoscedasticNoise(1e-5),
+                    "sigma_sq": AnalyticSigmaSq(),
                 },
             )
         )
@@ -712,7 +719,6 @@ class MakeRegressorTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_fn,
-        sigma_method,
         k_kwargs,
     ):
         if config.state.backend == "torch":
@@ -734,7 +740,6 @@ class MakeRegressorTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_fn=loss_fn,
-            sigma_method=sigma_method,
             opt_method="bayes",
             opt_kwargs={
                 "allow_duplicate_points": True,
@@ -758,25 +763,23 @@ class MakeRegressorTest(parameterized.TestCase):
                     muygps.kernel._hyperparameters[name](),
                 )
 
-        if sigma_method is None:
-            self.assertFalse(muygps.sigma_sq.trained)
-            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
-        else:
-            self.assertTrue(muygps.sigma_sq.trained)
+        self.assertTrue(muygps.sigma_sq.trained)
+        if isinstance(muygps.sigma_sq, AnalyticSigmaSq):
             print(f"\toptimized sigma_sq to find value " f"{muygps.sigma_sq()}")
+        else:
+            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
 
 
 class GPSigmaSqTest(GPTestCase):
     @parameterized.parameters(
         (
-            (1000, f, r, sm, 10, nn_kwargs, k_kwargs)
+            (1000, f, r, 10, nn_kwargs, k_kwargs)
             for f in [50, 1]
             for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [10]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for sm in ["analytic"]
             for k_kwargs in (
                 {
                     "kernel": Matern(nu=ScalarHyperparameter(1.5)),
@@ -794,12 +797,13 @@ class GPSigmaSqTest(GPTestCase):
         data_count,
         feature_count,
         response_count,
-        sigma_method,
         nn_count,
         nn_kwargs,
         k_kwargs,
     ):
-        muygps = MuyGPS(response_count=response_count, **k_kwargs)
+        muygps = MuyGPS(
+            sigma_sq=AnalyticSigmaSq(response_count=response_count), **k_kwargs
+        )
 
         # prepare data
         data = _make_gaussian_dict(data_count, feature_count, response_count)
@@ -816,9 +820,7 @@ class GPSigmaSqTest(GPTestCase):
         )
 
         K = muygps.kernel(pairwise_diffs)
-        muygps = muygps_sigma_sq_optim(
-            muygps, pairwise_diffs, nn_targets, sigma_method=sigma_method
-        )
+        muygps = muygps.optimize_sigma_sq(pairwise_diffs, nn_targets)
 
         K = _consistent_unchunk_tensor(K)
         nn_targets = _consistent_unchunk_tensor(nn_targets)

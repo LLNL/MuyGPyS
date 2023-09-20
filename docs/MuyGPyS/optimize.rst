@@ -13,4 +13,3 @@ optimize
    optimize/chassis
    optimize/loss
    optimize/objective
-   optimize/sigma_sq

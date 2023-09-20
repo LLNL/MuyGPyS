@@ -94,6 +94,7 @@ from MuyGPyS.gp.distortion import (
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
+from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import (
@@ -107,7 +108,6 @@ from MuyGPyS.optimize.loss import (
     make_var_predict_and_loss_fn,
 )
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
-from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
 
 if config.state.torch_enabled is False:
     raise ValueError("Bad attempt to run torch-only code with torch diabled.")
@@ -307,15 +307,17 @@ class TensorsTestCase(parameterized.TestCase):
             eps=HomoscedasticNoise(
                 cls.eps, _backend_fn=homoscedastic_perturb_n
             ),
+            sigma_sq=AnalyticSigmaSq(
+                _backend_ones=np.ones,
+                _backend_ndarray=np.ndarray,
+                _backend_ftype=np.ftype,
+                _backend_farray=np.farray,
+                _backend_outer=np.outer,
+            ),
             _backend_mean_fn=muygps_posterior_mean_n,
             _backend_var_fn=muygps_diagonal_variance_n,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_n,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_n,
-            _backend_ones=np.ones,
-            _backend_ndarray=np.ndarray,
-            _backend_ftype=np.ftype,
-            _backend_farray=np.farray,
-            _backend_outer=np.outer,
         )
         cls.muygps_t = MuyGPS(
             kernel=Matern(
@@ -327,15 +329,17 @@ class TensorsTestCase(parameterized.TestCase):
             eps=HomoscedasticNoise(
                 cls.eps, _backend_fn=homoscedastic_perturb_t
             ),
+            sigma_sq=AnalyticSigmaSq(
+                _backend_ones=torch.ones,
+                _backend_ndarray=torch.ndarray,
+                _backend_ftype=torch.ftype,
+                _backend_farray=torch.farray,
+                _backend_outer=torch.outer,
+            ),
             _backend_mean_fn=muygps_posterior_mean_t,
             _backend_var_fn=muygps_diagonal_variance_t,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_t,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_t,
-            _backend_ones=torch.ones,
-            _backend_ndarray=torch.ndarray,
-            _backend_ftype=torch.ftype,
-            _backend_farray=torch.farray,
-            _backend_outer=torch.outer,
         )
         cls.muygps_heteroscedastic_n = MuyGPS(
             kernel=Matern(
@@ -347,15 +351,17 @@ class TensorsTestCase(parameterized.TestCase):
             eps=HeteroscedasticNoise(
                 cls.eps_heteroscedastic_n, _backend_fn=heteroscedastic_perturb_n
             ),
+            sigma_sq=AnalyticSigmaSq(
+                _backend_ones=np.ones,
+                _backend_ndarray=np.ndarray,
+                _backend_ftype=np.ftype,
+                _backend_farray=np.farray,
+                _backend_outer=np.outer,
+            ),
             _backend_mean_fn=muygps_posterior_mean_n,
             _backend_var_fn=muygps_diagonal_variance_n,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_n,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_n,
-            _backend_ones=np.ones,
-            _backend_ndarray=np.ndarray,
-            _backend_ftype=np.ftype,
-            _backend_farray=np.farray,
-            _backend_outer=np.outer,
         )
         cls.muygps_heteroscedastic_t = MuyGPS(
             kernel=Matern(
@@ -367,15 +373,17 @@ class TensorsTestCase(parameterized.TestCase):
             eps=HeteroscedasticNoise(
                 cls.eps_heteroscedastic_t, _backend_fn=heteroscedastic_perturb_t
             ),
+            sigma_sq=AnalyticSigmaSq(
+                _backend_ones=torch.ones,
+                _backend_ndarray=torch.ndarray,
+                _backend_ftype=torch.ftype,
+                _backend_farray=torch.farray,
+                _backend_outer=torch.outer,
+            ),
             _backend_mean_fn=muygps_posterior_mean_t,
             _backend_var_fn=muygps_diagonal_variance_t,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_t,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_t,
-            _backend_ones=torch.ones,
-            _backend_ndarray=torch.ndarray,
-            _backend_ftype=torch.ftype,
-            _backend_farray=torch.farray,
-            _backend_outer=torch.outer,
         )
         cls.muygps_heteroscedastic_train_n = MuyGPS(
             kernel=Matern(
@@ -388,11 +396,17 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.eps_heteroscedastic_train_n,
                 _backend_fn=heteroscedastic_perturb_n,
             ),
+            sigma_sq=AnalyticSigmaSq(
+                _backend_ones=np.ones,
+                _backend_ndarray=np.ndarray,
+                _backend_ftype=np.ftype,
+                _backend_farray=np.farray,
+                _backend_outer=np.outer,
+            ),
             _backend_mean_fn=muygps_posterior_mean_n,
             _backend_var_fn=muygps_diagonal_variance_n,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_n,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_n,
-            _backend_math=np,
         )
         cls.muygps_heteroscedastic_train_t = MuyGPS(
             kernel=Matern(
@@ -405,11 +419,17 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.eps_heteroscedastic_train_n,
                 _backend_fn=heteroscedastic_perturb_t,
             ),
+            sigma_sq=AnalyticSigmaSq(
+                _backend_ones=torch.ones,
+                _backend_ndarray=torch.ndarray,
+                _backend_ftype=torch.ftype,
+                _backend_farray=torch.farray,
+                _backend_outer=torch.outer,
+            ),
             _backend_mean_fn=muygps_posterior_mean_t,
             _backend_var_fn=muygps_diagonal_variance_t,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_t,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_t,
-            _backend_math=torch,
         )
         cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
             cls.nbrs_lookup, cls.batch_count, cls.train_count
@@ -1231,23 +1251,19 @@ class OptimTestCase(MuyGPSTestCase):
         )
 
     def _get_sigma_sq_fn_n(self):
-        return make_analytic_sigma_sq_optim(
-            self.muygps_n, analytic_sigma_sq_optim_n
-        )
+        return self.muygps_n.sigma_sq.get_opt_fn(self.muygps_n)
 
     def _get_sigma_sq_fn_heteroscedastic_n(self):
-        return make_analytic_sigma_sq_optim(
-            self.muygps_heteroscedastic_n, analytic_sigma_sq_optim_n
+        return self.muygps_heteroscedastic_n.sigma_sq.get_opt_fn(
+            self.muygps_heteroscedastic_n
         )
 
     def _get_sigma_sq_fn_t(self):
-        return make_analytic_sigma_sq_optim(
-            self.muygps_t, analytic_sigma_sq_optim_t
-        )
+        return self.muygps_t.sigma_sq.get_opt_fn(self.muygps_t)
 
     def _get_sigma_sq_fn_heteroscedastic_t(self):
-        return make_analytic_sigma_sq_optim(
-            self.muygps_heteroscedastic_t, analytic_sigma_sq_optim_t
+        return self.muygps_heteroscedastic_t.sigma_sq.get_opt_fn(
+            self.muygps_heteroscedastic_t
         )
 
     def _get_obj_fn_n(self):

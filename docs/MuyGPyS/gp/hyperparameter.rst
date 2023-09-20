@@ -14,3 +14,8 @@ hyperparameter
 .. autoclass:: MuyGPyS.gp.sigma_sq.SigmaSq
   :members:
   :special-members: __call__
+
+.. default-role:: code
+.. autoclass:: MuyGPyS.gp.sigma_sq.AnalyticSigmaSq
+  :members:
+  :special-members: __call__

@@ -42,10 +42,6 @@ from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.objective import make_obj_fn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
-from MuyGPyS.optimize.sigma_sq import (
-    make_sigma_sq_optim,
-    muygps_sigma_sq_optim,
-)
 
 
 def optimize_from_tensors_mini_batch(
@@ -61,7 +57,6 @@ def optimize_from_tensors_mini_batch(
     batch_features: Optional[mm.ndarray] = None,
     loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
-    sigma_method: Optional[str] = "analytic",
     loss_kwargs: Optional[Dict] = dict(),
     verbose: bool = False,
     **kwargs,
@@ -164,9 +159,6 @@ def optimize_from_tensors_mini_batch(
         obj_method:
             Indicates the objective function to be minimized. Currently
             restricted to `"loo_crossval"`.
-        sigma_method:
-            The optimization method to be employed to learn the `sigma_sq`
-            hyperparameter.
         loss_kwargs:
             A dictionary of additional keyword arguments to apply to the loss
             function. Loss function specific.
@@ -197,7 +189,7 @@ def optimize_from_tensors_mini_batch(
     kernel_fn = muygps.kernel.get_opt_fn()
     mean_fn = muygps.get_opt_mean_fn()
     var_fn = muygps.get_opt_var_fn()
-    sigma_sq_fn = make_sigma_sq_optim(sigma_method, muygps)
+    sigma_sq_fn = muygps.sigma_sq.get_opt_fn(muygps)
 
     # Create bayes_opt kwargs
     x0_names, x0, bounds = _get_opt_lists(muygps, verbose=verbose)
@@ -316,11 +308,10 @@ def optimize_from_tensors_mini_batch(
             print(line)
 
     # Compute optimal variance scaling hyperparameter
-    new_muygpys = muygps_sigma_sq_optim(
-        _new_muygps(muygps, x0_names, bounds, optimizer.max["params"]),
-        batch_pairwise_diffs,
-        batch_nn_targets,
-        sigma_method=sigma_method,
+    new_muygpys = _new_muygps(muygps, x0_names, bounds, optimizer.max["params"])
+
+    new_muygpys = new_muygpys.optimize_sigma_sq(
+        batch_pairwise_diffs, batch_nn_targets
     )
 
     return (

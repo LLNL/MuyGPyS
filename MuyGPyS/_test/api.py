@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 from absl.testing import parameterized
 
@@ -275,7 +275,6 @@ class RegressionAPITest(parameterized.TestCase):
         loss_fn: LossFn,
         obj_method: str,
         opt_method: str,
-        sigma_method: Optional[str],
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
@@ -289,7 +288,6 @@ class RegressionAPITest(parameterized.TestCase):
             loss_fn,
             obj_method,
             opt_method,
-            sigma_method,
             nn_kwargs,
             k_kwargs,
             opt_kwargs,
@@ -297,9 +295,7 @@ class RegressionAPITest(parameterized.TestCase):
         )
         self.assertEqual(predictions.shape, test["output"].shape)
         if isinstance(regressor, MuyGPS):
-            self._verify_regressor(
-                regressor, variance, test["output"], sigma_method
-            )
+            self._verify_regressor(regressor, variance, test["output"])
         else:
             test_count, _ = test["output"].shape
             for i, model in enumerate(regressor.models):
@@ -307,12 +303,11 @@ class RegressionAPITest(parameterized.TestCase):
                     model,
                     variance[:, i].reshape(test_count, 1),
                     test["output"][:, i].reshape(test_count, 1),
-                    sigma_method,
                 )
         print(f"obtains mse: {mse}")
         self.assertLessEqual(mse, target_mse)
 
-    def _verify_regressor(self, regressor, variance, targets, sigma_method):
+    def _verify_regressor(self, regressor, variance, targets):
         param_names, param_vals, _ = regressor.get_opt_params()
         if len(param_names) > 0:
             print("finds hyperparameters:")
@@ -321,13 +316,12 @@ class RegressionAPITest(parameterized.TestCase):
         if variance is not None:
             test_count, response_count = targets.shape
             self.assertEqual(variance.shape, (test_count, response_count))
-        if sigma_method is None:
-            self.assertFalse(regressor.sigma_sq.trained)
-        elif sigma_method.lower() == "analytic":
+            if regressor.fixed():
+                self.assertFalse(regressor.sigma_sq.trained)
+            else:
+                self.assertTrue(regressor.sigma_sq.trained)
             self.assertEqual(regressor.sigma_sq.shape, (response_count,))
             _check_ndarray(self.assertEqual, regressor.sigma_sq(), np.ftype)
-        else:
-            raise ValueError(f"Unsupported sigma method {sigma_method}")
 
     def _do_regress(
         self,
@@ -338,7 +332,6 @@ class RegressionAPITest(parameterized.TestCase):
         loss_fn: LossFn,
         obj_method: str,
         opt_method: str,
-        sigma_method: Optional[str],
         nn_kwargs: Dict,
         k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
         opt_kwargs: Dict,
@@ -354,7 +347,6 @@ class RegressionAPITest(parameterized.TestCase):
             loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
-            sigma_method=sigma_method,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,

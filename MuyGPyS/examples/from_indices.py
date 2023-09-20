@@ -9,7 +9,7 @@ Convenience wrapper for GP prediction from indices.
 
 import numpy as np
 
-from typing import Optional, Tuple, Union
+from typing import Tuple, Union
 
 from MuyGPyS.gp.tensors import (
     crosswise_tensor,
@@ -127,7 +127,6 @@ def optimize_from_indices(
     loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
-    sigma_method: Optional[str] = "analytic",
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:
@@ -195,9 +194,6 @@ def optimize_from_indices(
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` (alternately `"bayes"` or `"bayes_opt"`) and
             `"scipy"`.
-        sigma_method:
-            The optimization method to be employed to learn the `sigma_sq`
-            hyperparameter.
         verbose:
             If True, print debug messages.
         kwargs:
@@ -226,7 +222,6 @@ def optimize_from_indices(
         loss_fn=loss_fn,
         obj_method=obj_method,
         opt_method=opt_method,
-        sigma_method=sigma_method,
         verbose=verbose,
         **kwargs,
     )

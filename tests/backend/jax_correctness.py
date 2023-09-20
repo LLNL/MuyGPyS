@@ -102,6 +102,7 @@ from MuyGPyS.gp.distortion import (
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
+from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import (
@@ -115,7 +116,6 @@ from MuyGPyS.optimize.loss import (
     make_var_predict_and_loss_fn,
 )
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
-from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
 
 if config.state.jax_enabled is False:
     raise ValueError("Bad attempt to run jax-only code with jax diabled.")
@@ -331,15 +331,17 @@ class TensorsTestCase(parameterized.TestCase):
             eps=HomoscedasticNoise(
                 cls.eps, _backend_fn=homoscedastic_perturb_n
             ),
+            sigma_sq=AnalyticSigmaSq(
+                _backend_ones=np.ones,
+                _backend_ndarray=np.ndarray,
+                _backend_ftype=np.ftype,
+                _backend_farray=np.farray,
+                _backend_outer=np.outer,
+            ),
             _backend_mean_fn=muygps_posterior_mean_n,
             _backend_var_fn=muygps_diagonal_variance_n,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_n,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_n,
-            _backend_ones=np.ones,
-            _backend_ndarray=np.ndarray,
-            _backend_ftype=np.ftype,
-            _backend_farray=np.farray,
-            _backend_outer=np.outer,
         )
         cls.muygps_j = MuyGPS(
             kernel=Matern(
@@ -351,15 +353,17 @@ class TensorsTestCase(parameterized.TestCase):
             eps=HomoscedasticNoise(
                 cls.eps, _backend_fn=homoscedastic_perturb_j
             ),
+            sigma_sq=AnalyticSigmaSq(
+                _backend_ones=jnp.ones,
+                _backend_ndarray=jnp.ndarray,
+                _backend_ftype=jnp.ftype,
+                _backend_farray=jnp.farray,
+                _backend_outer=jnp.outer,
+            ),
             _backend_mean_fn=muygps_posterior_mean_j,
             _backend_var_fn=muygps_diagonal_variance_j,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_j,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_j,
-            _backend_ones=jnp.ones,
-            _backend_ndarray=jnp.ndarray,
-            _backend_ftype=jnp.ftype,
-            _backend_farray=jnp.farray,
-            _backend_outer=jnp.outer,
         )
         cls.muygps_heteroscedastic_n = MuyGPS(
             kernel=Matern(
@@ -371,15 +375,17 @@ class TensorsTestCase(parameterized.TestCase):
             eps=HeteroscedasticNoise(
                 cls.eps_heteroscedastic_n, _backend_fn=heteroscedastic_perturb_n
             ),
+            sigma_sq=AnalyticSigmaSq(
+                _backend_ones=np.ones,
+                _backend_ndarray=np.ndarray,
+                _backend_ftype=np.ftype,
+                _backend_farray=np.farray,
+                _backend_outer=np.outer,
+            ),
             _backend_mean_fn=muygps_posterior_mean_n,
             _backend_var_fn=muygps_diagonal_variance_n,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_n,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_n,
-            _backend_ones=np.ones,
-            _backend_ndarray=np.ndarray,
-            _backend_ftype=np.ftype,
-            _backend_farray=np.farray,
-            _backend_outer=np.outer,
         )
         cls.muygps_heteroscedastic_j = MuyGPS(
             kernel=Matern(
@@ -391,15 +397,17 @@ class TensorsTestCase(parameterized.TestCase):
             eps=HeteroscedasticNoise(
                 cls.eps_heteroscedastic_j, _backend_fn=heteroscedastic_perturb_j
             ),
+            sigma_sq=AnalyticSigmaSq(
+                _backend_ones=jnp.ones,
+                _backend_ndarray=jnp.ndarray,
+                _backend_ftype=jnp.ftype,
+                _backend_farray=jnp.farray,
+                _backend_outer=jnp.outer,
+            ),
             _backend_mean_fn=muygps_posterior_mean_j,
             _backend_var_fn=muygps_diagonal_variance_j,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_j,
             _backend_fast_precompute_fn=muygps_fast_posterior_mean_precompute_j,
-            _backend_ones=jnp.ones,
-            _backend_ndarray=jnp.ndarray,
-            _backend_ftype=jnp.ftype,
-            _backend_farray=jnp.farray,
-            _backend_outer=jnp.outer,
         )
 
         cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
@@ -1378,23 +1386,19 @@ class OptimTestCase(MuyGPSTestCase):
         )
 
     def _get_sigma_sq_fn_n(self):
-        return make_analytic_sigma_sq_optim(
-            self.muygps_n, analytic_sigma_sq_optim_n
-        )
+        return self.muygps_n.sigma_sq.get_opt_fn(self.muygps_n)
 
     def _get_sigma_sq_fn_heteroscedastic_n(self):
-        return make_analytic_sigma_sq_optim(
-            self.muygps_heteroscedastic_n, analytic_sigma_sq_optim_n
+        return self.muygps_heteroscedastic_n.sigma_sq.get_opt_fn(
+            self.muygps_heteroscedastic_n
         )
 
     def _get_sigma_sq_fn_j(self):
-        return make_analytic_sigma_sq_optim(
-            self.muygps_j, analytic_sigma_sq_optim_j
-        )
+        return self.muygps_j.sigma_sq.get_opt_fn(self.muygps_j)
 
     def _get_sigma_sq_fn_heteroscedastic_j(self):
-        return make_analytic_sigma_sq_optim(
-            self.muygps_heteroscedastic_j, analytic_sigma_sq_optim_j
+        return self.muygps_heteroscedastic_j.sigma_sq.get_opt_fn(
+            self.muygps_heteroscedastic_j
         )
 
     def _get_obj_fn_n(self):

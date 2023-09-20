@@ -3,12 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Union
-
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.gp.tensors import _pairwise_differences
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise, NullNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
 from MuyGPyS.gp.sigma_sq import SigmaSq
 
 
@@ -28,9 +26,7 @@ class BenchmarkGP:
     def __init__(
         self,
         kernel: Matern,
-        eps: Union[
-            HeteroscedasticNoise, HomoscedasticNoise, NullNoise
-        ] = HomoscedasticNoise(0.0),
+        eps: NoiseFn = HomoscedasticNoise(0.0),
     ):
         """
         Initialize.

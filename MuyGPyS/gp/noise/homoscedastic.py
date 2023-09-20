@@ -15,9 +15,10 @@ import MuyGPyS._src.math as mm
 
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.noise.noise_fn import NoiseFn
 
 
-class HomoscedasticNoise(ScalarHyperparameter):
+class HomoscedasticNoise(ScalarHyperparameter, NoiseFn):
     """
     A scalar prior noise parameter.
 
@@ -54,7 +55,9 @@ class HomoscedasticNoise(ScalarHyperparameter):
 
         self._perturb_fn = _backend_fn
 
-    def perturb(self, K: mm.ndarray, eps: Optional[float] = None) -> mm.ndarray:
+    def perturb(
+        self, K: mm.ndarray, eps: Optional[float] = None, **kwargs
+    ) -> mm.ndarray:
         """
         Perturb a kernel tensor with homoscedastic noise.
 

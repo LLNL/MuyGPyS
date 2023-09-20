@@ -34,12 +34,12 @@ from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import mse_fn
-from MuyGPyS.optimize.sigma_sq import mmuygps_sigma_sq_optim
 
 
 class InitTest(parameterized.TestCase):
@@ -98,10 +98,9 @@ class InitTest(parameterized.TestCase):
 class SigmaSqTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, f, sm, 10, nn_kwargs, model_args)
+            (1000, f, 10, nn_kwargs, model_args)
             for nn_kwargs in _basic_nn_kwarg_options
             for f in [100]
-            for sm in ["analytic"]
             for model_args in (
                 [
                     {
@@ -113,6 +112,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -123,6 +123,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -133,6 +134,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -143,6 +145,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -153,6 +156,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -163,6 +167,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                 ],
             )
@@ -172,7 +177,6 @@ class SigmaSqTest(parameterized.TestCase):
         self,
         data_count,
         feature_count,
-        sigma_method,
         nn_count,
         nn_kwargs,
         model_args,
@@ -191,24 +195,22 @@ class SigmaSqTest(parameterized.TestCase):
         pairwise_diffs = pairwise_tensor(data["input"], nn_indices)
 
         # fit sigmas
-        mmuygps = mmuygps_sigma_sq_optim(
-            mmuygps, pairwise_diffs, nn_targets, sigma_method=sigma_method
-        )
+        mmuygps = mmuygps.optimize_sigma_sq(pairwise_diffs, nn_targets)
 
         K = mm.zeros((data_count, nn_count, nn_count))
         nn_targets = _consistent_unchunk_tensor(nn_targets)
-        for i, muygps in enumerate(mmuygps.models):
-            K = _consistent_unchunk_tensor(muygps.kernel(pairwise_diffs))
+        for i, model in enumerate(mmuygps.models):
+            K = _consistent_unchunk_tensor(model.kernel(pairwise_diffs))
             sigmas = _get_sigma_sq_series(
                 K,
                 nn_targets[:, :, i].reshape(data_count, nn_count, 1),
-                muygps.eps(),
+                model.eps(),
             )
             _check_ndarray(self.assertEqual, sigmas, mm.ftype)
-            _check_ndarray(self.assertEqual, muygps.sigma_sq(), mm.ftype)
+            _check_ndarray(self.assertEqual, model.sigma_sq(), mm.ftype)
             self.assertEqual(sigmas.shape, (data_count,))
             self.assertAlmostEqual(
-                np.array(muygps.sigma_sq()[0]),
+                np.array(model.sigma_sq()[0]),
                 np.mean(np.array(sigmas)),
                 5,
             )
@@ -223,14 +225,14 @@ class OptimTest(parameterized.TestCase):
                 b,
                 n,
                 nn_kwargs,
-                loss_and_sigma_methods,
+                loss_fn,
                 om,
                 opt_method_and_kwargs,
                 k_kwargs,
             )
             for b in [250]
             for n in [20]
-            for loss_and_sigma_methods in [[mse_fn, None]]
+            for loss_fn in [mse_fn]
             for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
             # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
@@ -274,7 +276,7 @@ class OptimTest(parameterized.TestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_and_sigma_methods,
+        loss_fn,
         obj_method,
         opt_method_and_kwargs,
         k_kwargs,
@@ -287,7 +289,6 @@ class OptimTest(parameterized.TestCase):
             )
             return
         target, args = k_kwargs
-        loss_fn, sigma_method = loss_and_sigma_methods
         opt_method, opt_kwargs = opt_method_and_kwargs
         response_count = len(args)
 
@@ -358,7 +359,6 @@ class OptimTest(parameterized.TestCase):
                     loss_fn=loss_fn,
                     obj_method=obj_method,
                     opt_method=opt_method,
-                    sigma_method=sigma_method,
                     **opt_kwargs,
                 )
                 estimate = mmuygps.models[i].kernel._hyperparameters["nu"]()
@@ -695,7 +695,6 @@ class MakeRegressorTest(parameterized.TestCase):
                 nn_kwargs,
                 lf,
                 opt_method_and_kwargs,
-                ssm,
                 args,
             )
             for b in [250]
@@ -703,7 +702,6 @@ class MakeRegressorTest(parameterized.TestCase):
             for nn_kwargs in _basic_nn_kwarg_options
             for lf in [mse_fn]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
-            for ssm in ["analytic", None]
             for args in (
                 (
                     {
@@ -715,6 +713,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -725,6 +724,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -735,6 +735,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -745,6 +746,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": SigmaSq(),
                     },
                 ),
             )
@@ -760,7 +762,6 @@ class MakeRegressorTest(parameterized.TestCase):
         nn_kwargs,
         loss_fn,
         opt_method_and_kwargs,
-        sigma_method,
         args,
     ):
         if config.state.backend == "mpi":
@@ -789,7 +790,6 @@ class MakeRegressorTest(parameterized.TestCase):
             batch_count=batch_count,
             loss_fn=loss_fn,
             opt_method=opt_method,
-            sigma_method=sigma_method,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
             k_args=args,
@@ -809,14 +809,14 @@ class MakeRegressorTest(parameterized.TestCase):
                         param(),
                         muygps.kernel._hyperparameters[name](),
                     )
-            if sigma_method is None:
-                self.assertFalse(muygps.sigma_sq.trained)
-            else:
-                self.assertTrue(muygps.sigma_sq.trained)
+            self.assertTrue(muygps.sigma_sq.trained)
+            if isinstance(muygps.sigma_sq, AnalyticSigmaSq):
                 print(
                     f"\toptimized sigma_sq to find value "
                     f"{muygps.sigma_sq()}"
                 )
+            else:
+                self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
 
 
 if __name__ == "__main__":

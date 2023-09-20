@@ -77,6 +77,9 @@ class KernelFn:
     def _make_base(self):
         self.distortion_fn.populate_length_scale(self._hyperparameters)
 
+    def _make(self):
+        raise NotImplementedError("_make is not implemented for base KernelFn")
+
     def set_params(self, **kwargs) -> None:
         """
         Reset hyperparameters using hyperparameter dict(s).
@@ -91,6 +94,11 @@ class KernelFn:
     def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
         raise NotImplementedError(
             "__call__ is not implemented for base KernelFn"
+        )
+
+    def get_opt_fn(self) -> Callable:
+        raise NotImplementedError(
+            "get_opt_fn is not implemented for base KernelFn"
         )
 
     def get_opt_params(

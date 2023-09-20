@@ -57,7 +57,6 @@ from MuyGPyS._src.optimize.sigma_sq.numpy import (
 from MuyGPyS._src.optimize.sigma_sq.mpi import (
     _analytic_sigma_sq_optim as analytic_sigma_sq_optim_m,
 )
-from MuyGPyS.optimize.sigma_sq import make_analytic_sigma_sq_optim
 from MuyGPyS._src.optimize.loss.numpy import (
     _cross_entropy_fn as cross_entropy_fn_n,
     _lool_fn as lool_fn_n,
@@ -95,6 +94,7 @@ from MuyGPyS.gp.distortion import (
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import (
@@ -267,6 +267,7 @@ class TensorsTestCase(parameterized.TestCase):
                 ),
             ),
             "eps": HomoscedasticNoise(cls.eps),
+            "sigma_sq": AnalyticSigmaSq(),
         }
         cls.muygps = MuyGPS(**cls.k_kwargs)
         cls.kernel_kwargs = {"nu": cls.muygps.kernel.nu()}
@@ -1161,14 +1162,10 @@ class OptimTestCase(MuyGPSTestCase):
         )
 
     def _get_sigma_sq_fn_n(self):
-        return make_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_n
-        )
+        return self.muygps.sigma_sq.get_opt_fn(self.muygps)
 
     def _get_sigma_sq_fn_m(self):
-        return make_analytic_sigma_sq_optim(
-            self.muygps, analytic_sigma_sq_optim_m
-        )
+        return self.muygps.sigma_sq.get_opt_fn(self.muygps)
 
     # Numpy objective functions
     def _get_obj_fn_n(self):

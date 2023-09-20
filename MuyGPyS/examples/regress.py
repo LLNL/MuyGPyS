@@ -18,7 +18,7 @@ above and :func:`~MuyGPyS.examples.regress.regress_any`.
 """
 import numpy as np
 from time import perf_counter
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
@@ -27,10 +27,6 @@ from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import LossFn, lool_fn
-from MuyGPyS.optimize.sigma_sq import (
-    muygps_sigma_sq_optim,
-    mmuygps_sigma_sq_optim,
-)
 
 
 def make_regressor(
@@ -41,7 +37,6 @@ def make_regressor(
     loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
-    sigma_method: Optional[str] = "analytic",
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -56,15 +51,24 @@ def make_regressor(
     appropriate functions for specifics.
 
     Example:
+        >>> from MuyGPyS.examples.regress import make_regressor
+        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.kernels import RBF
+        >>> from MuyGPyS.gp.noise import HomoscedasticNoise
+        >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.regress import make_regressor
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
-        ...         "kern": "rbf",
-        ...         "metric": "F2",
-        ...         "eps": {"val": 1e-5},
-        ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
+        ...     "kernel": RBF(
+        ...         metric=IsotropicDistortion(
+        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...         )
+        ...     ),
+        ...     "eps": HomoscedasticNoise(1e-5),
+        ...     "sigma_sq": AnalyticSigmaSq(),
         ... }
         >>> muygps, nbrs_lookup = make_regressor(
         ...         train_features,
@@ -74,20 +78,6 @@ def make_regressor(
         ...         loss_fn=lool_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
-        ...         sigma_method="analytic",
-        ...         k_kwargs=k_kwargs,
-        ...         nn_kwargs=nn_kwargs,
-        ...         verbose=False,
-        ... )
-        >>> muygps, nbrs_lookup = make_regressor(
-        ...         train_features,
-        ...         train_responses,
-        ...         nn_count=30,
-        ...         batch_count=200,
-        ...         loss_fn=lool_fn,
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
-        ...         sigma_method="analytic",
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -114,14 +104,6 @@ def make_regressor(
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
-        sigma_method:
-            The optimization method to be employed to learn the `sigma_sq`
-            hyperparameter. Currently supports only `"analytic"` and `None`. If
-            the value is not `None`, the returned
-            :class:`MuyGPyS.gp.muygps.MuyGPS` object will possess a `sigma_sq`
-            member whose value, invoked via `muygps.sigma_sq()`, is a
-            `(response_count,)` vector to be used for scaling posterior
-            variances.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
             metric, epsilon and sigma hyperparameter specifications, and
@@ -159,10 +141,10 @@ def make_regressor(
     time_nn = perf_counter()
 
     # create MuyGPs object
-    muygps = MuyGPS(**k_kwargs, response_count=response_count)
+    muygps = MuyGPS(**k_kwargs)
 
     skip_opt = muygps.fixed()
-    if skip_opt is False or sigma_method is not None:
+    if skip_opt is False:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup,
@@ -195,21 +177,14 @@ def make_regressor(
                 loss_fn=loss_fn,
                 obj_method=obj_method,
                 opt_method=opt_method,
-                sigma_method=sigma_method,
                 verbose=verbose,
                 **opt_kwargs,
             )
         time_opt = perf_counter()
 
-        if sigma_method is not None:
-            muygps = muygps_sigma_sq_optim(
-                muygps,
-                pairwise_diffs,
-                batch_nn_targets,
-                sigma_method=sigma_method,
-            )
-            if verbose is True:
-                print(f"Optimized sigma_sq values " f"{muygps.sigma_sq()}")
+        muygps = muygps.optimize_sigma_sq(pairwise_diffs, batch_nn_targets)
+        if verbose is True:
+            print(f"Optimized sigma_sq values " f"{muygps.sigma_sq()}")
         time_sopt = perf_counter()
 
         if verbose is True:
@@ -230,7 +205,6 @@ def make_multivariate_regressor(
     loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
-    sigma_method: Optional[str] = "analytic",
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -245,18 +219,33 @@ def make_multivariate_regressor(
     docstrings of the appropriate functions for specifics.
 
     Example:
+        >>> from MuyGPyS.examples.regress import make_multivariate_regressor
+        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.kernels import RBF
+        >>> from MuyGPyS.gp.noise import HomoscedasticNoise
+        >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
-        >>> from MuyGPyS.examples.regress import make_regressor
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_args = [
         ...         {
-        ...             "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
-        ...             "eps": {"val": 1e-5},
+        ...             "kernel": RBF(
+        ...                 metric=IsotropicDistortion(
+        ...                     length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...                 )
+        ...             ),
+        ...             "eps": HomoscedasticNoise(1e-5),
+        ...             "sigma_sq": AnalyticSigmaSq(),
         ...         },
         ...         {
-        ...             "length_scale": {"val": 1.5, "bounds": (1e-2, 1e2)}
-        ...             "eps": {"val": 1e-5},
+        ...             "kernel": RBF(
+        ...                 metric=IsotropicDistortion(
+        ...                     length_scale=ScalarHyperparameter(1.5, (1e-2, 1e2))
+        ...                 )
+        ...             ),
+        ...             "eps": HomoscedasticNoise(1e-5),
+        ...             "sigma_sq": AnalyticSigmaSq(),
         ...         },
         ... ]
         >>> mmuygps, nbrs_lookup = make_multivariate_regressor(
@@ -267,20 +256,6 @@ def make_multivariate_regressor(
         ...         loss_fn=lool_fn,
         ...         obj_method="loo_crossval",
         ...         opt_method="bayes",
-        ...         sigma_method="analytic",
-        ...         k_args=k_args,
-        ...         nn_kwargs=nn_kwargs,
-        ...         verbose=False,
-        ... )
-        >>> mmuygps, nbrs_lookup = make_multivariate_regressor(
-        ...         train_features,
-        ...         train_responses,
-        ...         nn_count=30,
-        ...         batch_count=200,
-        ...         loss_fn=lool_fn,
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
-        ...         sigma_method="analytic",
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -307,14 +282,6 @@ def make_multivariate_regressor(
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
-        sigma_method:
-            The optimization method to be employed to learn the `sigma_sq`
-            hyperparameter. Currently supports only `"analytic"` and `None`. If
-            the value is not `None`, the returned
-            :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS` object will possess a
-            `sigma_sq` member whose value, invoked via `mmuygps.sigma_sq()`, is
-            a `(response_count,)` vector to be used for scaling posterior
-            variances.
         k_args:
             A list of `response_count` dicts containing kernel initialization
             keyword arguments. Each dict specifies parameters for the kernel,
@@ -360,7 +327,7 @@ def make_multivariate_regressor(
     mmuygps = MMuyGPS(*k_args)
 
     skip_opt = mmuygps.fixed()
-    if skip_opt is False or sigma_method is not None:
+    if skip_opt is False:
         # collect batch
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup,
@@ -397,21 +364,14 @@ def make_multivariate_regressor(
                         loss_fn=loss_fn,
                         obj_method=obj_method,
                         opt_method=opt_method,
-                        sigma_method=sigma_method,
                         verbose=verbose,
                         **opt_kwargs,
                     )
         time_opt = perf_counter()
 
-        if sigma_method is not None:
-            mmuygps = mmuygps_sigma_sq_optim(
-                mmuygps,
-                pairwise_diffs,
-                batch_nn_targets,
-                sigma_method=sigma_method,
-            )
-            if verbose is True:
-                print(f"Optimized sigma_sq values " f"{mmuygps.sigma_sq()}")
+        mmuygps = mmuygps.optimize_sigma_sq(pairwise_diffs, batch_nn_targets)
+        if verbose is True:
+            print(f"Optimized sigma_sq values " f"{mmuygps.sigma_sq()}")
         time_sopt = perf_counter()
 
         if verbose is True:
@@ -466,7 +426,6 @@ def _decide_and_make_regressor(
     loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
-    sigma_method: Optional[str] = "analytic",
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -481,7 +440,6 @@ def _decide_and_make_regressor(
             loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
-            sigma_method=sigma_method,
             k_args=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
@@ -497,7 +455,6 @@ def _decide_and_make_regressor(
                 loss_fn=loss_fn,
                 obj_method=obj_method,
                 opt_method=opt_method,
-                sigma_method=sigma_method,
                 k_kwargs=k_kwargs,
                 nn_kwargs=nn_kwargs,
                 opt_kwargs=opt_kwargs,
@@ -520,7 +477,6 @@ def do_regress(
     loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
-    sigma_method: Optional[str] = "analytic",
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -537,30 +493,26 @@ def do_regress(
     a multivariate model, pass a list of hyperparameter dicts to `k_kwargs`.
 
     Example:
+        >>> from MuyGPyS.examples.regress import do_regress
+        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.kernels import RBF
+        >>> from MuyGPyS.gp.noise import HomoscedasticNoise
+        >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.regress import do_regress
         >>> from MuyGPyS.optimize.objective import mse_fn
         >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
-        ...         "kern": "rbf",
-        ...         "metric": "F2",
-        ...         "eps": {"val": 1e-5},
-        ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
+        ...     "kernel": RBF(
+        ...         metric=IsotropicDistortion(
+        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...         )
+        ...     ),
+        ...     "eps": HomoscedasticNoise(1e-5),
+        ...     "sigma_sq": AnalyticSigmaSq(),
         ... }
-        >>> muygps, nbrs_lookup, predictions, variance = do_regress(
-        ...         test['input'],
-        ...         train['input'],
-        ...         train['output'],
-        ...         nn_count=30,
-        ...         batch_count=200,
-        ...         loss_fn=lool_fn,
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
-        ...         k_kwargs=k_kwargs,
-        ...         nn_kwargs=nn_kwargs,
-        ...         verbose=False,
-        ... )
         >>> muygps, nbrs_lookup, predictions, variance = do_regress(
         ...         test['input'],
         ...         train['input'],
@@ -602,14 +554,6 @@ def do_regress(
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
-        sigma_method:
-            The optimization method to be employed to learn the `sigma_sq`
-            hyperparameter. Currently supports only `"analytic"` and `None`. If
-            the value is not `None`, the returned
-            :class:`MuyGPyS.gp.muygps.MuyGPS` object will possess a `sigma_sq`
-            member whose value, invoked via `muygps.sigma_sq()`, is a
-            `(response_count,)` vector to be used for scaling posterior
-            variances.
         k_kwargs:
             If given a list or tuple of length `response_count`, assume that the
             elements are dicts containing kernel initialization keyword
@@ -649,7 +593,6 @@ def do_regress(
         loss_fn=loss_fn,
         obj_method=obj_method,
         opt_method=opt_method,
-        sigma_method=sigma_method,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,
