@@ -206,12 +206,13 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                         f"optimized to find value "
                         f"{muygps.kernel._hyperparameters[name]()}"
                     )
+                    self.assertTrue(muygps.sigma_sq.trained)
                 else:
                     self.assertEqual(
                         param(),
                         muygps.kernel._hyperparameters[name](),
                     )
-            self.assertTrue(muygps.sigma_sq.trained)
+                    self.assertFalse(muygps.sigma_sq.trained)
             if isinstance(muygps.sigma_sq, AnalyticSigmaSq):
                 print(
                     f"\toptimized sigma_sq to find value "
