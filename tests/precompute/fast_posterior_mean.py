@@ -213,13 +213,8 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                         muygps.kernel._hyperparameters[name](),
                     )
                     self.assertFalse(muygps.sigma_sq.trained)
-            if isinstance(muygps.sigma_sq, AnalyticSigmaSq):
-                print(
-                    f"\toptimized sigma_sq to find value "
-                    f"{muygps.sigma_sq()}"
-                )
-            else:
-                self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+            self.assertFalse(muygps.sigma_sq.trained)
+            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
 
 
 if __name__ == "__main__":
