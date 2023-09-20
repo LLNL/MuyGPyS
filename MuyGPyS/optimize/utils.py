@@ -16,20 +16,3 @@ def _switch_on_opt_method(
         return scipy_func(*args, **kwargs)
     else:
         raise ValueError(f"Unsupported optimization method: {opt_method}")
-
-
-def _switch_on_sigma_method(
-    sigma_method: Optional[str],
-    analytic_func: Callable,
-    none_func: Callable,
-    *args,
-    **kwargs,
-):
-    if sigma_method is not None:
-        sigma_method = sigma_method.lower()
-    if sigma_method == "analytic":
-        return analytic_func(*args, **kwargs)
-    elif sigma_method is None:
-        return none_func(*args, **kwargs)
-    else:
-        raise ValueError(f"Unrecognized sigma_method {sigma_method}")

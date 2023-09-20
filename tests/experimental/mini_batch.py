@@ -20,6 +20,7 @@ from MuyGPyS.gp.distortion import IsotropicDistortion, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.optimize.experimental.chassis import (
     optimize_from_tensors_mini_batch,
 )
@@ -48,7 +49,6 @@ class MiniBatchBenchmarkTestCase(BenchmarkTestCase):
         batch_count,
         loss_fn,
         obj_method,
-        sigma_method,
         opt_kwargs,
         loss_kwargs=dict(),
     ) -> float:
@@ -71,7 +71,6 @@ class MiniBatchBenchmarkTestCase(BenchmarkTestCase):
             batch_features=None,
             loss_fn=loss_fn,
             obj_method=obj_method,
-            sigma_method=sigma_method,
             loss_kwargs=loss_kwargs,
             verbose=False,
             **opt_kwargs,
@@ -93,17 +92,17 @@ class NuTest(MiniBatchBenchmarkTestCase):
             (
                 b,
                 n,
-                loss_kwargs_and_sigma_methods,
+                loss_kwargs_and_sigma_sq,
                 om,
                 opt_method_and_kwargs,
             )
             for b in [250]
             for n in [20]
-            for loss_kwargs_and_sigma_methods in [
-                ["lool", lool_fn, dict(), "analytic"],
-                ["mse", mse_fn, dict(), None],
-                ["huber", pseudo_huber_fn, {"boundary_scale": 1.5}, None],
-                ["looph", looph_fn, {"boundary_scale": 1.5}, "analytic"],
+            for loss_kwargs_and_sigma_sq in [
+                ["lool", lool_fn, dict(), AnalyticSigmaSq()],
+                ["mse", mse_fn, dict(), SigmaSq()],
+                ["huber", pseudo_huber_fn, {"boundary_scale": 1.5}, SigmaSq()],
+                ["looph", looph_fn, {"boundary_scale": 1.5}, AnalyticSigmaSq()],
             ]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in [
@@ -123,7 +122,7 @@ class NuTest(MiniBatchBenchmarkTestCase):
         self,
         batch_count,
         nn_count,
-        loss_kwargs_and_sigma_methods,
+        loss_kwargs_and_sigma_sq,
         obj_method,
         opt_method_and_kwargs,
     ):
@@ -131,8 +130,8 @@ class NuTest(MiniBatchBenchmarkTestCase):
             loss_name,
             loss_fn,
             loss_kwargs,
-            sigma_method,
-        ) = loss_kwargs_and_sigma_methods
+            sigma_sq,
+        ) = loss_kwargs_and_sigma_sq
         _, opt_kwargs = opt_method_and_kwargs
 
         mrse = 0.0
@@ -152,6 +151,7 @@ class NuTest(MiniBatchBenchmarkTestCase):
                     ),
                 ),
                 eps=HomoscedasticNoise(self.params["eps"]()),
+                sigma_sq=sigma_sq,
             )
 
             mrse += self._optim_chassis_mini_batch(
@@ -162,7 +162,6 @@ class NuTest(MiniBatchBenchmarkTestCase):
                 batch_count,
                 loss_fn,
                 obj_method,
-                sigma_method,
                 opt_kwargs,
                 loss_kwargs=loss_kwargs,
             )
@@ -182,14 +181,14 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
             (
                 b,
                 n,
-                loss_kwargs_and_sigma_methods,
+                loss_kwargs_and_sigma_sq,
                 om,
                 opt_method_and_kwargs,
             )
             for b in [250]
             for n in [20]
-            for loss_kwargs_and_sigma_methods in [
-                ["lool", lool_fn, dict(), "analytic"],
+            for loss_kwargs_and_sigma_sq in [
+                ["lool", lool_fn, dict(), AnalyticSigmaSq()],
             ]
             for om in ["loo_crossval"]
             for opt_method_and_kwargs in [
@@ -209,7 +208,7 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
         self,
         batch_count,
         nn_count,
-        loss_kwargs_and_sigma_methods,
+        loss_kwargs_and_sigma_sq,
         obj_method,
         opt_method_and_kwargs,
     ):
@@ -217,8 +216,8 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
             loss_name,
             loss_fn,
             loss_kwargs,
-            sigma_method,
-        ) = loss_kwargs_and_sigma_methods
+            sigma_sq,
+        ) = loss_kwargs_and_sigma_sq
         _, opt_kwargs = opt_method_and_kwargs
 
         error_vector = mm.zeros((self.its,))
@@ -236,6 +235,7 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
                     ),
                 ),
                 eps=HomoscedasticNoise(self.params["eps"]()),
+                sigma_sq=sigma_sq,
             )
 
             error_vector[i] = self._optim_chassis_mini_batch(
@@ -246,7 +246,6 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
                 batch_count,
                 loss_fn,
                 obj_method,
-                sigma_method,
                 opt_kwargs,
                 loss_kwargs=loss_kwargs,
             )

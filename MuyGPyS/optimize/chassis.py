@@ -36,7 +36,6 @@ from MuyGPyS.gp import MuyGPS
 from MuyGPyS.optimize.utils import _switch_on_opt_method
 from MuyGPyS.optimize.objective import make_obj_fn
 from MuyGPyS.optimize.loss import lool_fn, LossFn
-from MuyGPyS.optimize.sigma_sq import make_sigma_sq_optim
 
 
 def optimize_from_tensors(
@@ -49,7 +48,6 @@ def optimize_from_tensors(
     loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
-    sigma_method: Optional[str] = "analytic",
     loss_kwargs: Dict = dict(),
     verbose: bool = False,
     **kwargs,
@@ -121,9 +119,6 @@ def optimize_from_tensors(
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` (alternately `"bayes"` or `"bayes_opt"`) and
             `"scipy"`.
-        sigma_method:
-            The optimization method to be employed to learn the `sigma_sq`
-            hyperparameter.
         loss_kwargs:
             A dictionary of additional keyword arguments to apply to the loss
             function. Loss function specific.
@@ -138,7 +133,7 @@ def optimize_from_tensors(
     kernel_fn = muygps.kernel.get_opt_fn()
     mean_fn = muygps.get_opt_mean_fn()
     var_fn = muygps.get_opt_var_fn()
-    sigma_sq_fn = make_sigma_sq_optim(sigma_method, muygps)
+    sigma_sq_fn = muygps.sigma_sq.get_opt_fn(muygps)
 
     obj_fn = make_obj_fn(
         obj_method,

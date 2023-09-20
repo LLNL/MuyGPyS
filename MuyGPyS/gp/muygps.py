@@ -391,6 +391,15 @@ class MuyGPS:
         """
         return self._var_fn.get_opt_fn()
 
+    def optimize_sigma_sq(
+        self, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
+    ):
+        K = self.kernel(pairwise_diffs)
+        opt_fn = self.sigma_sq.get_opt_fn(self)
+        self.sigma_sq._set(opt_fn(K, nn_targets))
+        self._make()
+        return self
+
     def __eq__(self, rhs) -> bool:
         if isinstance(rhs, self.__class__):
             return all(

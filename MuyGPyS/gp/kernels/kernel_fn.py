@@ -96,6 +96,11 @@ class KernelFn:
             "__call__ is not implemented for base KernelFn"
         )
 
+    def get_opt_fn(self) -> Callable:
+        raise NotImplementedError(
+            "get_opt_fn is not implemented for base KernelFn"
+        )
+
     def get_opt_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:

@@ -6,6 +6,8 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
+import MuyGPyS._src.math as mm
+
 from MuyGPyS import config
 
 from MuyGPyS._test.utils import (
@@ -18,6 +20,7 @@ from MuyGPyS.gp.distortion import IsotropicDistortion, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.optimize.loss import mse_fn
 
 if config.state.backend in ["mpi", "torch"]:
@@ -111,7 +114,6 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                 nn_kwargs,
                 lf,
                 opt_method_and_kwargs,
-                ssm,
                 k_kwargs,
             )
             for b in [250]
@@ -119,7 +121,6 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
             for nn_kwargs in _basic_nn_kwarg_options
             for lf in [mse_fn]
             for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
-            for ssm in ["analytic", None]
             for k_kwargs in (
                 (
                     {
@@ -130,6 +131,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
                         "kernel": Matern(
@@ -139,6 +141,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
+                        "sigma_sq": SigmaSq(),
                     },
                 ),
             )
@@ -154,7 +157,6 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
         nn_kwargs,
         loss_fn,
         opt_method_and_kwargs,
-        sigma_method,
         k_kwargs,
     ):
         # skip if we are using the MPI implementation
@@ -184,7 +186,6 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
             batch_count=batch_count,
             loss_fn=loss_fn,
             opt_method=opt_method,
-            sigma_method=sigma_method,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
@@ -210,14 +211,14 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                         param(),
                         muygps.kernel._hyperparameters[name](),
                     )
-            if sigma_method is None:
-                self.assertFalse(muygps.sigma_sq.trained)
-            else:
-                self.assertTrue(muygps.sigma_sq.trained)
+            self.assertTrue(muygps.sigma_sq.trained)
+            if isinstance(muygps.sigma_sq, AnalyticSigmaSq):
                 print(
                     f"\toptimized sigma_sq to find value "
                     f"{muygps.sigma_sq()}"
                 )
+            else:
+                self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
 
 
 if __name__ == "__main__":

@@ -29,6 +29,7 @@ from MuyGPyS.gp.distortion import (
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.optimize.loss import mse_fn
 
 if config.state.backend == "torch":
@@ -93,16 +94,18 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-3),
+                            "sigma_sq": AnalyticSigmaSq(),
                         },
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter(0.5),
+                                nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
                                 metric=IsotropicDistortion(
                                     l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
                             "eps": HomoscedasticNoise(1e-3),
+                            "sigma_sq": AnalyticSigmaSq(),
                         },
                     ],
                 ),
@@ -117,6 +120,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                 )
                             ),
                             "eps": HomoscedasticNoise(1e-3),
+                            "sigma_sq": SigmaSq(),
                         },
                         {
                             "kernel": RBF(
@@ -126,6 +130,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                 )
                             ),
                             "eps": HomoscedasticNoise(1e-3),
+                            "sigma_sq": SigmaSq(),
                         },
                     ],
                 ),
@@ -147,8 +152,6 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
 
-        sigma_method = "analytic"
-
         self._do_regress_test_chassis(
             train=train,
             test=test,
@@ -158,7 +161,6 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
-            sigma_method=sigma_method,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_args,
             opt_kwargs=opt_kwargs,
@@ -198,6 +200,7 @@ class HeatonTest(RegressionAPITest):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
+                        "sigma_sq": AnalyticSigmaSq(),
                     },
                 ),
                 (
@@ -212,6 +215,7 @@ class HeatonTest(RegressionAPITest):
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-3),
+                        "sigma_sq": SigmaSq(),
                     },
                 ),
                 # (
@@ -239,8 +243,6 @@ class HeatonTest(RegressionAPITest):
         target_mse, k_kwargs = k_kwargs
         opt_method, opt_kwargs = opt_method_and_kwargs
 
-        sigma_method = "analytic"
-
         self._do_regress_test_chassis(
             train=self.train,
             test=self.test,
@@ -250,7 +252,6 @@ class HeatonTest(RegressionAPITest):
             loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
-            sigma_method=sigma_method,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             opt_kwargs=opt_kwargs,

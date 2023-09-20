@@ -53,28 +53,23 @@ def make_classifier(
     appropriate functions for specifics.
 
     Example:
+        >>> from MuyGPyS.examples.regress import make_classifier
+        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.kernels import RBF
+        >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.classify import make_classifier
         >>> train = _make_gaussian_dict(10000, 100, 10, categorial=True)
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
-        ...         "kern": "rbf",
-        ...         "metric": "F2",
-        ...         "eps": {"val": 1e-5},
-        ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)},
+        ...     "kernel": RBF(
+        ...         metric=IsotropicDistortion(
+        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...         )
+        ...     ),
+        ...     "eps": HomoscedasticNoise(1e-5),
         ... }
-        >>> muygps, nbrs_lookup = make_classifier(
-        ...         train['input'],
-        ...         train['output'],
-        ...         nn_count=30,
-        ...         batch_count=200,
-        ...         loss_fn=cross_entropy_fn,
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
-        ...         k_kwargs=k_kwargs,
-        ...         nn_kwargs=nn_kwargs,
-        ...         verbose=False,
-        ... )
         >>> muygps, nbrs_lookup = make_classifier(
         ...         train['input'],
         ...         train['output'],
@@ -176,7 +171,6 @@ def make_classifier(
             loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
-            sigma_method=None,
             verbose=verbose,
             **opt_kwargs,
         )
@@ -213,32 +207,35 @@ def make_multivariate_classifier(
     appropriate functions for specifics.
 
     Example:
+        >>> from MuyGPyS.examples.regress import make_multivariate_classifier
+        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.kernels import RBF
+        >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.classif import make_multivariate_classifier
         >>> train = _make_gaussian_dict(10000, 100, 10, categorial=True)
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_args = [
         ...         {
-        ...             "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
-        ...             "eps": {"val": 1e-5},
+        ...             "kernel": RBF(
+        ...                 metric=IsotropicDistortion(
+        ...                     length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...                 )
+        ...             ),
+        ...             "eps": HomoscedasticNoise(1e-5),
+        ...             "sigma_sq": AnalyticSigmaSq(),
         ...         },
         ...         {
-        ...             "length_scale": {"val": 1.5, "bounds": (1e-2, 1e2)}
-        ...             "eps": {"val": 1e-5},
+        ...             "kernel": RBF(
+        ...                 metric=IsotropicDistortion(
+        ...                     length_scale=ScalarHyperparameter(1.5, (1e-2, 1e2))
+        ...                 )
+        ...             ),
+        ...             "eps": HomoscedasticNoise(1e-5),
+        ...             "sigma_sq": AnalyticSigmaSq(),
         ...         },
         ... ]
-        >>> mmuygps, nbrs_lookup = make_multivariate_classifier(
-        ...         train['input'],
-        ...         train['output'],
-        ...         nn_count=30,
-        ...         batch_count=200,
-        ...         loss_fn=cross_entropy_fn,
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
-        ...         k_args=k_args,
-        ...         nn_kwargs=nn_kwargs,
-        ...         verbose=False,
-        ... )
         >>> mmuygps, nbrs_lookup = make_multivariate_classifier(
         ...         train['input'],
         ...         train['output'],
@@ -350,7 +347,6 @@ def make_multivariate_classifier(
                     loss_fn=loss_fn,
                     obj_method=obj_method,
                     opt_method=opt_method,
-                    sigma_method=None,
                     verbose=verbose,
                     **opt_kwargs,
                 )
@@ -439,6 +435,11 @@ def do_classify(
 
     Example:
         >>> import numpy as np
+        >>> from MuyGPyS.examples.classify import do_classify
+        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.kernels import RBF
+        >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.classify import do_classify
         >>> train, test  = _make_gaussian_dict(10000, 100, 100, 10, categorial=True)
@@ -446,12 +447,11 @@ def do_classify(
         >>> k_kwargs = {
         ...     "kernel": RBF(
         ...         metric=IsotropicDistortion(
-        ...             l2,
-        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2)),
-        ...         ),
+        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...         )
         ...     ),
         ...     "eps": HomoscedasticNoise(1e-5),
-        ... )
+        ... }
         >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
         ...         test['input'],
         ...         train['input'],

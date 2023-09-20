@@ -11,6 +11,7 @@ from typing import Callable, Tuple, Type
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import _fullname
+from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
 
 
 class SigmaSq:
@@ -118,3 +119,56 @@ class SigmaSq:
             return self._backend_outer(fn(*args, **kwargs), sigma_sq)
 
         return scaled_fn
+
+    def get_opt_fn(self, muygps) -> Callable:
+        def noop_sigma_sq_opt_fn(K, nn_targets, *args, **kwargs):
+            return muygps.sigma_sq()
+
+        return noop_sigma_sq_opt_fn
+
+
+class AnalyticSigmaSq(SigmaSq):
+    """
+    An optimizable :math:`\\sigma^2` covariance scale parameter.
+
+    Identical to :class:`~MuyGPyS.gp.sigma_sq.SigmaSq`, save that its
+    `get_opt_fn` method performs an analytic optimization.
+
+    Args:
+        response_count:
+            The integer number of response dimensions.
+    """
+
+    def get_opt_fn(self, muygps) -> Callable:
+        """
+        Get a function to optimize the value of the :math:`\\sigma^2` scale
+        parameter for each response dimension.
+
+        We approximate :math:`\\sigma^2` by way of averaging over the analytic
+        solution from each local kernel.
+
+        .. math::
+            \\sigma^2 = \\frac{1}{bk} * \\sum_{i \\in B}
+                        Y_{nn_i}^T K_{nn_i}^{-1} Y_{nn_i}
+
+        Here :math:`Y_{nn_i}` and :math:`K_{nn_i}` are the target and kernel
+        matrices with respect to the nearest neighbor set in scope, where
+        :math:`k` is the number of nearest neighbors and :math:`b = |B|` is the
+        number of batch elements considered.
+
+        Args:
+            muygps:
+                The model to used to create and perturb the kernel.
+
+        Returns:
+            A function with signature
+            `(K, nn_targets, *args, **kwargs) -> mm.ndarray` that perturbs the
+            `(batch_count, nn_count, nn_count)` tensor `K` with `muygps`'s noise
+            model before solving it against the
+            `(batch_count, nn_count, response_count)` tensor `nn_targets`.
+        """
+
+        def analytic_sigma_sq_opt_fn(K, nn_targets, *args, **kwargs):
+            return _analytic_sigma_sq_optim(muygps.eps.perturb(K), nn_targets)
+
+        return analytic_sigma_sq_opt_fn

@@ -163,7 +163,6 @@ def do_fast_posterior_mean(
     loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
     opt_method: str = "bayes",
-    sigma_method: Optional[str] = "analytic",
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -184,14 +183,22 @@ def do_fast_posterior_mean(
     Example:
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
+        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.kernels import RBF
+        >>> from MuyGPyS.gp.noise import HomoscedasticNoise
+        >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
         >>> from MuyGPyS.optimize.objective import mse_fn
         >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
-        ...         "kern": "rbf",
-        ...         "metric": "F2",
-        ...         "eps": {"val": 1e-5},
-        ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)}
+        ...     "kernel": RBF(
+        ...         metric=IsotropicDistortion(
+        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...         )
+        ...     ),
+        ...     "eps": HomoscedasticNoise(1e-5),
+        ...     "sigma_sq": AnalyticSigmaSq(),
         ... }
         >>> muygps, nbrs_lookup, predictions, precomputed_coefficients_matrix
         ...         = do_fast_posterior_mean(
@@ -207,6 +214,7 @@ def do_fast_posterior_mean(
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
+
     Args:
         test_features:
             A matrix of shape `(test_count, feature_count)` whose rows consist
@@ -231,14 +239,6 @@ def do_fast_posterior_mean(
         opt_method:
             Indicates the optimization method to be used. Currently restricted
             to `"bayesian"` and `"scipy"`.
-        sigma_method:
-            The optimization method to be employed to learn the `sigma_sq`
-            hyperparameter. Currently supports only `"analytic"` and `None`. If
-            the value is not `None`, the returned
-            :class:`MuyGPyS.gp.muygps.MuyGPS` object will possess a `sigma_sq`
-            member whose value, invoked via `muygps.sigma_sq()`, is a
-            `(response_count,)` vector to be used for scaling posterior
-            variances.
         k_kwargs:
             If given a list or tuple of length `response_count`, assume that the
             elements are dicts containing kernel initialization keyword
@@ -282,7 +282,6 @@ def do_fast_posterior_mean(
         loss_fn=loss_fn,
         obj_method=obj_method,
         opt_method=opt_method,
-        sigma_method=sigma_method,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,

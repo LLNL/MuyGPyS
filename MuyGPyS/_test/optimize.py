@@ -106,7 +106,6 @@ class BenchmarkTestCase(parameterized.TestCase):
         loss_fn,
         obj_method,
         opt_method,
-        sigma_method,
         opt_kwargs,
         loss_kwargs=dict(),
     ) -> float:
@@ -138,7 +137,6 @@ class BenchmarkTestCase(parameterized.TestCase):
             loss_fn=loss_fn,
             obj_method=obj_method,
             opt_method=opt_method,
-            sigma_method=sigma_method,
             loss_kwargs=loss_kwargs,
             **opt_kwargs,
             verbose=False,  # TODO True,

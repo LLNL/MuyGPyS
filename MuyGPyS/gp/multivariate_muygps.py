@@ -313,6 +313,63 @@ class MultivariateMuyGPS:
             )
         return _mmuygps_fast_posterior_mean(Kcross, coeffs_tensor)
 
+    def optimize_sigma_sq(
+        self, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
+    ):
+        """
+        Optimize the value of the :math:`\\sigma^2` scale parameter for each
+        response dimension.
+
+        We approximate :math:`\\sigma^2` by way of averaging over the analytic
+        solution from each local kernel.
+
+        .. math::
+            \\sigma^2 = \\frac{1}{bk} * \\sum_{i \\in B}
+                        Y_{nn_i}^T K_{nn_i}^{-1} Y_{nn_i}
+
+        Here :math:`Y_{nn_i}` and :math:`K_{nn_i}` are the target and kernel
+        matrices with respect to the nearest neighbor set in scope, where
+        :math:`k` is the number of nearest neighbors and :math:`b = |B|` is the
+        number of batch elements considered.
+
+        Args:
+            muygps:
+                The model to be optimized.
+            pairwise_diffs:
+                A tensor of shape
+                `(batch_count, nn_count, nn_count, feature_count)` containing
+                the `(nn_count, nn_count, feature_count)`-shaped pairwise
+                nearest neighbor difference tensors corresponding to each of the
+                batch elements.
+            nn_targets:
+                Tensor of floats of shape
+                `(batch_count, nn_count, response_count)` containing the
+                expected response for each nearest neighbor of each batch
+                element.
+
+        Returns:
+            The MultivariateMuyGPs model whose sigma_sq parameter (and those of
+            its submodels) has been optimized.
+        """
+        batch_count, nn_count, response_count = nn_targets.shape
+        if response_count != len(self.models):
+            raise ValueError(
+                f"Response count ({response_count}) does not match the number "
+                f"of models ({len(self.models)})."
+            )
+        sigma_sqs = mm.zeros((response_count,))
+        for i, model in enumerate(self.models):
+            K = model.kernel(pairwise_diffs)
+            opt_fn = model.sigma_sq.get_opt_fn(model)
+            new_sigma_val = opt_fn(
+                K,
+                nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
+            )
+            model.sigma_sq._set(new_sigma_val)
+            sigma_sqs = mm.assign(sigma_sqs, new_sigma_val[0], i)
+        self.sigma_sq._set(sigma_sqs)
+        return self
+
     def apply_new_noise(self, new_noise):
         """
         Updates the heteroscedastic noise parameters of a MultivariateMuyGPs
