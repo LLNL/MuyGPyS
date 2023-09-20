@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Callable, Optional
+from typing import Callable
 
 
 def _switch_on_opt_method(

@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 from absl.testing import parameterized
 
@@ -20,7 +20,6 @@ from MuyGPyS.examples.regress import do_regress
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.optimize.loss import mse_fn, LossFn
 
 

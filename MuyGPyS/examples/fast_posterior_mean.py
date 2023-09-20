@@ -21,7 +21,7 @@ It calls the maker APIs above and
 """
 
 from time import perf_counter
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS

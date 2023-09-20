@@ -9,7 +9,7 @@ Convenience wrapper for GP prediction from indices.
 
 import numpy as np
 
-from typing import Optional, Tuple, Union
+from typing import Tuple, Union
 
 from MuyGPyS.gp.tensors import (
     crosswise_tensor,
