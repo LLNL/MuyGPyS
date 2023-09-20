@@ -112,13 +112,6 @@ class KernelFn:
         """
         return self.distortion_fn.get_opt_params()
 
-    @staticmethod
-    def _get_opt_fn(
-        kernel_fn: Callable,
-        distortion_fn: DistortionFn,
-    ) -> Callable:
-        return distortion_fn.get_opt_fn(kernel_fn)
-
     def __str__(self) -> str:
         """
         Print state of hyperparameter dict.

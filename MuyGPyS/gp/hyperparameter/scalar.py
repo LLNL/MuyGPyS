@@ -292,16 +292,12 @@ class ScalarHyperparameter:
         """
         return self._fixed
 
-    def apply(self, fn: Callable, name: str) -> Callable:
-        if self.fixed():
+    def apply_fn(self, fn: Callable, name: str) -> Callable:
+        def applied_fn(*args, **kwargs):
+            kwargs.setdefault(name, self())
+            return fn(*args, **kwargs)
 
-            def applied_fn(*args, **kwargs):
-                kwargs.setdefault(name, self())
-                return fn(*args, **kwargs)
-
-            return applied_fn
-
-        return fn
+        return applied_fn
 
     def append_lists(
         self,

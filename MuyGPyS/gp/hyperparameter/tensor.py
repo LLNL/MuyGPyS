@@ -10,7 +10,7 @@ TensorHyperparameters specifications are expected to be provided in `Dict` form 
 the key `"val"`. `"val"` is either an mm.ndarray value.
 """
 
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 import MuyGPyS._src.math as mm
 
@@ -123,17 +123,6 @@ class TensorHyperparameter:
         raise NotImplementedError(
             "TensorHyperparameter does not support optimization bounds!"
         )
-
-    def apply(self, fn: Callable, name: str) -> Callable:
-        if self.fixed():
-
-            def applied_fn(*args, **kwargs):
-                kwargs.setdefault(name, self())
-                return fn(*args, **kwargs)
-
-            return applied_fn
-
-        return fn
 
     def append_lists(self, name, names, params, bounds):
         pass

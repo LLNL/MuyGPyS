@@ -552,7 +552,7 @@ class MaternTest(KernelTest):
         self.assertTrue(mm.allclose(Kcross, sk_Kcross))
 
 
-class AnisotropicTest(KernelTest):
+class AnisotropicShapesTest(KernelTest):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -600,11 +600,11 @@ class AnisotropicTest(KernelTest):
             length_scale1=k_kwargs["length_scale1"],
         )
         mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
-        with self.assertRaisesRegex(
-            ValueError, "Number of lengthscale parameters "
-        ):
+        with self.assertRaisesRegex(ValueError, "Difference tensor of shape "):
             _ = _consistent_unchunk_tensor(mtn(pairwise_diffs))
 
+
+class AnisotropicTest(KernelTest):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -860,12 +860,14 @@ class AnisotropicTest(KernelTest):
         dist_model_aniso = AnisotropicDistortion(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
+            length_scale1=k_kwargs["length_scale0"],
         )
         rbf_aniso = RBF(metric=dist_model_aniso)
         self._check_params_chassis(
             rbf_aniso,
             **{
                 "length_scale0": k_kwargs["length_scale0"],
+                "length_scale1": k_kwargs["length_scale0"],
             },
         )
         kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
@@ -1034,6 +1036,7 @@ class AnisotropicTest(KernelTest):
         dist_model_aniso = AnisotropicDistortion(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
+            length_scale1=k_kwargs["length_scale0"],
         )
         rbf_aniso = RBF(metric=dist_model_aniso)
         self._check_params_chassis(

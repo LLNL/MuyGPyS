@@ -3,10 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .embed import (
-    apply_distortion,
-    embed_with_distortion_model,
-)
 from .anisotropic import AnisotropicDistortion
 from .distortion_fn import DistortionFn
 from .isotropic import IsotropicDistortion

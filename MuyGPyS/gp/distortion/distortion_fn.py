@@ -4,13 +4,9 @@
 # SPDX-License-Identifier: MIT
 
 
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
-from MuyGPyS.gp.hyperparameter.experimental import (
-    HierarchicalNonstationaryHyperparameter,
-)
 
 
 class DistortionFn:
@@ -24,16 +20,12 @@ class DistortionFn:
     def __init__(
         self,
         metric: Callable,
-        length_scale: Union[
-            ScalarHyperparameter, HierarchicalNonstationaryHyperparameter
-        ],
+        length_scale,
     ):
         self.length_scale = length_scale
         self._dist_fn = metric
 
-    def __call__(
-        self, diffs: mm.ndarray, length_scale: Union[float, mm.ndarray]
-    ) -> mm.ndarray:
+    def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
         raise NotImplementedError("Cannot call DistortionFn base class!")
 
     def get_opt_params(
@@ -55,31 +47,33 @@ class DistortionFn:
             "Cannot call DistortionFn base class functions!"
         )
 
-    def get_opt_fn(self, fn) -> Callable:
+    def populate_length_scale(self, hyperparameters: Dict) -> None:
         """
-        Return a kernel function with fixed parameters set.
+        Populates the hyperparameter dictionary of a KernelFn object with any
+        parameters of the DistortionFn object.
 
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
-        that optimization parameters will be passed as keyword arguments.
-
-        Returns:
-            A function implementing the kernel where all fixed parameters are
-            set. The function expects keyword arguments corresponding to current
-            hyperparameter values for unfixed parameters.
+        Args:
+            hyperparameters:
+                A dict containing the hyperparameters of a KernelFn object.
         """
         raise NotImplementedError(
             "Cannot call DistortionFn base class functions!"
         )
 
-    def populate_length_scale(self, hyperparameters: Dict) -> None:
+    def embed_fn(self, fn: Callable) -> Callable:
         """
-        Populates the hyperparameter dictionary of a KernelFn object with
-        `self.length_scale` of the IsotropicDistortion object.
+        Augments a function to automatically apply the distortion to a
+        difference tensor.
 
         Args:
-            hyperparameters:
-                A dict containing the hyperparameters of a KernelFn object.
+            fn:
+                A Callable with signature
+                `(diffs, *args, **kwargs) -> mm.ndarray` taking a difference
+                tensor `diffs`.
+
+        Returns:
+            A new Callable that applies the distortion to `diffs`, possibly
+            changing its tensor dimensionality.
         """
         raise NotImplementedError(
             "Cannot call DistortionFn base class functions!"
