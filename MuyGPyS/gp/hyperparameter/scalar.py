@@ -16,7 +16,7 @@ between the upper and lower bounds if specified).
 
 from collections.abc import Sequence
 from numbers import Number
-from typing import Callable, cast, List, Tuple, Type, Union
+from typing import Callable, cast, List, Tuple, Union
 
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math as mm
@@ -314,27 +314,3 @@ class ScalarHyperparameter:
             names.append(name)
             params.append(self())
             bounds.append(self.get_bounds())
-
-
-def _init_scalar_hyperparameter(
-    val_def: Union[str, float],
-    bounds_def: Union[str, Tuple[float, float]],
-    type: Type = ScalarHyperparameter,
-    **kwargs,
-) -> ScalarHyperparameter:
-    """
-    Initialize a hyperparameter given default values.
-
-    Args:
-        val:
-            A valid value or `"sample"` or `"log_sample"`.
-        bounds:
-            Iterable container of len 2 containing lower and upper bounds (in
-            that order), or the string `"fixed"`.
-        kwargs:
-            A hyperparameter dict including as subset of the keys `val` and
-            `bounds`.
-    """
-    val = kwargs.get("val", val_def)
-    bounds = kwargs.get("bounds", bounds_def)
-    return type(val, bounds)

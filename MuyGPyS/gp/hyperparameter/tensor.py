@@ -10,7 +10,7 @@ TensorHyperparameters specifications are expected to be provided in `Dict` form 
 the key `"val"`. `"val"` is either an mm.ndarray value.
 """
 
-from typing import Callable, Optional, Tuple, Type
+from typing import Callable, Optional, Tuple
 
 import MuyGPyS._src.math as mm
 
@@ -137,21 +137,3 @@ class TensorHyperparameter:
 
     def append_lists(self, name, names, params, bounds):
         pass
-
-
-def _init_tensor_hyperparameter(
-    val_def: mm.ndarray,
-    type: Type = TensorHyperparameter,
-    **kwargs,
-) -> TensorHyperparameter:
-    """
-    Initialize a tensor hyperparameter given default value.
-
-    Args:
-        val:
-            A valid value.
-        kwargs:
-            A hyperparameter dict including as subset of the key `val`.
-    """
-    val = kwargs.get("val", val_def)
-    return type(val)
