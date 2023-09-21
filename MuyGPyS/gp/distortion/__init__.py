@@ -3,13 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .embed import (
-    apply_distortion,
-    embed_with_distortion_model,
-)
+from .anisotropic import AnisotropicDistortion
+from .distortion_fn import DistortionFn
 from .isotropic import IsotropicDistortion
 from .null import NullDistortion
-from .anisotropic import AnisotropicDistortion
 
 from MuyGPyS._src.gp.tensors import _l2 as l2
 from MuyGPyS._src.gp.tensors import _F2 as F2

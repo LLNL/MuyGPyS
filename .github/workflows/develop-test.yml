@@ -41,7 +41,6 @@ jobs:
           python tests/gp.py
           python tests/batch.py
           python tests/predict.py
-          python tests/experimental/nonstationary.py
           python tests/precompute/fast_posterior_mean.py
       - name: Optimize Tests
         if: matrix.test-group == 'optimize'

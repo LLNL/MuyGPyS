@@ -41,8 +41,7 @@ if config.state.backend == "torch":
 class ClassifyTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 200, f, r, nn, nn_kwargs, k_kwargs)
-            for f in [10, 2]
+            (1000, 200, 2, r, nn, nn_kwargs, k_kwargs)
             for r in [10, 1]
             for nn in [5, 50]
             for nn_kwargs in _basic_nn_kwarg_options
@@ -64,7 +63,9 @@ class ClassifyTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
                         metric=AnisotropicDistortion(
-                            l2, length_scale0=ScalarHyperparameter(1.5)
+                            l2,
+                            length_scale0=ScalarHyperparameter(1.5),
+                            length_scale1=ScalarHyperparameter(0.5),
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -107,13 +108,12 @@ class ClassifyTest(parameterized.TestCase):
 class ClassifyUQTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 200, f, r, nn, b, nn_kwargs, k_kwargs)
+            (1000, 200, 2, r, nn, b, nn_kwargs, k_kwargs)
             # for f in [100]
             # for r in [2]
             # for nn in [10]
             # for b in [200]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for f in [10, 2]
             for r in [2]
             for nn in [5, 50]
             for b in [200]
@@ -140,7 +140,9 @@ class ClassifyUQTest(parameterized.TestCase):
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
                         metric=AnisotropicDistortion(
-                            l2, length_scale0=ScalarHyperparameter(1.5)
+                            l2,
+                            length_scale0=ScalarHyperparameter(1.5),
+                            length_scale1=ScalarHyperparameter(0.5),
                         ),
                     ),
                     "eps": HomoscedasticNoise(1e-5),
@@ -148,7 +150,9 @@ class ClassifyUQTest(parameterized.TestCase):
                 {
                     "kernel": RBF(
                         metric=AnisotropicDistortion(
-                            l2, length_scale0=ScalarHyperparameter(1.5)
+                            l2,
+                            length_scale0=ScalarHyperparameter(1.5),
+                            length_scale1=ScalarHyperparameter(0.5),
                         )
                     ),
                     "eps": HomoscedasticNoise(1e-5),

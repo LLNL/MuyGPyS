@@ -4,18 +4,16 @@
 # SPDX-License-Identifier: MIT
 
 
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
+from MuyGPyS.gp.distortion.distortion_fn import DistortionFn
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
-from MuyGPyS.gp.hyperparameter.experimental import (
-    HierarchicalNonstationaryHyperparameter,
-)
 
 
 @auto_str
-class IsotropicDistortion:
+class IsotropicDistortion(DistortionFn):
     """
     An isotropic distance model.
 
@@ -41,15 +39,18 @@ class IsotropicDistortion:
     def __init__(
         self,
         metric: Callable,
-        length_scale: Union[
-            ScalarHyperparameter, HierarchicalNonstationaryHyperparameter
-        ],
+        length_scale: ScalarHyperparameter,
     ):
+        if not isinstance(length_scale, ScalarHyperparameter):
+            raise ValueError(
+                "Expected ScalarHyperparameter type for length_scale, not "
+                f"{type(length_scale)}"
+            )
         self.length_scale = length_scale
         self._dist_fn = metric
 
     def __call__(
-        self, diffs: mm.ndarray, length_scale: Union[float, mm.ndarray]
+        self, diffs: mm.ndarray, length_scale: Optional[float] = None, **kwargs
     ) -> mm.ndarray:
         """
         Apply isotropic distortion to an elementwise difference tensor.
@@ -63,28 +64,26 @@ class IsotropicDistortion:
                 A tensor of pairwise differences of shape
                 `(..., feature_count)`.
             length_scale:
-                A floating point length scale, or a vector of `(knot_count,)`
-                knot length scales.
+                A floating point length scale.
         Returns:
             A crosswise distance matrix of shape `(data_count, nn_count)` or a
             pairwise distance tensor of shape
             `(data_count, nn_count, nn_count)` whose last two dimensions are
             pairwise distance matrices.
         """
-        length_scale_array = self._get_length_scale_array(
-            diffs.shape, length_scale
-        )
-        return self._dist_fn(diffs / length_scale_array)
+        if length_scale is None:
+            length_scale = self.length_scale()
+        return self._dist_fn(diffs / length_scale)
 
-    @staticmethod
-    def _get_length_scale_array(
-        target_shape: mm.ndarray,
-        length_scale: Union[float, mm.ndarray],
-    ) -> mm.ndarray:
-        # make sure length_scale is broadcastable when its shape is (batch_count,)
-        # NOTE[MWP] there is probably a better way to do this
-        shape = (-1,) + (1,) * (len(target_shape) - 1)
-        return mm.reshape(mm.promote(length_scale), shape)
+    # @staticmethod
+    # def _get_length_scale_array(
+    #     target_shape: mm.ndarray,
+    #     length_scale: Union[float, mm.ndarray],
+    # ) -> mm.ndarray:
+    #     # make sure length_scale is broadcastable when its shape is (batch_count,)
+    #     # NOTE[MWP] there is probably a better way to do this
+    #     shape = (-1,) + (1,) * (len(target_shape) - 1)
+    #     return mm.reshape(mm.promote(length_scale), shape)
 
     def get_opt_params(
         self,
@@ -107,22 +106,6 @@ class IsotropicDistortion:
         self.length_scale.append_lists("length_scale", names, params, bounds)
         return names, params, bounds
 
-    def get_opt_fn(self, fn) -> Callable:
-        """
-        Return a kernel function with fixed parameters set.
-
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
-        that optimization parameters will be passed as keyword arguments.
-
-        Returns:
-            A function implementing the kernel where all fixed parameters are
-            set. The function expects keyword arguments corresponding to current
-            hyperparameter values for unfixed parameters.
-        """
-        opt_fn = self.length_scale.apply(fn, "length_scale")
-        return opt_fn
-
     def populate_length_scale(self, hyperparameters: Dict) -> None:
         """
         Populates the hyperparameter dictionary of a KernelFn object with
@@ -133,3 +116,26 @@ class IsotropicDistortion:
                 A dict containing the hyperparameters of a KernelFn object.
         """
         hyperparameters["length_scale"] = self.length_scale
+
+    def embed_fn(self, fn: Callable) -> Callable:
+        """
+        Augments a function to automatically apply the distortion to a
+        difference tensor.
+
+        Args:
+            fn:
+                A Callable with signature
+                `(diffs, *args, **kwargs) -> mm.ndarray` taking a difference
+                tensor `diffs` with shape `(..., feature_count)`.
+
+        Returns:
+            A new Callable that applies the distortion to `diffs`, removing
+            the last tensor dimension by collapsing the feature-wise differences
+            into scalar distances. Also adds a `length_scale` kwarg, making the
+            function drivable by keyword optimization.
+        """
+
+        def embedded_fn(diffs, *args, length_scale=None, **kwargs):
+            return fn(self(diffs, length_scale=length_scale), *args, **kwargs)
+
+        return embedded_fn

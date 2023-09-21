@@ -57,6 +57,11 @@ class BenchmarkTestCase(parameterized.TestCase):
             "eps": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
         }
 
+        cls.setUpGP()
+        cls.simulate()
+
+    @classmethod
+    def setUpGP(cls):
         cls.gp = BenchmarkGP(
             kernel=Matern(
                 nu=ScalarHyperparameter(cls.params["nu"]()),
@@ -70,6 +75,9 @@ class BenchmarkTestCase(parameterized.TestCase):
             eps=HomoscedasticNoise(cls.params["eps"]()),
         )
         cls.gp.sigma_sq._set(mm.array([5.0]))
+
+    @classmethod
+    def simulate(cls):
         cls.ys = mm.zeros((cls.its, cls.data_count, cls.response_count))
         cls.train_responses = mm.zeros(
             (cls.its, cls.train_count, cls.response_count)

@@ -37,7 +37,7 @@ Example:
     >>> Kcross = kern(crosswise_diffs)
 """
 
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import (
@@ -50,10 +50,8 @@ from MuyGPyS._src.gp.kernels import (
 
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.distortion import (
-    embed_with_distortion_model,
-    AnisotropicDistortion,
+    DistortionFn,
     IsotropicDistortion,
-    NullDistortion,
     l2,
 )
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
@@ -62,20 +60,27 @@ from MuyGPyS.gp.kernels import (
 )
 
 
-def _set_matern_fn(nu: ScalarHyperparameter):
+def _set_matern_fn(
+    nu: ScalarHyperparameter,
+    _backend_05_fn: Callable = _matern_05_fn,
+    _backend_15_fn: Callable = _matern_15_fn,
+    _backend_25_fn: Callable = _matern_25_fn,
+    _backend_inf_fn: Callable = _matern_inf_fn,
+    _backend_gen_fn: Callable = _matern_gen_fn,
+):
     if nu.fixed() is True:
         if nu() == 0.5:
-            return _matern_05_fn
+            return _backend_05_fn
         elif nu() == 1.5:
-            return _matern_15_fn
+            return _backend_15_fn
         elif nu() == 2.5:
-            return _matern_25_fn
+            return _backend_25_fn
         elif nu() == mm.inf:
-            return _matern_inf_fn
+            return _backend_inf_fn
         else:
-            return _matern_gen_fn
+            return _backend_gen_fn
 
-    return _matern_gen_fn
+    return _backend_gen_fn
 
 
 @auto_str
@@ -116,23 +121,22 @@ class Matern(KernelFn):
     def __init__(
         self,
         nu: ScalarHyperparameter = ScalarHyperparameter(0.5),
-        metric: Union[
-            AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ] = IsotropicDistortion(l2, length_scale=ScalarHyperparameter(1.0)),
+        metric: DistortionFn = IsotropicDistortion(
+            l2, length_scale=ScalarHyperparameter(1.0)
+        ),
+        **_backend_fns
     ):
         super().__init__(metric=metric)
         self.nu = nu
+        self._backend_fns = _backend_fns
         self._make()
 
     def _make(self):
         super()._make_base()
         self._hyperparameters["nu"] = self.nu
-        self._kernel_fn = _set_matern_fn(self.nu)
-        self._fn = embed_with_distortion_model(
-            self._kernel_fn,
-            self.distortion_fn,
-            self.distortion_fn.length_scale,
-        )
+        self._kernel_fn = _set_matern_fn(self.nu, **self._backend_fns)
+        self._fn = self.nu.apply_fn(self._kernel_fn, "nu")
+        self._fn = self.distortion_fn.embed_fn(self._fn)
 
     def __call__(self, diffs):
         """
@@ -185,16 +189,4 @@ class Matern(KernelFn):
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._get_opt_fn(self._fn, self.distortion_fn, self.nu)
-
-    @staticmethod
-    def _get_opt_fn(
-        matern_fn: Callable,
-        distortion_fn: Union[
-            AnisotropicDistortion, IsotropicDistortion, NullDistortion
-        ],
-        nu: ScalarHyperparameter,
-    ) -> Callable:
-        opt_fn = KernelFn._get_opt_fn(matern_fn, distortion_fn)
-        opt_fn = nu.apply(opt_fn, "nu")
-        return opt_fn
+        return self._fn

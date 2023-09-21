@@ -3,12 +3,5 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .scalar import (
-    _init_scalar_hyperparameter,
-    ScalarHyperparameter,
-)
-
-from .tensor import (
-    TensorHyperparameter,
-    _init_tensor_hyperparameter,
-)
+from .scalar import ScalarHyperparameter
+from .tensor import TensorHyperparameter

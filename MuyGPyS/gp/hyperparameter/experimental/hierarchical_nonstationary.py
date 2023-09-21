@@ -120,7 +120,7 @@ class HierarchicalNonstationaryHyperparameter:
             "Set bounds on individual knot values instead."
         )
 
-    def apply(self, fn: Callable, name: str) -> Callable:
+    def apply_fn(self, fn: Callable, name: str) -> Callable:
         self._name = name
         if any(param.fixed() for param in self._knot_value_params):
 

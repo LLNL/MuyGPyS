@@ -37,14 +37,13 @@ Example:
     >>> Kcross = kernel_fn(crosswise_diffs)
 """
 
-from typing import Callable, List, Tuple, Union
+from typing import Callable
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import _rbf_fn
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.distortion import (
-    embed_with_distortion_model,
-    AnisotropicDistortion,
+    DistortionFn,
     IsotropicDistortion,
     F2,
 )
@@ -76,21 +75,18 @@ class RBF(KernelFn):
 
     def __init__(
         self,
-        metric: Union[
-            AnisotropicDistortion, IsotropicDistortion
-        ] = IsotropicDistortion(F2, length_scale=ScalarHyperparameter(1.0)),
+        metric: DistortionFn = IsotropicDistortion(
+            F2, length_scale=ScalarHyperparameter(1.0)
+        ),
+        _backend_fn: Callable = _rbf_fn,
     ):
         super().__init__(metric=metric)
-        self._kernel_fn = _rbf_fn
+        self._kernel_fn = _backend_fn
         self._make()
 
     def _make(self):
         super()._make_base()
-        self._fn = embed_with_distortion_model(
-            self._kernel_fn,
-            self.distortion_fn,
-            self.distortion_fn.length_scale,
-        )
+        self._fn = self.distortion_fn.embed_fn(self._kernel_fn)
 
     def __call__(
         self, diffs: mm.ndarray, batch_features: mm.ndarray = None, **kwargs
@@ -116,24 +112,6 @@ class RBF(KernelFn):
         """
         return self._fn(diffs, batch_features=batch_features, **kwargs)
 
-    def get_opt_params(
-        self,
-    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
-        """
-        Report lists of unfixed hyperparameter names, values, and bounds.
-
-        Returns
-        -------
-            names:
-                A list of unfixed hyperparameter names.
-            params:
-                A list of unfixed hyperparameter values.
-            bounds:
-                A list of unfixed hyperparameter bound tuples.
-        """
-        names, params, bounds = super().get_opt_params()
-        return names, params, bounds
-
     def get_opt_fn(self) -> Callable:
         """
         Return a kernel function with fixed parameters set.
@@ -147,4 +125,4 @@ class RBF(KernelFn):
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return super()._get_opt_fn(self._fn, self.distortion_fn)
+        return self._fn

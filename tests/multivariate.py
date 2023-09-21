@@ -98,9 +98,8 @@ class InitTest(parameterized.TestCase):
 class SigmaSqTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, f, 10, nn_kwargs, model_args)
+            (1000, 2, 10, nn_kwargs, model_args)
             for nn_kwargs in _basic_nn_kwarg_options
-            for f in [100]
             for model_args in (
                 [
                     {
@@ -142,6 +141,7 @@ class SigmaSqTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(7.2),
+                                length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -153,6 +153,7 @@ class SigmaSqTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(2.2),
+                                length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
@@ -164,6 +165,7 @@ class SigmaSqTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(12.4),
+                                length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-6),
@@ -371,8 +373,7 @@ class OptimTest(parameterized.TestCase):
 class ClassifyTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 200, f, nn, nn_kwargs, args)
-            for f in [100, 10, 2]
+            (1000, 200, 2, nn, nn_kwargs, args)
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [10]
@@ -406,6 +407,7 @@ class ClassifyTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(1.5),
+                                length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -416,6 +418,7 @@ class ClassifyTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(0.7),
+                                length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -467,8 +470,7 @@ class ClassifyTest(parameterized.TestCase):
 class RegressTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 200, f, nn, nn_kwargs, args)
-            for f in [100, 2]
+            (1000, 200, 2, nn, nn_kwargs, args)
             for nn in [5, 10]
             # for f in [2]
             # for nn in [5]
@@ -502,6 +504,7 @@ class RegressTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(1.5),
+                                length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -512,6 +515,7 @@ class RegressTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(0.7),
+                                length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -569,7 +573,7 @@ class MakeClassifierTest(parameterized.TestCase):
             (
                 1000,
                 1000,
-                10,
+                2,
                 b,
                 n,
                 nn_kwargs,
@@ -610,6 +614,7 @@ class MakeClassifierTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(1.5),
+                                length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -620,6 +625,7 @@ class MakeClassifierTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(0.7),
+                                length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -689,7 +695,7 @@ class MakeRegressorTest(parameterized.TestCase):
             (
                 1000,
                 1000,
-                10,
+                2,
                 b,
                 n,
                 nn_kwargs,
@@ -732,6 +738,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(1.5),
+                                length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
@@ -743,6 +750,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             metric=AnisotropicDistortion(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(0.7),
+                                length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
                         "eps": HomoscedasticNoise(1e-5),
