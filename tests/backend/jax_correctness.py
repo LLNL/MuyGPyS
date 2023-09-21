@@ -405,22 +405,22 @@ class TensorsTestCase(parameterized.TestCase):
         cls.muygps_25_j = cls._make_isotropic_muygps_j(2.5)
         cls.muygps_inf_j = cls._make_isotropic_muygps_j(jnp.inf)
 
-        cls.muygps_05_anisotropic_n = cls._make_anisotropic_muygps_n(cls.nu)
+        cls.muygps_05_anisotropic_n = cls._make_anisotropic_muygps_n(0.5)
         cls.muygps_15_anisotropic_n = cls._make_anisotropic_muygps_n(1.5)
         cls.muygps_25_anisotropic_n = cls._make_anisotropic_muygps_n(2.5)
         cls.muygps_inf_anisotropic_n = cls._make_anisotropic_muygps_n(np.inf)
         cls.muygps_gen_anisotropic_n = cls._make_anisotropic_muygps_n(cls.nu)
-        cls.muygps_05_anisotropic_j = cls._make_anisotropic_muygps_j(cls.nu)
+        cls.muygps_05_anisotropic_j = cls._make_anisotropic_muygps_j(0.5)
         cls.muygps_15_anisotropic_j = cls._make_anisotropic_muygps_j(1.5)
         cls.muygps_25_anisotropic_j = cls._make_anisotropic_muygps_j(2.5)
         cls.muygps_inf_anisotropic_j = cls._make_anisotropic_muygps_j(jnp.inf)
         cls.muygps_gen_anisotropic_j = cls._make_anisotropic_muygps_j(cls.nu)
 
         cls.muygps_heteroscedastic_n = cls._make_heteroscedastic_muygps_n(
-            cls.nu, cls.eps_heteroscedastic_n
+            cls.nu, cls.eps_heteroscedastic_n, nu_bounds=cls.nu_bounds
         )
         cls.muygps_heteroscedastic_j = cls._make_heteroscedastic_muygps_j(
-            cls.nu, cls.eps_heteroscedastic_j
+            cls.nu, cls.eps_heteroscedastic_j, nu_bounds=cls.nu_bounds
         )
 
         cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
@@ -911,7 +911,7 @@ class FastPredictTest(MuyGPSTestCase):
             np.arange(0, cls.test_count),
             cls.closest_set_new_n,
         )
-        cls.Kcross.fast_n = cls.muygps_gen_n.kernel(cls.crosswise_diffs_fast_n)
+        cls.Kcross_fast_n = cls.muygps_gen_n.kernel(cls.crosswise_diffs_fast_n)
 
         cls.nn_indices_all_j, _ = cls.nbrs_lookup.get_batch_nns(
             np.arange(0, cls.train_count)
@@ -959,7 +959,7 @@ class FastPredictTest(MuyGPSTestCase):
             np.arange(0, cls.test_count),
             cls.closest_set_new_j,
         )
-        cls.Kcross.fast_j = cls.muygps_gen_j.kernel(cls.crosswise_diffs_fast_j)
+        cls.Kcross_fast_j = cls.muygps_gen_j.kernel(cls.crosswise_diffs_fast_j)
 
     def test_fast_nn_update(self):
         self.assertTrue(
