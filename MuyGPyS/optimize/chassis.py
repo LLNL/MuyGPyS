@@ -116,6 +116,7 @@ class OptimizeFn:
         return self._fn(muygps, obj_fn, verbose=verbose, **kwargs)
 
 
+Bayes_optimize_fn = OptimizeFn(_bayes_opt_optimize, make_loo_crossval_fn)
 """
 Optimize a :class:`~MuyGPyS.gp.muygps.MuyGPS` model using Bayesian optimization.
 
@@ -202,8 +203,8 @@ Returns:
     A new MuyGPs model whose specified hyperparameters have been
     optimized.
 """
-Bayes_optimize_fn = OptimizeFn(_bayes_opt_optimize, make_loo_crossval_fn)
 
+L_BFGS_B_optimize_fn = OptimizeFn(_scipy_optimize, make_loo_crossval_fn)
 """
 Optimize a :class:`~MuyGPyS.gp.muygps.MuyGPS` model using the L-BFGS-B
 algorithm.
@@ -278,4 +279,3 @@ Returns:
     A new MuyGPs model whose specified hyperparameters have been
     optimized.
 """
-L_BFGS_B_optimize_fn = OptimizeFn(_scipy_optimize, make_loo_crossval_fn)
