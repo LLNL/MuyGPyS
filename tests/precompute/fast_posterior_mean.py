@@ -12,7 +12,7 @@ from MuyGPyS import config
 
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
-    _basic_opt_method_and_kwarg_options,
+    _basic_opt_fn_and_kwarg_options,
     _make_gaussian_data,
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
@@ -30,11 +30,12 @@ if config.state.backend in ["mpi", "torch"]:
 class MakeFastRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lf, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lf, opt_fn_and_kwargs, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lf in [mse_fn]
+            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             # for ssm in ["analytic"]
             # for rt in [True]
             for k_kwargs in (
@@ -59,11 +60,13 @@ class MakeFastRegressorTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_fn,
+        opt_fn_and_kwargs,
         k_kwargs,
     ):
         # skip if we are using the MPI implementation
 
         # construct the observation locations
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
         response_count = 2
         train, test = _make_gaussian_data(
             train_count,
@@ -86,12 +89,8 @@ class MakeFastRegressorTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_fn=loss_fn,
-            opt_method="bayes",
-            opt_kwargs={
-                "allow_duplicate_points": True,
-                "init_points": 2,
-                "n_iter": 2,
-            },
+            opt_fn=opt_fn,
+            opt_kwargs=opt_kwargs,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
         )
@@ -113,14 +112,14 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                 n,
                 nn_kwargs,
                 lf,
-                opt_method_and_kwargs,
+                opt_fn_and_kwargs,
                 k_kwargs,
             )
             for b in [250]
             for n in [10]
             for nn_kwargs in _basic_nn_kwarg_options
             for lf in [mse_fn]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             for k_kwargs in (
                 (
                     {
@@ -156,11 +155,11 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_fn,
-        opt_method_and_kwargs,
+        opt_fn_and_kwargs,
         k_kwargs,
     ):
         # skip if we are using the MPI implementation
-        opt_method, opt_kwargs = opt_method_and_kwargs
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
         response_count = len(k_kwargs)
 
         # construct the observation locations
@@ -185,7 +184,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_fn=loss_fn,
-            opt_method=opt_method,
+            opt_fn=opt_fn,
             k_kwargs=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,

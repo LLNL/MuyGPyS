@@ -24,7 +24,7 @@ from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize import optimize_from_tensors
+from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import LossFn, lool_fn
 
@@ -35,8 +35,7 @@ def make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    obj_method: str = "loo_crossval",
-    opt_method: str = "bayes",
+    opt_fn: OptimizeFn = Bayes_optimize_fn,
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -57,7 +56,7 @@ def make_regressor(
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
-        >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
+        >>> from MuyGPyS.optimize import Bayes_optimize_fn
         >>> from MuyGPyS.examples.regress import make_regressor
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
@@ -76,8 +75,7 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=lool_fn,
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
+        ...         opt_fn=Bayes_optimize_fn,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -98,12 +96,10 @@ def make_regressor(
         loss_fn:
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-        obj_method:
-            Indicates the objective function to be minimized. Currently
-            restricted to `"loo_crossval"`.
-        opt_method:
-            Indicates the optimization method to be used. Currently restricted
-            to `"bayesian"` and `"scipy"`.
+        opt_fn:
+            The optimization functor to use in hyperparameter optimization.
+            Ignored if all of the parameters specified by argument `k_kwargs`
+            are fixed.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
             metric, epsilon and sigma hyperparameter specifications, and
@@ -168,15 +164,13 @@ def make_regressor(
 
         if skip_opt is False:
             # maybe do something with these estimates?
-            muygps = optimize_from_tensors(
+            muygps = opt_fn(
                 muygps,
                 batch_targets,
                 batch_nn_targets,
                 crosswise_diffs,
                 pairwise_diffs,
                 loss_fn=loss_fn,
-                obj_method=obj_method,
-                opt_method=opt_method,
                 verbose=verbose,
                 **opt_kwargs,
             )
@@ -203,8 +197,7 @@ def make_multivariate_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    obj_method: str = "loo_crossval",
-    opt_method: str = "bayes",
+    opt_fn: OptimizeFn = Bayes_optimize_fn,
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -225,7 +218,7 @@ def make_multivariate_regressor(
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
-        >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
+        >>> from MuyGPyS.optimize import Bayes_optimize_fn
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_args = [
@@ -254,8 +247,7 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=lool_fn,
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
+        ...         opt_fn=Bayes_optimize_fn,
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -276,12 +268,10 @@ def make_multivariate_regressor(
         loss_fn:
             The loss method to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-        obj_method:
-            Indicates the objective function to be minimized. Currently
-            restricted to `"loo_crossval"`.
-        opt_method:
-            Indicates the optimization method to be used. Currently restricted
-            to `"bayesian"` and `"scipy"`.
+        opt_fn:
+            The optimization functor to use in hyperparameter optimization.
+            Ignored if all of the parameters specified by argument `k_kwargs`
+            are fixed.
         k_args:
             A list of `response_count` dicts containing kernel initialization
             keyword arguments. Each dict specifies parameters for the kernel,
@@ -353,7 +343,7 @@ def make_multivariate_regressor(
             # maybe do something with these estimates?
             for i, muygps in enumerate(mmuygps.models):
                 if muygps.fixed() is False:
-                    mmuygps.models[i] = optimize_from_tensors(
+                    mmuygps.models[i] = opt_fn(
                         muygps,
                         batch_targets[:, i].reshape(batch_targets.shape[0], 1),
                         batch_nn_targets[:, :, i].reshape(
@@ -362,8 +352,6 @@ def make_multivariate_regressor(
                         crosswise_diffs,
                         pairwise_diffs,
                         loss_fn=loss_fn,
-                        obj_method=obj_method,
-                        opt_method=opt_method,
                         verbose=verbose,
                         **opt_kwargs,
                     )
@@ -424,8 +412,7 @@ def _decide_and_make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    obj_method: str = "loo_crossval",
-    opt_method: str = "bayes",
+    opt_fn: OptimizeFn = Bayes_optimize_fn,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -438,8 +425,7 @@ def _decide_and_make_regressor(
             nn_count=nn_count,
             batch_count=batch_count,
             loss_fn=loss_fn,
-            obj_method=obj_method,
-            opt_method=opt_method,
+            opt_fn=opt_fn,
             k_args=k_kwargs,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
@@ -453,8 +439,7 @@ def _decide_and_make_regressor(
                 nn_count=nn_count,
                 batch_count=batch_count,
                 loss_fn=loss_fn,
-                obj_method=obj_method,
-                opt_method=opt_method,
+                opt_fn=opt_fn,
                 k_kwargs=k_kwargs,
                 nn_kwargs=nn_kwargs,
                 opt_kwargs=opt_kwargs,
@@ -475,8 +460,7 @@ def do_regress(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    obj_method: str = "loo_crossval",
-    opt_method: str = "bayes",
+    opt_fn: OptimizeFn = Bayes_optimize_fn,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -499,10 +483,11 @@ def do_regress(
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
-        >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.regress import do_regress
+        >>> from MuyGPyS.optimize import Bayes_optimize_fn
         >>> from MuyGPyS.optimize.objective import mse_fn
-        >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
+        >>> train_features, train_responses = make_train()  # stand-in function
+        >>> test_features, test_responses = make_test()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
@@ -514,19 +499,18 @@ def do_regress(
         ...     "sigma_sq": AnalyticSigmaSq(),
         ... }
         >>> muygps, nbrs_lookup, predictions, variance = do_regress(
-        ...         test['input'],
-        ...         train['input'],
-        ...         train['output'],
+        ...         test_features,
+        ...         train_features,
+        ...         train_responses,
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=lool_fn,
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
+        ...         opt_fn=Bayes_optimize_fn,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> mse = mse_fn(test['output'], predictions)
+        >>> mse = mse_fn(test_responses, predictions)
         >>> print(f"obtained mse: {mse}")
         obtained mse: 0.20842...
 
@@ -548,12 +532,10 @@ def do_regress(
         loss_fn:
             The loss functor to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-        obj_method:
-            Indicates the objective function to be minimized. Currently
-            restricted to `"loo_crossval"`.
-        opt_method:
-            Indicates the optimization method to be used. Currently restricted
-            to `"bayesian"` and `"scipy"`.
+        opt_fn:
+            The optimization functor to use in hyperparameter optimization.
+            Ignored if all of the parameters specified by argument `k_kwargs`
+            are fixed.
         k_kwargs:
             If given a list or tuple of length `response_count`, assume that the
             elements are dicts containing kernel initialization keyword
@@ -591,8 +573,7 @@ def do_regress(
         nn_count=nn_count,
         batch_count=batch_count,
         loss_fn=loss_fn,
-        obj_method=obj_method,
-        opt_method=opt_method,
+        opt_fn=opt_fn,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,

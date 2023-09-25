@@ -22,13 +22,14 @@ from MuyGPyS.gp.distortion import F2, l2
 # from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
-    _consistent_assert,
+    _basic_opt_fn_and_kwarg_options,
     _check_ndarray,
+    _consistent_assert,
     _get_sigma_sq_series,
-    _make_gaussian_dict,
     _make_gaussian_data,
-    _precision_assert,
+    _make_gaussian_dict,
     _make_heteroscedastic_test_nugget,
+    _precision_assert,
 )
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
@@ -614,11 +615,12 @@ class GPDiagonalVariance(GPTestCase):
 class MakeClassifierTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lf, kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lf, opt_fn_and_kwargs, kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lf in [mse_fn]
+            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             for kwargs in (
                 {
                     "kernel": Matern(
@@ -638,11 +640,15 @@ class MakeClassifierTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_fn,
+        opt_fn_and_kwargs,
         k_kwargs,
     ):
         if config.state.backend == "torch":
             _warn0(f"{self.__class__} does not support torch")
             return
+
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
+
         response_count = 2
         train, test = _make_gaussian_data(
             train_count,
@@ -660,12 +666,8 @@ class MakeClassifierTest(parameterized.TestCase):
             loss_fn=loss_fn,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
-            opt_method="bayes",
-            opt_kwargs={
-                "allow_duplicate_points": True,
-                "init_points": 2,
-                "n_iter": 2,
-            },
+            opt_fn=opt_fn,
+            opt_kwargs=opt_kwargs,
             verbose=False,
         )
 
@@ -686,11 +688,12 @@ class MakeClassifierTest(parameterized.TestCase):
 class MakeRegressorTest(parameterized.TestCase):
     @parameterized.parameters(
         (
-            (1000, 1000, 10, b, n, nn_kwargs, lf, k_kwargs)
+            (1000, 1000, 10, b, n, nn_kwargs, lf, opt_fn_and_kwargs, k_kwargs)
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lf in [mse_fn]
+            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             # for ssm in ["analytic"]
             for k_kwargs in (
                 {
@@ -719,11 +722,15 @@ class MakeRegressorTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_fn,
+        opt_fn_and_kwargs,
         k_kwargs,
     ):
         if config.state.backend == "torch":
             _warn0(f"{self.__class__} does not support torch")
             return
+
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
+
         response_count = 1
         # construct the observation locations
         train, test = _make_gaussian_data(
@@ -740,12 +747,8 @@ class MakeRegressorTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_fn=loss_fn,
-            opt_method="bayes",
-            opt_kwargs={
-                "allow_duplicate_points": True,
-                "init_points": 2,
-                "n_iter": 2,
-            },
+            opt_fn=opt_fn,
+            opt_kwargs=opt_kwargs,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
         )

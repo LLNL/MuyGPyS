@@ -17,7 +17,7 @@ from MuyGPyS.gp.tensors import (
     make_train_tensors,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.optimize import optimize_from_tensors
+from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
 
 
@@ -125,8 +125,7 @@ def optimize_from_indices(
     train_features: np.ndarray,
     train_targets: np.ndarray,
     loss_fn: LossFn = lool_fn,
-    obj_method: str = "loo_crossval",
-    opt_method: str = "bayes",
+    opt_fn: OptimizeFn = Bayes_optimize_fn,
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:
@@ -151,8 +150,7 @@ def optimize_from_indices(
         ...         train_features,
         ...         train_responses,
         ...         loss_fn=lool_fn,
-        ...         obj_method='loo_crossval',
-        ...         opt_method='scipy',
+        ...         opt_fn=L_BFGS_B_optimize_fn,
         ...         verbose=True,
         ... )
         parameters to be optimized: ['nu']
@@ -187,13 +185,8 @@ def optimize_from_indices(
             vector-valued responses for each training element.
         loss_fn:
             Indicates the loss functor to be used.
-        obj_method:
-            Indicates the objective function to be minimized. Currently
-            restricted to `"loo_crossval"`.
-        opt_method:
-            Indicates the optimization method to be used. Currently restricted
-            to `"bayesian"` (alternately `"bayes"` or `"bayes_opt"`) and
-            `"scipy"`.
+        opt_fn:
+            The optimization functor to use in hyperparameter optimization.
         verbose:
             If True, print debug messages.
         kwargs:
@@ -213,15 +206,13 @@ def optimize_from_indices(
         train_features,
         train_targets,
     )
-    return optimize_from_tensors(
+    return opt_fn(
         muygps,
         batch_targets,
         batch_nn_targets,
         crosswise_diffs,
         pairwise_diffs,
         loss_fn=loss_fn,
-        obj_method=obj_method,
-        opt_method=opt_method,
         verbose=verbose,
         **kwargs,
     )

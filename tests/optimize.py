@@ -14,8 +14,8 @@ from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 from MuyGPyS._test.gp import get_analytic_sigma_sq
 from MuyGPyS._test.optimize import BenchmarkTestCase
 from MuyGPyS._test.utils import (
-    _advanced_opt_method_and_kwarg_options,
-    _basic_opt_method_and_kwarg_options,
+    _advanced_opt_fn_and_kwarg_options,
+    _basic_opt_fn_and_kwarg_options,
     _basic_nn_kwarg_options,
     _sq_rel_err,
 )
@@ -161,8 +161,7 @@ class NuTest(BenchmarkTestCase):
                 n,
                 nn_kwargs,
                 loss_kwargs_and_sigma_sq,
-                om,
-                opt_method_and_kwargs,
+                opt_fn_and_kwargs,
             )
             for b in [250]
             for n in [20]
@@ -172,12 +171,11 @@ class NuTest(BenchmarkTestCase):
                 ["huber", pseudo_huber_fn, {"boundary_scale": 1.5}, SigmaSq()],
                 ["looph", looph_fn, {"boundary_scale": 1.5}, AnalyticSigmaSq()],
             ]
-            for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            # for opt_method_and_kwargs in [
-            #     _basic_opt_method_and_kwarg_options[0]
+            # for opt_fn_and_kwargs in [
+            #     _basic_opt_fn_and_kwarg_options[0]
             # ]
         )
     )
@@ -187,8 +185,7 @@ class NuTest(BenchmarkTestCase):
         nn_count,
         nn_kwargs,
         loss_kwargs_and_sigma_sq,
-        obj_method,
-        opt_method_and_kwargs,
+        opt_fn_and_kwargs,
     ):
         (
             loss_name,
@@ -196,7 +193,7 @@ class NuTest(BenchmarkTestCase):
             loss_kwargs,
             sigma_sq,
         ) = loss_kwargs_and_sigma_sq
-        opt_method, opt_kwargs = opt_method_and_kwargs
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
 
         mrse = 0.0
 
@@ -228,8 +225,7 @@ class NuTest(BenchmarkTestCase):
                 nbrs_lookup,
                 batch_count,
                 loss_fn,
-                obj_method,
-                opt_method,
+                opt_fn,
                 opt_kwargs,
                 loss_kwargs=loss_kwargs,
             )
@@ -251,18 +247,16 @@ class LengthScaleTest(BenchmarkTestCase):
                 n,
                 nn_kwargs,
                 loss_and_sigma_sq,
-                om,
-                opt_method_and_kwargs,
+                opt_fn_and_kwargs,
             )
             for b in [250]
             for n in [20]
             for loss_and_sigma_sq in [["lool", lool_fn, AnalyticSigmaSq()]]
-            for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
-            for opt_method_and_kwargs in _advanced_opt_method_and_kwarg_options
+            for opt_fn_and_kwargs in _advanced_opt_fn_and_kwarg_options
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            # for opt_method_and_kwargs in [
-            #     _basic_opt_method_and_kwarg_options[0]
+            # for opt_fn_and_kwargs in [
+            #     _basic_opt_fn_and_kwarg_options[0]
             # ]
         )
     )
@@ -272,11 +266,10 @@ class LengthScaleTest(BenchmarkTestCase):
         nn_count,
         nn_kwargs,
         loss_and_sigma_sq,
-        obj_method,
-        opt_method_and_kwargs,
+        opt_fn_and_kwargs,
     ):
         loss_name, loss_fn, sigma_sq = loss_and_sigma_sq
-        opt_method, opt_kwargs = opt_method_and_kwargs
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
 
         error_vector = mm.zeros((self.its,))
 
@@ -306,8 +299,7 @@ class LengthScaleTest(BenchmarkTestCase):
                 nbrs_lookup,
                 batch_count,
                 loss_fn,
-                obj_method,
-                opt_method,
+                opt_fn,
                 opt_kwargs,
             )
         median_error = mm.median(error_vector)

@@ -76,17 +76,19 @@ class ShearKernel(KernelFn):
         metric: IsotropicDistortion = IsotropicDistortion(
             F2, length_scale=ScalarHyperparameter(1.0)
         ),
+        _backend_fn=_shear_fn,
     ):
         super().__init__(metric=metric)
         if not isinstance(self.distortion_fn, IsotropicDistortion):
             raise ValueError(
                 f"ShearKernel only supports isotropic metrics, not {type(metric)}"
             )
-        self._fn = _shear_fn
+        self._kernel_fn = _backend_fn
         self._make()
 
     def _make(self):
         super()._make_base()
+        self._fn = self._kernel_fn
 
     def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
         """
@@ -99,18 +101,13 @@ class ShearKernel(KernelFn):
                 `(data_count, nn_count, feature_count)`. In the four dimensional
                 case, it is assumed that the diagonals dists
                 diffs[i, j, j, :] == 0.
-            batch_features:
-                A tensor of shape `(data_count, 1)` or a vector of length
-                `data_count` or a scalar.
 
         Returns:
             A cross-covariance matrix of shape `(data_count * 3, nn_count * 3)`
             or a tensor of shape `(data_count, nn_count * 3, nn_count * 3)`
             whose last two dimensions are kernel matrices.
         """
-        return self._fn(
-            diffs, length_scale=self.distortion_fn.length_scale(), **kwargs
-        )
+        return self._fn(diffs, **kwargs)
 
     def get_opt_params(
         self,
@@ -134,13 +131,12 @@ class ShearKernel(KernelFn):
         """
         Return a kernel function with fixed parameters set.
 
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
-        that optimization parameters will be passed as keyword arguments.
+        Assumes that optimization parameter literals will be passed as keyword
+        arguments.
 
         Returns:
             A function implementing the kernel where all fixed parameters are
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return super()._get_opt_fn(self._fn, self.distortion_fn)
+        return self._fn

@@ -183,9 +183,6 @@ class LossFn:
             :func:~MuyGPyS.optimize.loss._make_raw_predict_and_loss_fn` and
             :func:~MuyGPyS.optimize.loss._make_var_predict_and_loss_fn` are two
             candidates.
-
-    Returns:
-        A floating-point loss.
     """
 
     def __init__(self, loss_fn: Callable, make_predict_and_loss_fn: Callable):

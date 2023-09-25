@@ -85,7 +85,7 @@ class KernelFn:
         for name in kwargs:
             self._hyperparameters[name]._set(kwargs[name])
 
-    def __call__(self, diffs: mm.ndarray) -> mm.ndarray:
+    def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
         raise NotImplementedError(
             "__call__ is not implemented for base KernelFn"
         )

@@ -9,6 +9,7 @@ import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
+from MuyGPyS.optimize import Bayes_optimize_fn, L_BFGS_B_optimize_fn
 
 if config.muygpys_hnswlib_enabled is True:  # type: ignore
     _basic_nn_kwarg_options = [
@@ -27,10 +28,10 @@ else:
 
 _exact_nn_kwarg_options = ({"nn_method": "exact", "algorithm": "ball_tree"},)
 
-_basic_opt_method_and_kwarg_options = [
-    ["scipy", dict()],
+_basic_opt_fn_and_kwarg_options = [
+    [L_BFGS_B_optimize_fn, dict()],
     [
-        "bayesian",
+        Bayes_optimize_fn,
         {
             "random_state": 1,
             "init_points": 3,
@@ -40,10 +41,10 @@ _basic_opt_method_and_kwarg_options = [
     ],
 ]
 
-_advanced_opt_method_and_kwarg_options = [
-    ["scipy", dict()],
+_advanced_opt_fn_and_kwarg_options = [
+    [L_BFGS_B_optimize_fn, dict()],
     [
-        "bayesian",
+        Bayes_optimize_fn,
         {
             "random_state": 1,
             "init_points": 5,

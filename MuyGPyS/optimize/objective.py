@@ -17,30 +17,6 @@ import MuyGPyS._src.math as mm
 from MuyGPyS.optimize.loss import LossFn
 
 
-def make_obj_fn(obj_method: str, *args, **kwargs) -> Callable:
-    """
-    Prepare an objective function as a function purely of the hyperparameters
-    to be optimized.
-
-    This function is designed for use with
-    :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`, and the format
-    depends on the `opt_method` argument.
-
-    Args:
-        obj_method:
-            The name of the objective function to be minimized.
-        opt_method:
-            The name of the optimization method to be utilized.
-
-    Returns:
-        A Callable `objective_fn`, whose format depends on `opt_method`.
-    """
-    if obj_method == "loo_crossval":
-        return make_loo_crossval_fn(*args, **kwargs)
-    else:
-        raise ValueError(f"Unsupported objective method: {obj_method}")
-
-
 def make_loo_crossval_fn(
     loss_fn: LossFn,
     kernel_fn: Callable,
@@ -59,8 +35,7 @@ def make_loo_crossval_fn(
     the hyperparameters to be optimized.
 
     This function is designed for use with
-    :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()`, and the format
-    depends on the `opt_method` argument.
+    :class:`MuyGPyS.optimize.chassis.OptimizeFn`.
 
     Args:
         loss_fn:
@@ -100,7 +75,7 @@ def make_loo_crossval_fn(
             A dict listing any additional kwargs to pass to the loss function.
 
     Returns:
-        A Callable `objective_fn`, whose format depends on `opt_method`.
+        A Callable `objective_fn`.
     """
     kernels_fn = make_kernels_fn(kernel_fn, pairwise_diffs, crosswise_diffs)
     # This is ad-hoc, and might need to be revisited.

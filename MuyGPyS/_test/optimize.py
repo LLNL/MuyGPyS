@@ -15,7 +15,6 @@ from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
-from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
 
 
@@ -112,8 +111,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         nbrs_lookup,
         batch_count,
         loss_fn,
-        obj_method,
-        opt_method,
+        opt_fn,
         opt_kwargs,
         loss_kwargs=dict(),
     ) -> float:
@@ -136,15 +134,13 @@ class BenchmarkTestCase(parameterized.TestCase):
         batch_nn_targets = _consistent_chunk_tensor(
             self.train_responses[itr, batch_nn_indices, :]
         )
-        muygps = optimize_from_tensors(
+        muygps = opt_fn(
             muygps,
             batch_targets,
             batch_nn_targets,
             batch_crosswise_diffs,
             batch_pairwise_diffs,
             loss_fn=loss_fn,
-            obj_method=obj_method,
-            opt_method=opt_method,
             loss_kwargs=loss_kwargs,
             **opt_kwargs,
             verbose=False,  # TODO True,

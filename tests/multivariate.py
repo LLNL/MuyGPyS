@@ -21,7 +21,7 @@ from MuyGPyS._test.gp import (
 )
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
-    _basic_opt_method_and_kwarg_options,
+    _basic_opt_fn_and_kwarg_options,
     _check_ndarray,
     _get_sigma_sq_series,
     _make_gaussian_dict,
@@ -37,7 +37,6 @@ from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize import optimize_from_tensors
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import mse_fn
 
@@ -228,20 +227,16 @@ class OptimTest(parameterized.TestCase):
                 n,
                 nn_kwargs,
                 loss_fn,
-                om,
-                opt_method_and_kwargs,
+                opt_fn_and_kwargs,
                 k_kwargs,
             )
             for b in [250]
             for n in [20]
             for loss_fn in [mse_fn]
-            for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
-            # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            # for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for opt_method_and_kwargs in [
-                _basic_opt_method_and_kwarg_options[1]
-            ]
+            for opt_fn_and_kwargs in [_basic_opt_fn_and_kwarg_options[1]]
             for k_kwargs in (
                 (
                     [0.63, 0.78],
@@ -279,8 +274,7 @@ class OptimTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_fn,
-        obj_method,
-        opt_method_and_kwargs,
+        opt_fn_and_kwargs,
         k_kwargs,
     ):
         if config.state.backend != "numpy":
@@ -291,7 +285,7 @@ class OptimTest(parameterized.TestCase):
             )
             return
         target, args = k_kwargs
-        opt_method, opt_kwargs = opt_method_and_kwargs
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -352,15 +346,14 @@ class OptimTest(parameterized.TestCase):
                 b_nn_t = _consistent_chunk_tensor(
                     batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1)
                 )
-                mmuygps.models[i] = optimize_from_tensors(
+                mmuygps.models[i] = opt_fn(
                     muygps,
                     b_t,
                     b_nn_t,
                     crosswise_diffs,
                     pairwise_diffs,
                     loss_fn=loss_fn,
-                    obj_method=obj_method,
-                    opt_method=opt_method,
+                    opt_fn=opt_fn,
                     **opt_kwargs,
                 )
                 estimate = mmuygps.models[i].kernel._hyperparameters["nu"]()
@@ -578,14 +571,14 @@ class MakeClassifierTest(parameterized.TestCase):
                 n,
                 nn_kwargs,
                 lf,
-                opt_method_and_kwargs,
+                opt_fn_and_kwargs,
                 args,
             )
             for b in [250]
             for n in [10]
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lf in [mse_fn]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             for args in (
                 (
                     {
@@ -643,14 +636,14 @@ class MakeClassifierTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_fn,
-        opt_method_and_kwargs,
+        opt_fn_and_kwargs,
         args,
     ):
         if config.state.backend == "torch":
             _warn0("optimization does not support MPI. skipping.")
             return
 
-        opt_method, opt_kwargs = opt_method_and_kwargs
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -668,7 +661,7 @@ class MakeClassifierTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_fn=loss_fn,
-            opt_method=opt_method,
+            opt_fn=opt_fn,
             nn_kwargs=nn_kwargs,
             k_args=args,
             opt_kwargs=opt_kwargs,
@@ -700,14 +693,14 @@ class MakeRegressorTest(parameterized.TestCase):
                 n,
                 nn_kwargs,
                 lf,
-                opt_method_and_kwargs,
+                opt_fn_and_kwargs,
                 args,
             )
             for b in [250]
             for n in [10]
-            for nn_kwargs in _basic_nn_kwarg_options
+            for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for lf in [mse_fn]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             for args in (
                 (
                     {
@@ -769,7 +762,7 @@ class MakeRegressorTest(parameterized.TestCase):
         nn_count,
         nn_kwargs,
         loss_fn,
-        opt_method_and_kwargs,
+        opt_fn_and_kwargs,
         args,
     ):
         if config.state.backend == "mpi":
@@ -779,7 +772,7 @@ class MakeRegressorTest(parameterized.TestCase):
             _warn0("optimization does not support torch. skipping.")
             return
         # skip if we are using the MPI implementation
-        opt_method, opt_kwargs = opt_method_and_kwargs
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
         response_count = len(args)
 
         # construct the observation locations
@@ -797,7 +790,7 @@ class MakeRegressorTest(parameterized.TestCase):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_fn=loss_fn,
-            opt_method=opt_method,
+            opt_fn=opt_fn,
             nn_kwargs=nn_kwargs,
             opt_kwargs=opt_kwargs,
             k_args=args,

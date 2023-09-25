@@ -30,6 +30,7 @@ from MuyGPyS.examples.regress import _decide_and_make_regressor
 from MuyGPyS.gp.tensors import fast_nn_update
 from MuyGPyS.gp.tensors import pairwise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
 
 
@@ -161,8 +162,7 @@ def do_fast_posterior_mean(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    obj_method: str = "loo_crossval",
-    opt_method: str = "bayes",
+    opt_fn: OptimizeFn = Bayes_optimize_fn,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -187,9 +187,11 @@ def do_fast_posterior_mean(
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
+        >>> from MuyGPyS.optimize import Bayes_optimize_fn
         >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
         >>> from MuyGPyS.optimize.objective import mse_fn
-        >>> train, test = _make_gaussian_data(10000, 1000, 100, 10)
+        >>> train_features, train_responses = make_train()  # stand-in function
+        >>> test_features, test_responses = make_test()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
@@ -200,16 +202,16 @@ def do_fast_posterior_mean(
         ...     "eps": HomoscedasticNoise(1e-5),
         ...     "sigma_sq": AnalyticSigmaSq(),
         ... }
-        >>> muygps, nbrs_lookup, predictions, precomputed_coefficients_matrix
-        ...         = do_fast_posterior_mean(
-        ...         test['input'],
-        ...         train['input'],
-        ...         train['output'],
+        >>> (
+        ...     muygps, nbrs_lookup, predictions, precomputed_coefficients_matrix
+        ... ) = do_fast_posterior_mean(
+        ...         test_features,
+        ...         train_features,
+        ...         train_responses,
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=lool_fn,
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
+        ...         opt_fn=Bayes_optimize_fn,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -233,12 +235,10 @@ def do_fast_posterior_mean(
         loss_fn:
             The loss functor to use in hyperparameter optimization. Ignored if
             all of the parameters specified by argument `k_kwargs` are fixed.
-        obj_method:
-            Indicates the objective function to be minimized. Currently
-            restricted to `"loo_crossval"`.
-        opt_method:
-            Indicates the optimization method to be used. Currently restricted
-            to `"bayesian"` and `"scipy"`.
+        opt_fn:
+            The optimization functor to use in hyperparameter optimization.
+            Ignored if all of the parameters specified by argument `k_kwargs`
+            are fixed.
         k_kwargs:
             If given a list or tuple of length `response_count`, assume that the
             elements are dicts containing kernel initialization keyword
@@ -280,8 +280,7 @@ def do_fast_posterior_mean(
         nn_count=nn_count,
         batch_count=batch_count,
         loss_fn=loss_fn,
-        obj_method=obj_method,
-        opt_method=opt_method,
+        opt_fn=opt_fn,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,
