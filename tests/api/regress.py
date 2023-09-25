@@ -17,7 +17,7 @@ from MuyGPyS._test.api import RegressionAPITest
 from MuyGPyS._test.utils import (
     _balanced_subsample,
     _basic_nn_kwarg_options,
-    _basic_opt_method_and_kwarg_options,
+    _basic_opt_fn_and_kwarg_options,
 )
 
 from MuyGPyS.gp.distortion import (
@@ -70,17 +70,14 @@ class MultivariateStargalRegressTest(RegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lf, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lf, opt_fn_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
             for lf in [mse_fn]
-            for om in ["loo_crossval"]
             # for nn_kwargs in _basic_nn_kwarg_options
-            # for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            # for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for opt_method_and_kwargs in [
-                _basic_opt_method_and_kwarg_options[0]
-            ]
+            for opt_fn_and_kwargs in [_basic_opt_fn_and_kwarg_options[0]]
             for k_kwargs in (
                 (
                     1.0,
@@ -142,13 +139,12 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         nn_count,
         batch_count,
         loss_fn,
-        obj_method,
-        opt_method_and_kwargs,
+        opt_fn_and_kwargs,
         nn_kwargs,
         k_kwargs,
     ):
         target_mse, k_args = k_kwargs
-        opt_method, opt_kwargs = opt_method_and_kwargs
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
         train = _balanced_subsample(self.embedded_40_train, 10000)
         test = _balanced_subsample(self.embedded_40_test, 1000)
 
@@ -159,8 +155,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_fn=loss_fn,
-            obj_method=obj_method,
-            opt_method=opt_method,
+            opt_fn=opt_fn,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_args,
             opt_kwargs=opt_kwargs,
@@ -177,16 +172,15 @@ class HeatonTest(RegressionAPITest):
 
     @parameterized.parameters(
         (
-            (nn, bs, lf, om, opt_method_and_kwargs, nn_kwargs, k_kwargs)
+            (nn, bs, lf, opt_fn_and_kwargs, nn_kwargs, k_kwargs)
             for nn in [30]
             for bs in [500]
             for lf in [mse_fn]
-            for om in ["loo_crossval"]
-            for opt_method_and_kwargs in _basic_opt_method_and_kwarg_options
+            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            # for opt_method_and_kwargs in [
-            #     _basic_opt_method_and_kwarg_options[0]
+            # for opt_fn_and_kwargs in [
+            #     _basic_opt_fn_and_kwarg_options[0]
             # ]
             for k_kwargs in (
                 (
@@ -235,13 +229,12 @@ class HeatonTest(RegressionAPITest):
         nn_count,
         batch_count,
         loss_fn,
-        obj_method,
-        opt_method_and_kwargs,
+        opt_fn_and_kwargs,
         nn_kwargs,
         k_kwargs,
     ):
         target_mse, k_kwargs = k_kwargs
-        opt_method, opt_kwargs = opt_method_and_kwargs
+        opt_fn, opt_kwargs = opt_fn_and_kwargs
 
         self._do_regress_test_chassis(
             train=self.train,
@@ -250,8 +243,7 @@ class HeatonTest(RegressionAPITest):
             nn_count=nn_count,
             batch_count=batch_count,
             loss_fn=loss_fn,
-            obj_method=obj_method,
-            opt_method=opt_method,
+            opt_fn=opt_fn,
             nn_kwargs=nn_kwargs,
             k_kwargs=k_kwargs,
             opt_kwargs=opt_kwargs,

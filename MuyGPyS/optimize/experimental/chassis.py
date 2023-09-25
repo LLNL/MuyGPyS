@@ -40,7 +40,7 @@ from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import AnisotropicDistortion
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.objective import make_obj_fn
+from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
 
 
@@ -57,7 +57,7 @@ def optimize_from_tensors_mini_batch(
     batch_features: Optional[mm.ndarray] = None,
     loss_fn: LossFn = lool_fn,
     obj_method: str = "loo_crossval",
-    loss_kwargs: Optional[Dict] = dict(),
+    loss_kwargs: Dict = dict(),
     verbose: bool = False,
     **kwargs,
 ) -> Tuple[MuyGPS, NN_Wrapper, float, int, int]:
@@ -242,8 +242,7 @@ def optimize_from_tensors_mini_batch(
         )
 
         # Generate the objective function
-        obj_fn = make_obj_fn(
-            obj_method,
+        obj_fn = make_loo_crossval_fn(
             loss_fn,
             kernel_fn,
             mean_fn,
@@ -287,10 +286,8 @@ def optimize_from_tensors_mini_batch(
         if isinstance(muygps.kernel.distortion_fn, AnisotropicDistortion) and (
             epoch < (num_epochs - 1)
         ):
-            length_scales = AnisotropicDistortion._get_length_scale_array(
-                mm.array,
+            length_scales = muygps.kernel.distortion_fn._length_scale_array(
                 train_features.shape,
-                None,
                 **optimizer.max["params"],
             )
             train_features_scaled = train_features / length_scales

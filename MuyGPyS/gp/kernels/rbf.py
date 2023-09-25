@@ -88,9 +88,7 @@ class RBF(KernelFn):
         super()._make_base()
         self._fn = self.distortion_fn.embed_fn(self._kernel_fn)
 
-    def __call__(
-        self, diffs: mm.ndarray, batch_features: mm.ndarray = None, **kwargs
-    ) -> mm.ndarray:
+    def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
         """
         Compute RBF kernel(s) from a difference tensor.
 
@@ -101,24 +99,20 @@ class RBF(KernelFn):
                 `(data_count, nn_count, feature_count)`. In the four dimensional
                 case, it is assumed that the diagonals dists
                 diffs[i, j, j, :] == 0.
-            batch_features:
-                A tensor of shape `(data_count, 1)` or a vector of length
-                `data_count` or a scalar.
 
         Returns:
             A cross-covariance matrix of shape `(data_count, nn_count)` or a
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self._fn(diffs, batch_features=batch_features, **kwargs)
+        return self._fn(diffs, **kwargs)
 
     def get_opt_fn(self) -> Callable:
         """
         Return a kernel function with fixed parameters set.
 
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
-        that optimization parameters will be passed as keyword arguments.
+        Assumes that optimization parameter literals will be passed as keyword
+        arguments.
 
         Returns:
             A function implementing the kernel where all fixed parameters are

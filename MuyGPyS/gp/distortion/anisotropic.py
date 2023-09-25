@@ -86,12 +86,20 @@ class AnisotropicDistortion(DistortionFn):
             `(data_count, nn_count, nn_count)` whose last two dimensions are
             pairwise distance matrices.
         """
-        if diffs.shape[-1] != len(self.length_scale):
+        length_scale_array = self._length_scale_array(
+            diffs.shape, **length_scales
+        )
+        return self._dist_fn(diffs / length_scale_array)
+
+    def _length_scale_array(
+        self, shape: mm.ndarray, **length_scales
+    ) -> mm.ndarray:
+        if shape[-1] != len(self.length_scale):
             raise ValueError(
-                f"Difference tensor of shape {diffs.shape} must have final "
+                f"Difference tensor of shape {shape} must have final "
                 f"dimension size of {len(self.length_scale)}"
             )
-        length_scale_array = mm.array(
+        return mm.array(
             [
                 length_scales[key]
                 if key in length_scales.keys()
@@ -99,7 +107,6 @@ class AnisotropicDistortion(DistortionFn):
                 for key in self.length_scale
             ]
         )
-        return self._dist_fn(diffs / length_scale_array)
 
     # @staticmethod
     # def _get_length_scale_array(

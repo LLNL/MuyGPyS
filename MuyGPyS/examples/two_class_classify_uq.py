@@ -35,6 +35,7 @@ from MuyGPyS.examples.classify import (
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
+from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
 from MuyGPyS.optimize.batch import get_balanced_batch
 from MuyGPyS.optimize.loss import LossFn, cross_entropy_fn
 
@@ -64,8 +65,7 @@ def do_classify_uq(
     opt_batch_count: int = 200,
     uq_batch_count: int = 500,
     loss_fn: LossFn = cross_entropy_fn,
-    obj_method: str = "loo_crossval",
-    opt_method: str = "bayes",
+    opt_fn: OptimizeFn = Bayes_optimize_fn,
     uq_objectives: Union[
         List[Callable], Tuple[Callable, ...]
     ] = example_lambdas,
@@ -89,7 +89,8 @@ def do_classify_uq(
         >>> import numpy as np
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.regress import do_classify_uq, do_uq
-        >>> train, test  = _make_gaussian_dict(10000, 100, 100, 10, categorial=True)
+        >>> train_features, train_responses = make_train()  # stand-in function
+        >>> test_features, test_responses = make_test()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...         "kern": "rbf",
@@ -98,19 +99,18 @@ def do_classify_uq(
         ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)},
         ... }
         >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
-        ...         test['input'],
-        ...         train['input'],
-        ...         train['output'],
+        ...         test_features,
+        ...         train_features,
+        ...         train_responses,
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=cross_entropy_fn,
-        ...         obj_method="loo_crossval",
-        ...         opt_method="bayes",
+        ...         opt_fn=Bayes_optimize_fn,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
         ... )
-        >>> accuracy, uq = do_uq(surrogate_predictions, test['output'], masks)
+        >>> accuracy, uq = do_uq(surrogate_predictions, test_responses, masks)
         >>> print(f"obtained accuracy {accuracy}")
         obtained accuracy: 0.973...
         >>> print(f"obtained mask uq : \\n{uq}")
@@ -140,12 +140,10 @@ def do_classify_uq(
         loss_fn:
             The loss functor to use in hyperparameter optimization. Ignored if
             all of the parameters specified by `k_kwargs` are fixed.
-        obj_method:
-            Indicates the objective function to be minimized. Currently
-            restricted to `"loo_crossval"`.
-        opt_method:
-            Indicates the optimization method to be used. Currently restricted
-            to `"bayesian"` and `"scipy"`.
+        opt_fn:
+            The optimization functor to use in hyperparameter optimization.
+            Ignored if all of the parameters specified by argument `k_kwargs`
+            are fixed.
         uq_objectives : list(Callable)
             List of `objective_count`functions taking four arguments: bit masks
             `alpha` and `beta` - the type 1 and type 2 error counts at each grid
@@ -191,8 +189,7 @@ def do_classify_uq(
         nn_count=nn_count,
         batch_count=opt_batch_count,
         loss_fn=loss_fn,
-        obj_method=obj_method,
-        opt_method=opt_method,
+        opt_fn=opt_fn,
         k_kwargs=k_kwargs,
         nn_kwargs=nn_kwargs,
         opt_kwargs=opt_kwargs,

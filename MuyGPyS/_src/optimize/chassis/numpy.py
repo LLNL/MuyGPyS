@@ -95,6 +95,8 @@ def _bayes_get_kwargs(verbose: bool = False, **kwargs):
     }
     if "verbose" not in optimizer_kwargs:
         optimizer_kwargs["verbose"] = 2 if verbose is True else 0
+    if "allow_duplicate_points" not in optimizer_kwargs:
+        optimizer_kwargs["allow_duplicate_points"] = True
 
     # not allowing the user to set the opt gp parameters for now
     maximize_kwargs = {

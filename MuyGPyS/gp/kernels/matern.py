@@ -138,7 +138,7 @@ class Matern(KernelFn):
         self._fn = self.nu.apply_fn(self._kernel_fn, "nu")
         self._fn = self.distortion_fn.embed_fn(self._fn)
 
-    def __call__(self, diffs):
+    def __call__(self, diffs, **kwargs):
         """
         Compute Matern kernels from distance tensor.
 
@@ -156,7 +156,7 @@ class Matern(KernelFn):
             tensor of shape `(data_count, nn_count, nn_count)` whose last two
             dimensions are kernel matrices.
         """
-        return self._fn(diffs, nu=self.nu())
+        return self._fn(diffs, **kwargs)
 
     def get_opt_params(
         self,
@@ -180,9 +180,9 @@ class Matern(KernelFn):
     def get_opt_fn(self) -> Callable:
         """
         Return a kernel function with fixed parameters set.
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
-        that optimization parameters will be passed as keyword arguments.
+
+        Assumes that optimization parameter literals will be passed as keyword
+        arguments.
 
         Returns:
             A function implementing the kernel where all fixed parameters are

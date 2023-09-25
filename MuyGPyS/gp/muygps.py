@@ -363,9 +363,8 @@ class MuyGPS:
         """
         Return a posterior mean function for use in optimization.
 
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
-        that either `eps` will be passed via a keyword argument or not at all.
+        Assumes that optimization parameter literals will be passed as keyword
+        arguments.
 
         Returns:
             A function implementing the posterior mean, where `eps` is either
@@ -379,9 +378,8 @@ class MuyGPS:
         """
         Return a posterior variance function for use in optimization.
 
-        This function is designed for use with
-        :func:`MuyGPyS.optimize.chassis.optimize_from_tensors()` and assumes
-        that either `eps` will be passed via a keyword argument or not at all.
+        Assumes that optimization parameter literals will be passed as keyword
+        arguments.
 
         Returns:
             A function implementing posterior variance, where `eps` is either
