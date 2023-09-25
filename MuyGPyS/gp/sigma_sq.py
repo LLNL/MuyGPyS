@@ -169,6 +169,6 @@ class AnalyticSigmaSq(SigmaSq):
         """
 
         def analytic_sigma_sq_opt_fn(K, nn_targets, *args, **kwargs):
-            return _analytic_sigma_sq_optim(muygps.eps.perturb(K), nn_targets)
+            return _analytic_sigma_sq_optim(muygps.noise.perturb(K), nn_targets)
 
         return analytic_sigma_sq_opt_fn

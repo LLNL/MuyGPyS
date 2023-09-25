@@ -29,8 +29,8 @@ def _mmuygps_fast_posterior_mean(
 
 def _muygps_fast_posterior_mean_precompute(
     K: np.ndarray,
-    eps: float,
     train_nn_targets_fast: np.ndarray,
+    **kwargs,
 ) -> np.ndarray:
     raise NotImplementedError(
         'Function "muygps_fast_posterior_mean_precompute" does not support mpi!'

@@ -90,7 +90,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                             "sigma_sq": AnalyticSigmaSq(),
                         },
                         {
@@ -101,7 +101,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                             "sigma_sq": AnalyticSigmaSq(),
                         },
                     ],
@@ -116,7 +116,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                     length_scale=ScalarHyperparameter(1.5),
                                 )
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                             "sigma_sq": SigmaSq(),
                         },
                         {
@@ -126,7 +126,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                     length_scale=ScalarHyperparameter(1.5),
                                 )
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                             "sigma_sq": SigmaSq(),
                         },
                     ],
@@ -193,7 +193,7 @@ class HeatonTest(RegressionAPITest):
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                 ),
@@ -208,7 +208,7 @@ class HeatonTest(RegressionAPITest):
                                 length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                         "sigma_sq": SigmaSq(),
                     },
                 ),
@@ -218,7 +218,7 @@ class HeatonTest(RegressionAPITest):
                 #         "kern": "rbf",
                 #         "metric": "F2",
                 #         "length_scale": ScalarHyperparameter(1.5, "bounds": (0.5, 1e1)},
-                #         "eps": HomoscedasticNoise(1e-3),
+                #         "noise": HomoscedasticNoise(1e-3),
                 #     },
                 # ),
             )

@@ -31,17 +31,27 @@ class MultivariateMuyGPS:
     Example:
         >>> from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
         >>> k_kwargs1 = {
-        ...         "eps": {"val": 1e-5},
-        ...         "nu": {"val": 0.67, "bounds": (0.1, 2.5)},
-        ...         "length_scale": {"val": 7.2},
+        ...     "noise": ScalarHyperparameter(1e-5),
+        ...     "kernel": Matern(
+        ...         nu=ScalarHyperparameter(0.67, (0.1, 2.5)),
+        ...         metric=IsotropicDistortion(
+        ...             metric=l2,
+        ...             length_scale=ScalarHyperparameter(0.2),
+        ...         sigma_sq=AnalyticSigmaSq(),
+        ...     ),
         ... }
         >>> k_kwargs2 = {
-        ...         "eps": {"val": 1e-5},
-        ...         "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
-        ...         "length_scale": {"val": 7.2},
+        ...     "noise": ScalarHyperparameter(1e-5),
+        ...     "kernel": Matern(
+        ...         nu=ScalarHyperparameter(0.67, (0.1, 2.5)),
+        ...         metric=IsotropicDistortion(
+        ...             metric=l2,
+        ...             length_scale=ScalarHyperparameter(0.2),
+        ...         sigma_sq=AnalyticSigmaSq(),
+        ...     ),
         ... }
         >>> k_args = [k_kwargs1, k_kwargs2]
-        >>> mmuygps = MMuyGPS("matern", *k_args)
+        >>> mmuygps = MMuyGPS(*k_args)
 
     We can realize kernel tensors for each of the models contained within a
     `MultivariateMuyGPS` object by iterating over its `models` member. Once we
@@ -50,9 +60,9 @@ class MultivariateMuyGPS:
 
     Example:
         >>> for model in MuyGPyS.models:
-        >>>         K = model.kernel(pairwise_diffs)
-        >>>         Kcross = model.kernel(crosswise_diffs)
-        >>>         # do something with K and Kcross...
+        >>>     K = model.kernel(pairwise_diffs)
+        >>>     Kcross = model.kernel(crosswise_diffs)
+        >>>     # do something with K and Kcross...
 
     Args
         model_args:
@@ -104,17 +114,17 @@ class MultivariateMuyGPS:
         .. math::
             \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})_{:,j} =
                 K^{(j)}_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K^{(j)}_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon_j I_k)^{-1}
+                (K^{(j)}_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon_j)^{-1}
                 Y(X_{N_i})_{:,j}.
 
         Here :math:`X_{N_i}` is the set of nearest neighbors of
         :math:`\\mathbf{x}_i` in the training data, :math:`K^{(j)}_\\theta` is
         the kernel functor associated with the jth internal model, corresponding
-        to the jth response dimension, :math:`\\varepsilon_j I_k` is a diagonal
-        homoscedastic noise matrix whose diagonal is the value of the
-        `self.models[j].eps` hyperparameter, and :math:`Y(X_{N_i})_{:,j}` is the
-        `(batch_count,)` vector of the jth responses of the nearest neighbors
-        given by a slice of the `batch_nn_targets` argument.
+        to the jth response dimension, :math:`\\varepsilon_j` is a diagonal
+        noise matrix whose diagonal elements are informed by the value of the
+        `self.models[j].noise` hyperparameter, and :math:`Y(X_{N_i})_{:,j}` is
+        the `(batch_count,)` vector of the jth responses of the nearest
+        neighbors given by a slice of the `batch_nn_targets` argument.
 
         Args:
             pairwise_diffs:
@@ -170,7 +180,7 @@ class MultivariateMuyGPS:
             Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}))_j =
                 K^{(j)}_\\theta (\\mathbf{x}_i, \\mathbf{x}_i) -
                 K^{(j)}_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K^{(j)}_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
+                (K^{(j)}_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon_j)^{-1}
                 K^{(j)}_\\theta (X_{N_i}, \\mathbf{x}_i).
 
         Args:
@@ -218,17 +228,16 @@ class MultivariateMuyGPS:
         .. math::
             \\mathbf{C}_{N^*}(i, :, j) =
                 (K_{\\hat{\\theta_j}} (X_{N^*}, X_{N^*}) +
-                \\varepsilon I_k)^{-1} Y(X_{N^*}).
+                \\varepsilon_j)^{-1} Y(X_{N^*}).
 
         Here :math:`X_{N^*}` is the union of the nearest neighbor of the ith
         test point and the `nn_count - 1` nearest neighbors of this nearest
         neighbor, :math:`K_{\\hat{\\theta_j}}` is the trained kernel functor
         corresponding the jth response and specified by `self.models`,
-        :math:`\\varepsilon I_k` is a diagonal homoscedastic noise matrix whose
-        diagonal  is the value of the `self.eps` hyperparameter,
-        and :math:`Y(X_{N^*})` is the `(train_count, response_count)`
-        matrix of responses corresponding to the training features indexed
-        by $N^*$.
+        :math:`\\varepsilon_j` is a diagonal noise matrix whose diagonal
+        elements are informed by the `self.noise` hyperparameter, and
+        :math:`Y(X_{N^*})` is the `(train_count, response_count)` matrix of
+        responses corresponding to the training features indexed by $N^*$.
 
         Args:
             pairwise_diffs:
@@ -255,7 +264,7 @@ class MultivariateMuyGPS:
             mm.assign(
                 coeffs_tensor,
                 model.fast_coefficients(
-                    model.eps.perturb(K),
+                    model.noise.perturb(K),
                     train_nn_targets_fast[:, :, i],
                 ),
                 slice(None),
@@ -387,7 +396,7 @@ class MultivariateMuyGPS:
         """
         ret = deepcopy(self)
         for i, model in enumerate(ret.models):
-            model.eps = HeteroscedasticNoise(new_noise[:, :, :, i], "fixed")
-            model._mean_fn = PosteriorMean(model.eps)
-            model._var_fn = PosteriorVariance(model.eps, model.sigma_sq)
+            model.noise = HeteroscedasticNoise(new_noise[:, :, :, i], "fixed")
+            model._mean_fn = PosteriorMean(model.noise)
+            model._var_fn = PosteriorVariance(model.noise, model.sigma_sq)
         return ret

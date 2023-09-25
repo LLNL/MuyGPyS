@@ -56,15 +56,15 @@ class HomoscedasticNoise(ScalarHyperparameter, NoiseFn):
         self._perturb_fn = _backend_fn
 
     def perturb(
-        self, K: mm.ndarray, eps: Optional[float] = None, **kwargs
+        self, K: mm.ndarray, noise: Optional[float] = None, **kwargs
     ) -> mm.ndarray:
         """
         Perturb a kernel tensor with homoscedastic noise.
 
         Applies a homoscedastic noise model to a kernel tensor, whose last two
         dimensions are assumed to be the same length. For each such square
-        submatrix :math:`K`, computes the form :math:`K + \\varepsilon * I`,
-        where :math:`\\varepsilon` is the shared noise prior variance and
+        submatrix :math:`K`, computes the form :math:`K + \\tau^2 * I`,
+        where :math:`\\tau^2` is the shared noise prior variance and
         :math:`I` is the conforming identity matrix.
 
         Args:
@@ -72,7 +72,7 @@ class HomoscedasticNoise(ScalarHyperparameter, NoiseFn):
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
                 the `(nn_count, nn_count)`-shaped kernel matrices corresponding
                 to each of the batch elements.
-            eps:
+            noise:
                 A floating-point value for the noise variance prior, or `None`.
                 `None` prompts the use of the stored value, whereas supplying
                 alternative values is employed during optimization.
@@ -82,9 +82,9 @@ class HomoscedasticNoise(ScalarHyperparameter, NoiseFn):
             final two dimensions consist of the perturbed matrices of the input
             :math:`K`.
         """
-        if eps is None:
-            eps = self._val
-        return self._perturb_fn(K, eps)
+        if noise is None:
+            noise = self._val
+        return self._perturb_fn(K, noise)
 
     def perturb_fn(self, fn: Callable) -> Callable:
         """
@@ -104,11 +104,11 @@ class HomoscedasticNoise(ScalarHyperparameter, NoiseFn):
 
         Returns:
             A Callable with the same signature that applies a homoscedastic
-            perturbation to its first argument. Also adds an `eps` keyword
+            perturbation to its first argument. Also adds a `noise` keyword
             argument that is only used for optimization.
         """
 
-        def perturbed_fn(K, *args, eps=None, **kwargs):
-            return fn(self.perturb(K, eps=eps), *args, **kwargs)
+        def perturbed_fn(K, *args, noise=None, **kwargs):
+            return fn(self.perturb(K, noise=noise), *args, **kwargs)
 
         return perturbed_fn

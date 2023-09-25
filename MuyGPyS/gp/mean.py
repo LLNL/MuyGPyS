@@ -17,12 +17,12 @@ from MuyGPyS.gp.noise import NoiseFn
 class PosteriorMean:
     def __init__(
         self,
-        eps: NoiseFn,
+        noise: NoiseFn,
         _backend_fn: Callable = _muygps_posterior_mean,
         **kwargs,
     ):
         self._fn = _backend_fn
-        self._fn = eps.perturb_fn(self._fn)
+        self._fn = noise.perturb_fn(self._fn)
 
     def __call__(
         self,

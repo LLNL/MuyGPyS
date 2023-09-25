@@ -80,8 +80,9 @@ class SigmaSqTest(BenchmarkTestCase):
     def test_sigma_sq(self):
         mrse = 0.0
         pairwise_diffs = _pairwise_differences(self.train_features)
-        K = self.gp.kernel(pairwise_diffs)
-        +self.gp.eps() * mm.eye(self.feature_count)
+        K = self.gp.kernel(pairwise_diffs) + self.gp.noise() * mm.eye(
+            self.feature_count
+        )
         for i in range(self.its):
             ss = get_analytic_sigma_sq(K, self.train_features)
             mrse += _sq_rel_err(self.gp.sigma_sq(), ss)
@@ -125,7 +126,7 @@ class SigmaSqOptimTest(BenchmarkTestCase):
                         ),
                     ),
                 ),
-                eps=HomoscedasticNoise(self.params["eps"]()),
+                noise=HomoscedasticNoise(self.params["noise"]()),
                 sigma_sq=AnalyticSigmaSq(),
             )
             _, batch_nn_indices = sample_batch(
@@ -214,7 +215,7 @@ class NuTest(BenchmarkTestCase):
                         ),
                     ),
                 ),
-                eps=HomoscedasticNoise(self.params["eps"]()),
+                noise=HomoscedasticNoise(self.params["noise"]()),
                 sigma_sq=sigma_sq,
             )
 
@@ -288,7 +289,7 @@ class LengthScaleTest(BenchmarkTestCase):
                         ),
                     ),
                 ),
-                eps=HomoscedasticNoise(self.params["eps"]()),
+                noise=HomoscedasticNoise(self.params["noise"]()),
                 sigma_sq=sigma_sq,
             )
 

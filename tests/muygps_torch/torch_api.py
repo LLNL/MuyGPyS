@@ -143,7 +143,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                         length_scale=ScalarHyperparameter(7.2),
                     ),
                 ),
-                "eps": HomoscedasticNoise(1e-5),
+                "noise": HomoscedasticNoise(1e-5),
             },
             {
                 "kernel": Matern(
@@ -153,7 +153,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                         length_scale=ScalarHyperparameter(2.2),
                     ),
                 ),
-                "eps": HomoscedasticNoise(1e-6),
+                "noise": HomoscedasticNoise(1e-6),
             },
         ]
 
@@ -288,7 +288,7 @@ class HeatonTest(RegressionAPITest):
                     length_scale=ScalarHyperparameter(1.0),
                 ),
             ),
-            eps=HomoscedasticNoise(1e-5),
+            noise=HomoscedasticNoise(1e-5),
         )
 
         model = SVDKMuyGPs_Heaton(

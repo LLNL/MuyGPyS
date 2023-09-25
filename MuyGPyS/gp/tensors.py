@@ -96,7 +96,7 @@ def make_heteroscedastic_tensor(
     Create the heteroscedastic noise tensor for nonuniform noise values.
 
     Used to produce the noise tensor needed during batched training and
-    prediction. Creates the `eps_tensor` tensor required by heteroscedastic
+    prediction. Creates the `noise_tensor` tensor required by heteroscedastic
     MuyGPs models.
 
     Args:

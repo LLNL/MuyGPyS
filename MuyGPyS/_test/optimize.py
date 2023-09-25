@@ -53,7 +53,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.params = {
             "length_scale": ScalarHyperparameter(1e-1, (1e-2, 1e0)),
             "nu": ScalarHyperparameter(0.78, (1e-1, 2e0)),
-            "eps": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
+            "noise": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
         }
 
         cls.setUpGP()
@@ -71,7 +71,7 @@ class BenchmarkTestCase(parameterized.TestCase):
                     ),
                 ),
             ),
-            eps=HomoscedasticNoise(cls.params["eps"]()),
+            noise=HomoscedasticNoise(cls.params["noise"]()),
         )
         cls.gp.sigma_sq._set(mm.array([5.0]))
 

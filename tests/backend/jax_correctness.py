@@ -162,8 +162,8 @@ class TensorsTestCase(parameterized.TestCase):
                 ),
                 _backend_fn=rbf_fn_n,
             ),
-            eps=HomoscedasticNoise(
-                cls.eps, _backend_fn=homoscedastic_perturb_n
+            noise=HomoscedasticNoise(
+                cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
             sigma_sq=AnalyticSigmaSq(
                 _backend_ones=np.ones,
@@ -177,7 +177,7 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_muygps_n(cls, nu, eps, metric, nu_bounds="fixed"):
+    def _make_muygps_n(cls, nu, noise, metric, nu_bounds="fixed"):
         return MuyGPS(
             kernel=Matern(
                 nu=ScalarHyperparameter(nu, nu_bounds),
@@ -188,7 +188,7 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_inf_fn=matern_inf_fn_n,
                 _backend_gen_fn=matern_gen_fn_n,
             ),
-            eps=eps,
+            noise=noise,
             sigma_sq=AnalyticSigmaSq(
                 _backend_ones=np.ones,
                 _backend_ndarray=np.ndarray,
@@ -206,8 +206,8 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_homoscedastic_muygps_n(cls, nu, metric, **kwargs):
         return cls._make_muygps_n(
             nu,
-            eps=HomoscedasticNoise(
-                cls.eps, _backend_fn=homoscedastic_perturb_n
+            noise=HomoscedasticNoise(
+                cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
             metric=metric,
             **kwargs,
@@ -236,11 +236,11 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_heteroscedastic_muygps_n(cls, nu, eps, **kwargs):
+    def _make_heteroscedastic_muygps_n(cls, nu, noise, **kwargs):
         return cls._make_muygps_n(
             nu,
-            eps=HeteroscedasticNoise(
-                eps, _backend_fn=heteroscedastic_perturb_n
+            noise=HeteroscedasticNoise(
+                noise, _backend_fn=heteroscedastic_perturb_n
             ),
             metric=IsotropicDistortion(
                 l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
@@ -257,8 +257,8 @@ class TensorsTestCase(parameterized.TestCase):
                 ),
                 _backend_fn=rbf_fn_j,
             ),
-            eps=HomoscedasticNoise(
-                cls.eps, _backend_fn=homoscedastic_perturb_j
+            noise=HomoscedasticNoise(
+                cls.noise, _backend_fn=homoscedastic_perturb_j
             ),
             sigma_sq=AnalyticSigmaSq(
                 _backend_ones=jnp.ones,
@@ -272,7 +272,7 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_muygps_j(cls, nu, eps, metric, nu_bounds="fixed"):
+    def _make_muygps_j(cls, nu, noise, metric, nu_bounds="fixed"):
         return MuyGPS(
             kernel=Matern(
                 nu=ScalarHyperparameter(nu, nu_bounds),
@@ -283,7 +283,7 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_inf_fn=matern_inf_fn_j,
                 _backend_gen_fn=matern_gen_fn_j,
             ),
-            eps=eps,
+            noise=noise,
             sigma_sq=AnalyticSigmaSq(
                 _backend_ones=jnp.ones,
                 _backend_ndarray=jnp.ndarray,
@@ -301,8 +301,8 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_homoscedastic_muygps_j(cls, nu, metric, **kwargs):
         return cls._make_muygps_j(
             nu,
-            eps=HomoscedasticNoise(
-                cls.eps, _backend_fn=homoscedastic_perturb_j
+            noise=HomoscedasticNoise(
+                cls.noise, _backend_fn=homoscedastic_perturb_j
             ),
             metric=metric,
             **kwargs,
@@ -331,11 +331,11 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_heteroscedastic_muygps_j(cls, nu, eps, **kwargs):
+    def _make_heteroscedastic_muygps_j(cls, nu, noise, **kwargs):
         return cls._make_muygps_j(
             nu,
-            eps=HeteroscedasticNoise(
-                eps, _backend_fn=heteroscedastic_perturb_j
+            noise=HeteroscedasticNoise(
+                noise, _backend_fn=heteroscedastic_perturb_j
             ),
             metric=IsotropicDistortion(
                 l2_j, length_scale=ScalarHyperparameter(cls.length_scale)
@@ -355,17 +355,17 @@ class TensorsTestCase(parameterized.TestCase):
         cls.length_scale = 1.0
         cls.nu = 0.55
         cls.nu_bounds = (1e-1, 1e1)
-        cls.eps = 1e-3
-        cls.eps_heteroscedastic_n = cls.eps * np.ones(
+        cls.noise = 1e-3
+        cls.noise_heteroscedastic_n = cls.noise * np.ones(
             (cls.batch_count, cls.nn_count)
         )
-        cls.eps_heteroscedastic_train_n = cls.eps * np.ones(
+        cls.noise_heteroscedastic_train_n = cls.noise * np.ones(
             (cls.train_count, cls.nn_count)
         )
 
-        cls.eps_heteroscedastic_j = jnp.array(cls.eps_heteroscedastic_n)
-        cls.eps_heteroscedastic_train_j = jnp.array(
-            cls.eps_heteroscedastic_train_n
+        cls.noise_heteroscedastic_j = jnp.array(cls.noise_heteroscedastic_n)
+        cls.noise_heteroscedastic_train_j = jnp.array(
+            cls.noise_heteroscedastic_train_n
         )
         cls.train_features_n = _make_gaussian_matrix(
             cls.train_count, cls.feature_count
@@ -417,10 +417,10 @@ class TensorsTestCase(parameterized.TestCase):
         cls.muygps_gen_anisotropic_j = cls._make_anisotropic_muygps_j(cls.nu)
 
         cls.muygps_heteroscedastic_n = cls._make_heteroscedastic_muygps_n(
-            cls.nu, cls.eps_heteroscedastic_n, nu_bounds=cls.nu_bounds
+            cls.nu, cls.noise_heteroscedastic_n, nu_bounds=cls.nu_bounds
         )
         cls.muygps_heteroscedastic_j = cls._make_heteroscedastic_muygps_j(
-            cls.nu, cls.eps_heteroscedastic_j, nu_bounds=cls.nu_bounds
+            cls.nu, cls.noise_heteroscedastic_j, nu_bounds=cls.nu_bounds
         )
 
         cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
@@ -754,12 +754,12 @@ class MuyGPSTestCase(KernelTestCase):
         cls.K_n = cls.muygps_gen_n.kernel(cls.pairwise_diffs_n)
         cls.K_j = cls.muygps_gen_j.kernel(cls.pairwise_diffs_j)
 
-        cls.homoscedastic_K_n = cls.muygps_gen_n.eps.perturb(cls.K_n)
-        cls.homoscedastic_K_j = cls.muygps_gen_j.eps.perturb(cls.K_j)
-        cls.heteroscedastic_K_n = cls.muygps_heteroscedastic_n.eps.perturb(
+        cls.homoscedastic_K_n = cls.muygps_gen_n.noise.perturb(cls.K_n)
+        cls.homoscedastic_K_j = cls.muygps_gen_j.noise.perturb(cls.K_j)
+        cls.heteroscedastic_K_n = cls.muygps_heteroscedastic_n.noise.perturb(
             cls.K_n,
         )
-        cls.heteroscedastic_K_j = cls.muygps_heteroscedastic_j.eps.perturb(
+        cls.heteroscedastic_K_j = cls.muygps_heteroscedastic_j.noise.perturb(
             cls.K_j
         )
 
@@ -879,12 +879,12 @@ class FastPredictTest(MuyGPSTestCase):
             cls.train_responses_n,
         )
 
-        cls.homoscedastic_K_fast_n = cls.muygps_gen_n.eps.perturb(
+        cls.homoscedastic_K_fast_n = cls.muygps_gen_n.noise.perturb(
             l2_n(cls.K_fast_n),
         )
 
         cls.heteroscedastic_K_fast_n = heteroscedastic_perturb_n(
-            l2_n(cls.K_fast_n), cls.eps_heteroscedastic_train_n
+            l2_n(cls.K_fast_n), cls.noise_heteroscedastic_train_n
         )
 
         cls.fast_regress_coeffs_n = muygps_fast_posterior_mean_precompute_n(
@@ -927,12 +927,12 @@ class FastPredictTest(MuyGPSTestCase):
             cls.train_responses_j,
         )
 
-        cls.homoscedastic_K_fast_j = cls.muygps_gen_j.eps.perturb(
+        cls.homoscedastic_K_fast_j = cls.muygps_gen_j.noise.perturb(
             l2_j(cls.K_fast_j),
         )
 
         cls.heteroscedastic_K_fast_j = heteroscedastic_perturb_j(
-            l2_j(cls.K_fast_j), cls.eps_heteroscedastic_train_j
+            l2_j(cls.K_fast_j), cls.noise_heteroscedastic_train_j
         )
 
         cls.fast_regress_coeffs_j = muygps_fast_posterior_mean_precompute_j(
@@ -1027,16 +1027,16 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.length_scale = 1.0
         cls.nu = 0.55
         cls.nu_bounds = (1e-1, 1e1)
-        cls.eps = 1e-3
-        cls.eps_heteroscedastic_n = _make_heteroscedastic_test_nugget(
-            cls.batch_count, cls.nn_count, cls.eps
+        cls.noise = 1e-3
+        cls.noise_heteroscedastic_n = _make_heteroscedastic_test_nugget(
+            cls.batch_count, cls.nn_count, cls.noise
         )
-        cls.eps_heteroscedastic_train_n = _make_heteroscedastic_test_nugget(
-            cls.train_count, cls.nn_count, cls.eps
+        cls.noise_heteroscedastic_train_n = _make_heteroscedastic_test_nugget(
+            cls.train_count, cls.nn_count, cls.noise
         )
-        cls.eps_heteroscedastic_j = jnp.array(cls.eps_heteroscedastic_n)
-        cls.eps_heteroscedastic_train_j = jnp.array(
-            cls.eps_heteroscedastic_train_n
+        cls.noise_heteroscedastic_j = jnp.array(cls.noise_heteroscedastic_n)
+        cls.noise_heteroscedastic_train_j = jnp.array(
+            cls.noise_heteroscedastic_train_n
         )
         cls.k_kwargs_n = [
             {
@@ -1047,8 +1047,8 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
                         length_scale=ScalarHyperparameter(cls.length_scale),
                     ),
                 ),
-                "eps": HeteroscedasticNoise(
-                    cls.eps_heteroscedastic_train_n,
+                "noise": HeteroscedasticNoise(
+                    cls.noise_heteroscedastic_train_n,
                     _backend_fn=heteroscedastic_perturb_n,
                 ),
             },
@@ -1060,8 +1060,8 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
                         length_scale=ScalarHyperparameter(cls.length_scale),
                     ),
                 ),
-                "eps": HeteroscedasticNoise(
-                    cls.eps_heteroscedastic_train_n,
+                "noise": HeteroscedasticNoise(
+                    cls.noise_heteroscedastic_train_n,
                     _backend_fn=heteroscedastic_perturb_n,
                 ),
             },
@@ -1104,14 +1104,14 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         )
 
         cls.homoscedastic_K_fast_n = homoscedastic_perturb_n(
-            l2_n(cls.K_fast_n), cls.eps
+            l2_n(cls.K_fast_n), cls.noise
         )
         cls.fast_regress_coeffs_n = muygps_fast_posterior_mean_precompute_n(
             cls.homoscedastic_K_fast_n, cls.train_nn_targets_fast_n
         )
 
         cls.heteroscedastic_K_fast_n = heteroscedastic_perturb_n(
-            l2_n(cls.K_fast_n), cls.eps_heteroscedastic_train_n
+            l2_n(cls.K_fast_n), cls.noise_heteroscedastic_train_n
         )
         cls.fast_regress_coeffs_heteroscedastic_n = (
             muygps_fast_posterior_mean_precompute_n(
@@ -1155,14 +1155,14 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         )
 
         cls.homoscedastic_K_fast_j = homoscedastic_perturb_j(
-            l2_j(cls.K_fast_j), cls.eps
+            l2_j(cls.K_fast_j), cls.noise
         )
         cls.fast_regress_coeffs_j = muygps_fast_posterior_mean_precompute_j(
             cls.homoscedastic_K_fast_j, cls.train_nn_targets_fast_j
         )
 
         cls.heteroscedastic_K_fast_j = heteroscedastic_perturb_j(
-            l2_n(cls.K_fast_j), cls.eps_heteroscedastic_train_j
+            l2_n(cls.K_fast_j), cls.noise_heteroscedastic_train_j
         )
 
         cls.fast_regress_coeffs_heteroscedastic_j = (
@@ -1428,10 +1428,10 @@ class LossTest(OptimTestCase):
         self.assertTrue(
             allclose_gen(
                 cross_entropy_fn_n(
-                    cat_predictions_n, cat_batch_targets_n, ll_eps=1e-6
+                    cat_predictions_n, cat_batch_targets_n, eps=1e-6
                 ),
                 cross_entropy_fn_j(
-                    cat_predictions_j, cat_batch_targets_j, ll_eps=1e-6
+                    cat_predictions_j, cat_batch_targets_j, eps=1e-6
                 ),
             )
         )

@@ -74,7 +74,7 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
                                 l2, length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
                 (
@@ -88,7 +88,7 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
                                 length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
             )
@@ -152,7 +152,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": Matern(
@@ -162,7 +162,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                     ],
                 ),
@@ -176,7 +176,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                                     length_scale=ScalarHyperparameter(1.5),
                                 )
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": RBF(
@@ -185,7 +185,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                                     length_scale=ScalarHyperparameter(1.5),
                                 )
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                     ],
                 ),
@@ -254,7 +254,7 @@ class StargalFastTest(FastPosteriorMeanAPITest):
                                 l2, length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
                 # (
@@ -265,7 +265,7 @@ class StargalFastTest(FastPosteriorMeanAPITest):
                 #                 F2, length_scale=ScalarHyperparameter(1.5)
                 #             )
                 #         ),
-                #         "eps": HomoscedasticNoise(1e-3),
+                #         "noise": HomoscedasticNoise(1e-3),
                 #     },
                 # ),
             )

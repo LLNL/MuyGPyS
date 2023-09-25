@@ -299,7 +299,7 @@ def _normalize(X: mm.ndarray) -> mm.ndarray:
 def _get_sigma_sq_series(
     K: mm.ndarray,
     nn_targets_column: mm.ndarray,
-    eps: float,
+    noise_variance: float,
 ) -> mm.ndarray:
     """
     Return the series of sigma^2 scale parameters for each neighborhood
@@ -324,7 +324,7 @@ def _get_sigma_sq_series(
     batch_count, nn_count, _ = nn_targets_column.shape
 
     sigmas = np.zeros((batch_count,))
-    for i, el in enumerate(_get_sigma_sq(K, nn_targets_column, eps)):
+    for i, el in enumerate(_get_sigma_sq(K, nn_targets_column, noise_variance)):
         sigmas[i] = el
     return mm.array(sigmas / nn_count)
 
@@ -332,7 +332,7 @@ def _get_sigma_sq_series(
 def _get_sigma_sq(
     K: mm.ndarray,
     nn_targets_column: mm.ndarray,
-    eps: float,
+    noise_variance: float,
 ) -> Generator[float, None, None]:
     """
     Generate series of :math:`\\sigma^2` scale parameters for each
@@ -363,7 +363,9 @@ def _get_sigma_sq(
     batch_count, nn_count, _ = nn_targets_column.shape
     for j in range(batch_count):
         Y_0 = nn_targets_column[j, :, 0]
-        yield Y_0 @ mm.linalg.solve(K[j, :, :] + eps * mm.eye(nn_count), Y_0)
+        yield Y_0 @ mm.linalg.solve(
+            K[j, :, :] + noise_variance * mm.eye(nn_count), Y_0
+        )
 
 
 def _check_ndarray(
@@ -408,7 +410,7 @@ def _consistent_assert(assert_fn, *args):
 
 
 def _make_heteroscedastic_test_nugget(
-    batch_count: int, nn_count: int, eps_mag: float
+    batch_count: int, nn_count: int, magnitude: float
 ):
     """
     Produces a test heteroscedastic 3D tensor parameter of shape
@@ -421,7 +423,7 @@ def _make_heteroscedastic_test_nugget(
             Number of points to be predicted.
         nn_count:
             Number of nearest neighbors in the kernel.
-        eps:
+        magnitude:
             Maximum noise magnitude.
 
 
@@ -429,5 +431,4 @@ def _make_heteroscedastic_test_nugget(
         A `(batch_count, nn_count)` shaped tensor for heteroscedastic
         noise modeling.
     """
-    eps_tensor = eps_mag * mm.ones((batch_count, nn_count))
-    return eps_tensor
+    return magnitude * mm.ones((batch_count, nn_count))

@@ -67,7 +67,7 @@ def make_classifier(
         ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),
-        ...     "eps": HomoscedasticNoise(1e-5),
+        ...     "noise": HomoscedasticNoise(1e-5),
         ... }
         >>> muygps, nbrs_lookup = make_classifier(
         ...         train_features,
@@ -102,7 +102,7 @@ def make_classifier(
             are fixed.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
-            metric, epsilon and sigma hyperparameter specifications, and
+            metric, noise and sigma hyperparameter specifications, and
             specifications for kernel hyperparameters. See
             :ref:`MuyGPyS-gp-kernels` for examples and requirements. If all of
             the hyperparameters are fixed or are not given optimization bounds,
@@ -209,24 +209,24 @@ def make_multivariate_classifier(
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_args = [
-        ...         {
-        ...             "kernel": RBF(
-        ...                 metric=IsotropicDistortion(
-        ...                     length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
-        ...                 )
+        ...     {
+        ...         "kernel": RBF(
+        ...             metric=IsotropidDistortion(
+        ...                 metric=F2,
+        ...                 length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
         ...             ),
-        ...             "eps": HomoscedasticNoise(1e-5),
-        ...             "sigma_sq": AnalyticSigmaSq(),
-        ...         },
-        ...         {
-        ...             "kernel": RBF(
-        ...                 metric=IsotropicDistortion(
-        ...                     length_scale=ScalarHyperparameter(1.5, (1e-2, 1e2))
-        ...                 )
+        ...         )
+        ...         "noise": HomoscedasticNoise(1e-5),
+        ...     },
+        ...     {
+        ...         "kernel": RBF(
+        ...             metric=IsotropidDistortion(
+        ...                 metric=F2,
+        ...                 length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
         ...             ),
-        ...             "eps": HomoscedasticNoise(1e-5),
-        ...             "sigma_sq": AnalyticSigmaSq(),
-        ...         },
+        ...         )
+        ...         "noise": HomoscedasticNoise(1e-5),
+        ...     },
         ... ]
         >>> mmuygps, nbrs_lookup = make_multivariate_classifier(
         ...         train_features,
@@ -262,7 +262,7 @@ def make_multivariate_classifier(
         k_args:
             A list of `response_count` dicts containing kernel initialization
             keyword arguments. Each dict specifies parameters for the kernel,
-            possibly including epsilon and sigma hyperparameter specifications
+            possibly including noise and sigma hyperparameter specifications
             and specifications for specific kernel hyperparameters. If all of
             the hyperparameters are fixed or are not given optimization bounds,
             no optimization will occur.
@@ -429,11 +429,12 @@ def do_classify(
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...         metric=IsotropicDistortion(
-        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
-        ...         )
-        ...     ),
-        ...     "eps": HomoscedasticNoise(1e-5),
+        ...         metric=IsotropidDistortion(
+        ...             metric=F2,
+        ...             length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
+        ...         ),
+        ...     )
+        ...     "noise": HomoscedasticNoise(1e-5),
         ... }
         >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
         ...         test_features,
@@ -476,7 +477,7 @@ def do_classify(
             are fixed.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
-            metric, epsilon and sigma hyperparameter specifications, and
+            metric, noise and sigma hyperparameter specifications, and
             specifications for kernel hyperparameters. If all of the
             hyperparameters are fixed or are not given optimization bounds, no
             optimization will occur. If `"kern"` is specified and `"k_kwargs"`

@@ -94,7 +94,7 @@ class MNISTTest(ClassifyAPITest):
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
                 # (
@@ -103,7 +103,7 @@ class MNISTTest(ClassifyAPITest):
                 #         "kern": "rbf",
                 #         "metric": "F2",
                 #         "length_scale": ScalarHyperparameter(1.5, "bounds": (0.5, 1e1)},
-                #         "eps": HomoscedasticNoise(1e-3),
+                #         "noise": HomoscedasticNoise(1e-3),
                 #     },
                 # ),
             )
@@ -184,7 +184,7 @@ class StargalClassifyTest(StargalTest):
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
                 (
@@ -198,7 +198,7 @@ class StargalClassifyTest(StargalTest):
                                 ),
                             )
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
             )
@@ -267,7 +267,7 @@ class StargalUQTest(StargalTest):
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
                 (
@@ -279,7 +279,7 @@ class StargalUQTest(StargalTest):
                                 length_scale=ScalarHyperparameter(1.5),
                             )
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
             )
@@ -341,7 +341,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": Matern(
@@ -351,7 +351,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                     ],
                 ),
@@ -367,7 +367,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                                     ),
                                 )
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": RBF(
@@ -378,7 +378,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                                     ),
                                 )
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                     ],
                 ),

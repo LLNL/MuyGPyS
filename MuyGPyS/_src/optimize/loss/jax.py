@@ -13,12 +13,12 @@ import MuyGPyS._src.math.jax as jnp
 def _cross_entropy_fn(
     predictions: jnp.ndarray,
     targets: jnp.ndarray,
-    ll_eps: float = 1e-15,
+    **kwargs,
 ) -> float:
     one_hot_targets = jnp.where(targets > 0.0, 1.0, 0.0)
     softmax_predictions = softmax(predictions, axis=1)
 
-    return _log_loss(one_hot_targets, softmax_predictions, eps=ll_eps)
+    return _log_loss(one_hot_targets, softmax_predictions, **kwargs)
 
 
 @jit

@@ -39,7 +39,7 @@ class MultivariateMuyGPs_layer(nn.Module):
     the Matern kernel for non-special values of :math:`\\nu`, e.g. 1/2, 3/2,
     5/2, and :math:`\\infty`. The MuyGPs layer allows the lengthscale parameter
     :math:`\\rho` to be trained (provided an initial value by the user) as well
-    as the homoskedastic :math:`\\varepsilon` noise parameter.
+    as the homoscedastic :math:`\\tau^2` noise prior variance parameter.
 
     The MultivariateMuyGPs layer returns the posterior mean, posterior variance
     , and a vector of :math:`\\sigma^2` indicating the scale parameter
@@ -60,7 +60,7 @@ class MultivariateMuyGPs_layer(nn.Module):
         ...             length_scale=ScalarHyperparameter(1.0)
         ...         ),
         ...     ),
-        ...     eps=HomoscedasticNoise(1e-5),
+        ...     noise=HomoscedasticNoise(1e-5),
         ... )
         >>> batch_indices = torch.arange(100,)
         >>> batch_nn_indices = torch.arange(100,)

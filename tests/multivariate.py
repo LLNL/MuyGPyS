@@ -53,7 +53,7 @@ class InitTest(parameterized.TestCase):
                             metric=l2, length_scale=ScalarHyperparameter(7.2)
                         ),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": Matern(
@@ -62,7 +62,7 @@ class InitTest(parameterized.TestCase):
                             metric=l2, length_scale=ScalarHyperparameter(2.2)
                         ),
                     ),
-                    "eps": HomoscedasticNoise(1e-6),
+                    "noise": HomoscedasticNoise(1e-6),
                 },
             ],
             [
@@ -73,7 +73,7 @@ class InitTest(parameterized.TestCase):
                             metric=l2, length_scale=ScalarHyperparameter(7.2)
                         ),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
             ],
         )
@@ -89,8 +89,8 @@ class InitTest(parameterized.TestCase):
                     muygps.kernel._hyperparameters[name](),
                 )
                 self.assertTrue(muygps.kernel._hyperparameters[name].fixed())
-            self.assertEqual(this_kwargs["eps"](), muygps.eps())
-            self.assertTrue(muygps.eps.fixed())
+            self.assertEqual(this_kwargs["noise"](), muygps.noise())
+            self.assertTrue(muygps.noise.fixed())
             self.assertFalse(muygps.sigma_sq.trained)
 
 
@@ -109,7 +109,7 @@ class SigmaSqTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(7.2),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
@@ -120,7 +120,7 @@ class SigmaSqTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(2.2),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-6),
+                        "noise": HomoscedasticNoise(1e-6),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
@@ -131,7 +131,7 @@ class SigmaSqTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(12.4),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-6),
+                        "noise": HomoscedasticNoise(1e-6),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
@@ -143,7 +143,7 @@ class SigmaSqTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
@@ -155,7 +155,7 @@ class SigmaSqTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-6),
+                        "noise": HomoscedasticNoise(1e-6),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
@@ -167,7 +167,7 @@ class SigmaSqTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-6),
+                        "noise": HomoscedasticNoise(1e-6),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                 ],
@@ -205,7 +205,7 @@ class SigmaSqTest(parameterized.TestCase):
             sigmas = _get_sigma_sq_series(
                 K,
                 nn_targets[:, :, i].reshape(data_count, nn_count, 1),
-                model.eps(),
+                model.noise(),
             )
             _check_ndarray(self.assertEqual, sigmas, mm.ftype)
             _check_ndarray(self.assertEqual, model.sigma_sq(), mm.ftype)
@@ -249,7 +249,7 @@ class OptimTest(parameterized.TestCase):
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
                             ),
-                            "eps": HomoscedasticNoise(1e-5),
+                            "noise": HomoscedasticNoise(1e-5),
                         },
                         {
                             "kernel": Matern(
@@ -259,7 +259,7 @@ class OptimTest(parameterized.TestCase):
                                     length_scale=ScalarHyperparameter(0.7),
                                 ),
                             ),
-                            "eps": HomoscedasticNoise(1e-5),
+                            "noise": HomoscedasticNoise(1e-5),
                         },
                     ],
                 ),
@@ -382,7 +382,7 @@ class ClassifyTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
@@ -392,7 +392,7 @@ class ClassifyTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(0.7),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
@@ -403,7 +403,7 @@ class ClassifyTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
@@ -414,7 +414,7 @@ class ClassifyTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                 ),
             )
@@ -479,7 +479,7 @@ class RegressTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
@@ -489,7 +489,7 @@ class RegressTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(0.7),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
@@ -500,7 +500,7 @@ class RegressTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
@@ -511,7 +511,7 @@ class RegressTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                 ),
             )
@@ -589,7 +589,7 @@ class MakeClassifierTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
@@ -599,7 +599,7 @@ class MakeClassifierTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(0.7),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
@@ -610,7 +610,7 @@ class MakeClassifierTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
@@ -621,7 +621,7 @@ class MakeClassifierTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                     },
                 ),
             )
@@ -668,7 +668,7 @@ class MakeClassifierTest(parameterized.TestCase):
         )
 
         for i, muygps in enumerate(mmuygps.models):
-            self.assertEqual(args[i]["eps"](), muygps.eps())
+            self.assertEqual(args[i]["noise"](), muygps.noise())
             for name, param in args[i]["kernel"]._hyperparameters.items():
                 if param.fixed() is False:
                     print(
@@ -711,7 +711,7 @@ class MakeRegressorTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
@@ -722,7 +722,7 @@ class MakeRegressorTest(parameterized.TestCase):
                                 length_scale=ScalarHyperparameter(0.7),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
@@ -734,7 +734,7 @@ class MakeRegressorTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(0.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
@@ -746,7 +746,7 @@ class MakeRegressorTest(parameterized.TestCase):
                                 length_scale1=ScalarHyperparameter(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                         "sigma_sq": SigmaSq(),
                     },
                 ),
@@ -798,7 +798,7 @@ class MakeRegressorTest(parameterized.TestCase):
 
         for i, muygps in enumerate(mmuygps.models):
             print(f"For model{i}:")
-            self.assertEqual(args[i]["eps"](), muygps.eps())
+            self.assertEqual(args[i]["noise"](), muygps.noise())
             for name, param in args[i]["kernel"]._hyperparameters.items():
                 if param.fixed() is False:
                     print(

@@ -18,13 +18,13 @@ from MuyGPyS.gp.noise import NoiseFn
 class PosteriorVariance:
     def __init__(
         self,
-        eps: NoiseFn,
+        noise: NoiseFn,
         sigma_sq: SigmaSq,
         apply_sigma_sq: bool = True,
         _backend_fn: Callable = _muygps_diagonal_variance,
     ):
         self._fn = _backend_fn
-        self._fn = eps.perturb_fn(self._fn)
+        self._fn = noise.perturb_fn(self._fn)
         if apply_sigma_sq is True:
             self._fn = sigma_sq.scale_fn(self._fn)
 

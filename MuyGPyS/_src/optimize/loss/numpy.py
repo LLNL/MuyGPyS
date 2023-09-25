@@ -12,12 +12,12 @@ import MuyGPyS._src.math.numpy as np
 def _cross_entropy_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
-    ll_eps: float = 1e-15,
+    **kwargs,
 ) -> float:
     one_hot_targets = np.where(targets > 0.0, 1.0, 0.0)
     softmax_predictions = softmax(predictions, axis=1)
     return log_loss(
-        one_hot_targets, softmax_predictions, eps=ll_eps, normalize=False
+        one_hot_targets, softmax_predictions, normalize=False, **kwargs
     )
 
 

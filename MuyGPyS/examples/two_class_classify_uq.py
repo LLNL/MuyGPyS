@@ -93,10 +93,14 @@ def do_classify_uq(
         >>> test_features, test_responses = make_test()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
-        ...         "kern": "rbf",
-        ...         "metric": "F2",
-        ...         "eps": {"val": 1e-5},
-        ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)},
+        ...     "kernel": RBF(
+        ...         metric=IsotropidDistortion(
+        ...             metric=F2,
+        ...             length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
+        ...         ),
+        ...     )
+        ...     "noise": HomoscedasticNoise(1e-5),
+        ...     "sigma_sq": AnalyticSigmaSq(),
         ... }
         >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
         ...         test_features,
@@ -153,7 +157,7 @@ def do_classify_uq(
             `MuyGPyS.examples.classify.example_lambdas` for examples.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
-            metric, epsilon and sigma hyperparameter specifications, and
+            metric, noise and sigma hyperparameter specifications, and
             specifications for kernel hyperparameters. If all of the
             hyperparameters are fixed or are not given optimization bounds, no
             optimization will occur.

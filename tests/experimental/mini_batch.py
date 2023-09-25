@@ -150,7 +150,7 @@ class NuTest(MiniBatchBenchmarkTestCase):
                         ),
                     ),
                 ),
-                eps=HomoscedasticNoise(self.params["eps"]()),
+                noise=HomoscedasticNoise(self.params["noise"]()),
                 sigma_sq=sigma_sq,
             )
 
@@ -234,7 +234,7 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
                         ),
                     ),
                 ),
-                eps=HomoscedasticNoise(self.params["eps"]()),
+                noise=HomoscedasticNoise(self.params["noise"]()),
                 sigma_sq=sigma_sq,
             )
 

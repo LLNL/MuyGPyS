@@ -210,13 +210,13 @@ class HyperparameterTest(parameterized.TestCase):
         (
             kwargs
             for kwargs in (
-                {"val": "sample", "bounds": (1e-4, 1e2), "reps": 100},
-                {"val": "log_sample", "bounds": (1e-4, 1e2), "reps": 100},
+                {"val": "sample", "bounds": (1e-4, 1e2), "its": 100},
+                {"val": "log_sample", "bounds": (1e-4, 1e2), "its": 100},
             )
         )
     )
-    def test_sample(self, val, bounds, reps):
-        for _ in range(reps):
+    def test_sample(self, val, bounds, its):
+        for _ in range(its):
             param = ScalarHyperparameter(val, bounds)
             self._check_in_bounds(bounds, param)
 

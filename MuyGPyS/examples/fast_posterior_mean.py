@@ -199,7 +199,7 @@ def do_fast_posterior_mean(
         ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),
-        ...     "eps": HomoscedasticNoise(1e-5),
+        ...     "noise": HomoscedasticNoise(1e-5),
         ...     "sigma_sq": AnalyticSigmaSq(),
         ... }
         >>> (

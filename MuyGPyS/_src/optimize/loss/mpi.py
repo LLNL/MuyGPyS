@@ -41,9 +41,9 @@ def _make_mpi_obj_fn(kwargs_opt_fn, comm):
 def _cross_entropy_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
-    ll_eps: float = 1e-15,
+    **kwargs,
 ) -> float:
-    local_log_loss = _cross_entropy_fn_n(predictions, targets, ll_eps=ll_eps)
+    local_log_loss = _cross_entropy_fn_n(predictions, targets, **kwargs)
     global_log_loss = world.allreduce(local_log_loss, op=MPI.SUM)
     return global_log_loss
 

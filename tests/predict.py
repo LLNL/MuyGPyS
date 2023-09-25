@@ -57,7 +57,7 @@ class ClassifyTest(parameterized.TestCase):
                             l2, length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": Matern(
@@ -68,7 +68,7 @@ class ClassifyTest(parameterized.TestCase):
                             length_scale1=ScalarHyperparameter(0.5),
                         ),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -126,7 +126,7 @@ class ClassifyUQTest(parameterized.TestCase):
                             l2, length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": RBF(
@@ -134,7 +134,7 @@ class ClassifyUQTest(parameterized.TestCase):
                             l2, length_scale=ScalarHyperparameter(1.5)
                         )
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": Matern(
@@ -145,7 +145,7 @@ class ClassifyUQTest(parameterized.TestCase):
                             length_scale1=ScalarHyperparameter(0.5),
                         ),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": RBF(
@@ -155,7 +155,7 @@ class ClassifyUQTest(parameterized.TestCase):
                             length_scale1=ScalarHyperparameter(0.5),
                         )
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
             )
         )

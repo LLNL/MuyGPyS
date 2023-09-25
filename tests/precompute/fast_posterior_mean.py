@@ -46,7 +46,7 @@ class MakeFastRegressorTest(parameterized.TestCase):
                             l2, length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -129,7 +129,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                                 l2, length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                         "sigma_sq": AnalyticSigmaSq(),
                     },
                     {
@@ -139,7 +139,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                                 l2, length_scale=ScalarHyperparameter(0.7)
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
+                        "noise": HomoscedasticNoise(1e-5),
                         "sigma_sq": SigmaSq(),
                     },
                 ),
@@ -198,7 +198,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
 
         for i, muygps in enumerate(mmuygps.models):
             print(f"For model{i}:")
-            self.assertEqual(k_kwargs[i]["eps"](), muygps.eps())
+            self.assertEqual(k_kwargs[i]["noise"](), muygps.noise())
             for name, param in k_kwargs[i]["kernel"]._hyperparameters.items():
                 if param.fixed() is False:
                     print(

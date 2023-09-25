@@ -218,8 +218,8 @@ Args:
         The predicted response of shape `(batch_count, response_count)`.
     targets:
         The expected response of shape `(batch_count, response_count)`.
-    ll_eps:
-        Probabilities are clipped to the range `[ll_eps, 1 - ll_eps]`.
+    eps:
+        Probabilities are clipped to the range `[eps, 1 - eps]`.
 
 Returns:
     The cross-entropy loss of the prediction.

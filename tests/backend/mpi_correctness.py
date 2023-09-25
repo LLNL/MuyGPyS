@@ -145,8 +145,8 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_inf_fn=matern_inf_fn_n,
                 _backend_gen_fn=matern_gen_fn_n,
             ),
-            eps=HomoscedasticNoise(
-                cls.eps, _backend_fn=homoscedastic_perturb_n
+            noise=HomoscedasticNoise(
+                cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
             sigma_sq=AnalyticSigmaSq(
                 _backend_ones=np.ones,
@@ -188,8 +188,8 @@ class TensorsTestCase(parameterized.TestCase):
                 metric=metric,
                 _backend_fn=rbf_fn_n,
             ),
-            eps=HomoscedasticNoise(
-                cls.eps, _backend_fn=homoscedastic_perturb_n
+            noise=HomoscedasticNoise(
+                cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
             sigma_sq=AnalyticSigmaSq(
                 _backend_ones=np.ones,
@@ -232,7 +232,7 @@ class TensorsTestCase(parameterized.TestCase):
         cls.length_scale = 1.0
         cls.nu = 0.5
         cls.nu_bounds = (1e-1, 2)
-        cls.eps = 1e-3
+        cls.noise = 1e-3
         cls.muygps_gen = cls._make_isotropic_muygps(
             cls.nu, nu_bounds=cls.nu_bounds
         )
@@ -1013,7 +1013,7 @@ class MuyGPSTestCase(KernelTestCase):
         super(MuyGPSTestCase, cls).setUpClass()
         if rank == 0:
             cls.batch_homoscedastic_covariance_gen = homoscedastic_perturb_n(
-                cls.batch_covariance_gen, cls.muygps_gen.eps()
+                cls.batch_covariance_gen, cls.muygps_gen.noise()
             )
             cls.batch_prediction = muygps_posterior_mean_n(
                 cls.batch_homoscedastic_covariance_gen,
@@ -1030,7 +1030,7 @@ class MuyGPSTestCase(KernelTestCase):
             cls.batch_variance = None
 
         cls.batch_homoscedastic_covariance_gen_chunk = homoscedastic_perturb_m(
-            cls.batch_covariance_gen_chunk, cls.muygps_gen.eps()
+            cls.batch_covariance_gen_chunk, cls.muygps_gen.noise()
         )
         cls.batch_prediction_chunk = muygps_posterior_mean_m(
             cls.batch_homoscedastic_covariance_gen_chunk,

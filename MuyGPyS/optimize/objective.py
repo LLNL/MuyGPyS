@@ -44,14 +44,14 @@ def make_loo_crossval_fn(
             A function that realizes kernel tensors given a list of the free
             parameters.
         mean_fn:
-            A function that realizes MuyGPs posterior mean prediction given an
-            epsilon value. The given value is unused if epsilon is fixed.
+            A function that realizes MuyGPs posterior mean prediction given a
+            noise model.
         var_fn:
             A function that realizes MuyGPs posterior variance prediction given
-            an epsilon value. The given value is unused if epsilon is fixed.
+            a noise model.
         sigma_sq_fn:
-            A function that realizes `sigma_sq` optimization given an epsilon
-            value. The given value is unused if epsilon is fixed.
+            A function that realizes `sigma_sq` optimization given a noise
+            model.
         pairwise_diffs:
             A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
             containing the `(nn_count, nn_count, feature_count)`-shaped pairwise

@@ -84,7 +84,7 @@ class RegressTest(parameterized.TestCase):
 
         model_nu = 0.5
         model_length_scale = 1.0
-        measurement_eps = 1e-6
+        measurement_noise = 1e-6
 
         model_args = [
             {
@@ -95,7 +95,7 @@ class RegressTest(parameterized.TestCase):
                         length_scale=ScalarHyperparameter(model_length_scale),
                     ),
                 ),
-                "eps": HomoscedasticNoise(measurement_eps),
+                "noise": HomoscedasticNoise(measurement_noise),
             },
             {
                 "kernel": Matern(
@@ -105,7 +105,7 @@ class RegressTest(parameterized.TestCase):
                         length_scale=ScalarHyperparameter(model_length_scale),
                     ),
                 ),
-                "eps": HomoscedasticNoise(measurement_eps),
+                "noise": HomoscedasticNoise(measurement_noise),
             },
         ]
 
@@ -223,7 +223,7 @@ class MultivariateRegressTest(parameterized.TestCase):
                         length_scale=ScalarHyperparameter(7.2),
                     ),
                 ),
-                "eps": HomoscedasticNoise(1e-5),
+                "noise": HomoscedasticNoise(1e-5),
             },
             {
                 "kernel": Matern(
@@ -233,7 +233,7 @@ class MultivariateRegressTest(parameterized.TestCase):
                         length_scale=ScalarHyperparameter(2.2),
                     ),
                 ),
-                "eps": HomoscedasticNoise(1e-6),
+                "noise": HomoscedasticNoise(1e-6),
             },
         ]
 

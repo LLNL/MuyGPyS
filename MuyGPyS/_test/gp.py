@@ -19,20 +19,20 @@ class BenchmarkGP:
     Args:
         kernel:
             The kernel to be used. Only supports Matern.
-        eps:
+        noise:
             The noise model.
     """
 
     def __init__(
         self,
         kernel: Matern,
-        eps: NoiseFn = HomoscedasticNoise(0.0),
+        noise: NoiseFn = HomoscedasticNoise(0.0),
     ):
         """
         Initialize.
         """
         self.kernel = kernel
-        self.eps = eps
+        self.noise = noise
         self.sigma_sq = SigmaSq()
 
     def fixed(self) -> bool:
@@ -48,7 +48,7 @@ class BenchmarkGP:
         for p in self.kernel._hyperparameters:
             if not self.kernel._hyperparameters[p].fixed():
                 return False
-        if not self.eps.fixed():
+        if not self.noise.fixed():
             return False
         return True
 
@@ -97,7 +97,7 @@ def benchmark_prepare_cholK(
     pairwise_diffs = _pairwise_differences(data)
     data_count, _ = data.shape
     Kfull = gp.sigma_sq()[0] * (
-        gp.kernel(pairwise_diffs) + gp.eps() * np.eye(data_count)
+        gp.kernel(pairwise_diffs) + gp.noise() * np.eye(data_count)
     )
     return np.linalg.cholesky(Kfull)
 
