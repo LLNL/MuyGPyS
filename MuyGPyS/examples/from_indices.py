@@ -17,7 +17,7 @@ from MuyGPyS.gp.tensors import (
     make_train_tensors,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
+from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
 
 
@@ -125,7 +125,7 @@ def optimize_from_indices(
     train_features: np.ndarray,
     train_targets: np.ndarray,
     loss_fn: LossFn = lool_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     verbose: bool = False,
     **kwargs,
 ) -> MuyGPS:
@@ -150,7 +150,7 @@ def optimize_from_indices(
         ...         train_features,
         ...         train_responses,
         ...         loss_fn=lool_fn,
-        ...         opt_fn=L_BFGS_B_optimize_fn,
+        ...         opt_fn=L_BFGS_B_optimize,
         ...         verbose=True,
         ... )
         parameters to be optimized: ['nu']

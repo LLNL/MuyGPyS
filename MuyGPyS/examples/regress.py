@@ -24,7 +24,7 @@ from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
+from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import LossFn, lool_fn
 
@@ -35,7 +35,7 @@ def make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -56,7 +56,7 @@ def make_regressor(
         >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
-        >>> from MuyGPyS.optimize import Bayes_optimize_fn
+        >>> from MuyGPyS.optimize import Bayes_optimize
         >>> from MuyGPyS.examples.regress import make_regressor
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
@@ -76,7 +76,7 @@ def make_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=lool_fn,
-        ...         opt_fn=Bayes_optimize_fn,
+        ...         opt_fn=Bayes_optimize,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -198,7 +198,7 @@ def make_multivariate_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -219,7 +219,7 @@ def make_multivariate_regressor(
         >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
-        >>> from MuyGPyS.optimize import Bayes_optimize_fn
+        >>> from MuyGPyS.optimize import Bayes_optimize
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_args = [
@@ -250,7 +250,7 @@ def make_multivariate_regressor(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=lool_fn,
-        ...         opt_fn=Bayes_optimize_fn,
+        ...         opt_fn=Bayes_optimize,
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -415,7 +415,7 @@ def _decide_and_make_regressor(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -463,7 +463,7 @@ def do_regress(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -487,7 +487,7 @@ def do_regress(
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.examples.regress import do_regress
-        >>> from MuyGPyS.optimize import Bayes_optimize_fn
+        >>> from MuyGPyS.optimize import Bayes_optimize
         >>> from MuyGPyS.optimize.objective import mse_fn
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> test_features, test_responses = make_test()  # stand-in function
@@ -509,7 +509,7 @@ def do_regress(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=lool_fn,
-        ...         opt_fn=Bayes_optimize_fn,
+        ...         opt_fn=Bayes_optimize,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,

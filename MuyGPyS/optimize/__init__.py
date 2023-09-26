@@ -3,4 +3,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .chassis import Bayes_optimize_fn, L_BFGS_B_optimize_fn, OptimizeFn
+from .chassis import Bayes_optimize, L_BFGS_B_optimize, OptimizeFn

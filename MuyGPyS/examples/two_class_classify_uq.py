@@ -35,7 +35,7 @@ from MuyGPyS.examples.classify import (
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
+from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.batch import get_balanced_batch
 from MuyGPyS.optimize.loss import LossFn, cross_entropy_fn
 
@@ -65,7 +65,7 @@ def do_classify_uq(
     opt_batch_count: int = 200,
     uq_batch_count: int = 500,
     loss_fn: LossFn = cross_entropy_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     uq_objectives: Union[
         List[Callable], Tuple[Callable, ...]
     ] = example_lambdas,
@@ -107,7 +107,7 @@ def do_classify_uq(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=cross_entropy_fn,
-        ...         opt_fn=Bayes_optimize_fn,
+        ...         opt_fn=Bayes_optimize,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,

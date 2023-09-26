@@ -30,7 +30,7 @@ from MuyGPyS.examples.regress import _decide_and_make_regressor
 from MuyGPyS.gp.tensors import fast_nn_update
 from MuyGPyS.gp.tensors import pairwise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
+from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
 
 
@@ -162,7 +162,7 @@ def do_fast_posterior_mean(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -188,7 +188,7 @@ def do_fast_posterior_mean(
         >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
-        >>> from MuyGPyS.optimize import Bayes_optimize_fn
+        >>> from MuyGPyS.optimize import Bayes_optimize
         >>> from MuyGPyS.optimize.objective import mse_fn
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> test_features, test_responses = make_test()  # stand-in function
@@ -212,7 +212,7 @@ def do_fast_posterior_mean(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=lool_fn,
-        ...         opt_fn=Bayes_optimize_fn,
+        ...         opt_fn=Bayes_optimize,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
