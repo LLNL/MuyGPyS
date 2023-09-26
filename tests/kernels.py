@@ -21,7 +21,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
 )
 from MuyGPyS.gp.tensors import crosswise_tensor, pairwise_tensor
-from MuyGPyS.gp.hyperparameter import ScalarParam, Scale
+from MuyGPyS.gp.hyperparameter import ScalarParam, FixedScale
 from MuyGPyS.gp.kernels import RBF, Matern
 from MuyGPyS.gp.deformation import Anisotropy, Isotropy, F2, l2
 from MuyGPyS.neighbors import NN_Wrapper
@@ -154,7 +154,7 @@ class BackendConfigUser:
 
 class ScaleTest(parameterized.TestCase):
     def _do_untrained(self, val):
-        param = Scale()
+        param = FixedScale()
         self.assertFalse(param.trained)
         self.assertEqual(mm.array([1.0]), param())
         param._set(val)

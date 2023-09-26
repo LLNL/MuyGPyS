@@ -18,10 +18,10 @@ hyperparameters.
 Example:
     >>> from MuyGPyS.gp.kernels import Matern
     >>> kern = Matern(
-    ...     nu=ScalarParam("log_sample", (0.1, 2.5)),
+    ...     nu=Parameter("log_sample", (0.1, 2.5)),
     ...     deformation=Isotropy(
     ...         metric=l2,
-    ...         length_scale=ScalarParam(1.0),
+    ...         length_scale=Parameter(1.0),
     ...     ),
     ... )
 

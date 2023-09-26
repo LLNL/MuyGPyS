@@ -22,7 +22,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.gp import MuyGPS
 
 from MuyGPyS.gp.deformation import Isotropy, l2
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, Scale
+from MuyGPyS.gp.hyperparameter import AnalyticScale, FixedScale, ScalarParam
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor
@@ -165,8 +165,13 @@ class NuTest(BenchmarkTestCase):
             for n in [20]
             for loss_kwargs_and_scale in [
                 ["lool", lool_fn, dict(), AnalyticScale()],
-                ["mse", mse_fn, dict(), Scale()],
-                ["huber", pseudo_huber_fn, {"boundary_scale": 1.5}, Scale()],
+                ["mse", mse_fn, dict(), FixedScale()],
+                [
+                    "huber",
+                    pseudo_huber_fn,
+                    {"boundary_scale": 1.5},
+                    FixedScale(),
+                ],
                 ["looph", looph_fn, {"boundary_scale": 1.5}, AnalyticScale()],
             ]
             # for nn_kwargs in _basic_nn_kwarg_options

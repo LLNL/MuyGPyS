@@ -11,7 +11,7 @@ from typing import Callable
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
-from MuyGPyS.gp.hyperparameter import Scale
+from MuyGPyS.gp.hyperparameter import ScaleFn
 from MuyGPyS.gp.noise import NoiseFn
 
 
@@ -19,7 +19,7 @@ class PosteriorVariance:
     def __init__(
         self,
         noise: NoiseFn,
-        scale: Scale,
+        scale: ScaleFn,
         apply_scale: bool = True,
         _backend_fn: Callable = _muygps_diagonal_variance,
     ):

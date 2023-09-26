@@ -14,9 +14,9 @@ from MuyGPyS._src.util import _fullname
 from MuyGPyS._src.optimize.scale import _analytic_scale_optim
 
 
-class Scale:
+class ScaleFn:
     """
-    A :math:`\\sigma^2` covariance scale parameter.
+    A :math:`\\sigma^2` covariance scale parameter base functor.
 
     :math:`\\sigma^2` is a scaling parameter that one multiplies with the
     found diagonal variances of a :class:`MuyGPyS.gp.muygps.MuyGPS` or
@@ -127,11 +127,41 @@ class Scale:
         return noop_scale_opt_fn
 
 
-class AnalyticScale(Scale):
+class FixedScale(ScaleFn):
+    """
+    A :math:`\\sigma^2` covariance scale parameter.
+
+    A `Scale` parameter with a null optimization method. This parameter is
+    therefore insensitive to optimization.
+
+    Args:
+        response_count:
+            The integer number of response dimensions.
+    """
+
+    def get_opt_fn(self, muygps) -> Callable:
+        """
+        Return a function that optimizes the value of the variance scale.
+
+        Args:
+            muygps:
+                A model to be ignored.
+
+        Returns:
+            A function that always returns the value of this scale parameter.
+        """
+
+        def noop_scale_opt_fn(K, nn_targets, *args, **kwargs):
+            return muygps.scale()
+
+        return noop_scale_opt_fn
+
+
+class AnalyticScale(ScaleFn):
     """
     An optimizable :math:`\\sigma^2` covariance scale parameter.
 
-    Identical to :class:`~MuyGPyS.gp.scale.Scale`, save that its
+    Identical to :class:`~MuyGPyS.gp.scale.FixedScale`, save that its
     `get_opt_fn` method performs an analytic optimization.
 
     Args:

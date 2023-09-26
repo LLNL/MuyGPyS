@@ -31,7 +31,7 @@ from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.deformation import Isotropy, Anisotropy, l2
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, Scale
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, FixedScale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
@@ -746,7 +746,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
-                        "scale": Scale(),
+                        "scale": FixedScale(),
                     },
                 ),
             )

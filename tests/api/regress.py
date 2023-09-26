@@ -26,7 +26,7 @@ from MuyGPyS.gp.deformation import (
     F2,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, Scale
+from MuyGPyS.gp.hyperparameter import AnalyticScale, FixedScale, ScalarParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn
@@ -116,7 +116,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                 )
                             ),
                             "noise": HomoscedasticNoise(1e-3),
-                            "scale": Scale(),
+                            "scale": FixedScale(),
                         },
                         {
                             "kernel": RBF(
@@ -126,7 +126,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                 )
                             ),
                             "noise": HomoscedasticNoise(1e-3),
-                            "scale": Scale(),
+                            "scale": FixedScale(),
                         },
                     ],
                 ),
@@ -208,7 +208,7 @@ class HeatonTest(RegressionAPITest):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
-                        "scale": Scale(),
+                        "scale": FixedScale(),
                     },
                 ),
                 # (

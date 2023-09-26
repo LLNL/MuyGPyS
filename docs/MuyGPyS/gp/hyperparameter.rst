@@ -16,7 +16,12 @@ hyperparameter
   :special-members: __call__
 
 .. default-role:: code
-.. autoclass:: MuyGPyS.gp.hyperparameter.scale.Scale
+.. autoclass:: MuyGPyS.gp.hyperparameter.scale.ScaleFn
+  :members:
+  :special-members: __call__
+
+.. default-role:: code
+.. autoclass:: MuyGPyS.gp.hyperparameter.scale.FixedScale
   :members:
   :special-members: __call__
 

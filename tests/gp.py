@@ -37,7 +37,7 @@ from MuyGPyS.gp.deformation import (
     F2,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, Scale
+from MuyGPyS.gp.hyperparameter import AnalyticScale, FixedScale, ScalarParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS.gp.tensors import (
@@ -700,7 +700,7 @@ class MakeRegressorTest(parameterized.TestCase):
                 {
                     "kernel": Matern(nu=ScalarParam("sample", (1e-1, 1e0))),
                     "noise": HomoscedasticNoise(1e-5),
-                    "scale": Scale(),
+                    "scale": FixedScale(),
                 },
                 {
                     "kernel": Matern(nu=ScalarParam("sample", (1e-1, 1e0))),

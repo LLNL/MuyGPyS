@@ -17,7 +17,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp.deformation import Isotropy, l2
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, Scale
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, FixedScale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn
@@ -137,7 +137,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
-                        "scale": Scale(),
+                        "scale": FixedScale(),
                     },
                 ),
             )

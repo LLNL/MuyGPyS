@@ -9,7 +9,7 @@ Multivariate MuyGPs implementation
 from copy import deepcopy
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _mmuygps_fast_posterior_mean
-from MuyGPyS.gp.hyperparameter import Scale
+from MuyGPyS.gp.hyperparameter import FixedScale, ScaleFn
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.noise import HeteroscedasticNoise
@@ -31,22 +31,22 @@ class MultivariateMuyGPS:
     Example:
         >>> from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
         >>> k_kwargs1 = {
-        ...     "noise": ScalarParam(1e-5),
+        ...     "noise": Parameter(1e-5),
         ...     "kernel": Matern(
-        ...         nu=ScalarParam(0.67, (0.1, 2.5)),
+        ...         nu=Parameter(0.67, (0.1, 2.5)),
         ...         deformation=Isotropy(
         ...             metric=l2,
-        ...             length_scale=ScalarParam(0.2),
+        ...             length_scale=Parameter(0.2),
         ...         scale=AnalyticScale(),
         ...     ),
         ... }
         >>> k_kwargs2 = {
-        ...     "noise": ScalarParam(1e-5),
+        ...     "noise": Parameter(1e-5),
         ...     "kernel": Matern(
-        ...         nu=ScalarParam(0.67, (0.1, 2.5)),
+        ...         nu=Parameter(0.67, (0.1, 2.5)),
         ...         deformation=Isotropy(
         ...             metric=l2,
-        ...             length_scale=ScalarParam(0.2),
+        ...             length_scale=Parameter(0.2),
         ...         scale=AnalyticScale(),
         ...     ),
         ... }
@@ -75,7 +75,7 @@ class MultivariateMuyGPS:
         *model_args,
     ):
         self.models = [MuyGPS(**args) for args in model_args]
-        self.scale = Scale(response_count=len(self.models))
+        self.scale = FixedScale(response_count=len(self.models))
 
     def fixed(self) -> bool:
         """

@@ -5,7 +5,7 @@
 
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.gp.tensors import _pairwise_differences
-from MuyGPyS.gp.hyperparameter import Scale
+from MuyGPyS.gp.hyperparameter import FixedScale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
 
@@ -33,7 +33,7 @@ class BenchmarkGP:
         """
         self.kernel = kernel
         self.noise = noise
-        self.scale = Scale()
+        self.scale = FixedScale()
 
     def fixed(self) -> bool:
         """

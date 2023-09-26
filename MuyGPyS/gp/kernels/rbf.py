@@ -19,7 +19,7 @@ Example:
     >>> kernel_fn = RBF(
     ...     deformation=Isotropy(
     ...         metric=l2,
-    ...         length_scale=ScalarParam(1.0),
+    ...         length_scale=Parameter(1.0),
     ...     ),
     ... )
 

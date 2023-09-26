@@ -5,4 +5,4 @@
 
 from .scalar import Parameter, Parameter as ScalarParam
 from .tensor import TensorParam
-from .scale import AnalyticScale, Scale
+from .scale import AnalyticScale, FixedScale, ScaleFn

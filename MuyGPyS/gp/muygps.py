@@ -17,7 +17,7 @@ from MuyGPyS.gp.fast_precompute import (
     FastPrecomputeCoefficients,
 )
 from MuyGPyS.gp.fast_mean import _muygps_fast_posterior_mean, FastPosteriorMean
-from MuyGPyS.gp.hyperparameter import Scale
+from MuyGPyS.gp.hyperparameter import FixedScale, ScaleFn
 from MuyGPyS.gp.kernels import KernelFn
 from MuyGPyS.gp.mean import _muygps_posterior_mean, PosteriorMean
 from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
@@ -51,10 +51,10 @@ class MuyGPS:
         >>> from MuyGPyS.gp import MuyGPS
         >>> muygps = MuyGPS(
         ...    kernel=Matern(
-        ...        nu=ScalarParam( 0.38, (0.1, 2.5)),
+        ...        nu=Parameter(0.38, (0.1, 2.5)),
         ...        deformation=Isotropy(
         ...            metric=F2,
-        ...            length_scale=ScalarParam(0.2),
+        ...            length_scale=Parameter(0.2),
         ...        ),
         ...    ),
         ...    noise=HomoscedasticNoise(1e-5),
@@ -93,7 +93,7 @@ class MuyGPS:
         self,
         kernel: KernelFn,
         noise: NoiseFn = HomoscedasticNoise(0.0, "fixed"),
-        scale: Scale = Scale(response_count=1),
+        scale: ScaleFn = FixedScale(response_count=1),
         _backend_mean_fn: Callable = _muygps_posterior_mean,
         _backend_var_fn: Callable = _muygps_diagonal_variance,
         _backend_fast_mean_fn: Callable = _muygps_fast_posterior_mean,
