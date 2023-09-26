@@ -115,7 +115,7 @@ jobs:
           python tests/backend/torch_correctness.py
           export MUYGPYS_BACKEND=torch
           export MUYGPYS_FTYPE=32
-          python tests/muygps_torch/muygps_torch.py
+          python tests/torch/muygps_torch.py
 
   build-docs:
     runs-on: ubuntu-latest

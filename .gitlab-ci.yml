@@ -43,10 +43,10 @@ all_tests:
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/optimize.py
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/predict.py
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/multivariate.py
-    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/jax_correctness.py
-    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/regress_api.py /p/lustre1/madstare/muygps-data/
-    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/classify_api.py /p/lustre1/madstare/muygps-data/
-    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/fast_regress_api.py /p/lustre1/madstare/muygps-data/
+    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/backend/jax_correctness.py
+    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/api/regress.py /p/lustre1/madstare/muygps-data/
+    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/api/classify.py /p/lustre1/madstare/muygps-data/
+    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/precompute/fast_regress_api.py /p/lustre1/madstare/muygps-data/
     - echo "done with JAX tests"
     - export MUYGPYS_BACKEND=mpi
     - echo "performing MPI tests"
@@ -55,13 +55,12 @@ all_tests:
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/optimize.py
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/predict.py
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/multivariate.py
-    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/jax_correctness.py
-    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/regress_api.py /p/lustre1/madstare/muygps-data/
-    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/classify_api.py /p/lustre1/madstare/muygps-data/
-    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/fast_regress_api.py /p/lustre1/madstare/muygps-data/
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/backend/mpi_correctness.py
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/api/regress.py /p/lustre1/madstare/muygps-data/
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/api/classify.py /p/lustre1/madstare/muygps-data/
     - echo "done with MPI tests"
     - export MUYGPYS_BACKEND=torch
     - echo "performing Torch tests"
-    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/torch_correctness.py
-    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/torch_api.py /p/lustre1/madstare/muygps-data/
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/backend/torch_correctness.py
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/torch/torch_api.py /p/lustre1/madstare/muygps-data/
     - echo "done with Torch tests"
