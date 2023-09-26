@@ -19,7 +19,7 @@ from MuyGPyS.examples.two_class_classify_uq import (
     do_uq,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion, l2
+from MuyGPyS.gp.deformation import Isotropy, Anisotropy, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -53,7 +53,7 @@ class ClassifyTest(parameterized.TestCase):
                 {
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
-                        metric=IsotropicDistortion(
+                        deformation=Isotropy(
                             l2, length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
@@ -62,7 +62,7 @@ class ClassifyTest(parameterized.TestCase):
                 {
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
-                        metric=AnisotropicDistortion(
+                        deformation=Anisotropy(
                             l2,
                             length_scale0=ScalarHyperparameter(1.5),
                             length_scale1=ScalarHyperparameter(0.5),
@@ -122,7 +122,7 @@ class ClassifyUQTest(parameterized.TestCase):
                 {
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
-                        metric=IsotropicDistortion(
+                        deformation=Isotropy(
                             l2, length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
@@ -130,7 +130,7 @@ class ClassifyUQTest(parameterized.TestCase):
                 },
                 {
                     "kernel": RBF(
-                        metric=IsotropicDistortion(
+                        deformation=Isotropy(
                             l2, length_scale=ScalarHyperparameter(1.5)
                         )
                     ),
@@ -139,7 +139,7 @@ class ClassifyUQTest(parameterized.TestCase):
                 {
                     "kernel": Matern(
                         nu=ScalarHyperparameter(0.38),
-                        metric=AnisotropicDistortion(
+                        deformation=Anisotropy(
                             l2,
                             length_scale0=ScalarHyperparameter(1.5),
                             length_scale1=ScalarHyperparameter(0.5),
@@ -149,7 +149,7 @@ class ClassifyUQTest(parameterized.TestCase):
                 },
                 {
                     "kernel": RBF(
-                        metric=AnisotropicDistortion(
+                        deformation=Anisotropy(
                             l2,
                             length_scale0=ScalarHyperparameter(1.5),
                             length_scale1=ScalarHyperparameter(0.5),

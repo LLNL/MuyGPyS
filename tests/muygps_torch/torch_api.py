@@ -26,7 +26,7 @@ from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.torch import MuyGPs_layer, MultivariateMuyGPs_layer
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distortion import IsotropicDistortion, l2
+from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.kernels import Matern
 
 if config.state.torch_enabled is False:
@@ -138,7 +138,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             {
                 "kernel": Matern(
                     nu=ScalarHyperparameter(1.5),
-                    metric=IsotropicDistortion(
+                    deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarHyperparameter(7.2),
                     ),
@@ -148,7 +148,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             {
                 "kernel": Matern(
                     nu=ScalarHyperparameter(0.5),
-                    metric=IsotropicDistortion(
+                    deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarHyperparameter(2.2),
                     ),
@@ -283,7 +283,7 @@ class HeatonTest(RegressionAPITest):
         muygps_model = MuyGPS(
             Matern(
                 nu=ScalarHyperparameter(1.5),
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     metric=l2,
                     length_scale=ScalarHyperparameter(1.0),
                 ),

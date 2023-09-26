@@ -53,7 +53,7 @@ def make_classifier(
 
     Example:
         >>> from MuyGPyS.examples.regress import make_classifier
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -63,7 +63,8 @@ def make_classifier(
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...         metric=IsotropicDistortion(
+        ...         deformation=Isotropy(
+        ...             metric=F2,
         ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),
@@ -101,9 +102,9 @@ def make_classifier(
             Ignored if all of the parameters specified by argument `k_kwargs`
             are fixed.
         k_kwargs:
-            Parameters for the kernel, possibly including kernel type, distance
-            metric, noise and scale hyperparameter specifications, and
-            specifications for kernel hyperparameters. See
+            Parameters for the kernel, possibly including kernel type,
+            deformation function, noise and scale hyperparameter specifications,
+            and specifications for kernel hyperparameters. See
             :ref:`MuyGPyS-gp-kernels` for examples and requirements. If all of
             the hyperparameters are fixed or are not given optimization bounds,
             no optimization will occur.
@@ -201,7 +202,7 @@ def make_multivariate_classifier(
 
     Example:
         >>> from MuyGPyS.examples.classify import make_multivariate_classifier
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -211,7 +212,7 @@ def make_multivariate_classifier(
         >>> k_args = [
         ...     {
         ...         "kernel": RBF(
-        ...             metric=IsotropidDistortion(
+        ...             deformation=Isotropy(
         ...                 metric=F2,
         ...                 length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
         ...             ),
@@ -220,7 +221,7 @@ def make_multivariate_classifier(
         ...     },
         ...     {
         ...         "kernel": RBF(
-        ...             metric=IsotropidDistortion(
+        ...             deformation=Isotropy(
         ...                 metric=F2,
         ...                 length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
         ...             ),
@@ -419,7 +420,7 @@ def do_classify(
     Example:
         >>> import numpy as np
         >>> from MuyGPyS.examples.classify import do_classify
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -429,7 +430,7 @@ def do_classify(
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...         metric=IsotropidDistortion(
+        ...         deformation=Isotropy(
         ...             metric=F2,
         ...             length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
         ...         ),
@@ -476,13 +477,12 @@ def do_classify(
             Ignored if all of the parameters specified by argument `k_kwargs`
             are fixed.
         k_kwargs:
-            Parameters for the kernel, possibly including kernel type, distance
-            metric, noise and scale hyperparameter specifications, and
-            specifications for kernel hyperparameters. If all of the
+            Parameters for the kernel, possibly including kernel type,
+            deformation function, noise and scale hyperparameter specifications,
+            and specifications for kernel hyperparameters. If all of the
             hyperparameters are fixed or are not given optimization bounds, no
-            optimization will occur. If `"kern"` is specified and `"k_kwargs"`
-            is a list of such dicts, will create a multivariate classifier
-            model.
+            optimization will occur. If `"k_kwargs"` is a list of such dicts,
+            will create a multivariate classifier model.
         nn_kwargs:
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and

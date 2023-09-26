@@ -37,7 +37,7 @@ from MuyGPyS._src.optimize.chassis.numpy import (
     _bayes_get_kwargs,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import AnisotropicDistortion
+from MuyGPyS.gp.deformation import Anisotropy
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
@@ -283,10 +283,10 @@ def optimize_from_tensors_mini_batch(
         optimized_values.append(f"{epoch}, {optimizer.max['params']}")
 
         # Update neighborhoods using the learned length scales
-        if isinstance(muygps.kernel.distortion_fn, AnisotropicDistortion) and (
+        if isinstance(muygps.kernel.deformation, Anisotropy) and (
             epoch < (num_epochs - 1)
         ):
-            length_scales = muygps.kernel.distortion_fn._length_scale_array(
+            length_scales = muygps.kernel.deformation._length_scale_array(
                 train_features.shape,
                 **optimizer.max["params"],
             )

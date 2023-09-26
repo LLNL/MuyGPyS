@@ -3,8 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS.gp.distortion.distortion_fn import DistortionFn
+from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
 
 
-class NullDistortion(DistortionFn):
+class NullDeformation(DeformationFn):
     pass

@@ -49,9 +49,9 @@ class MultivariateMuyGPs_layer(nn.Module):
         >>> from MuyGPyS.torch.muygps_layer import MultivariateMuyGPs_layer
         >>> multivariate_muygps_model = MMuyGPs(
         ...     Matern(
-        ...         nu=ScalarHyperparameter("sample", (0.1, 1)),
-        ...         metric=IsotropicDistortion(
-        ...             l2,
+        ...         nu=ScalarHyperparameter(0.5),
+        ...         deformation=Isotropy(
+        ...             metric=l2,
         ...             length_scale=ScalarHyperparameter(1.0)
         ...         ),
         ...     ),

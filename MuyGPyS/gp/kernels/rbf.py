@@ -17,8 +17,8 @@ hyperparameters.
 
 Example:
     >>> kernel_fn = RBF(
-    ...     metric=IsotropicDistortion(
-    ...         l2,
+    ...     deformation=Isotropy(
+    ...         metric=l2,
     ...         length_scale=ScalarHyperparameter(1.0),
     ...     ),
     ... )
@@ -42,9 +42,9 @@ from typing import Callable
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import _rbf_fn
 from MuyGPyS._src.util import auto_str
-from MuyGPyS.gp.distortion import (
-    DistortionFn,
-    IsotropicDistortion,
+from MuyGPyS.gp.deformation import (
+    DeformationFn,
+    Isotropy,
     F2,
 )
 from MuyGPyS.gp.kernels import KernelFn
@@ -68,25 +68,25 @@ class RBF(KernelFn):
     or second frequency moment of the difference of the operands.
 
     Args:
-        metric:
-            The distance function to be used. Includes length_scale
-            hyperparameter information via the MuyGPyS.gp.distortion module
+        deformation:
+            The deformation functor to be used. Includes length_scale
+            hyperparameter information via the `MuyGPyS.gp.deformation` module
     """
 
     def __init__(
         self,
-        metric: DistortionFn = IsotropicDistortion(
+        deformation: DeformationFn = Isotropy(
             F2, length_scale=ScalarHyperparameter(1.0)
         ),
         _backend_fn: Callable = _rbf_fn,
     ):
-        super().__init__(metric=metric)
+        super().__init__(deformation=deformation)
         self._kernel_fn = _backend_fn
         self._make()
 
     def _make(self):
         super()._make_base()
-        self._fn = self.distortion_fn.embed_fn(self._kernel_fn)
+        self._fn = self.deformation.embed_fn(self._kernel_fn)
 
     def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
         """

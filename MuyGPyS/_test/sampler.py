@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from MuyGPyS._test.gp import benchmark_sample, BenchmarkGP
-from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -42,9 +42,7 @@ class UnivariateSampler(SamplerBase):
         view_ub=0.6,
         kernel=Matern(
             nu=ScalarHyperparameter(2.0),
-            metric=IsotropicDistortion(
-                "l2", length_scale=ScalarHyperparameter(1.0)
-            ),
+            deformation=Isotropy(l2, length_scale=ScalarHyperparameter(1.0)),
         ),
         noise=HomoscedasticNoise(1e-14),
         measurement_noise=HomoscedasticNoise(1e-5),
@@ -243,9 +241,7 @@ class UnivariateSampler2D(SamplerBase):
         train_ratio=10,
         kernel=Matern(
             nu=ScalarHyperparameter(2.0),
-            metric=IsotropicDistortion(
-                "l2", length_scale=ScalarHyperparameter(1.0)
-            ),
+            deformation=Isotropy(l2, length_scale=ScalarHyperparameter(1.0)),
         ),
         noise=HomoscedasticNoise(1e-14),
         measurement_noise=HomoscedasticNoise(1e-5),
@@ -478,7 +474,7 @@ class UnivariateSampler2D(SamplerBase):
 
 
 def get_length_scale(muygps):
-    ls = muygps.kernel.distortion_fn.length_scale
+    ls = muygps.kernel.deformation.length_scale
     if isinstance(ls, dict):
         return np.array([ls[x]() for x in ls])
     else:

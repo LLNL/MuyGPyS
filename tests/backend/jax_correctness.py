@@ -94,7 +94,7 @@ from MuyGPyS._test.utils import (
     _make_heteroscedastic_test_nugget,
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distortion import AnisotropicDistortion, IsotropicDistortion
+from MuyGPyS.gp.deformation import Anisotropy, Isotropy
 from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
@@ -156,7 +156,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_muygps_rbf_n(cls):
         return MuyGPS(
             kernel=RBF(
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     F2_n, length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
                 _backend_fn=rbf_fn_n,
@@ -176,11 +176,11 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_muygps_n(cls, nu, noise, metric, nu_bounds="fixed"):
+    def _make_muygps_n(cls, nu, noise, deformation, nu_bounds="fixed"):
         return MuyGPS(
             kernel=Matern(
                 nu=ScalarHyperparameter(nu, nu_bounds),
-                metric=metric,
+                deformation=deformation,
                 _backend_05_fn=matern_05_fn_n,
                 _backend_15_fn=matern_15_fn_n,
                 _backend_25_fn=matern_25_fn_n,
@@ -202,13 +202,13 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_homoscedastic_muygps_n(cls, nu, metric, **kwargs):
+    def _make_homoscedastic_muygps_n(cls, nu, deformation, **kwargs):
         return cls._make_muygps_n(
             nu,
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
-            metric=metric,
+            deformation=deformation,
             **kwargs,
         )
 
@@ -216,7 +216,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_isotropic_muygps_n(cls, nu, **kwargs):
         return cls._make_homoscedastic_muygps_n(
             nu,
-            metric=IsotropicDistortion(
+            deformation=Isotropy(
                 l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
             ),
             **kwargs,
@@ -226,7 +226,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_anisotropic_muygps_n(cls, nu, **kwargs):
         return cls._make_homoscedastic_muygps_n(
             nu,
-            AnisotropicDistortion(
+            deformation=Anisotropy(
                 l2_n,
                 length_scale0=ScalarHyperparameter(cls.length_scale),
                 length_scale1=ScalarHyperparameter(cls.length_scale),
@@ -241,7 +241,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HeteroscedasticNoise(
                 noise, _backend_fn=heteroscedastic_perturb_n
             ),
-            metric=IsotropicDistortion(
+            deformation=Isotropy(
                 l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
             ),
             **kwargs,
@@ -251,7 +251,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_muygps_rbf_j(cls):
         return MuyGPS(
             kernel=RBF(
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     F2_j, length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
                 _backend_fn=rbf_fn_j,
@@ -271,11 +271,11 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_muygps_j(cls, nu, noise, metric, nu_bounds="fixed"):
+    def _make_muygps_j(cls, nu, noise, deformation, nu_bounds="fixed"):
         return MuyGPS(
             kernel=Matern(
                 nu=ScalarHyperparameter(nu, nu_bounds),
-                metric=metric,
+                deformation=deformation,
                 _backend_05_fn=matern_05_fn_j,
                 _backend_15_fn=matern_15_fn_j,
                 _backend_25_fn=matern_25_fn_j,
@@ -297,13 +297,13 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_homoscedastic_muygps_j(cls, nu, metric, **kwargs):
+    def _make_homoscedastic_muygps_j(cls, nu, deformation, **kwargs):
         return cls._make_muygps_j(
             nu,
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_j
             ),
-            metric=metric,
+            deformation=deformation,
             **kwargs,
         )
 
@@ -311,9 +311,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_isotropic_muygps_j(cls, nu, **kwargs):
         return cls._make_homoscedastic_muygps_j(
             nu,
-            IsotropicDistortion(
-                l2_j, length_scale=ScalarHyperparameter(cls.length_scale)
-            ),
+            Isotropy(l2_j, length_scale=ScalarHyperparameter(cls.length_scale)),
             **kwargs,
         )
 
@@ -321,7 +319,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_anisotropic_muygps_j(cls, nu, **kwargs):
         return cls._make_homoscedastic_muygps_j(
             nu,
-            AnisotropicDistortion(
+            Anisotropy(
                 l2_j,
                 length_scale0=ScalarHyperparameter(cls.length_scale),
                 length_scale1=ScalarHyperparameter(cls.length_scale),
@@ -336,7 +334,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HeteroscedasticNoise(
                 noise, _backend_fn=heteroscedastic_perturb_j
             ),
-            metric=IsotropicDistortion(
+            deformation=Isotropy(
                 l2_j, length_scale=ScalarHyperparameter(cls.length_scale)
             ),
             **kwargs,
@@ -1041,7 +1039,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             {
                 "kernel": Matern(
                     nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
-                    metric=IsotropicDistortion(
+                    deformation=Isotropy(
                         l2_n,
                         length_scale=ScalarHyperparameter(cls.length_scale),
                     ),
@@ -1054,7 +1052,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             {
                 "kernel": Matern(
                     nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
-                    metric=IsotropicDistortion(
+                    deformation=Isotropy(
                         l2_n,
                         length_scale=ScalarHyperparameter(cls.length_scale),
                     ),

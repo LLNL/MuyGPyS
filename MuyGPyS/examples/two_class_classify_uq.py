@@ -93,7 +93,7 @@ def do_classify_uq(
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...         metric=IsotropidDistortion(
+        ...         deformation=Isotropy(
         ...             metric=F2,
         ...             length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
         ...         ),
@@ -154,9 +154,9 @@ def do_classify_uq(
             parameter :math:`\\sigma^2` for setting confidence intervals. See
             `MuyGPyS.examples.classify.example_lambdas` for examples.
         k_kwargs:
-            Parameters for the kernel, possibly including kernel type, distance
-            metric, noise and scale hyperparameter specifications, and
-            specifications for kernel hyperparameters. If all of the
+            Parameters for the kernel, possibly including kernel type,
+            deformation function, noise and scale hyperparameter specifications,
+            and specifications for kernel hyperparameters. If all of the
             hyperparameters are fixed or are not given optimization bounds, no
             optimization will occur.
         nn_kwargs:

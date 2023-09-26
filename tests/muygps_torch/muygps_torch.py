@@ -6,7 +6,6 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS.gp.distortion import l2
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS import config
@@ -14,7 +13,7 @@ from MuyGPyS._test.torch_utils import SVDKMultivariateMuyGPs
 from MuyGPyS._test.utils import _check_ndarray, _make_gaussian_data
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.gp.distortion import IsotropicDistortion
+from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.batch import sample_batch
@@ -90,7 +89,7 @@ class RegressTest(parameterized.TestCase):
             {
                 "kernel": Matern(
                     nu=ScalarHyperparameter(model_nu),
-                    metric=IsotropicDistortion(
+                    deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarHyperparameter(model_length_scale),
                     ),
@@ -100,7 +99,7 @@ class RegressTest(parameterized.TestCase):
             {
                 "kernel": Matern(
                     nu=ScalarHyperparameter(model_nu),
-                    metric=IsotropicDistortion(
+                    deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarHyperparameter(model_length_scale),
                     ),
@@ -218,7 +217,7 @@ class MultivariateRegressTest(parameterized.TestCase):
             {
                 "kernel": Matern(
                     nu=ScalarHyperparameter(1.5),
-                    metric=IsotropicDistortion(
+                    deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarHyperparameter(7.2),
                     ),
@@ -228,7 +227,7 @@ class MultivariateRegressTest(parameterized.TestCase):
             {
                 "kernel": Matern(
                     nu=ScalarHyperparameter(0.5),
-                    metric=IsotropicDistortion(
+                    deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarHyperparameter(2.2),
                     ),

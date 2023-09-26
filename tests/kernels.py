@@ -23,12 +23,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.gp.tensors import crosswise_tensor, pairwise_tensor
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter, Scale
 from MuyGPyS.gp.kernels import RBF, Matern
-from MuyGPyS.gp.distortion import (
-    AnisotropicDistortion,
-    IsotropicDistortion,
-    F2,
-    l2,
-)
+from MuyGPyS.gp.deformation import Anisotropy, Isotropy, F2, l2
 from MuyGPyS.neighbors import NN_Wrapper
 
 
@@ -376,13 +371,13 @@ class RBFTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, _ = nbrs_lookup.get_nns(test)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = IsotropicDistortion(F2, **k_kwargs)
-        rbf = RBF(metric=dist_model)
+        deformation_model = Isotropy(F2, **k_kwargs)
+        rbf = RBF(deformation=deformation_model)
         self._check_params_chassis(rbf, **k_kwargs)
         kern = _consistent_unchunk_tensor(rbf(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
-        sk_rbf = sk_RBF(length_scale=dist_model.length_scale())
+        sk_rbf = sk_RBF(length_scale=deformation_model.length_scale())
         sk_kern = mm.array(np.array([sk_rbf(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
@@ -415,10 +410,8 @@ class ParamTest(KernelTest):
         )
     )
     def test_rbf(self, k_kwargs, alt_kwargs):
-        dist_model = IsotropicDistortion(
-            F2, length_scale=k_kwargs["length_scale"]
-        )
-        self._test_chassis(RBF(dist_model), k_kwargs, alt_kwargs)
+        deformation_model = Isotropy(F2, length_scale=k_kwargs["length_scale"])
+        self._test_chassis(RBF(deformation_model), k_kwargs, alt_kwargs)
 
     @parameterized.parameters(
         (
@@ -445,10 +438,8 @@ class ParamTest(KernelTest):
         )
     )
     def test_matern(self, k_kwargs, alt_kwargs):
-        dist_model = IsotropicDistortion(
-            l2, length_scale=k_kwargs["length_scale"]
-        )
-        kern_fn = Matern(metric=dist_model, nu=k_kwargs["nu"])
+        deformation_model = Isotropy(l2, length_scale=k_kwargs["length_scale"])
+        kern_fn = Matern(deformation=deformation_model, nu=k_kwargs["nu"])
         self._test_chassis(kern_fn, k_kwargs, alt_kwargs)
 
     def _test_chassis(self, kern_fn, k_kwargs, alt_kwargs):
@@ -523,16 +514,16 @@ class MaternTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = IsotropicDistortion(
-            l2, length_scale=k_kwargs["length_scale"]
-        )
-        mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
+        deformation_model = Isotropy(l2, length_scale=k_kwargs["length_scale"])
+        mtn = Matern(nu=k_kwargs["nu"], deformation=deformation_model)
         # mtn = Matern(**k_kwargs)
         self._check_params_chassis(mtn, **k_kwargs)
         kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
-        sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=dist_model.length_scale())
+        sk_mtn = sk_Matern(
+            nu=mtn.nu(), length_scale=deformation_model.length_scale()
+        )
         sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
@@ -593,12 +584,12 @@ class AnisotropicShapesTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = AnisotropicDistortion(
+        deformation_model = Anisotropy(
             metric=l2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
-        mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
+        mtn = Matern(nu=k_kwargs["nu"], deformation=deformation_model)
         with self.assertRaisesRegex(ValueError, "Difference tensor of shape "):
             _ = _consistent_unchunk_tensor(mtn(pairwise_diffs))
 
@@ -665,12 +656,12 @@ class AnisotropicTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = AnisotropicDistortion(
+        deformation_model = Anisotropy(
             metric=l2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
-        mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
+        mtn = Matern(nu=k_kwargs["nu"], deformation=deformation_model)
         # mtn = Matern(**k_kwargs)
         self._check_params_chassis(
             mtn,
@@ -763,12 +754,12 @@ class AnisotropicTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = AnisotropicDistortion(
+        deformation_model = Anisotropy(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
-        rbf = RBF(metric=dist_model)
+        rbf = RBF(deformation=deformation_model)
         self._check_params_chassis(
             rbf,
             **{
@@ -856,12 +847,12 @@ class AnisotropicTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model_aniso = AnisotropicDistortion(
+        deformation_model_aniso = Anisotropy(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale0"],
         )
-        rbf_aniso = RBF(metric=dist_model_aniso)
+        rbf_aniso = RBF(deformation=deformation_model_aniso)
         self._check_params_chassis(
             rbf_aniso,
             **{
@@ -871,11 +862,11 @@ class AnisotropicTest(KernelTest):
         )
         kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
 
-        dist_model_iso = IsotropicDistortion(
+        deformation_model_iso = Isotropy(
             metric=F2,
             length_scale=k_kwargs["length_scale0"],
         )
-        rbf_iso = RBF(metric=dist_model_iso)
+        rbf_iso = RBF(deformation=deformation_model_iso)
         self._check_params_chassis(
             rbf_iso,
             **{
@@ -952,12 +943,14 @@ class AnisotropicTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model_aniso = AnisotropicDistortion(
+        deformation_model_aniso = Anisotropy(
             metric=l2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
-        mtn_aniso = Matern(nu=k_kwargs["nu"], metric=dist_model_aniso)
+        mtn_aniso = Matern(
+            nu=k_kwargs["nu"], deformation=deformation_model_aniso
+        )
 
         self._check_params_chassis(
             mtn_aniso,
@@ -969,11 +962,11 @@ class AnisotropicTest(KernelTest):
         )
         kern_aniso = _consistent_unchunk_tensor(mtn_aniso(pairwise_diffs))
 
-        dist_model_iso = IsotropicDistortion(
+        deformation_model_iso = Isotropy(
             metric=l2,
             length_scale=k_kwargs["length_scale0"],
         )
-        mtn_iso = Matern(nu=k_kwargs["nu"], metric=dist_model_iso)
+        mtn_iso = Matern(nu=k_kwargs["nu"], deformation=deformation_model_iso)
 
         self._check_params_chassis(
             mtn_iso,
@@ -1032,12 +1025,12 @@ class AnisotropicTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model_aniso = AnisotropicDistortion(
+        deformation_model_aniso = Anisotropy(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale0"],
         )
-        rbf_aniso = RBF(metric=dist_model_aniso)
+        rbf_aniso = RBF(deformation=deformation_model_aniso)
         self._check_params_chassis(
             rbf_aniso,
             **{
@@ -1047,11 +1040,11 @@ class AnisotropicTest(KernelTest):
         )
         kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
 
-        dist_model_iso = IsotropicDistortion(
+        deformation_model_iso = Isotropy(
             metric=F2,
             length_scale=k_kwargs["length_scale0"],
         )
-        rbf_iso = RBF(metric=dist_model_iso)
+        rbf_iso = RBF(deformation=deformation_model_iso)
         self._check_params_chassis(
             rbf_iso,
             **{

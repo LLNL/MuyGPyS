@@ -86,10 +86,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 
-from MuyGPyS.gp.distortion import (
-    AnisotropicDistortion,
-    IsotropicDistortion,
-)
+from MuyGPyS.gp.deformation import Anisotropy, Isotropy
 from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
@@ -136,7 +133,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_muygps_rbf_n(cls):
         return MuyGPS(
             kernel=RBF(
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     F2_n, length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
                 _backend_fn=rbf_fn_n,
@@ -156,11 +153,11 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_muygps_n(cls, nu, noise, metric):
+    def _make_muygps_n(cls, nu, noise, deformation):
         return MuyGPS(
             kernel=Matern(
                 nu=ScalarHyperparameter(nu),
-                metric=metric,
+                deformation=deformation,
                 _backend_05_fn=matern_05_fn_n,
                 _backend_15_fn=matern_15_fn_n,
                 _backend_25_fn=matern_25_fn_n,
@@ -182,20 +179,20 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_homoscedastic_muygps_n(cls, nu, metric):
+    def _make_homoscedastic_muygps_n(cls, nu, deformation):
         return cls._make_muygps_n(
             nu,
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
-            metric=metric,
+            deformation=deformation,
         )
 
     @classmethod
     def _make_isotropic_muygps_n(cls, nu):
         return cls._make_homoscedastic_muygps_n(
             nu,
-            metric=IsotropicDistortion(
+            deformation=Isotropy(
                 l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
             ),
         )
@@ -204,7 +201,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_anisotropic_muygps_n(cls, nu):
         return cls._make_homoscedastic_muygps_n(
             nu,
-            AnisotropicDistortion(
+            Anisotropy(
                 l2_n,
                 length_scale0=ScalarHyperparameter(cls.length_scale),
                 length_scale1=ScalarHyperparameter(cls.length_scale),
@@ -218,7 +215,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HeteroscedasticNoise(
                 noise, _backend_fn=heteroscedastic_perturb_n
             ),
-            metric=IsotropicDistortion(
+            deformation=Isotropy(
                 l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
             ),
         )
@@ -227,7 +224,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_muygps_rbf_t(cls):
         return MuyGPS(
             kernel=RBF(
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     F2_t, length_scale=ScalarHyperparameter(cls.length_scale)
                 ),
                 _backend_fn=rbf_fn_t,
@@ -247,11 +244,11 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_muygps_t(cls, nu, noise, metric):
+    def _make_muygps_t(cls, nu, noise, deformation):
         return MuyGPS(
             kernel=Matern(
                 nu=ScalarHyperparameter(nu),
-                metric=metric,
+                deformation=deformation,
                 _backend_05_fn=matern_05_fn_t,
                 _backend_15_fn=matern_15_fn_t,
                 _backend_25_fn=matern_25_fn_t,
@@ -273,29 +270,27 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_homoscedastic_muygps_t(cls, nu, metric):
+    def _make_homoscedastic_muygps_t(cls, nu, deformation):
         return cls._make_muygps_t(
             nu,
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_t
             ),
-            metric=metric,
+            deformation=deformation,
         )
 
     @classmethod
     def _make_isotropic_muygps_t(cls, nu):
         return cls._make_homoscedastic_muygps_t(
             nu,
-            IsotropicDistortion(
-                l2_t, length_scale=ScalarHyperparameter(cls.length_scale)
-            ),
+            Isotropy(l2_t, length_scale=ScalarHyperparameter(cls.length_scale)),
         )
 
     @classmethod
     def _make_anisotropic_muygps_t(cls, nu):
         return cls._make_homoscedastic_muygps_t(
             nu,
-            AnisotropicDistortion(
+            Anisotropy(
                 l2_t,
                 length_scale0=ScalarHyperparameter(cls.length_scale),
                 length_scale1=ScalarHyperparameter(cls.length_scale),
@@ -309,7 +304,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HeteroscedasticNoise(
                 noise, _backend_fn=heteroscedastic_perturb_t
             ),
-            metric=IsotropicDistortion(
+            deformation=Isotropy(
                 l2_t, length_scale=ScalarHyperparameter(cls.length_scale)
             ),
         )
@@ -918,7 +913,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             {
                 "kernel": Matern(
                     nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
-                    metric=IsotropicDistortion(
+                    deformation=Isotropy(
                         l2_n,
                         length_scale=ScalarHyperparameter(cls.length_scale),
                     ),
@@ -931,7 +926,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             {
                 "kernel": Matern(
                     nu=ScalarHyperparameter(cls.nu, cls.nu_bounds),
-                    metric=IsotropicDistortion(
+                    deformation=Isotropy(
                         l2_n,
                         length_scale=ScalarHyperparameter(cls.length_scale),
                     ),

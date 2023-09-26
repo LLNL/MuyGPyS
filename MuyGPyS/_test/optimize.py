@@ -10,7 +10,7 @@ import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 from MuyGPyS._test.utils import _check_ndarray, _sq_rel_err
 from MuyGPyS._test.gp import benchmark_sample_full, BenchmarkGP
-from MuyGPyS.gp.distortion import IsotropicDistortion, l2
+from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -64,7 +64,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.gp = BenchmarkGP(
             kernel=Matern(
                 nu=ScalarHyperparameter(cls.params["nu"]()),
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     metric=l2,
                     length_scale=ScalarHyperparameter(
                         cls.params["length_scale"]()

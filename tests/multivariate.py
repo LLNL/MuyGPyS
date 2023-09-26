@@ -30,7 +30,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion, l2
+from MuyGPyS.gp.deformation import Isotropy, Anisotropy, l2
 from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -48,7 +48,7 @@ class InitTest(parameterized.TestCase):
                 {
                     "kernel": Matern(
                         nu=ScalarHyperparameter(1.0),
-                        metric=IsotropicDistortion(
+                        deformation=Isotropy(
                             metric=l2, length_scale=ScalarHyperparameter(7.2)
                         ),
                     ),
@@ -57,7 +57,7 @@ class InitTest(parameterized.TestCase):
                 {
                     "kernel": Matern(
                         nu=ScalarHyperparameter(1.2),
-                        metric=IsotropicDistortion(
+                        deformation=Isotropy(
                             metric=l2, length_scale=ScalarHyperparameter(2.2)
                         ),
                     ),
@@ -68,7 +68,7 @@ class InitTest(parameterized.TestCase):
                 {
                     "kernel": Matern(
                         nu=ScalarHyperparameter(1.0),
-                        metric=IsotropicDistortion(
+                        deformation=Isotropy(
                             metric=l2, length_scale=ScalarHyperparameter(7.2)
                         ),
                     ),
@@ -103,7 +103,7 @@ class ScaleTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(1.5),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(7.2),
                             ),
@@ -114,7 +114,7 @@ class ScaleTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(2.2),
                             ),
@@ -125,7 +125,7 @@ class ScaleTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(mm.inf),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(12.4),
                             ),
@@ -136,7 +136,7 @@ class ScaleTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(1.5),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(7.2),
                                 length_scale1=ScalarHyperparameter(0.5),
@@ -148,7 +148,7 @@ class ScaleTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(2.2),
                                 length_scale1=ScalarHyperparameter(0.5),
@@ -160,7 +160,7 @@ class ScaleTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(mm.inf),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(12.4),
                                 length_scale1=ScalarHyperparameter(0.5),
@@ -243,7 +243,7 @@ class OptimTest(parameterized.TestCase):
                         {
                             "kernel": Matern(
                                 nu=ScalarHyperparameter("sample", (1e-2, 1e0)),
-                                metric=IsotropicDistortion(
+                                deformation=Isotropy(
                                     metric=l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
@@ -253,7 +253,7 @@ class OptimTest(parameterized.TestCase):
                         {
                             "kernel": Matern(
                                 nu=ScalarHyperparameter("sample", (1e-2, 1e0)),
-                                metric=IsotropicDistortion(
+                                deformation=Isotropy(
                                     metric=l2,
                                     length_scale=ScalarHyperparameter(0.7),
                                 ),
@@ -376,7 +376,7 @@ class ClassifyTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.63),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
@@ -386,7 +386,7 @@ class ClassifyTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.79),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(0.7),
                             ),
@@ -396,7 +396,7 @@ class ClassifyTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.63),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(1.5),
                                 length_scale1=ScalarHyperparameter(0.5),
@@ -407,7 +407,7 @@ class ClassifyTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.79),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(0.7),
                                 length_scale1=ScalarHyperparameter(1.5),
@@ -473,7 +473,7 @@ class RegressTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(1.5),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
@@ -483,7 +483,7 @@ class RegressTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             ScalarHyperparameter(0.5),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(0.7),
                             ),
@@ -493,7 +493,7 @@ class RegressTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(1.5),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(1.5),
                                 length_scale1=ScalarHyperparameter(0.5),
@@ -504,7 +504,7 @@ class RegressTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             ScalarHyperparameter(0.5),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(0.7),
                                 length_scale1=ScalarHyperparameter(1.5),
@@ -583,7 +583,7 @@ class MakeClassifierTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
@@ -593,7 +593,7 @@ class MakeClassifierTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.8),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(0.7),
                             ),
@@ -603,7 +603,7 @@ class MakeClassifierTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(1.5),
                                 length_scale1=ScalarHyperparameter(0.5),
@@ -614,7 +614,7 @@ class MakeClassifierTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.8),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(0.7),
                                 length_scale1=ScalarHyperparameter(1.5),
@@ -705,7 +705,7 @@ class MakeRegressorTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(1.5),
                             ),
@@ -716,7 +716,7 @@ class MakeRegressorTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.8),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarHyperparameter(0.7),
                             ),
@@ -727,7 +727,7 @@ class MakeRegressorTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(1.5),
                                 length_scale1=ScalarHyperparameter(0.5),
@@ -739,7 +739,7 @@ class MakeRegressorTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.8),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarHyperparameter(0.7),
                                 length_scale1=ScalarHyperparameter(1.5),

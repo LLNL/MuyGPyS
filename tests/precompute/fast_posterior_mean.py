@@ -16,7 +16,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_data,
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
-from MuyGPyS.gp.distortion import IsotropicDistortion, l2
+from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -41,7 +41,7 @@ class MakeFastRegressorTest(parameterized.TestCase):
                 {
                     "kernel": Matern(
                         nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
-                        metric=IsotropicDistortion(
+                        deformation=Isotropy(
                             l2, length_scale=ScalarHyperparameter(1.5)
                         ),
                     ),
@@ -124,7 +124,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 l2, length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
@@ -134,7 +134,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.8),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 l2, length_scale=ScalarHyperparameter(0.7)
                             ),
                         ),

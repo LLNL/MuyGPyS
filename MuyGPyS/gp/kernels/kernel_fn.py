@@ -19,8 +19,8 @@ Example:
     >>> from MuyGPyS.gp.kernels import Matern
     >>> kern = Matern(
     ...     nu=ScalarHyperparameter("log_sample", (0.1, 2.5)),
-    ...     metric=IsotropicDistortion(
-    ...         l2,
+    ...     deformation=Isotropy(
+    ...         metric=l2,
     ...         length_scale=ScalarHyperparameter(1.0),
     ...     ),
     ... )
@@ -42,7 +42,7 @@ Example:
 from typing import Callable, Dict, List, Tuple
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.gp.distortion import DistortionFn
+from MuyGPyS.gp.deformation import DeformationFn
 
 
 class KernelFn:
@@ -59,17 +59,17 @@ class KernelFn:
 
     def __init__(
         self,
-        metric: DistortionFn,
+        deformation: DeformationFn,
     ):
         """
         Initialize dict holding hyperparameters.
         """
         self._hyperparameters: Dict = dict()
-        self.distortion_fn = metric
+        self.deformation = deformation
         self._make_base()
 
     def _make_base(self):
-        self.distortion_fn.populate_length_scale(self._hyperparameters)
+        self.deformation.populate_length_scale(self._hyperparameters)
 
     def _make(self):
         raise NotImplementedError("_make is not implemented for base KernelFn")
@@ -110,7 +110,7 @@ class KernelFn:
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        return self.distortion_fn.get_opt_params()
+        return self.deformation.get_opt_params()
 
     def __str__(self) -> str:
         """

@@ -20,9 +20,9 @@ from MuyGPyS._test.utils import (
     _basic_opt_fn_and_kwarg_options,
 )
 
-from MuyGPyS.gp.distortion import (
-    IsotropicDistortion,
-    AnisotropicDistortion,
+from MuyGPyS.gp.deformation import (
+    Isotropy,
+    Anisotropy,
     F2,
     l2,
 )
@@ -70,7 +70,7 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 l2, length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
@@ -82,7 +82,7 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
-                            metric=AnisotropicDistortion(
+                            deformation=Anisotropy(
                                 l2,
                                 length_scale0=ScalarHyperparameter(1.5),
                                 length_scale1=ScalarHyperparameter(1.5),
@@ -147,7 +147,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                         {
                             "kernel": Matern(
                                 nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
-                                metric=IsotropicDistortion(
+                                deformation=Isotropy(
                                     l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
@@ -157,7 +157,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                         {
                             "kernel": Matern(
                                 nu=ScalarHyperparameter(0.5),
-                                metric=IsotropicDistortion(
+                                deformation=Isotropy(
                                     l2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 ),
@@ -171,7 +171,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                     [
                         {
                             "kernel": RBF(
-                                metric=IsotropicDistortion(
+                                deformation=Isotropy(
                                     F2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 )
@@ -180,7 +180,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                         },
                         {
                             "kernel": RBF(
-                                metric=IsotropicDistortion(
+                                deformation=Isotropy(
                                     F2,
                                     length_scale=ScalarHyperparameter(1.5),
                                 )
@@ -250,7 +250,7 @@ class StargalFastTest(FastPosteriorMeanAPITest):
                     {
                         "kernel": Matern(
                             nu=ScalarHyperparameter(0.5),
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 l2, length_scale=ScalarHyperparameter(1.5)
                             ),
                         ),
@@ -261,7 +261,7 @@ class StargalFastTest(FastPosteriorMeanAPITest):
                 #     1.0,
                 #     {
                 #         "kernel": RBF(
-                #             metric=IsotropicDistortion(
+                #             deformation=Isotropy(
                 #                 F2, length_scale=ScalarHyperparameter(1.5)
                 #             )
                 #         ),

@@ -34,7 +34,7 @@ class MultivariateMuyGPS:
         ...     "noise": ScalarHyperparameter(1e-5),
         ...     "kernel": Matern(
         ...         nu=ScalarHyperparameter(0.67, (0.1, 2.5)),
-        ...         metric=IsotropicDistortion(
+        ...         deformation=Isotropy(
         ...             metric=l2,
         ...             length_scale=ScalarHyperparameter(0.2),
         ...         scale=AnalyticScale(),
@@ -44,7 +44,7 @@ class MultivariateMuyGPS:
         ...     "noise": ScalarHyperparameter(1e-5),
         ...     "kernel": Matern(
         ...         nu=ScalarHyperparameter(0.67, (0.1, 2.5)),
-        ...         metric=IsotropicDistortion(
+        ...         deformation=Isotropy(
         ...             metric=l2,
         ...             length_scale=ScalarHyperparameter(0.2),
         ...         scale=AnalyticScale(),

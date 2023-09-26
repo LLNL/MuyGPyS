@@ -17,9 +17,6 @@ from MuyGPyS._src.mpi_utils import (
     _consistent_unchunk_tensor,
     _warn0,
 )
-from MuyGPyS.gp.distortion import F2, l2
-
-# from MuyGPyS._test.gp import BenchmarkGP
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_fn_and_kwarg_options,
@@ -34,7 +31,12 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion
+from MuyGPyS.gp.deformation import (
+    Isotropy,
+    Anisotropy,
+    F2,
+    l2,
+)
 from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
@@ -81,19 +83,19 @@ class GPInitTest(parameterized.TestCase):
         for kernel in (
             Matern(
                 nu=ScalarHyperparameter(1.0, (1e-2, 5e4)),
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             Matern(
                 nu=ScalarHyperparameter(1.0),
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             Matern(
                 nu=ScalarHyperparameter(1.0, (1e-2, 5e4)),
-                metric=AnisotropicDistortion(
+                deformation=Anisotropy(
                     l2,
                     length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0)),
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),
@@ -101,24 +103,24 @@ class GPInitTest(parameterized.TestCase):
             ),
             Matern(
                 nu=ScalarHyperparameter(1.0),
-                metric=AnisotropicDistortion(
+                deformation=Anisotropy(
                     l2,
                     length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0)),
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),
                 ),
             ),
             RBF(
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             RBF(
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             RBF(
-                metric=AnisotropicDistortion(
+                deformation=Anisotropy(
                     F2,
                     length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0)),
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),
@@ -167,36 +169,36 @@ class GPInitTest(parameterized.TestCase):
         for kernel in (
             Matern(
                 nu=ScalarHyperparameter("sample", (1e-2, 5e4)),
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             RBF(
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             Matern(
                 nu=ScalarHyperparameter("log_sample", (1e-2, 5e4)),
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     l2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 ),
             ),
             RBF(
-                metric=IsotropicDistortion(
+                deformation=Isotropy(
                     F2, length_scale=ScalarHyperparameter(2.0, (0.0, 3.0))
                 )
             ),
             Matern(
                 nu=ScalarHyperparameter("log_sample", (1e-2, 5e4)),
-                metric=AnisotropicDistortion(
+                deformation=Anisotropy(
                     l2,
                     length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0)),
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),
                 ),
             ),
             RBF(
-                metric=AnisotropicDistortion(
+                deformation=Anisotropy(
                     F2,
                     length_scale0=ScalarHyperparameter(2.0, (0.0, 3.0)),
                     length_scale1=ScalarHyperparameter(2.0, (0.0, 3.0)),

@@ -9,7 +9,7 @@ gp
    :maxdepth: 2
    :caption: Contents:
    
-   gp/distortion
+   gp/deformation
    gp/tensors
    gp/hyperparameter
    gp/kernels

@@ -183,7 +183,7 @@ def do_fast_posterior_mean(
     Example:
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
         >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
@@ -195,7 +195,8 @@ def do_fast_posterior_mean(
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...         metric=IsotropicDistortion(
+        ...         deformation=Isotropy(
+        ...             metric=F2,
         ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),

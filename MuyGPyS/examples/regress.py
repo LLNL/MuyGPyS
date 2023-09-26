@@ -51,7 +51,7 @@ def make_regressor(
 
     Example:
         >>> from MuyGPyS.examples.regress import make_regressor
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
         >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
@@ -62,7 +62,8 @@ def make_regressor(
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...         metric=IsotropicDistortion(
+        ...         deformation=Isotropy(
+        ...             metric=F2,
         ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),
@@ -101,9 +102,9 @@ def make_regressor(
             Ignored if all of the parameters specified by argument `k_kwargs`
             are fixed.
         k_kwargs:
-            Parameters for the kernel, possibly including kernel type, distance
-            metric, noise and scale hyperparameter specifications, and
-            specifications for kernel hyperparameters. See
+            Parameters for the kernel, possibly including kernel type,
+            deformation function, noise and scale hyperparameter specifications,
+            and specifications for kernel hyperparameters. See
             :ref:`MuyGPyS-gp-kernels` for examples and requirements. If all of
             the hyperparameters are fixed or are not given optimization bounds,
             no optimization will occur.
@@ -213,7 +214,7 @@ def make_multivariate_regressor(
 
     Example:
         >>> from MuyGPyS.examples.regress import make_multivariate_regressor
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
         >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
@@ -224,7 +225,8 @@ def make_multivariate_regressor(
         >>> k_args = [
         ...         {
         ...             "kernel": RBF(
-        ...                 metric=IsotropicDistortion(
+        ...                 deformation=Isotropy(
+        ...                     metric=F2,
         ...                     length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
         ...                 )
         ...             ),
@@ -233,8 +235,9 @@ def make_multivariate_regressor(
         ...         },
         ...         {
         ...             "kernel": RBF(
-        ...                 metric=IsotropicDistortion(
-        ...                     length_scale=ScalarHyperparameter(1.5, (1e-2, 1e2))
+        ...                 deformation=Isotropy(
+        ...                     metric=F2,
+        ...                     length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
         ...                 )
         ...             ),
         ...             "noise": HomoscedasticNoise(1e-5),
@@ -478,7 +481,7 @@ def do_regress(
 
     Example:
         >>> from MuyGPyS.examples.regress import do_regress
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
         >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
@@ -491,7 +494,8 @@ def do_regress(
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...         metric=IsotropicDistortion(
+        ...         deformation=Isotropy(
+        ...             metric=F2,
         ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),

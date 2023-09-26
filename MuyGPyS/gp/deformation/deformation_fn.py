@@ -9,12 +9,13 @@ from typing import Callable, Dict, List, Tuple
 import MuyGPyS._src.math as mm
 
 
-class DistortionFn:
+class DeformationFn:
     """
-    The base distortion functor class.
+    The base deformation functor class.
 
     Contains some function :math:`d_\\ell(\\cdot, \\cdot)` that computes scalar
-    distances of pairs of points.
+    similarities of pairs of points, possibly applying a non-Euclidean
+    deformation to the feature space.
     """
 
     def __init__(
@@ -26,7 +27,7 @@ class DistortionFn:
         self._dist_fn = metric
 
     def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
-        raise NotImplementedError("Cannot call DistortionFn base class!")
+        raise NotImplementedError("Cannot call DeformationFn base class!")
 
     def get_opt_params(
         self,
@@ -44,25 +45,25 @@ class DistortionFn:
                 A list of unfixed hyperparameter bound tuples.
         """
         raise NotImplementedError(
-            "Cannot call DistortionFn base class functions!"
+            "Cannot call DeformationFn base class functions!"
         )
 
     def populate_length_scale(self, hyperparameters: Dict) -> None:
         """
         Populates the hyperparameter dictionary of a KernelFn object with any
-        parameters of the DistortionFn object.
+        parameters of the DeformationFn object.
 
         Args:
             hyperparameters:
                 A dict containing the hyperparameters of a KernelFn object.
         """
         raise NotImplementedError(
-            "Cannot call DistortionFn base class functions!"
+            "Cannot call DeformationFn base class functions!"
         )
 
     def embed_fn(self, fn: Callable) -> Callable:
         """
-        Augments a function to automatically apply the distortion to a
+        Augments a function to automatically apply the deformation to a
         difference tensor.
 
         Args:
@@ -72,9 +73,9 @@ class DistortionFn:
                 tensor `diffs`.
 
         Returns:
-            A new Callable that applies the distortion to `diffs`, possibly
+            A new Callable that applies the deformation to `diffs`, possibly
             changing its tensor dimensionality.
         """
         raise NotImplementedError(
-            "Cannot call DistortionFn base class functions!"
+            "Cannot call DeformationFn base class functions!"
         )
