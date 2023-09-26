@@ -18,7 +18,7 @@ class Anisotropy(DeformationFn):
     An anisotropic deformation model.
 
     Anisotropy parameterizes a scaled elementwise distance function
-    :math:`d_\ell(\\cdot, \\cdot)`, and is paramterized by a vector-valued
+    :math:`d_\\ell(\\cdot, \\cdot)`, and is paramterized by a vector-valued
     :math:`\\mathbf{\\ell}>0` length scale hyperparameter.
 
     .. math::
