@@ -4,19 +4,19 @@
 # SPDX-License-Identifier: MIT
 
 """
-Sigma Square hyperparameter
+Variance scale hyperparameter
 """
 
 from typing import Callable, Tuple, Type
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import _fullname
-from MuyGPyS._src.optimize.sigma_sq import _analytic_sigma_sq_optim
+from MuyGPyS._src.optimize.scale import _analytic_scale_optim
 
 
-class SigmaSq:
+class ScaleFn:
     """
-    A :math:`\\sigma^2` covariance scale parameter.
+    A :math:`\\sigma^2` covariance scale parameter base functor.
 
     :math:`\\sigma^2` is a scaling parameter that one multiplies with the
     found diagonal variances of a :class:`MuyGPyS.gp.muygps.MuyGPS` or
@@ -61,13 +61,13 @@ class SigmaSq:
         """
         if not isinstance(val, self._backend_ndarray):
             raise ValueError(
-                f"Expected {_fullname(self._backend_ndarray)} for SigmaSq "
-                f"value update, not {_fullname(val.__class__)}"
+                f"Expected {_fullname(self._backend_ndarray)} for variance "
+                f"scale value update, not {_fullname(val.__class__)}"
             )
         if self.val.shape != val.shape:
             raise ValueError(
-                f"Bad attempt to assign SigmaSq of shape {self.val.shape} a "
-                f"value of shape {val.shape}"
+                "Bad attempt to assign variance scale of shape "
+                f"{self.val.shape} a value of shape {val.shape}"
             )
         if val.dtype != self._backend_ftype:
             val = self._backend_farray(val)
@@ -96,16 +96,16 @@ class SigmaSq:
     @property
     def shape(self) -> Tuple[int, ...]:
         """
-        Report the shape of the SigmaSq value.
+        Report the shape of the scale parameter.
 
         Returns:
-            The shape of the SigmaSq value.
+            The shape of the scale parameter.
         """
         return self.val.shape
 
     def scale_fn(self, fn: Callable) -> Callable:
         """
-        Modify a function to outer product its output with `sigma_sq`.
+        Modify a function to outer product its output with `scale`.
 
         Args:
             fn:
@@ -115,23 +115,53 @@ class SigmaSq:
             A function that returns the outer product of the output of `fn`
         """
 
-        def scaled_fn(*args, sigma_sq=self(), **kwargs):
-            return self._backend_outer(fn(*args, **kwargs), sigma_sq)
+        def scaled_fn(*args, scale=self(), **kwargs):
+            return self._backend_outer(fn(*args, **kwargs), scale)
 
         return scaled_fn
 
     def get_opt_fn(self, muygps) -> Callable:
-        def noop_sigma_sq_opt_fn(K, nn_targets, *args, **kwargs):
-            return muygps.sigma_sq()
+        def noop_scale_opt_fn(K, nn_targets, *args, **kwargs):
+            return muygps.scale()
 
-        return noop_sigma_sq_opt_fn
+        return noop_scale_opt_fn
 
 
-class AnalyticSigmaSq(SigmaSq):
+class FixedScale(ScaleFn):
+    """
+    A :math:`\\sigma^2` covariance scale parameter.
+
+    A `Scale` parameter with a null optimization method. This parameter is
+    therefore insensitive to optimization.
+
+    Args:
+        response_count:
+            The integer number of response dimensions.
+    """
+
+    def get_opt_fn(self, muygps) -> Callable:
+        """
+        Return a function that optimizes the value of the variance scale.
+
+        Args:
+            muygps:
+                A model to be ignored.
+
+        Returns:
+            A function that always returns the value of this scale parameter.
+        """
+
+        def noop_scale_opt_fn(K, nn_targets, *args, **kwargs):
+            return muygps.scale()
+
+        return noop_scale_opt_fn
+
+
+class AnalyticScale(ScaleFn):
     """
     An optimizable :math:`\\sigma^2` covariance scale parameter.
 
-    Identical to :class:`~MuyGPyS.gp.sigma_sq.SigmaSq`, save that its
+    Identical to :class:`~MuyGPyS.gp.scale.FixedScale`, save that its
     `get_opt_fn` method performs an analytic optimization.
 
     Args:
@@ -168,7 +198,7 @@ class AnalyticSigmaSq(SigmaSq):
             `(batch_count, nn_count, response_count)` tensor `nn_targets`.
         """
 
-        def analytic_sigma_sq_opt_fn(K, nn_targets, *args, **kwargs):
-            return _analytic_sigma_sq_optim(muygps.eps.perturb(K), nn_targets)
+        def analytic_scale_opt_fn(K, nn_targets, *args, **kwargs):
+            return _analytic_scale_optim(muygps.noise.perturb(K), nn_targets)
 
-        return analytic_sigma_sq_opt_fn
+        return analytic_scale_opt_fn

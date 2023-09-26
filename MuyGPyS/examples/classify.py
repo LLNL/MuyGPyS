@@ -26,7 +26,7 @@ from MuyGPyS.examples.from_indices import posterior_mean_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
+from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.batch import get_balanced_batch
 from MuyGPyS.optimize.loss import LossFn, cross_entropy_fn
 
@@ -37,7 +37,7 @@ def make_classifier(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = cross_entropy_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -53,21 +53,22 @@ def make_classifier(
 
     Example:
         >>> from MuyGPyS.examples.regress import make_classifier
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
-        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
+        >>> from MuyGPyS.gp.hyperparameter import Parameter
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
-        >>> from MuyGPyS.optimize import Bayes_optimize_fn
+        >>> from MuyGPyS.optimize import Bayes_optimize
         >>> from MuyGPyS.examples.classify import make_classifier
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...         metric=IsotropicDistortion(
-        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...         deformation=Isotropy(
+        ...             metric=F2,
+        ...             length_scale=Parameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),
-        ...     "eps": HomoscedasticNoise(1e-5),
+        ...     "noise": HomoscedasticNoise(1e-5),
         ... }
         >>> muygps, nbrs_lookup = make_classifier(
         ...         train_features,
@@ -75,7 +76,7 @@ def make_classifier(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=cross_entropy_fn,
-        ...         opt_fn=Bayes_optimize_fn,
+        ...         opt_fn=Bayes_optimize,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -101,9 +102,9 @@ def make_classifier(
             Ignored if all of the parameters specified by argument `k_kwargs`
             are fixed.
         k_kwargs:
-            Parameters for the kernel, possibly including kernel type, distance
-            metric, epsilon and sigma hyperparameter specifications, and
-            specifications for kernel hyperparameters. See
+            Parameters for the kernel, possibly including kernel type,
+            deformation function, noise and scale hyperparameter specifications,
+            and specifications for kernel hyperparameters. See
             :ref:`MuyGPyS-gp-kernels` for examples and requirements. If all of
             the hyperparameters are fixed or are not given optimization bounds,
             no optimization will occur.
@@ -185,7 +186,7 @@ def make_multivariate_classifier(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = cross_entropy_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     k_args: Union[List[Dict], Tuple[Dict, ...]] = list(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -201,32 +202,32 @@ def make_multivariate_classifier(
 
     Example:
         >>> from MuyGPyS.examples.classify import make_multivariate_classifier
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
-        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
+        >>> from MuyGPyS.gp.hyperparameter import Parameter
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
-        >>> from MuyGPyS.optimize import Bayes_optimize_fn
+        >>> from MuyGPyS.optimize import Bayes_optimize
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_args = [
-        ...         {
-        ...             "kernel": RBF(
-        ...                 metric=IsotropicDistortion(
-        ...                     length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
-        ...                 )
+        ...     {
+        ...         "kernel": RBF(
+        ...             deformation=Isotropy(
+        ...                 metric=F2,
+        ...                 length_scale=Parameter(0.5, (0.01, 1)),
         ...             ),
-        ...             "eps": HomoscedasticNoise(1e-5),
-        ...             "sigma_sq": AnalyticSigmaSq(),
-        ...         },
-        ...         {
-        ...             "kernel": RBF(
-        ...                 metric=IsotropicDistortion(
-        ...                     length_scale=ScalarHyperparameter(1.5, (1e-2, 1e2))
-        ...                 )
+        ...         )
+        ...         "noise": HomoscedasticNoise(1e-5),
+        ...     },
+        ...     {
+        ...         "kernel": RBF(
+        ...             deformation=Isotropy(
+        ...                 metric=F2,
+        ...                 length_scale=Parameter(0.5, (0.01, 1)),
         ...             ),
-        ...             "eps": HomoscedasticNoise(1e-5),
-        ...             "sigma_sq": AnalyticSigmaSq(),
-        ...         },
+        ...         )
+        ...         "noise": HomoscedasticNoise(1e-5),
+        ...     },
         ... ]
         >>> mmuygps, nbrs_lookup = make_multivariate_classifier(
         ...         train_features,
@@ -234,7 +235,7 @@ def make_multivariate_classifier(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=cross_entropy_fn,
-        ...         opt_fn=Bayes_optimize_fn,
+        ...         opt_fn=Bayes_optimize,
         ...         k_args=k_args,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -262,7 +263,7 @@ def make_multivariate_classifier(
         k_args:
             A list of `response_count` dicts containing kernel initialization
             keyword arguments. Each dict specifies parameters for the kernel,
-            possibly including epsilon and sigma hyperparameter specifications
+            possibly including noise and scale hyperparameter specifications
             and specifications for specific kernel hyperparameters. If all of
             the hyperparameters are fixed or are not given optimization bounds,
             no optimization will occur.
@@ -354,7 +355,7 @@ def _decide_and_make_classifier(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = cross_entropy_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -402,7 +403,7 @@ def do_classify(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = cross_entropy_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -419,21 +420,22 @@ def do_classify(
     Example:
         >>> import numpy as np
         >>> from MuyGPyS.examples.classify import do_classify
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
-        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
+        >>> from MuyGPyS.gp.hyperparameter import Parameter
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
-        >>> from MuyGPyS.optimize import Bayes_optimize_fn
+        >>> from MuyGPyS.optimize import Bayes_optimize
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> test_features, test_responses = make_test()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...         metric=IsotropicDistortion(
-        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
-        ...         )
-        ...     ),
-        ...     "eps": HomoscedasticNoise(1e-5),
+        ...         deformation=Isotropy(
+        ...             metric=F2,
+        ...             length_scale=Parameter(0.5, (0.01, 1)),
+        ...         ),
+        ...     )
+        ...     "noise": HomoscedasticNoise(1e-5),
         ... }
         >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
         ...         test_features,
@@ -442,7 +444,7 @@ def do_classify(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=cross_entropy_fn,
-        ...         opt_fn=Bayes_optimize_fn,
+        ...         opt_fn=Bayes_optimize,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -475,13 +477,12 @@ def do_classify(
             Ignored if all of the parameters specified by argument `k_kwargs`
             are fixed.
         k_kwargs:
-            Parameters for the kernel, possibly including kernel type, distance
-            metric, epsilon and sigma hyperparameter specifications, and
-            specifications for kernel hyperparameters. If all of the
+            Parameters for the kernel, possibly including kernel type,
+            deformation function, noise and scale hyperparameter specifications,
+            and specifications for kernel hyperparameters. If all of the
             hyperparameters are fixed or are not given optimization bounds, no
-            optimization will occur. If `"kern"` is specified and `"k_kwargs"`
-            is a list of such dicts, will create a multivariate classifier
-            model.
+            optimization will occur. If `"k_kwargs"` is a list of such dicts,
+            will create a multivariate classifier model.
         nn_kwargs:
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and

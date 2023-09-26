@@ -19,8 +19,8 @@ from MuyGPyS.examples.two_class_classify_uq import (
     do_uq,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion, l2
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.deformation import Isotropy, Anisotropy, l2
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
@@ -52,23 +52,21 @@ class ClassifyTest(parameterized.TestCase):
             for k_kwargs in (
                 {
                     "kernel": Matern(
-                        nu=ScalarHyperparameter(0.38),
-                        metric=IsotropicDistortion(
-                            l2, length_scale=ScalarHyperparameter(1.5)
-                        ),
+                        nu=ScalarParam(0.38),
+                        deformation=Isotropy(l2, length_scale=ScalarParam(1.5)),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": Matern(
-                        nu=ScalarHyperparameter(0.38),
-                        metric=AnisotropicDistortion(
+                        nu=ScalarParam(0.38),
+                        deformation=Anisotropy(
                             l2,
-                            length_scale0=ScalarHyperparameter(1.5),
-                            length_scale1=ScalarHyperparameter(0.5),
+                            length_scale0=ScalarParam(1.5),
+                            length_scale1=ScalarParam(0.5),
                         ),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -121,41 +119,37 @@ class ClassifyUQTest(parameterized.TestCase):
             for k_kwargs in (
                 {
                     "kernel": Matern(
-                        nu=ScalarHyperparameter(0.38),
-                        metric=IsotropicDistortion(
-                            l2, length_scale=ScalarHyperparameter(1.5)
-                        ),
+                        nu=ScalarParam(0.38),
+                        deformation=Isotropy(l2, length_scale=ScalarParam(1.5)),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": RBF(
-                        metric=IsotropicDistortion(
-                            l2, length_scale=ScalarHyperparameter(1.5)
-                        )
+                        deformation=Isotropy(l2, length_scale=ScalarParam(1.5))
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": Matern(
-                        nu=ScalarHyperparameter(0.38),
-                        metric=AnisotropicDistortion(
+                        nu=ScalarParam(0.38),
+                        deformation=Anisotropy(
                             l2,
-                            length_scale0=ScalarHyperparameter(1.5),
-                            length_scale1=ScalarHyperparameter(0.5),
+                            length_scale0=ScalarParam(1.5),
+                            length_scale1=ScalarParam(0.5),
                         ),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": RBF(
-                        metric=AnisotropicDistortion(
+                        deformation=Anisotropy(
                             l2,
-                            length_scale0=ScalarHyperparameter(1.5),
-                            length_scale1=ScalarHyperparameter(0.5),
+                            length_scale0=ScalarParam(1.5),
+                            length_scale1=ScalarParam(0.5),
                         )
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
             )
         )

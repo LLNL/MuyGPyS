@@ -37,7 +37,7 @@ from MuyGPyS._src.optimize.chassis.numpy import (
     _bayes_get_kwargs,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import AnisotropicDistortion
+from MuyGPyS.gp.deformation import Anisotropy
 from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
@@ -189,7 +189,7 @@ def optimize_from_tensors_mini_batch(
     kernel_fn = muygps.kernel.get_opt_fn()
     mean_fn = muygps.get_opt_mean_fn()
     var_fn = muygps.get_opt_var_fn()
-    sigma_sq_fn = muygps.sigma_sq.get_opt_fn(muygps)
+    scale_fn = muygps.scale.get_opt_fn(muygps)
 
     # Create bayes_opt kwargs
     x0_names, x0, bounds = _get_opt_lists(muygps, verbose=verbose)
@@ -247,7 +247,7 @@ def optimize_from_tensors_mini_batch(
             kernel_fn,
             mean_fn,
             var_fn,
-            sigma_sq_fn,
+            scale_fn,
             batch_pairwise_diffs,
             batch_crosswise_diffs,
             batch_nn_targets,
@@ -283,10 +283,10 @@ def optimize_from_tensors_mini_batch(
         optimized_values.append(f"{epoch}, {optimizer.max['params']}")
 
         # Update neighborhoods using the learned length scales
-        if isinstance(muygps.kernel.distortion_fn, AnisotropicDistortion) and (
+        if isinstance(muygps.kernel.deformation, Anisotropy) and (
             epoch < (num_epochs - 1)
         ):
-            length_scales = muygps.kernel.distortion_fn._length_scale_array(
+            length_scales = muygps.kernel.deformation._length_scale_array(
                 train_features.shape,
                 **optimizer.max["params"],
             )
@@ -307,7 +307,7 @@ def optimize_from_tensors_mini_batch(
     # Compute optimal variance scaling hyperparameter
     new_muygpys = _new_muygps(muygps, x0_names, bounds, optimizer.max["params"])
 
-    new_muygpys = new_muygpys.optimize_sigma_sq(
+    new_muygpys = new_muygpys.optimize_scale(
         batch_pairwise_diffs, batch_nn_targets
     )
 

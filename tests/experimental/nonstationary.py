@@ -11,8 +11,8 @@ import MuyGPyS._src.math.numpy as np
 
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.kernels import Matern, RBF
-from MuyGPyS.gp.distortion import l2, IsotropicDistortion, AnisotropicDistortion
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.deformation import l2, Isotropy, Anisotropy
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
     sample_knots,
@@ -68,7 +68,12 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
 
     @parameterized.parameters(
         (
-            (feature_count, type(knot_values[0]), high_level_kernel, metric)
+            (
+                feature_count,
+                type(knot_values[0]),
+                high_level_kernel,
+                deformation,
+            )
             for feature_count in [2, 17]
             for knot_count in [10]
             for knot_features in [
@@ -76,17 +81,17 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
             ]
             for knot_values in [
                 np.random.uniform(size=knot_count),
-                [ScalarHyperparameter(i) for i in range(knot_count)],
+                [ScalarParam(i) for i in range(knot_count)],
             ]
             for high_level_kernel in [RBF(), Matern()]
-            for metric in [
-                IsotropicDistortion(
+            for deformation in [
+                Isotropy(
                     l2,
                     length_scale=HierarchicalNonstationaryHyperparameter(
                         knot_features, knot_values, high_level_kernel
                     ),
                 ),
-                AnisotropicDistortion(
+                Anisotropy(
                     l2,
                     **{
                         f"length_scale{i}": HierarchicalNonstationaryHyperparameter(
@@ -105,10 +110,10 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
         feature_count,
         knot_values_type,
         high_level_kernel,
-        metric,
+        deformation,
     ):
         muygps = MuyGPS(
-            kernel=RBF(metric=metric),
+            kernel=RBF(deformation=deformation),
         )
 
         # prepare data

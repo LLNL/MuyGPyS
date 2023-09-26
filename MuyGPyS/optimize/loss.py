@@ -27,7 +27,7 @@ def make_raw_predict_and_loss_fn(
     loss_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
-    sigma_sq_fn: Callable,
+    scale_fn: Callable,
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
     **loss_kwargs,
@@ -55,8 +55,8 @@ def make_raw_predict_and_loss_fn(
             `(batch_count, nn_count, nn_count)` and `(batch_count, nn_count)`,
             respectively. Unused by this function, but still required by the
             signature.
-        sigma_sq_fn:
-            A MuyGPS `sigma_sq` optimization function Callable with signature
+        scale_fn:
+            A MuyGPS `scale` optimization function Callable with signature
             `(K, batch_nn_targets)`, which are tensors of shape
             `(batch_count, nn_count, nn_count)` and
             `(batch_count, nn_count, response_count)`, respectively. Unused by
@@ -94,7 +94,7 @@ def make_var_predict_and_loss_fn(
     loss_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
-    sigma_sq_fn: Callable,
+    scale_fn: Callable,
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
     **loss_kwargs,
@@ -122,8 +122,8 @@ def make_var_predict_and_loss_fn(
             `(K, Kcross)`, which are tensors of shape
             `(batch_count, nn_count, nn_count)` and `(batch_count, nn_count)`,
             respectively.
-        sigma_sq_fn:
-            A MuyGPS `sigma_sq` optimization function Callable with signature
+        scale_fn:
+            A MuyGPS `scale` optimization function Callable with signature
             `(K, batch_nn_targets)`, which are tensors of shape
             `(batch_count, nn_count, nn_count)` and
             `(batch_count, nn_count, response_count)`, respectively.
@@ -150,12 +150,12 @@ def make_var_predict_and_loss_fn(
             batch_nn_targets,
             **kwargs,
         )
-        sigma_sq = sigma_sq_fn(K, batch_nn_targets, **kwargs)
+        scale = scale_fn(K, batch_nn_targets, **kwargs)
 
         variances = var_fn(K, Kcross, **kwargs)
 
         return -loss_fn(
-            predictions, batch_targets, variances, sigma_sq, **loss_kwargs
+            predictions, batch_targets, variances, scale, **loss_kwargs
         )
 
     return predict_and_loss_fn
@@ -171,13 +171,13 @@ class LossFn:
     Args:
         loss_fn:
             A Callable with signature `(predictions, targets, **kwargs)` or
-            `(predictions, targets, variances, sigma_sq, **kwargs)` tha computes
+            `(predictions, targets, variances, scale, **kwargs)` tha computes
             a floating-point loss score of a set of predictions given posterior
             means and possibly posterior variances. Individual loss functions
             can implement different `kwargs` as needed.
         make_precit_and_loss_fn:
             A Callable with signature
-            `(loss_fn, mean_fn, var_fn, sigma_sq_fn, batch_nn_targets, batch_targets, **loss_kwargs)`
+            `(loss_fn, mean_fn, var_fn, scale_fn, batch_nn_targets, batch_targets, **loss_kwargs)`
             that produces a function that computes posterior predictions and
             scores them using the loss function.
             :func:~MuyGPyS.optimize.loss._make_raw_predict_and_loss_fn` and
@@ -204,11 +204,12 @@ Computes the cross entropy loss the predicted versus known response. Transforms
 `predictions` to be row-stochastic, and ensures that `targets` contains no
 negative elements. Only defined for two or more labels.
 For a sample with true labels :math:`y_i \\in \\{0, 1\\}` and estimates
-:math:`f(x_i) = \\textrm{Pr}(y = 1)`, the function computes
+:math:`\\bar{\\mu(x_i)} = \\textrm{Pr}(y = 1)`, the function computes
 
 .. math::
-    \\ell_\\textrm{cross-entropy}(f(x), y) =
-        \\sum_{i=1}^{b} y_i \\log(f(x_i)) - (1 - y_i) \\log(1 - f(x_i))
+    \\ell_\\textrm{cross-entropy}(\\bar{\\mu}, y) =
+        \\sum_{i=1}^{b} y_i \\log(\\bar{\\mu}_i)
+        - (1 - y_i) \\log(1 - \\bar{\\mu}_i).
 
 The numpy backend uses
 `sklearn's implementation <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`_.
@@ -218,8 +219,8 @@ Args:
         The predicted response of shape `(batch_count, response_count)`.
     targets:
         The expected response of shape `(batch_count, response_count)`.
-    ll_eps:
-        Probabilities are clipped to the range `[ll_eps, 1 - ll_eps]`.
+    eps:
+        Probabilities are clipped to the range `[eps, 1 - eps]`.
 
 Returns:
     The cross-entropy loss of the prediction.
@@ -234,7 +235,8 @@ multivariate outputs as interchangeable in terms of loss penalty. The function
 computes
 
 .. math::
-    \\ell_\\textrm{MSE}(f(x), y) = \\frac{1}{b} \\sum_{i=1}^b (f(x_i) - y)^2
+    \\ell_\\textrm{MSE}(\\bar{\\mu}, y) =
+        \\frac{1}{b} \\sum_{i=1}^b (\\bar{\\mu}_i - y)^2.
 
 Args:
     predictions:
@@ -255,9 +257,10 @@ response. Treats multivariate outputs as interchangeable in terms of loss
 penalty. The function computes
 
 .. math::
-    \\ell_\\textrm{lool}(f(x), y \\mid \\sigma^2) =
+    \\ell_\\textrm{lool}(\\bar{\\mu}, y \\mid \\bar{\\Sigma}) =
     \\sum_{i=1}^b \\sum_{j=1}^s
-    \\left ( \\frac{(f(x_i) - y)}{\\sigma_j} \\right )^2 + \\log \\sigma_j^2
+    \\left ( \\frac{\\bar{\\mu}_i - y}{\\bar{\\Sigma}_{ii}} \\right )_j^2
+    +  \\left ( \\log \\bar{\\Sigma}_{ii} \\right )_j
 
 Args:
     predictions:
@@ -267,8 +270,8 @@ Args:
     variances:
         The unscaled variance of the predicted responses of shape
         `(batch_count, response_count)`.
-    sigma_sq:
-        The sigma_sq variance scaling parameter of shape `(response_count,)`.
+    scale:
+        The scale variance scaling parameter of shape `(response_count,)`.
 
 Returns:
     The LOOL loss of the prediction.
@@ -280,12 +283,12 @@ Leave-one-out likelihood function.
 
 Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
 response. Treats multivariate outputs as interchangeable in terms of loss
-penalty. Unlike lool_fn, does not require sigma_sq as an argument. The function
+penalty. Unlike lool_fn, does not require scale as an argument. The function
 computes
 
 .. math::
-    \\ell_\\textrm{lool}(f(x), y \\mid \\sigma^2) = \\sum_{i=1}^b
-    \\left ( \\frac{(f(x_i) - y)}{\\sigma_i} \\right )^2 + \\log \\sigma_i^2
+    \\ell_\\textrm{lool}(\\bar{\\mu}, y \\mid \\bar{\\Sigma}) = \\sum_{i=1}^b
+    \\frac{(\\bar{\\mu}_i - y)^2}{\\bar{\\Sigma}_{ii}} + \\log \\bar{\\Sigma}_{ii}.
 
 Args:
     predictions:
@@ -312,10 +315,10 @@ outliers. Uses the form from
 The function computes
 
 .. math::
-    \\ell_\\textrm{Pseudo-Huber}(f(x), y \\mid \\delta) =
+    \\ell_\\textrm{Pseudo-Huber}(\\bar{\\mu}, y \\mid \\delta) =
         \\sum_{i=1}^b \\delta^2 \\left ( \\sqrt{
-        1 + \\left ( \\frac{y_i - f(x_i)}{\\delta} \\right )^2
-        } - 1 \\right )
+        1 + \\left ( \\frac{y_i - \\bar{\\mu}_i}{\\delta} \\right )^2
+        } - 1 \\right ).
 
 Args:
     predictions:
@@ -340,10 +343,13 @@ additive logarithmic variance regularization term to avoid exploding the
 variance. The function computes
 
 .. math::
-    \\ell_\\textrm{lool}(f(x), y \\mid \\delta, \\sigma^2) =
-        \\sum_{i=1}^b \\delta^2 \\left ( \\sqrt{
-        1 + \\left ( \\frac{y_i - f(x_i)}{\\delta \\sigma_i^2} \\right )^2
-        } - 1 \\right ) + \\log \\sigma_i^2
+    \\ell_\\textrm{lool}(\\bar{\\mu}, y \\mid \\delta, \\bar{\\Sigma}) =
+        \\sum_{i=1}^b \\sum_{i=1}^s \\delta^2
+        \\left ( \\sqrt{
+            1 + \\left (
+                \\frac{y_i - \\bar{\\mu}_i}{\\delta \\bar{\\Sigma}_{ii}}
+            \\right )_j^2
+        } - 1 \\right ) + \\left ( \\log \\bar{\\Sigma}_{ii} \\right )_j.
 
 Args:
     predictions:
@@ -353,8 +359,8 @@ Args:
     variances:
         The unscaled variance of the predicted responses of shape
         `(batch_count, response_count)`.
-    sigma_sq:
-        The sigma_sq variance scaling parameter of shape `(response_count,)`.
+    scale:
+        The scale variance scaling parameter of shape `(response_count,)`.
     boundary_scale:
         The boundary value for the residual beyond which the loss becomes
         approximately linear. Useful values depend on the scale of the response.

@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 
 from MuyGPyS._test.gp import benchmark_sample, BenchmarkGP
-from MuyGPyS.gp.distortion import IsotropicDistortion
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.deformation import Isotropy, l2
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn
@@ -41,13 +41,11 @@ class UnivariateSampler(SamplerBase):
         view_lb=0.5,
         view_ub=0.6,
         kernel=Matern(
-            nu=ScalarHyperparameter(2.0),
-            metric=IsotropicDistortion(
-                "l2", length_scale=ScalarHyperparameter(1.0)
-            ),
+            nu=ScalarParam(2.0),
+            deformation=Isotropy(l2, length_scale=ScalarParam(1.0)),
         ),
-        eps=HomoscedasticNoise(1e-14),
-        measurement_eps=HomoscedasticNoise(1e-5),
+        noise=HomoscedasticNoise(1e-14),
+        measurement_noise=HomoscedasticNoise(1e-5),
     ):
         super().__init__(data_count, train_ratio=train_ratio, seed=seed)
         self.data_count = data_count
@@ -56,8 +54,8 @@ class UnivariateSampler(SamplerBase):
         self.train_features = self.x[self._train_mask, :]
         self.test_count, _ = self.test_features.shape
         self.train_count, _ = self.train_features.shape
-        self.measurement_eps = measurement_eps
-        self.gp = BenchmarkGP(kernel=kernel, eps=eps)
+        self.measurement_noise = measurement_noise
+        self.gp = BenchmarkGP(kernel=kernel, noise=noise)
         self.train_interval = self.get_interval(
             view_lb, view_ub, self.train_features
         )
@@ -74,7 +72,7 @@ class UnivariateSampler(SamplerBase):
         y = benchmark_sample(self.gp, self.x)
         self.test_responses = y[self._test_mask, :]
         self.train_responses = y[self._train_mask, :] + np.random.normal(
-            0, self.measurement_eps(), size=(self.train_count, 1)
+            0, self.measurement_noise(), size=(self.train_count, 1)
         )
         return self.train_responses, self.test_responses
 
@@ -242,13 +240,11 @@ class UnivariateSampler2D(SamplerBase):
         points_per_dim=60,
         train_ratio=10,
         kernel=Matern(
-            nu=ScalarHyperparameter(2.0),
-            metric=IsotropicDistortion(
-                "l2", length_scale=ScalarHyperparameter(1.0)
-            ),
+            nu=ScalarParam(2.0),
+            deformation=Isotropy(l2, length_scale=ScalarParam(1.0)),
         ),
-        eps=HomoscedasticNoise(1e-14),
-        measurement_eps=HomoscedasticNoise(1e-5),
+        noise=HomoscedasticNoise(1e-14),
+        measurement_noise=HomoscedasticNoise(1e-5),
     ):
         self.points_per_dim = points_per_dim
         self.data_count = self.points_per_dim**2
@@ -266,8 +262,8 @@ class UnivariateSampler2D(SamplerBase):
         self.train_features = self.xs[self._train_mask, :]
         self.test_count, _ = self.test_features.shape
         self.train_count, _ = self.train_features.shape
-        self.measurement_eps = measurement_eps
-        self.gp = BenchmarkGP(kernel=kernel, eps=eps)
+        self.measurement_noise = measurement_noise
+        self.gp = BenchmarkGP(kernel=kernel, noise=noise)
 
     def features(self):
         return self.train_features, self.test_features
@@ -276,7 +272,7 @@ class UnivariateSampler2D(SamplerBase):
         self.ys = benchmark_sample(self.gp, self.xs)
         self.test_responses = self.ys[self._test_mask, :]
         self.train_responses = self.ys[self._train_mask, :] + np.random.normal(
-            0, self.measurement_eps(), size=(self.train_count, 1)
+            0, self.measurement_noise(), size=(self.train_count, 1)
         )
         return self.train_responses, self.test_responses
 
@@ -478,7 +474,7 @@ class UnivariateSampler2D(SamplerBase):
 
 
 def get_length_scale(muygps):
-    ls = muygps.kernel.distortion_fn.length_scale
+    ls = muygps.kernel.deformation.length_scale
     if isinstance(ls, dict):
         return np.array([ls[x]() for x in ls])
     else:
@@ -501,8 +497,8 @@ def print_results(targets, *args, **kwargs):
                 name,
                 muygps.kernel.nu(),
                 get_length_scale(muygps),
-                muygps.eps(),
-                muygps.sigma_sq()[0],
+                muygps.noise(),
+                muygps.scale()[0],
                 np.sqrt(mse_fn(means, targets)),
                 np.mean(variances),
                 np.mean(confidence_intervals),
@@ -515,8 +511,8 @@ def print_results(targets, *args, **kwargs):
             "name",
             "nu",
             "length scale",
-            "$\\varepsilon$",
-            "$\\sigma^2$",
+            "noise variance",
+            "variance scale",
             "rmse",
             "mean variance",
             "mean confidence interval",
@@ -539,7 +535,7 @@ def print_fast_results(targets, *args, **kwargs):
                 name,
                 np.sqrt(mse_fn(means, targets)),
                 time,
-                muygps.eps(),
+                muygps.noise(),
             ]
         )
     return pd.DataFrame(
@@ -548,6 +544,6 @@ def print_fast_results(targets, *args, **kwargs):
             "name",
             "rmse",
             "timing results",
-            "$\\varepsilon$",
+            "noise variance",
         ],
     ).style.hide(axis="index")

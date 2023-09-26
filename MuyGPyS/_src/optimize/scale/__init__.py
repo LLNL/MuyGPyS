@@ -3,8 +3,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS.gp.distortion.distortion_fn import DistortionFn
+from MuyGPyS._src.util import _collect_implementation
 
-
-class NullDistortion(DistortionFn):
-    pass
+[_analytic_scale_optim] = _collect_implementation(
+    "MuyGPyS._src.optimize.scale",
+    "_analytic_scale_optim",
+)

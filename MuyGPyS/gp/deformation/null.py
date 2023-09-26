@@ -3,9 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS._src.util import _collect_implementation
+from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
 
-[_analytic_sigma_sq_optim] = _collect_implementation(
-    "MuyGPyS._src.optimize.sigma_sq",
-    "_analytic_sigma_sq_optim",
-)
+
+class NullDeformation(DeformationFn):
+    pass

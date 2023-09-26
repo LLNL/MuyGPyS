@@ -8,17 +8,17 @@ from typing import List, Tuple, Callable, Dict
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
 
-from MuyGPyS.gp.distortion.distortion_fn import DistortionFn
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
+from MuyGPyS.gp.hyperparameter import ScalarParam
 
 
 @auto_str
-class AnisotropicDistortion(DistortionFn):
+class Anisotropy(DeformationFn):
     """
-    An isotropic distance model.
+    An anisotropic deformation model.
 
-    AnisotropicDistortion parameterizes a scaled elementwise distance function
-    :math:`d(\\cdot, \\cdot)`, and is paramterized by a vector-valued
+    Anisotropy parameterizes a scaled elementwise distance function
+    :math:`d_\\ell(\\cdot, \\cdot)`, and is paramterized by a vector-valued
     :math:`\\mathbf{\\ell}>0` length scale hyperparameter.
 
     .. math::
@@ -52,19 +52,19 @@ class AnisotropicDistortion(DistortionFn):
                 )
         if not (
             all(
-                isinstance(param, ScalarHyperparameter)
+                isinstance(param, ScalarParam)
                 for param in length_scales.values()
             )
         ):
             raise ValueError(
                 "Anisotropic model expects all values for the length_scale{i} "
-                "keyword arguments to be of type ScalarHyperparameter."
+                "keyword arguments to be of type ScalarParam."
             )
         self.length_scale = length_scales
 
     def __call__(self, diffs: mm.ndarray, **length_scales) -> mm.ndarray:
         """
-        Apply anisotropic distortion to an elementwise difference tensor.
+        Apply anisotropic deformation to an elementwise difference tensor.
 
         This function is not intended to be invoked directly by a user. It is
         instead functionally incorporated into some
@@ -108,38 +108,6 @@ class AnisotropicDistortion(DistortionFn):
             ]
         )
 
-    # @staticmethod
-    # def _get_length_scale_array(
-    #     array_fn: Callable,
-    #     target_shape: mm.ndarray,
-    #     batch_features=None,
-    #     **length_scales,
-    # ) -> mm.ndarray:
-    #     # NOTE[MWP] THIS WILL NOT WORK WITH TORCH OPTIMIZATION.
-    #     # We need to eliminate the implicit copy. Will need indirection.
-    #     # We should make this whole workflow ifless.
-    #     AnisotropicDistortion._lengths_agree(
-    #         len(length_scales), target_shape[-1]
-    #     )
-    #     if callable(length_scales["length_scale0"]) is True:
-    #         length_scales = {
-    #             ls: length_scales[ls](batch_features) for ls in length_scales
-    #         }
-    #     # make sure each length_scale array is broadcastable when its shape is (batch_count,)
-    #     shape = (1,) * (len(target_shape) - 2) + (-1,)
-    #     return array_fn(
-    #         [mm.reshape(value, shape) for value in length_scales.values()]
-    #     ).T
-
-    # @staticmethod
-    # def _lengths_agree(found_length, target_length):
-    #     if target_length != found_length and found_length != 1:
-    #         raise ValueError(
-    #             f"Number of lengthscale parameters ({found_length}) "
-    #             f"must match number of features ({target_length}) or be 1 "
-    #             "(Isotropic model)."
-    #         )
-
     def get_opt_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
@@ -165,7 +133,7 @@ class AnisotropicDistortion(DistortionFn):
     def populate_length_scale(self, hyperparameters: Dict) -> None:
         """
         Populates the hyperparameter dictionary of a KernelFn object with
-        `self.length_scales` of the AnisotropicDistortion object.
+        `self.length_scales` of the Anisotropy object.
 
         Args:
             hyperparameters:
@@ -176,7 +144,7 @@ class AnisotropicDistortion(DistortionFn):
 
     def embed_fn(self, fn: Callable) -> Callable:
         """
-        Augments a function to automatically apply the distortion to a
+        Augments a function to automatically apply the deformation to a
         difference tensor.
 
         Args:
@@ -186,10 +154,11 @@ class AnisotropicDistortion(DistortionFn):
                 tensor `diffs` with shape `(..., feature_count)`.
 
         Returns:
-            A new Callable that applies the distortion to `diffs`, removing
+            A new Callable that applies the deformation to `diffs`, removing
             the last tensor dimension by collapsing the feature-wise differences
             into scalar distances. Propagates any `length_scaleN` kwargs to the
-            distortion fn, making the function drivable by keyword optimization.
+            deformation fn, making the function drivable by keyword
+            optimization.
         """
 
         def embedded_fn(diffs, *args, length_scale=None, **kwargs):

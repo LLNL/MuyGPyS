@@ -43,10 +43,10 @@ def _lool_fn(
     predictions: torch.ndarray,
     targets: torch.ndarray,
     variances: torch.ndarray,
-    sigma_sq: torch.ndarray,
+    scale: torch.ndarray,
 ) -> float:
     return _lool_fn_unscaled(
-        predictions, targets, torch.unsqueeze(variances * sigma_sq, dim=1)
+        predictions, targets, torch.unsqueeze(variances * scale, dim=1)
     )
 
 
@@ -93,12 +93,12 @@ def _looph_fn(
     predictions: torch.ndarray,
     targets: torch.ndarray,
     variances: torch.ndarray,
-    sigma_sq: torch.ndarray,
+    scale: torch.ndarray,
     boundary_scale: float = 1.5,
 ) -> float:
     return _looph_fn_unscaled(
         predictions,
         targets,
-        torch.outer(variances, sigma_sq),
+        torch.outer(variances, scale),
         boundary_scale=boundary_scale,
     )

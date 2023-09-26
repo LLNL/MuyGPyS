@@ -4,10 +4,10 @@
 # SPDX-License-Identifier: MIT
 
 """
-TensorHyperparameters
+Tensor-valued Hyperparameters
 
-TensorHyperparameters specifications are expected to be provided in `Dict` form with
-the key `"val"`. `"val"` is either an mm.ndarray value.
+`TensorParam` specifications are expected to be provided as an `mm.ndarray`
+value.
 """
 
 from typing import Optional, Tuple
@@ -26,12 +26,12 @@ except Exception:
     from MuyGPyS._src.math.numpy import ndarray as torch_ndarray  # type: ignore
 
 
-class TensorHyperparameter:
+class TensorParam:
     """
     A MuyGPs kernel or model Tensor Hyperparameter.
 
-    TensorHyperparameters are defined solely by a value. Values must
-    be scalar numeric arrays. Currently only used for heteroscedastic noise.
+    TensorParam are defined solely by a value, which must be numeric arrays.
+    Currently only used for heteroscedastic noise.
 
     Args:
         val:
@@ -77,9 +77,7 @@ class TensorHyperparameter:
                 will produce an error.
         """
         if isinstance(val, str):
-            raise ValueError(
-                "TensorHyperparameter class does not support strings."
-            )
+            raise ValueError("TensorParam class does not support strings.")
         if not isinstance(val, mm.ndarray):
             if type(val) not in [numpy_ndarray, torch_ndarray, jax_ndarray]:
                 raise ValueError(
@@ -95,9 +93,7 @@ class TensorHyperparameter:
                     "backend tests"
                 )
         if self.fixed() is False:
-            raise ValueError(
-                "TensorHyperparameters objects do not support optimization."
-            )
+            raise ValueError("TensorParam objects do not support optimization.")
         self._val = val
 
     def __call__(self) -> mm.ndarray:
@@ -121,7 +117,7 @@ class TensorHyperparameter:
 
     def get_bounds(self) -> Tuple[float, float]:
         raise NotImplementedError(
-            "TensorHyperparameter does not support optimization bounds!"
+            "TensorParam does not support optimization bounds!"
         )
 
     def append_lists(self, name, names, params, bounds):

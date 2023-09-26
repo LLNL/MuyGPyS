@@ -9,13 +9,17 @@ import MuyGPyS._src.math.jax as jnp
 
 
 @jit
-def _homoscedastic_perturb(K: jnp.ndarray, eps: float) -> jnp.ndarray:
+def _homoscedastic_perturb(
+    K: jnp.ndarray, noise_variance: float
+) -> jnp.ndarray:
     _, nn_count, _ = K.shape
-    return K + eps * jnp.eye(nn_count)
+    return K + noise_variance * jnp.eye(nn_count)
 
 
 @jit
-def _heteroscedastic_perturb(K: jnp.ndarray, eps: jnp.ndarray) -> jnp.ndarray:
+def _heteroscedastic_perturb(
+    K: jnp.ndarray, noise_variances: jnp.ndarray
+) -> jnp.ndarray:
     batch_count, nn_count, _ = K.shape
     ret = K.copy()
     indices = (
@@ -23,6 +27,6 @@ def _heteroscedastic_perturb(K: jnp.ndarray, eps: jnp.ndarray) -> jnp.ndarray:
         jnp.tile(jnp.arange(nn_count), batch_count),
         jnp.tile(jnp.arange(nn_count), batch_count),
     )
-    ret = ret.at[indices].add(eps.flatten())
+    ret = ret.at[indices].add(noise_variances.flatten())
 
     return ret

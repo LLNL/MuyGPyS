@@ -21,15 +21,9 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
 )
 from MuyGPyS.gp.tensors import crosswise_tensor, pairwise_tensor
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam, FixedScale
 from MuyGPyS.gp.kernels import RBF, Matern
-from MuyGPyS.gp.distortion import (
-    AnisotropicDistortion,
-    IsotropicDistortion,
-    F2,
-    l2,
-)
-from MuyGPyS.gp.sigma_sq import SigmaSq
+from MuyGPyS.gp.deformation import Anisotropy, Isotropy, F2, l2
 from MuyGPyS.neighbors import NN_Wrapper
 
 
@@ -158,9 +152,9 @@ class BackendConfigUser:
         config.update("muygpys_backend", self.state)
 
 
-class SigmaSqTest(parameterized.TestCase):
+class ScaleTest(parameterized.TestCase):
     def _do_untrained(self, val):
-        param = SigmaSq()
+        param = FixedScale()
         self.assertFalse(param.trained)
         self.assertEqual(mm.array([1.0]), param())
         param._set(val)
@@ -172,7 +166,7 @@ class SigmaSqTest(parameterized.TestCase):
         self._do_untrained(mm.atleast_1d(mm.array(val)))
 
     def test_untrained_bad(self):
-        with self.assertRaisesRegex(ValueError, "for SigmaSq value update"):
+        with self.assertRaisesRegex(ValueError, "for variance scale value"):
             self._do_untrained([5.0])
 
 
@@ -188,7 +182,7 @@ class HyperparameterTest(parameterized.TestCase):
         )
     )
     def test_full_init(self, val, bounds):
-        param = ScalarHyperparameter(val, bounds)
+        param = ScalarParam(val, bounds)
         self.assertEqual(val, param())
         self._check_in_bounds(bounds, param)
 
@@ -202,7 +196,7 @@ class HyperparameterTest(parameterized.TestCase):
         (kwargs for kwargs in ({"val": 1.0, "bounds": "fixed"},))
     )
     def test_fixed_init(self, val, bounds):
-        param = ScalarHyperparameter(val, bounds)
+        param = ScalarParam(val, bounds)
         self.assertEqual(val, param())
         self.assertTrue(param.fixed())
 
@@ -210,14 +204,14 @@ class HyperparameterTest(parameterized.TestCase):
         (
             kwargs
             for kwargs in (
-                {"val": "sample", "bounds": (1e-4, 1e2), "reps": 100},
-                {"val": "log_sample", "bounds": (1e-4, 1e2), "reps": 100},
+                {"val": "sample", "bounds": (1e-4, 1e2), "its": 100},
+                {"val": "log_sample", "bounds": (1e-4, 1e2), "its": 100},
             )
         )
     )
-    def test_sample(self, val, bounds, reps):
-        for _ in range(reps):
-            param = ScalarHyperparameter(val, bounds)
+    def test_sample(self, val, bounds, its):
+        for _ in range(its):
+            param = ScalarParam(val, bounds)
             self._check_in_bounds(bounds, param)
 
     @parameterized.parameters(
@@ -231,7 +225,7 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_fixed_sample(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "Fixed bounds do not support "):
-            ScalarHyperparameter(val, bounds)
+            ScalarParam(val, bounds)
 
     @parameterized.parameters(
         (
@@ -244,7 +238,7 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_oob(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "bound"):
-            ScalarHyperparameter(val, bounds)
+            ScalarParam(val, bounds)
 
     @parameterized.parameters(
         (
@@ -257,7 +251,7 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_nonscalar(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "Nonscalar hyperparameter"):
-            ScalarHyperparameter(val, bounds)
+            ScalarParam(val, bounds)
 
     @parameterized.parameters(
         (kwargs for kwargs in ({"val": "wut", "bounds": (1e-1, 1e2)},))
@@ -266,7 +260,7 @@ class HyperparameterTest(parameterized.TestCase):
         with self.assertRaisesRegex(
             ValueError, "Unsupported string hyperparameter"
         ):
-            ScalarHyperparameter(val, bounds)
+            ScalarParam(val, bounds)
 
     @parameterized.parameters(
         (kwargs for kwargs in ({"val": "sample", "bounds": "fixed"},))
@@ -275,21 +269,21 @@ class HyperparameterTest(parameterized.TestCase):
         with self.assertRaisesRegex(
             ValueError, "Fixed bounds do not support string"
         ):
-            ScalarHyperparameter(val, bounds)
+            ScalarParam(val, bounds)
 
     @parameterized.parameters(
         (kwargs for kwargs in ({"val": 1.0, "bounds": "badstring"},))
     )
     def test_bad_val_bounds(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "Unknown"):
-            ScalarHyperparameter(val, bounds)
+            ScalarParam(val, bounds)
 
     @parameterized.parameters(
         (kwargs for kwargs in ({"val": 1.0, "bounds": (1e2, 1e-1)},))
     )
     def test_bad_bounds(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "not lesser than upper bound"):
-            ScalarHyperparameter(val, bounds)
+            ScalarParam(val, bounds)
 
     @parameterized.parameters(
         (
@@ -302,7 +296,7 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_bad_bound_length(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "unsupported length"):
-            ScalarHyperparameter(val, bounds)
+            ScalarParam(val, bounds)
 
     @parameterized.parameters(
         (
@@ -315,14 +309,14 @@ class HyperparameterTest(parameterized.TestCase):
     )
     def test_bad_bound_vals(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "supported hyperparameter"):
-            ScalarHyperparameter(val, bounds)
+            ScalarParam(val, bounds)
 
     @parameterized.parameters(
         (kwargs for kwargs in ({"val": 1.0, "bounds": 1e-2},))
     )
     def test_noniterable_bound(self, val, bounds):
         with self.assertRaisesRegex(ValueError, "non-iterable type"):
-            ScalarHyperparameter(val, bounds)
+            ScalarParam(val, bounds)
 
 
 class KernelTest(parameterized.TestCase):
@@ -358,8 +352,8 @@ class RBFTest(KernelTest):
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
-                {"length_scale": ScalarHyperparameter(1.0, (1e-5, 1e1))},
-                {"length_scale": ScalarHyperparameter(2.0, (1e-4, 1e3))},
+                {"length_scale": ScalarParam(1.0, (1e-5, 1e1))},
+                {"length_scale": ScalarParam(2.0, (1e-4, 1e3))},
             ]
         )
     )
@@ -377,13 +371,13 @@ class RBFTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, _ = nbrs_lookup.get_nns(test)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = IsotropicDistortion(F2, **k_kwargs)
-        rbf = RBF(metric=dist_model)
+        deformation_model = Isotropy(F2, **k_kwargs)
+        rbf = RBF(deformation=deformation_model)
         self._check_params_chassis(rbf, **k_kwargs)
         kern = _consistent_unchunk_tensor(rbf(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
-        sk_rbf = sk_RBF(length_scale=dist_model.length_scale())
+        sk_rbf = sk_RBF(length_scale=deformation_model.length_scale())
         sk_kern = mm.array(np.array([sk_rbf(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
@@ -405,51 +399,45 @@ class ParamTest(KernelTest):
     @parameterized.parameters(
         (
             (k_kwargs, alt_kwargs)
-            for k_kwargs in [
-                {"length_scale": ScalarHyperparameter(10.0, (1e-5, 1e1))}
-            ]
+            for k_kwargs in [{"length_scale": ScalarParam(10.0, (1e-5, 1e1))}]
             for alt_kwargs in [
-                {"length_scale": ScalarHyperparameter(1.0, (1e-2, 1e4))},
-                {"length_scale": ScalarHyperparameter("sample", (1e-3, 1e2))},
-                {"length_scale": ScalarHyperparameter(2.0)},
+                {"length_scale": ScalarParam(1.0, (1e-2, 1e4))},
+                {"length_scale": ScalarParam("sample", (1e-3, 1e2))},
+                {"length_scale": ScalarParam(2.0)},
             ]
         )
     )
     def test_rbf(self, k_kwargs, alt_kwargs):
-        dist_model = IsotropicDistortion(
-            F2, length_scale=k_kwargs["length_scale"]
-        )
-        self._test_chassis(RBF(dist_model), k_kwargs, alt_kwargs)
+        deformation_model = Isotropy(F2, length_scale=k_kwargs["length_scale"])
+        self._test_chassis(RBF(deformation_model), k_kwargs, alt_kwargs)
 
     @parameterized.parameters(
         (
             (k_kwargs, alt_kwargs)
             for k_kwargs in [
                 {
-                    "nu": ScalarHyperparameter(0.42, (1e-4, 5e1)),
-                    "length_scale": ScalarHyperparameter(1.0, (1e-5, 1e1)),
+                    "nu": ScalarParam(0.42, (1e-4, 5e1)),
+                    "length_scale": ScalarParam(1.0, (1e-5, 1e1)),
                 }
             ]
             for alt_kwargs in [
                 {
-                    "nu": ScalarHyperparameter(1.0, (1e-2, 5e4)),
-                    "length_scale": ScalarHyperparameter(7.2, (2e-5, 2e1)),
+                    "nu": ScalarParam(1.0, (1e-2, 5e4)),
+                    "length_scale": ScalarParam(7.2, (2e-5, 2e1)),
                 },
                 {
-                    "nu": ScalarHyperparameter(1.0),
-                    "length_scale": ScalarHyperparameter("sample", (2e-5, 2e1)),
+                    "nu": ScalarParam(1.0),
+                    "length_scale": ScalarParam("sample", (2e-5, 2e1)),
                 },
                 {
-                    "nu": ScalarHyperparameter("sample", (1e-2, 5e4)),
+                    "nu": ScalarParam("sample", (1e-2, 5e4)),
                 },
             ]
         )
     )
     def test_matern(self, k_kwargs, alt_kwargs):
-        dist_model = IsotropicDistortion(
-            l2, length_scale=k_kwargs["length_scale"]
-        )
-        kern_fn = Matern(metric=dist_model, nu=k_kwargs["nu"])
+        deformation_model = Isotropy(l2, length_scale=k_kwargs["length_scale"])
+        kern_fn = Matern(deformation=deformation_model, nu=k_kwargs["nu"])
         self._test_chassis(kern_fn, k_kwargs, alt_kwargs)
 
     def _test_chassis(self, kern_fn, k_kwargs, alt_kwargs):
@@ -467,24 +455,24 @@ class MaternTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": ScalarHyperparameter(0.42, "fixed"),
-                    "length_scale": ScalarHyperparameter(1.0),
+                    "nu": ScalarParam(0.42, "fixed"),
+                    "length_scale": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(0.5),
-                    "length_scale": ScalarHyperparameter(1.0),
+                    "nu": ScalarParam(0.5),
+                    "length_scale": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(1.5),
-                    "length_scale": ScalarHyperparameter(1.0),
+                    "nu": ScalarParam(1.5),
+                    "length_scale": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(2.5),
-                    "length_scale": ScalarHyperparameter(1.0),
+                    "nu": ScalarParam(2.5),
+                    "length_scale": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(mm.inf),
-                    "length_scale": ScalarHyperparameter(1.0),
+                    "nu": ScalarParam(mm.inf),
+                    "length_scale": ScalarParam(1.0),
                 },
             ]
             # for f in [1]
@@ -524,16 +512,16 @@ class MaternTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = IsotropicDistortion(
-            l2, length_scale=k_kwargs["length_scale"]
-        )
-        mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
+        deformation_model = Isotropy(l2, length_scale=k_kwargs["length_scale"])
+        mtn = Matern(nu=k_kwargs["nu"], deformation=deformation_model)
         # mtn = Matern(**k_kwargs)
         self._check_params_chassis(mtn, **k_kwargs)
         kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
-        sk_mtn = sk_Matern(nu=mtn.nu(), length_scale=dist_model.length_scale())
+        sk_mtn = sk_Matern(
+            nu=mtn.nu(), length_scale=deformation_model.length_scale()
+        )
         sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
         _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
@@ -561,9 +549,9 @@ class AnisotropicShapesTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": ScalarHyperparameter(0.42, "fixed"),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(2.0),
+                    "nu": ScalarParam(0.42, "fixed"),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(2.0),
                 },
             ]
         )
@@ -594,12 +582,12 @@ class AnisotropicShapesTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = AnisotropicDistortion(
+        deformation_model = Anisotropy(
             metric=l2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
-        mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
+        mtn = Matern(nu=k_kwargs["nu"], deformation=deformation_model)
         with self.assertRaisesRegex(ValueError, "Difference tensor of shape "):
             _ = _consistent_unchunk_tensor(mtn(pairwise_diffs))
 
@@ -613,29 +601,29 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": ScalarHyperparameter(0.42, "fixed"),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(2.0),
+                    "nu": ScalarParam(0.42, "fixed"),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(0.5),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(2.0),
+                    "nu": ScalarParam(0.5),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(1.5),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(2.0),
+                    "nu": ScalarParam(1.5),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(2.5),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(2.0),
+                    "nu": ScalarParam(2.5),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(mm.inf),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(2.0),
+                    "nu": ScalarParam(mm.inf),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(2.0),
                 },
             ]
         )
@@ -666,12 +654,12 @@ class AnisotropicTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = AnisotropicDistortion(
+        deformation_model = Anisotropy(
             metric=l2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
-        mtn = Matern(nu=k_kwargs["nu"], metric=dist_model)
+        mtn = Matern(nu=k_kwargs["nu"], deformation=deformation_model)
         # mtn = Matern(**k_kwargs)
         self._check_params_chassis(
             mtn,
@@ -716,24 +704,24 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(2.0),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "length_scale0": ScalarHyperparameter(0.1),
-                    "length_scale1": ScalarHyperparameter(2.0),
+                    "length_scale0": ScalarParam(0.1),
+                    "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(10.0),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(10.0),
                 },
                 {
-                    "length_scale0": ScalarHyperparameter(0.1),
-                    "length_scale1": ScalarHyperparameter(10.0),
+                    "length_scale0": ScalarParam(0.1),
+                    "length_scale1": ScalarParam(10.0),
                 },
                 {
-                    "length_scale0": ScalarHyperparameter(2.0),
-                    "length_scale1": ScalarHyperparameter(0.01),
+                    "length_scale0": ScalarParam(2.0),
+                    "length_scale1": ScalarParam(0.01),
                 },
             ]
         )
@@ -764,12 +752,12 @@ class AnisotropicTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model = AnisotropicDistortion(
+        deformation_model = Anisotropy(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
-        rbf = RBF(metric=dist_model)
+        rbf = RBF(deformation=deformation_model)
         self._check_params_chassis(
             rbf,
             **{
@@ -809,24 +797,24 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(2.0),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "length_scale0": ScalarHyperparameter(0.1),
-                    "length_scale1": ScalarHyperparameter(2.0),
+                    "length_scale0": ScalarParam(0.1),
+                    "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(10.0),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(10.0),
                 },
                 {
-                    "length_scale0": ScalarHyperparameter(0.1),
-                    "length_scale1": ScalarHyperparameter(10.0),
+                    "length_scale0": ScalarParam(0.1),
+                    "length_scale1": ScalarParam(10.0),
                 },
                 {
-                    "length_scale0": ScalarHyperparameter(2.0),
-                    "length_scale1": ScalarHyperparameter(0.01),
+                    "length_scale0": ScalarParam(2.0),
+                    "length_scale1": ScalarParam(0.01),
                 },
             ]
         )
@@ -857,12 +845,12 @@ class AnisotropicTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model_aniso = AnisotropicDistortion(
+        deformation_model_aniso = Anisotropy(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale0"],
         )
-        rbf_aniso = RBF(metric=dist_model_aniso)
+        rbf_aniso = RBF(deformation=deformation_model_aniso)
         self._check_params_chassis(
             rbf_aniso,
             **{
@@ -872,11 +860,11 @@ class AnisotropicTest(KernelTest):
         )
         kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
 
-        dist_model_iso = IsotropicDistortion(
+        deformation_model_iso = Isotropy(
             metric=F2,
             length_scale=k_kwargs["length_scale0"],
         )
-        rbf_iso = RBF(metric=dist_model_iso)
+        rbf_iso = RBF(deformation=deformation_model_iso)
         self._check_params_chassis(
             rbf_iso,
             **{
@@ -900,29 +888,29 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": ScalarHyperparameter(0.42, "fixed"),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(1.0),
+                    "nu": ScalarParam(0.42, "fixed"),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(0.5),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(1.0),
+                    "nu": ScalarParam(0.5),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(1.5),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(1.0),
+                    "nu": ScalarParam(1.5),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(2.5),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(1.0),
+                    "nu": ScalarParam(2.5),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarHyperparameter(mm.inf),
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(1.0),
+                    "nu": ScalarParam(mm.inf),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(1.0),
                 },
             ]
         )
@@ -953,12 +941,14 @@ class AnisotropicTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model_aniso = AnisotropicDistortion(
+        deformation_model_aniso = Anisotropy(
             metric=l2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
-        mtn_aniso = Matern(nu=k_kwargs["nu"], metric=dist_model_aniso)
+        mtn_aniso = Matern(
+            nu=k_kwargs["nu"], deformation=deformation_model_aniso
+        )
 
         self._check_params_chassis(
             mtn_aniso,
@@ -970,11 +960,11 @@ class AnisotropicTest(KernelTest):
         )
         kern_aniso = _consistent_unchunk_tensor(mtn_aniso(pairwise_diffs))
 
-        dist_model_iso = IsotropicDistortion(
+        deformation_model_iso = Isotropy(
             metric=l2,
             length_scale=k_kwargs["length_scale0"],
         )
-        mtn_iso = Matern(nu=k_kwargs["nu"], metric=dist_model_iso)
+        mtn_iso = Matern(nu=k_kwargs["nu"], deformation=deformation_model_iso)
 
         self._check_params_chassis(
             mtn_iso,
@@ -1001,8 +991,8 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "length_scale0": ScalarHyperparameter(1.0),
-                    "length_scale1": ScalarHyperparameter(1.0),
+                    "length_scale0": ScalarParam(1.0),
+                    "length_scale1": ScalarParam(1.0),
                 },
             ]
         )
@@ -1033,12 +1023,12 @@ class AnisotropicTest(KernelTest):
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
-        dist_model_aniso = AnisotropicDistortion(
+        deformation_model_aniso = Anisotropy(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale0"],
         )
-        rbf_aniso = RBF(metric=dist_model_aniso)
+        rbf_aniso = RBF(deformation=deformation_model_aniso)
         self._check_params_chassis(
             rbf_aniso,
             **{
@@ -1048,11 +1038,11 @@ class AnisotropicTest(KernelTest):
         )
         kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
 
-        dist_model_iso = IsotropicDistortion(
+        deformation_model_iso = Isotropy(
             metric=F2,
             length_scale=k_kwargs["length_scale0"],
         )
-        rbf_iso = RBF(metric=dist_model_iso)
+        rbf_iso = RBF(deformation=deformation_model_iso)
         self._check_params_chassis(
             rbf_iso,
             **{

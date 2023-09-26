@@ -16,8 +16,7 @@ def _make_heteroscedastic_tensor(
     measurement_noise: jnp.ndarray,
     batch_nn_indices: jnp.ndarray,
 ) -> jnp.ndarray:
-    eps_tensor = measurement_noise[batch_nn_indices]
-    return eps_tensor
+    return measurement_noise[batch_nn_indices]
 
 
 @jit

@@ -41,9 +41,9 @@ def _make_mpi_obj_fn(kwargs_opt_fn, comm):
 def _cross_entropy_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
-    ll_eps: float = 1e-15,
+    **kwargs,
 ) -> float:
-    local_log_loss = _cross_entropy_fn_n(predictions, targets, ll_eps=ll_eps)
+    local_log_loss = _cross_entropy_fn_n(predictions, targets, **kwargs)
     global_log_loss = world.allreduce(local_log_loss, op=MPI.SUM)
     return global_log_loss
 
@@ -52,9 +52,9 @@ def _lool_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
-    sigma_sq: np.ndarray,
+    scale: np.ndarray,
 ) -> float:
-    local_likelihoods = _lool_fn_n(predictions, targets, variances, sigma_sq)
+    local_likelihoods = _lool_fn_n(predictions, targets, variances, scale)
     global_likelihood = world.allreduce(local_likelihoods, op=MPI.SUM)
     return global_likelihood
 
@@ -81,11 +81,11 @@ def _looph_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
-    sigma_sq: np.ndarray,
+    scale: np.ndarray,
     boundary_scale: float = 1.5,
 ) -> float:
     local_looph = _looph_fn_n(
-        predictions, targets, variances, sigma_sq, boundary_scale=boundary_scale
+        predictions, targets, variances, scale, boundary_scale=boundary_scale
     )
     global_looph = world.allreduce(local_looph, op=MPI.SUM)
     return global_looph

@@ -5,9 +5,9 @@
 
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.gp.tensors import _pairwise_differences
+from MuyGPyS.gp.hyperparameter import FixedScale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
-from MuyGPyS.gp.sigma_sq import SigmaSq
 
 
 class BenchmarkGP:
@@ -19,21 +19,21 @@ class BenchmarkGP:
     Args:
         kernel:
             The kernel to be used. Only supports Matern.
-        eps:
+        noise:
             The noise model.
     """
 
     def __init__(
         self,
         kernel: Matern,
-        eps: NoiseFn = HomoscedasticNoise(0.0),
+        noise: NoiseFn = HomoscedasticNoise(0.0),
     ):
         """
         Initialize.
         """
         self.kernel = kernel
-        self.eps = eps
-        self.sigma_sq = SigmaSq()
+        self.noise = noise
+        self.scale = FixedScale()
 
     def fixed(self) -> bool:
         """
@@ -48,7 +48,7 @@ class BenchmarkGP:
         for p in self.kernel._hyperparameters:
             if not self.kernel._hyperparameters[p].fixed():
                 return False
-        if not self.eps.fixed():
+        if not self.noise.fixed():
             return False
         return True
 
@@ -96,8 +96,8 @@ def benchmark_prepare_cholK(
     """
     pairwise_diffs = _pairwise_differences(data)
     data_count, _ = data.shape
-    Kfull = gp.sigma_sq()[0] * (
-        gp.kernel(pairwise_diffs) + gp.eps() * np.eye(data_count)
+    Kfull = gp.scale()[0] * (
+        gp.kernel(pairwise_diffs) + gp.noise() * np.eye(data_count)
     )
     return np.linalg.cholesky(Kfull)
 
@@ -127,6 +127,6 @@ def benchmark_sample_from_cholK(cholK: np.ndarray) -> np.ndarray:
     ).reshape(data_count, 1)
 
 
-def get_analytic_sigma_sq(K, y):
+def get_analytic_scale(K, y):
     assert y.shape[0] == K.shape[0]
     return (1 / y.shape[0]) * y.T @ np.linalg.solve(K, y)

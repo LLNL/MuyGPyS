@@ -4,14 +4,16 @@
 # SPDX-License-Identifier: MIT
 
 """
-Hyperparameters
+Scalar Hyperparameter
 
-Hyperparameters specifications are expected to be provided in `Dict` form with
-the keys `"val"` and `"bounds"`. `"bounds"` is either a 2-tuple indicating a
-lower and upper optimization bound or the string `"fixed"`, which exempts the
-hyperparameter from optimization (`"fixed"` is the default behavior if `bounds`
-is unspecified). `"val"` is either a floating point value (within the range
-between the upper and lower bounds if specified).
+Hyperparameters specifications are expected to provide a numeric scalar or
+string `val` a 2-tuple or string `bounds`. `bounds` is either a 2-tuple
+indicating a lower and upper optimization bound or the string `"fixed"`, which
+exempts the hyperparameter from optimization (`"fixed"` is the default behavior
+if `bounds` is unspecified). `val` is either a floating point value (within the
+range between the upper and lower bounds if specified) or the strings "sample"
+or "log_sample", which sample a guess between the provided lower and upper
+bounds.
 """
 
 from collections.abc import Sequence
@@ -24,9 +26,9 @@ from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
 
 
-class ScalarHyperparameter:
+class Parameter:
     """
-    A MuyGPs kernel or model Hyperparameter.
+    A MuyGPs kernel or model Hyperparameter. Also called `ScalarParam`.
 
     Hyperparameters are defined by a value and optimization bounds. Values must
     be scalar numeric types, and bounds are either a len == 2 iterable container

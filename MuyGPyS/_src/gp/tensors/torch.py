@@ -12,8 +12,7 @@ def _make_heteroscedastic_tensor(
     measurement_noise: torch.ndarray,
     batch_nn_indices: torch.ndarray,
 ) -> torch.ndarray:
-    eps_tensor = measurement_noise[batch_nn_indices]
-    return eps_tensor
+    return measurement_noise[batch_nn_indices]
 
 
 def _make_fast_predict_tensors(

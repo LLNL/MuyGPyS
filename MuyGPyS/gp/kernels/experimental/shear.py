@@ -16,9 +16,9 @@ kernel. Mathematical derivation is forthcoming.
 
 Example:
     >>> shear_fn = ShearKenrel(
-    ...     metric=IsotropicDistortion(
+    ...     deformation=Isotropy(
     ...         F2,
-    ...         length_scale=ScalarHyperparameter(1.0),
+    ...         length_scale=ScalarParam(1.0),
     ...     ),
     ... )
 
@@ -44,12 +44,12 @@ from typing import Callable, List, Tuple
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels.shear import _shear_fn
 from MuyGPyS._src.util import auto_str
-from MuyGPyS.gp.distortion import (
-    IsotropicDistortion,
+from MuyGPyS.gp.deformation import (
+    Isotropy,
     F2,
 )
 from MuyGPyS.gp.kernels import KernelFn
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 
 
 @auto_str
@@ -66,22 +66,21 @@ class ShearKernel(KernelFn):
         K(x_i, x_j) = \\dots
 
     Args:
-        metric:
-            The distance function to be used. Includes length_scale
-            hyperparameter information via the MuyGPyS.gp.distortion module
+        deformation:
+            The deformation function to be used. Includes length_scale
+            hyperparameter information via the MuyGPyS.gp.deformation module
     """
 
     def __init__(
         self,
-        metric: IsotropicDistortion = IsotropicDistortion(
-            F2, length_scale=ScalarHyperparameter(1.0)
-        ),
-        _backend_fn=_shear_fn,
+        deformation: Isotropy = Isotropy(F2, length_scale=ScalarParam(1.0)),
+        _backend_fn: Callable = _shear_fn,
     ):
-        super().__init__(metric=metric)
-        if not isinstance(self.distortion_fn, IsotropicDistortion):
+        super().__init__(deformation=deformation)
+        if not isinstance(self.deformation, Isotropy):
             raise ValueError(
-                f"ShearKernel only supports isotropic metrics, not {type(metric)}"
+                "ShearKernel only supports isotropic deformations, not "
+                f"{type(deformation)}"
             )
         self._kernel_fn = _backend_fn
         self._make()

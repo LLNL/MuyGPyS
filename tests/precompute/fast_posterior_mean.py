@@ -16,11 +16,10 @@ from MuyGPyS._test.utils import (
     _make_gaussian_data,
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
-from MuyGPyS.gp.distortion import IsotropicDistortion, l2
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.deformation import Isotropy, l2
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, FixedScale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.optimize.loss import mse_fn
 
 if config.state.backend in ["mpi", "torch"]:
@@ -41,12 +40,10 @@ class MakeFastRegressorTest(parameterized.TestCase):
             for k_kwargs in (
                 {
                     "kernel": Matern(
-                        nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
-                        metric=IsotropicDistortion(
-                            l2, length_scale=ScalarHyperparameter(1.5)
-                        ),
+                        nu=ScalarParam("sample", (1e-1, 1e0)),
+                        deformation=Isotropy(l2, length_scale=ScalarParam(1.5)),
                     ),
-                    "eps": HomoscedasticNoise(1e-5),
+                    "noise": HomoscedasticNoise(1e-5),
                 },
             )
         )
@@ -124,23 +121,23 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5),
-                            metric=IsotropicDistortion(
-                                l2, length_scale=ScalarHyperparameter(1.5)
+                            nu=ScalarParam(0.5),
+                            deformation=Isotropy(
+                                l2, length_scale=ScalarParam(1.5)
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "noise": HomoscedasticNoise(1e-5),
+                        "scale": AnalyticScale(),
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.8),
-                            metric=IsotropicDistortion(
-                                l2, length_scale=ScalarHyperparameter(0.7)
+                            nu=ScalarParam(0.8),
+                            deformation=Isotropy(
+                                l2, length_scale=ScalarParam(0.7)
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-5),
-                        "sigma_sq": SigmaSq(),
+                        "noise": HomoscedasticNoise(1e-5),
+                        "scale": FixedScale(),
                     },
                 ),
             )
@@ -198,22 +195,22 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
 
         for i, muygps in enumerate(mmuygps.models):
             print(f"For model{i}:")
-            self.assertEqual(k_kwargs[i]["eps"](), muygps.eps())
+            self.assertEqual(k_kwargs[i]["noise"](), muygps.noise())
             for name, param in k_kwargs[i]["kernel"]._hyperparameters.items():
                 if param.fixed() is False:
                     print(
                         f"optimized to find value "
                         f"{muygps.kernel._hyperparameters[name]()}"
                     )
-                    self.assertTrue(muygps.sigma_sq.trained)
+                    self.assertTrue(muygps.scale.trained)
                 else:
                     self.assertEqual(
                         param(),
                         muygps.kernel._hyperparameters[name](),
                     )
-                    self.assertFalse(muygps.sigma_sq.trained)
-            self.assertFalse(muygps.sigma_sq.trained)
-            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+                    self.assertFalse(muygps.scale.trained)
+            self.assertFalse(muygps.scale.trained)
+            self.assertEqual(mm.array([1.0]), muygps.scale())
 
 
 if __name__ == "__main__":

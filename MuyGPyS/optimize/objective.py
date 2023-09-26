@@ -22,7 +22,7 @@ def make_loo_crossval_fn(
     kernel_fn: Callable,
     mean_fn: Callable,
     var_fn: Callable,
-    sigma_sq_fn: Callable,
+    scale_fn: Callable,
     pairwise_diffs: mm.ndarray,
     crosswise_diffs: mm.ndarray,
     batch_nn_targets: mm.ndarray,
@@ -44,14 +44,14 @@ def make_loo_crossval_fn(
             A function that realizes kernel tensors given a list of the free
             parameters.
         mean_fn:
-            A function that realizes MuyGPs posterior mean prediction given an
-            epsilon value. The given value is unused if epsilon is fixed.
+            A function that realizes MuyGPs posterior mean prediction given a
+            noise model.
         var_fn:
             A function that realizes MuyGPs posterior variance prediction given
-            an epsilon value. The given value is unused if epsilon is fixed.
-        sigma_sq_fn:
-            A function that realizes `sigma_sq` optimization given an epsilon
-            value. The given value is unused if epsilon is fixed.
+            a noise model.
+        scale_fn:
+            A function that realizes variance scale parameter optimization given
+            a noise model.
         pairwise_diffs:
             A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
             containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
@@ -82,7 +82,7 @@ def make_loo_crossval_fn(
     predict_and_loss_fn = loss_fn.make_predict_and_loss_fn(
         mean_fn,
         var_fn,
-        sigma_sq_fn,
+        scale_fn,
         batch_nn_targets,
         batch_targets,
         **loss_kwargs,

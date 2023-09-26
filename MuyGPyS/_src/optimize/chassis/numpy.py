@@ -22,8 +22,8 @@ def _new_muygps(muygps: MuyGPS, x0_names, bounds, opt_dict) -> MuyGPS:
             val = lb
         elif val > ub:
             val = ub
-        if key == "eps":
-            ret.eps._set_val(val)
+        if key == "noise":
+            ret.noise._set_val(val)
         elif "_knot" in key:
             loc = key.find("_knot")
             name = key[:loc]

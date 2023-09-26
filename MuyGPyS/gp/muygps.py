@@ -12,16 +12,16 @@ from copy import deepcopy
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
-from MuyGPyS.gp.kernels import KernelFn
-from MuyGPyS.gp.mean import _muygps_posterior_mean, PosteriorMean
-from MuyGPyS.gp.sigma_sq import SigmaSq
-from MuyGPyS.gp.variance import _muygps_diagonal_variance, PosteriorVariance
-from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
-from MuyGPyS.gp.fast_mean import _muygps_fast_posterior_mean, FastPosteriorMean
 from MuyGPyS.gp.fast_precompute import (
     _muygps_fast_posterior_mean_precompute,
     FastPrecomputeCoefficients,
 )
+from MuyGPyS.gp.fast_mean import _muygps_fast_posterior_mean, FastPosteriorMean
+from MuyGPyS.gp.hyperparameter import FixedScale, ScaleFn
+from MuyGPyS.gp.kernels import KernelFn
+from MuyGPyS.gp.mean import _muygps_posterior_mean, PosteriorMean
+from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
+from MuyGPyS.gp.variance import _muygps_diagonal_variance, PosteriorVariance
 
 
 @auto_str
@@ -43,24 +43,23 @@ class MuyGPS:
     randomly sample a value within the range given by the bounds.
 
     In addition to individual kernel hyperparamters, each MuyGPS object also
-    possesses a homoscedastic :math:`\\varepsilon` noise parameter and a
-    vector of :math:`\\sigma^2` indicating the scale parameter associated
-    with the posterior variance of each dimension of the response.
-
-    :math:`\\sigma^2` is the only parameter assumed to be a training target by
-    default, and is treated differently from all other hyperparameters. All
-    other training targets must be manually specified in `k_kwargs`.
+    possesses a noise model, possibly with parameters, and a vector of
+    :math:`\\sigma^2` indicating the scale parameter associated with the
+    posterior variance of each dimension of the response.
 
     Example:
         >>> from MuyGPyS.gp import MuyGPS
-        >>> k_kwargs = {
-        ...         "kern": "rbf",
-        ...         "metric": "F2",
-        ...         "eps": {"val": 1e-5},
-        ...         "nu": {"val": 0.38, "bounds": (0.1, 2.5)},
-        ...         "length_scale": {"val": 7.2},
-        ... }
-        >>> muygps = MuyGPS(**k_kwarg)
+        >>> muygps = MuyGPS(
+        ...    kernel=Matern(
+        ...        nu=Parameter(0.38, (0.1, 2.5)),
+        ...        deformation=Isotropy(
+        ...            metric=F2,
+        ...            length_scale=Parameter(0.2),
+        ...        ),
+        ...    ),
+        ...    noise=HomoscedasticNoise(1e-5),
+        ...    scale=AnalyticScale(),
+        ... )
 
     MuyGPyS depends upon linear operations on specially-constructed tensors in
     order to efficiently estimate GP realizations. One can use (see their
@@ -82,8 +81,10 @@ class MuyGPS:
     Args:
         kernel:
             The kernel to be used.
-        eps:
+        noise:
             A noise model.
+        scale:
+            A variance scale parameter.
         response_count:
             The number of response dimensions.
     """
@@ -91,16 +92,16 @@ class MuyGPS:
     def __init__(
         self,
         kernel: KernelFn,
-        eps: NoiseFn = HomoscedasticNoise(0.0, "fixed"),
-        sigma_sq: SigmaSq = SigmaSq(response_count=1),
+        noise: NoiseFn = HomoscedasticNoise(0.0, "fixed"),
+        scale: ScaleFn = FixedScale(response_count=1),
         _backend_mean_fn: Callable = _muygps_posterior_mean,
         _backend_var_fn: Callable = _muygps_diagonal_variance,
         _backend_fast_mean_fn: Callable = _muygps_fast_posterior_mean,
         _backend_fast_precompute_fn: Callable = _muygps_fast_posterior_mean_precompute,
     ):
         self.kernel = kernel
-        self.sigma_sq = sigma_sq
-        self.eps = eps
+        self.scale = scale
+        self.noise = noise
         self._backend_mean_fn = _backend_mean_fn
         self._backend_var_fn = _backend_var_fn
         self._backend_fast_mean_fn = _backend_fast_mean_fn
@@ -110,16 +111,16 @@ class MuyGPS:
     def _make(self) -> None:
         self.kernel._make()
         self._mean_fn = PosteriorMean(
-            self.eps, _backend_fn=self._backend_mean_fn
+            self.noise, _backend_fn=self._backend_mean_fn
         )
         self._var_fn = PosteriorVariance(
-            self.eps, self.sigma_sq, _backend_fn=self._backend_var_fn
+            self.noise, self.scale, _backend_fn=self._backend_var_fn
         )
         self._fast_posterior_mean_fn = FastPosteriorMean(
             _backend_fn=self._backend_fast_mean_fn
         )
         self._fast_precompute_fn = FastPrecomputeCoefficients(
-            self.eps, _backend_fn=self._backend_fast_precompute_fn
+            self.noise, _backend_fn=self._backend_fast_precompute_fn
         )
 
     def fixed(self) -> bool:
@@ -135,7 +136,7 @@ class MuyGPS:
         for p in self.kernel._hyperparameters:
             if not self.kernel._hyperparameters[p].fixed():
                 return False
-        if not self.eps.fixed():
+        if not self.noise.fixed():
             return False
         return True
 
@@ -155,7 +156,7 @@ class MuyGPS:
                 A list of unfixed hyperparameter bound tuples.
         """
         names, params, bounds = self.kernel.get_opt_params()
-        self.eps.append_lists("eps", names, params, bounds)
+        self.noise.append_lists("noise", names, params, bounds)
         return names, mm.array(params), mm.array(bounds)
 
     def fast_coefficients(
@@ -172,16 +173,15 @@ class MuyGPS:
         .. math::
             \\mathbf{C}_{N^*}(i, :) =
                 (K_{\\hat{\\theta}} (X_{N^*}, X_{N^*})
-                + \\varepsilon I_k)^{-1} Y(X_{N^*}).
+                + \\varepsilon)^{-1} Y(X_{N^*}).
 
         Here :math:`X_{N^*}` is the union of the nearest neighbor of the ith
         test point and the `nn_count - 1` nearest neighbors of this nearest
         neighbor, :math:`K_{\\hat{\\theta}}` is the trained kernel functor
-        specified by `self.kernel`, :math:`\\varepsilon I_k` is a diagonal
-        noise matrix whose diagonal is the value of the
-        `self.eps` hyperparameter, and :math:`Y(X_{N^*})` is the
-        `(train_count,)` vector of responses corresponding to the
-        training features indexed by $N^*$.
+        specified by `self.kernel`, :math:`\\varepsilon` is a diagonal
+        noise matrix whose diagonal elements are informed by the `self.noise`
+        hyperparameter, and :math:`Y(X_{N^*})` is the `(train_count,)` vector of
+        responses corresponding to the training features indexed by $N^*$.
 
         Args:
             K:
@@ -225,14 +225,14 @@ class MuyGPS:
         .. math::
             \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}) =
                 K_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
+                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon)^{-1}
                 Y(X_{N_i}).
 
         Here :math:`X_{N_i}` is the set of nearest neighbors of
         :math:`\\mathbf{x}_i` in the training data, :math:`K_\\theta` is the
-        kernel functor specified by `self.kernel`, :math:`\\varepsilon I_k` is a
-        diagonal homoscedastic noise matrix whose diagonal is the value of the
-        `self.eps` hyperparameter, and :math:`Y(X_{N_i})` is the
+        kernel functor specified by `self.kernel`, :math:`\\varepsilon` is a
+        diagonal noise matrix whose diagonal elements are informed by the
+        `self.noise` hyperparameter, and :math:`Y(X_{N_i})` is the
         `(nn_count, response_count)` matrix of responses of the nearest
         neighbors given by the second two dimensions of the `batch_nn_targets`
         argument.
@@ -274,7 +274,7 @@ class MuyGPS:
             Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})) =
                 K_\\theta (\\mathbf{x}_i, \\mathbf{x}_i) -
                 K_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon I_k)^{-1}
+                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon)^{-1}
                 K_\\theta (X_{N_i}, \\mathbf{x}_i).
 
         Args:
@@ -354,9 +354,9 @@ class MuyGPS:
             A MuyGPs model with updated noise parameter(s).
         """
         ret = deepcopy(self)
-        ret.eps = new_noise
-        ret._mean_fn = PosteriorMean(ret.eps)
-        ret._var_fn = PosteriorVariance(ret.eps, ret.sigma_sq)
+        ret.noise = new_noise
+        ret._mean_fn = PosteriorMean(ret.noise)
+        ret._var_fn = PosteriorVariance(ret.noise, ret.scale)
         return ret
 
     def get_opt_mean_fn(self) -> Callable:
@@ -367,7 +367,7 @@ class MuyGPS:
         arguments.
 
         Returns:
-            A function implementing the posterior mean, where `eps` is either
+            A function implementing the posterior mean, where `noise` is either
             fixed or takes updating values during optimization. The function
             expects keyword arguments corresponding to current hyperparameter
             values for unfixed parameters.
@@ -382,19 +382,19 @@ class MuyGPS:
         arguments.
 
         Returns:
-            A function implementing posterior variance, where `eps` is either
+            A function implementing posterior variance, where `noise` is either
             fixed or takes updating values during optimization. The function
             expects keyword arguments corresponding to current hyperparameter
             values for unfixed parameters.
         """
         return self._var_fn.get_opt_fn()
 
-    def optimize_sigma_sq(
+    def optimize_scale(
         self, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
     ):
         K = self.kernel(pairwise_diffs)
-        opt_fn = self.sigma_sq.get_opt_fn(self)
-        self.sigma_sq._set(opt_fn(K, nn_targets))
+        opt_fn = self.scale.get_opt_fn(self)
+        self.scale._set(opt_fn(K, nn_targets))
         self._make()
         return self
 
@@ -407,8 +407,8 @@ class MuyGPS:
                         == rhs.kernel._hyperparameters[h]()
                         for h in self.kernel._hyperparameters
                     ),
-                    self.eps() == rhs.eps(),
-                    self.sigma_sq() == rhs.sigma_sq(),
+                    self.noise() == rhs.noise(),
+                    self.scale() == rhs.scale(),
                 )
             )
         else:

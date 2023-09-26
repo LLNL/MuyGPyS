@@ -8,8 +8,8 @@ MuyGPs PyTorch implementation
 """
 from MuyGPyS import config
 from MuyGPyS._src.math.torch import nn
-from MuyGPyS.gp.distortion import IsotropicDistortion
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.deformation import Isotropy
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.tensors import (
     pairwise_tensor,
@@ -39,28 +39,23 @@ class MuyGPs_layer(nn.Module):
     the Matern kernel for non-special values of :math:`\\nu`, e.g. 1/2, 3/2,
     5/2, and :math:`\\infty`. The MuyGPs layer allows the lengthscale parameter
     :math:`\\rho` to be trained (provided an initial value by the user) as well
-    as the homoscedastic :math:`\\varepsilon` noise parameter.
+    as the homoscedastic :math:`\\tau^2` noise prior variance.
 
     The MuyGPs layer returns the posterior mean, posterior variance, and a
     vector of :math:`\\sigma^2` indicating the scale parameter associated
     with the posterior variance of each dimension of the response.
 
-    :math:`\\sigma^2` is the only parameter assumed to be a training target by
-    default, and is treated differently from all other hyperparameters. All
-    other training targets must be manually specified in the construction of
-    a MuyGPs_layer object.
-
     Example:
         >>> from MuyGPyS.torch.muygps_layer import MuyGPs_layer
         >>> muygps_model = MuyGPS(
         ...     Matern(
-        ...         nu=ScalarHyperparameter("sample", (0.1, 1)),
-        ...         metric=IsotropicDistortion(
-        ...             l2,
-        ...             length_scale=ScalarHyperparameter(1.0)
+        ...         nu=ScalarParam(0.5),
+        ...         deformation=Isotropy(
+        ...             metric=l2,
+        ...             length_scale=ScalarParam(1.0)
         ...         ),
         ...     ),
-        ...     eps=HomoscedasticNoise(1e-5),
+        ...     noise=HomoscedasticNoise(1e-5),
         ... )
         >>> batch_indices = torch.arange(100,)
         >>> batch_nn_indices = torch.arange(100,)
@@ -107,23 +102,21 @@ class MuyGPs_layer(nn.Module):
         batch_nn_targets,
     ):
         super().__init__()
-        if not isinstance(
-            muygps_model.kernel.distortion_fn, IsotropicDistortion
-        ):
+        if not isinstance(muygps_model.kernel.deformation, Isotropy):
             raise NotImplementedError(
                 "MuyGPyS/torch optimization does not support "
-                f"{type(muygps_model.kernel.distortion_fn)} distortions"
+                f"{type(muygps_model.kernel.deformation)} deformations"
             )
         if not isinstance(
-            muygps_model.kernel.distortion_fn.length_scale, ScalarHyperparameter
+            muygps_model.kernel.deformation.length_scale, ScalarParam
         ):
             raise NotImplementedError(
                 "MuyGPyS/torch optimization does not support "
-                f"{type(muygps_model.kernel.distortion_fn.length_scale)} "
+                f"{type(muygps_model.kernel.deformation.length_scale)} "
                 "length scales"
             )
         self.muygps_model = muygps_model
-        self.length_scale = muygps_model.kernel.distortion_fn.length_scale._val
+        self.length_scale = muygps_model.kernel.deformation.length_scale._val
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets

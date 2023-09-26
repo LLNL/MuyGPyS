@@ -9,7 +9,7 @@ import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _is_mpi_mode
-from MuyGPyS.optimize import Bayes_optimize_fn, L_BFGS_B_optimize_fn
+from MuyGPyS.optimize import Bayes_optimize, L_BFGS_B_optimize
 
 if config.muygpys_hnswlib_enabled is True:  # type: ignore
     _basic_nn_kwarg_options = [
@@ -29,9 +29,9 @@ else:
 _exact_nn_kwarg_options = ({"nn_method": "exact", "algorithm": "ball_tree"},)
 
 _basic_opt_fn_and_kwarg_options = [
-    [L_BFGS_B_optimize_fn, dict()],
+    [L_BFGS_B_optimize, dict()],
     [
-        Bayes_optimize_fn,
+        Bayes_optimize,
         {
             "random_state": 1,
             "init_points": 3,
@@ -42,9 +42,9 @@ _basic_opt_fn_and_kwarg_options = [
 ]
 
 _advanced_opt_fn_and_kwarg_options = [
-    [L_BFGS_B_optimize_fn, dict()],
+    [L_BFGS_B_optimize, dict()],
     [
-        Bayes_optimize_fn,
+        Bayes_optimize,
         {
             "random_state": 1,
             "init_points": 5,
@@ -296,13 +296,13 @@ def _normalize(X: mm.ndarray) -> mm.ndarray:
     return X * mm.sqrt(X.shape[1] / mm.sum(X**2, axis=1))[:, None]
 
 
-def _get_sigma_sq_series(
+def _get_scale_series(
     K: mm.ndarray,
     nn_targets_column: mm.ndarray,
-    eps: float,
+    noise_variance: float,
 ) -> mm.ndarray:
     """
-    Return the series of sigma^2 scale parameters for each neighborhood
+    Return the series of :math:`sigma^2` scale parameters for each neighborhood
     solve.
 
     NOTE[bwp]: This function is only for testing purposes.
@@ -318,21 +318,21 @@ def _get_sigma_sq_series(
             each batch element.
 
     Returns:
-        A vector of shape `(response_count)` listing the value of sigma^2
-        for the given response dimension.
+        A vector of shape `(response_count)` listing the value of the scale
+        parameter for the given response dimension.
     """
     batch_count, nn_count, _ = nn_targets_column.shape
 
-    sigmas = np.zeros((batch_count,))
-    for i, el in enumerate(_get_sigma_sq(K, nn_targets_column, eps)):
-        sigmas[i] = el
-    return mm.array(sigmas / nn_count)
+    scales = np.zeros((batch_count,))
+    for i, el in enumerate(_get_scale(K, nn_targets_column, noise_variance)):
+        scales[i] = el
+    return mm.array(scales / nn_count)
 
 
-def _get_sigma_sq(
+def _get_scale(
     K: mm.ndarray,
     nn_targets_column: mm.ndarray,
-    eps: float,
+    noise_variance: float,
 ) -> Generator[float, None, None]:
     """
     Generate series of :math:`\\sigma^2` scale parameters for each
@@ -356,14 +356,16 @@ def _get_sigma_sq(
             each batch element.
 
     Return:
-        A generator producing `batch_count` optimal values of
-        :math:`\\sigma^2` for each neighborhood for the given response
-        dimension.
+        A generator producing `batch_count` optimal values of the
+        :math:`\\sigma^2` variance scale parameter for each neighborhood for the
+        given response dimension.
     """
     batch_count, nn_count, _ = nn_targets_column.shape
     for j in range(batch_count):
         Y_0 = nn_targets_column[j, :, 0]
-        yield Y_0 @ mm.linalg.solve(K[j, :, :] + eps * mm.eye(nn_count), Y_0)
+        yield Y_0 @ mm.linalg.solve(
+            K[j, :, :] + noise_variance * mm.eye(nn_count), Y_0
+        )
 
 
 def _check_ndarray(
@@ -408,7 +410,7 @@ def _consistent_assert(assert_fn, *args):
 
 
 def _make_heteroscedastic_test_nugget(
-    batch_count: int, nn_count: int, eps_mag: float
+    batch_count: int, nn_count: int, magnitude: float
 ):
     """
     Produces a test heteroscedastic 3D tensor parameter of shape
@@ -421,7 +423,7 @@ def _make_heteroscedastic_test_nugget(
             Number of points to be predicted.
         nn_count:
             Number of nearest neighbors in the kernel.
-        eps:
+        magnitude:
             Maximum noise magnitude.
 
 
@@ -429,5 +431,4 @@ def _make_heteroscedastic_test_nugget(
         A `(batch_count, nn_count)` shaped tensor for heteroscedastic
         noise modeling.
     """
-    eps_tensor = eps_mag * mm.ones((batch_count, nn_count))
-    return eps_tensor
+    return magnitude * mm.ones((batch_count, nn_count))

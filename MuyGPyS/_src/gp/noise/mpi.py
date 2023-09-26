@@ -6,5 +6,7 @@
 from MuyGPyS._src.gp.noise.numpy import _homoscedastic_perturb, np
 
 
-def _heteroscedastic_perturb(K: np.ndarray, eps: np.ndarray) -> np.ndarray:
+def _heteroscedastic_perturb(
+    K: np.ndarray, noise_variances: np.ndarray
+) -> np.ndarray:
     raise NotImplementedError("heteroscedastic noise does not support mpi!")

@@ -17,10 +17,10 @@ object.
 Example:
     >>> from MuyGPyS.gp.kernels import Matern
     >>> kern = Matern(
-    ...     nu=ScalarHyperparameter("log_sample", (0.1, 2.5)),
-    ...     metric=IsotropicDistortion(
-    ...         l2,
-    ...         length_scale=ScalarHyperparameter(1.0),
+    ...     nu=Parameter("log_sample", (0.1, 2.5)),
+    ...     deformation=Isotropy(
+    ...         metric=l2,
+    ...         length_scale=Parameter(1.0),
     ...     ),
     ... )
 
@@ -49,19 +49,17 @@ from MuyGPyS._src.gp.kernels import (
 )
 
 from MuyGPyS._src.util import auto_str
-from MuyGPyS.gp.distortion import (
-    DistortionFn,
-    IsotropicDistortion,
+from MuyGPyS.gp.deformation import (
+    DeformationFn,
+    Isotropy,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
-from MuyGPyS.gp.kernels import (
-    KernelFn,
-)
+from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.kernels import KernelFn
 
 
 def _set_matern_fn(
-    nu: ScalarHyperparameter,
+    nu: ScalarParam,
     _backend_05_fn: Callable = _matern_05_fn,
     _backend_15_fn: Callable = _matern_15_fn,
     _backend_25_fn: Callable = _matern_25_fn,
@@ -88,7 +86,7 @@ class Matern(KernelFn):
     """
     The Matérn kernel.
 
-    The Màtern kernel includes a parameterized distortion model
+    The Màtern kernel includes a parameterized deformation model
     :math:`d_\\ell(\\cdot, \\cdot)` and an additional smoothness parameter
     :math:`\\nu>0`. :math:`\\nu` is proportional to the smoothness of the
     resulting function. As :math:`\\nu\\rightarrow\\infty`, the kernel becomes
@@ -113,20 +111,20 @@ class Matern(KernelFn):
     Args:
         nu:
             A hyperparameter dict defining the length_scale parameter.
-        metric:
-            The distance function to be used. Includes length_scale
-            hyperparameter information via the MuyGPyS.gp.distortion module.
+        deformation:
+            The deformation functor to be used. Includes length_scale
+            hyperparameter information via the `MuyGPyS.gp.deformation` module.
     """
 
     def __init__(
         self,
-        nu: ScalarHyperparameter = ScalarHyperparameter(0.5),
-        metric: DistortionFn = IsotropicDistortion(
-            l2, length_scale=ScalarHyperparameter(1.0)
+        nu: ScalarParam = ScalarParam(0.5),
+        deformation: DeformationFn = Isotropy(
+            l2, length_scale=ScalarParam(1.0)
         ),
         **_backend_fns
     ):
-        super().__init__(metric=metric)
+        super().__init__(deformation=deformation)
         self.nu = nu
         self._backend_fns = _backend_fns
         self._make()
@@ -136,7 +134,7 @@ class Matern(KernelFn):
         self._hyperparameters["nu"] = self.nu
         self._kernel_fn = _set_matern_fn(self.nu, **self._backend_fns)
         self._fn = self.nu.apply_fn(self._kernel_fn, "nu")
-        self._fn = self.distortion_fn.embed_fn(self._fn)
+        self._fn = self.deformation.embed_fn(self._fn)
 
     def __call__(self, diffs, **kwargs):
         """

@@ -34,7 +34,7 @@ class OptimizeFn:
             `(muygps, obj_fn, verbose=verbose, **kwargs) -> MuyGPS`.
         make_obj_fn:
             A Callable taking the following objects, in order:
-            `loss_fn`, `kernel_fn`, `mean_fn`, `var_fn`, `sigma_sq_fn`,
+            `loss_fn`, `kernel_fn`, `mean_fn`, `var_fn`, `scale_fn`,
             `pairwise_diffs`, `crosswise_diffs` `batch_nn_targets`,
             `batch_targets` `batch_features`, `loss_kwargs`.
     """
@@ -98,14 +98,14 @@ class OptimizeFn:
         kernel_fn = muygps.kernel.get_opt_fn()
         mean_fn = muygps.get_opt_mean_fn()
         var_fn = muygps.get_opt_var_fn()
-        sigma_sq_fn = muygps.sigma_sq.get_opt_fn(muygps)
+        scale_fn = muygps.scale.get_opt_fn(muygps)
 
         obj_fn = self._make_obj_fn(
             loss_fn,
             kernel_fn,
             mean_fn,
             var_fn,
-            sigma_sq_fn,
+            scale_fn,
             pairwise_diffs,
             crosswise_diffs,
             batch_nn_targets,
@@ -116,7 +116,7 @@ class OptimizeFn:
         return self._fn(muygps, obj_fn, verbose=verbose, **kwargs)
 
 
-Bayes_optimize_fn = OptimizeFn(_bayes_opt_optimize, make_loo_crossval_fn)
+Bayes_optimize = OptimizeFn(_bayes_opt_optimize, make_loo_crossval_fn)
 """
 Optimize a :class:`~MuyGPyS.gp.muygps.MuyGPS` model using Bayesian optimization.
 
@@ -128,11 +128,11 @@ matrix using :func:`MuyGPyS.gp.tensors.crosswise_tensor` and
 initialized a :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
 
 Example:
-    >>> from MuyGPyS.optimize import Bayes_optimize_fn
-    >>> muygps = Bayes_optimize_fn(
+    >>> from MuyGPyS.optimize import Bayes_optimize
+    >>> muygps = Bayes_optimize(
     ...         muygps,
-    ...         batch_indices,
-    ...         batch_nn_indices,
+    ...         batch_targets,
+    ...         batch_nn_targets,
     ...         crosswise_diffs,
     ...         pairwise_diffs,
     ...         train_responses,
@@ -204,7 +204,7 @@ Returns:
     optimized.
 """
 
-L_BFGS_B_optimize_fn = OptimizeFn(_scipy_optimize, make_loo_crossval_fn)
+L_BFGS_B_optimize = OptimizeFn(_scipy_optimize, make_loo_crossval_fn)
 """
 Optimize a :class:`~MuyGPyS.gp.muygps.MuyGPS` model using the L-BFGS-B
 algorithm.
@@ -217,11 +217,11 @@ matrix using :func:`MuyGPyS.gp.tensors.crosswise_tensor` and
 initialized a :class:`~MuyGPyS.gp.muygps.MuyGPS` model `muygps`.
 
 Example:
-    >>> from MuyGPyS.optimize import L_BFGS_B_optimize_fn
-    >>> muygps = L_BFGS_B_optimize_fn(
+    >>> from MuyGPyS.optimize import L_BFGS_B_optimize
+    >>> muygps = L_BFGS_B_optimize(
     ...         muygps,
-    ...         batch_indices,
-    ...         batch_nn_indices,
+    ...         batch_targets,
+    ...         batch_nn_targets,
     ...         crosswise_diffs,
     ...         pairwise_diffs,
     ...         train_responses,

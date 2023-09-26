@@ -30,7 +30,7 @@ from MuyGPyS.examples.regress import _decide_and_make_regressor
 from MuyGPyS.gp.tensors import fast_nn_update
 from MuyGPyS.gp.tensors import pairwise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
+from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
 
 
@@ -162,7 +162,7 @@ def do_fast_posterior_mean(
     nn_count: int = 30,
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
@@ -183,24 +183,25 @@ def do_fast_posterior_mean(
     Example:
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
-        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
-        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.deformation import F2, Isotropy
+        >>> from MuyGPyS.gp.hyperparameter import Parameter
+        >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
-        >>> from MuyGPyS.optimize import Bayes_optimize_fn
-        >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
+        >>> from MuyGPyS.optimize import Bayes_optimize
         >>> from MuyGPyS.optimize.objective import mse_fn
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> test_features, test_responses = make_test()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
         ...     "kernel": RBF(
-        ...         metric=IsotropicDistortion(
-        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...         deformation=Isotropy(
+        ...             metric=F2,
+        ...             length_scale=Parameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),
-        ...     "eps": HomoscedasticNoise(1e-5),
-        ...     "sigma_sq": AnalyticSigmaSq(),
+        ...     "noise": HomoscedasticNoise(1e-5),
+        ...     "scale": AnalyticScale(),
         ... }
         >>> (
         ...     muygps, nbrs_lookup, predictions, precomputed_coefficients_matrix
@@ -211,7 +212,7 @@ def do_fast_posterior_mean(
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=lool_fn,
-        ...         opt_fn=Bayes_optimize_fn,
+        ...         opt_fn=Bayes_optimize,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,

@@ -19,9 +19,9 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_fn_and_kwarg_options,
 )
-from MuyGPyS.gp.distortion import IsotropicDistortion, F2, l2
+from MuyGPyS.gp.deformation import Isotropy, F2, l2
 from MuyGPyS.examples.two_class_classify_uq import example_lambdas
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import cross_entropy_fn, mse_fn
@@ -78,7 +78,6 @@ class MNISTTest(ClassifyAPITest):
             for lf in [cross_entropy_fn, mse_fn]
             for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             for nn_kwargs in _basic_nn_kwarg_options
-            # for lm in ["log"]
             # for opt_fn_and_kwargs in [
             #     _basic_opt_fn_and_kwarg_options[1]
             # ]
@@ -88,24 +87,15 @@ class MNISTTest(ClassifyAPITest):
                     0.85,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
-                            metric=IsotropicDistortion(
+                            nu=ScalarParam(0.5, (1e-1, 1e0)),
+                            deformation=Isotropy(
                                 l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
-                # (
-                #     0.85,
-                #     {
-                #         "kern": "rbf",
-                #         "metric": "F2",
-                #         "length_scale": ScalarHyperparameter(1.5, "bounds": (0.5, 1e1)},
-                #         "eps": HomoscedasticNoise(1e-3),
-                #     },
-                # ),
             )
         )
     )
@@ -178,27 +168,25 @@ class StargalClassifyTest(StargalTest):
                     0.92,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
-                            metric=IsotropicDistortion(
+                            nu=ScalarParam(0.5, (1e-1, 1e0)),
+                            deformation=Isotropy(
                                 l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
                 (
                     0.9,
                     {
                         "kernel": RBF(
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 F2,
-                                length_scale=ScalarHyperparameter(
-                                    1.5, (0.5, 1e1)
-                                ),
+                                length_scale=ScalarParam(1.5, (0.5, 1e1)),
                             )
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
             )
@@ -261,25 +249,25 @@ class StargalUQTest(StargalTest):
                     0.92,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
-                            metric=IsotropicDistortion(
+                            nu=ScalarParam(0.5, (1e-1, 1e0)),
+                            deformation=Isotropy(
                                 l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
                 (
                     0.9,
                     {
                         "kernel": RBF(
-                            metric=IsotropicDistortion(
+                            deformation=Isotropy(
                                 F2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             )
                         ),
-                        "eps": HomoscedasticNoise(1e-3),
+                        "noise": HomoscedasticNoise(1e-3),
                     },
                 ),
             )
@@ -335,23 +323,23 @@ class MultivariateStargalClassifyTest(StargalTest):
                     [
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
-                                metric=IsotropicDistortion(
+                                nu=ScalarParam(0.5, (1e-1, 1e0)),
+                                deformation=Isotropy(
                                     l2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 ),
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
-                                metric=IsotropicDistortion(
+                                nu=ScalarParam(0.5, (1e-1, 1e0)),
+                                deformation=Isotropy(
                                     l2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 ),
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                     ],
                 ),
@@ -360,25 +348,21 @@ class MultivariateStargalClassifyTest(StargalTest):
                     [
                         {
                             "kernel": RBF(
-                                metric=IsotropicDistortion(
+                                deformation=Isotropy(
                                     F2,
-                                    length_scale=ScalarHyperparameter(
-                                        1.5, (0.5, 1e1)
-                                    ),
+                                    length_scale=ScalarParam(1.5, (0.5, 1e1)),
                                 )
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": RBF(
-                                metric=IsotropicDistortion(
+                                deformation=Isotropy(
                                     F2,
-                                    length_scale=ScalarHyperparameter(
-                                        1.5, (0.5, 1e1)
-                                    ),
+                                    length_scale=ScalarParam(1.5, (0.5, 1e1)),
                                 )
                             ),
-                            "eps": HomoscedasticNoise(1e-3),
+                            "noise": HomoscedasticNoise(1e-3),
                         },
                     ],
                 ),

@@ -35,7 +35,7 @@ from MuyGPyS.examples.classify import (
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize import Bayes_optimize_fn, OptimizeFn
+from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.batch import get_balanced_batch
 from MuyGPyS.optimize.loss import LossFn, cross_entropy_fn
 
@@ -65,7 +65,7 @@ def do_classify_uq(
     opt_batch_count: int = 200,
     uq_batch_count: int = 500,
     loss_fn: LossFn = cross_entropy_fn,
-    opt_fn: OptimizeFn = Bayes_optimize_fn,
+    opt_fn: OptimizeFn = Bayes_optimize,
     uq_objectives: Union[
         List[Callable], Tuple[Callable, ...]
     ] = example_lambdas,
@@ -87,25 +87,27 @@ def do_classify_uq(
 
     Example:
         >>> import numpy as np
-        >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.regress import do_classify_uq, do_uq
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> test_features, test_responses = make_test()  # stand-in function
         >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
         >>> k_kwargs = {
-        ...         "kern": "rbf",
-        ...         "metric": "F2",
-        ...         "eps": {"val": 1e-5},
-        ...         "length_scale": {"val": 1.0, "bounds": (1e-2, 1e2)},
+        ...     "kernel": RBF(
+        ...         deformation=Isotropy(
+        ...             metric=F2,
+        ...             length_scale=Parameter(0.5, (0.01, 1)),
+        ...         ),
+        ...     )
+        ...     "noise": HomoscedasticNoise(1e-5),
         ... }
-        >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
+        >>> muygps, nbrs_lookup, surrogate_predictions = do_classify_uq(
         ...         test_features,
         ...         train_features,
         ...         train_responses,
         ...         nn_count=30,
         ...         batch_count=200,
         ...         loss_fn=cross_entropy_fn,
-        ...         opt_fn=Bayes_optimize_fn,
+        ...         opt_fn=Bayes_optimize,
         ...         k_kwargs=k_kwargs,
         ...         nn_kwargs=nn_kwargs,
         ...         verbose=False,
@@ -152,9 +154,9 @@ def do_classify_uq(
             parameter :math:`\\sigma^2` for setting confidence intervals. See
             `MuyGPyS.examples.classify.example_lambdas` for examples.
         k_kwargs:
-            Parameters for the kernel, possibly including kernel type, distance
-            metric, epsilon and sigma hyperparameter specifications, and
-            specifications for kernel hyperparameters. If all of the
+            Parameters for the kernel, possibly including kernel type,
+            deformation function, noise and scale hyperparameter specifications,
+            and specifications for kernel hyperparameters. If all of the
             hyperparameters are fixed or are not given optimization bounds, no
             optimization will occur.
         nn_kwargs:

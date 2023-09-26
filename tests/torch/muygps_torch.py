@@ -6,7 +6,6 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from MuyGPyS.gp.distortion import l2
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS import config
@@ -14,8 +13,8 @@ from MuyGPyS._test.torch_utils import SVDKMultivariateMuyGPs
 from MuyGPyS._test.utils import _check_ndarray, _make_gaussian_data
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.gp.distortion import IsotropicDistortion
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.deformation import Isotropy, l2
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
@@ -84,28 +83,28 @@ class RegressTest(parameterized.TestCase):
 
         model_nu = 0.5
         model_length_scale = 1.0
-        measurement_eps = 1e-6
+        measurement_noise = 1e-6
 
         model_args = [
             {
                 "kernel": Matern(
-                    nu=ScalarHyperparameter(model_nu),
-                    metric=IsotropicDistortion(
+                    nu=ScalarParam(model_nu),
+                    deformation=Isotropy(
                         metric=l2,
-                        length_scale=ScalarHyperparameter(model_length_scale),
+                        length_scale=ScalarParam(model_length_scale),
                     ),
                 ),
-                "eps": HomoscedasticNoise(measurement_eps),
+                "noise": HomoscedasticNoise(measurement_noise),
             },
             {
                 "kernel": Matern(
-                    nu=ScalarHyperparameter(model_nu),
-                    metric=IsotropicDistortion(
+                    nu=ScalarParam(model_nu),
+                    deformation=Isotropy(
                         metric=l2,
-                        length_scale=ScalarHyperparameter(model_length_scale),
+                        length_scale=ScalarParam(model_length_scale),
                     ),
                 ),
-                "eps": HomoscedasticNoise(measurement_eps),
+                "noise": HomoscedasticNoise(measurement_noise),
             },
         ]
 
@@ -217,23 +216,23 @@ class MultivariateRegressTest(parameterized.TestCase):
         model_args = [
             {
                 "kernel": Matern(
-                    nu=ScalarHyperparameter(1.5),
-                    metric=IsotropicDistortion(
+                    nu=ScalarParam(1.5),
+                    deformation=Isotropy(
                         metric=l2,
-                        length_scale=ScalarHyperparameter(7.2),
+                        length_scale=ScalarParam(7.2),
                     ),
                 ),
-                "eps": HomoscedasticNoise(1e-5),
+                "noise": HomoscedasticNoise(1e-5),
             },
             {
                 "kernel": Matern(
-                    nu=ScalarHyperparameter(0.5),
-                    metric=IsotropicDistortion(
+                    nu=ScalarParam(0.5),
+                    deformation=Isotropy(
                         metric=l2,
-                        length_scale=ScalarHyperparameter(2.2),
+                        length_scale=ScalarParam(2.2),
                     ),
                 ),
-                "eps": HomoscedasticNoise(1e-6),
+                "noise": HomoscedasticNoise(1e-6),
             },
         ]
 

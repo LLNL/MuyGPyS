@@ -10,9 +10,9 @@ import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 from MuyGPyS._test.utils import _check_ndarray, _sq_rel_err
 from MuyGPyS._test.gp import benchmark_sample_full, BenchmarkGP
-from MuyGPyS.gp.distortion import IsotropicDistortion, l2
+from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.optimize.batch import sample_batch
@@ -36,7 +36,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.response_count = 1
         cls.length_scale = 1e-2
 
-        cls.sigma_tol = 5e-1
+        cls.scale_tol = 5e-1
         cls.nu_tol = {
             "mse": 2.5e-1,
             "lool": 2.5e-1,
@@ -51,9 +51,9 @@ class BenchmarkTestCase(parameterized.TestCase):
         }
 
         cls.params = {
-            "length_scale": ScalarHyperparameter(1e-1, (1e-2, 1e0)),
-            "nu": ScalarHyperparameter(0.78, (1e-1, 2e0)),
-            "eps": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
+            "length_scale": ScalarParam(1e-1, (1e-2, 1e0)),
+            "nu": ScalarParam(0.78, (1e-1, 2e0)),
+            "noise": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
         }
 
         cls.setUpGP()
@@ -63,17 +63,15 @@ class BenchmarkTestCase(parameterized.TestCase):
     def setUpGP(cls):
         cls.gp = BenchmarkGP(
             kernel=Matern(
-                nu=ScalarHyperparameter(cls.params["nu"]()),
-                metric=IsotropicDistortion(
+                nu=ScalarParam(cls.params["nu"]()),
+                deformation=Isotropy(
                     metric=l2,
-                    length_scale=ScalarHyperparameter(
-                        cls.params["length_scale"]()
-                    ),
+                    length_scale=ScalarParam(cls.params["length_scale"]()),
                 ),
             ),
-            eps=HomoscedasticNoise(cls.params["eps"]()),
+            noise=HomoscedasticNoise(cls.params["noise"]()),
         )
-        cls.gp.sigma_sq._set(mm.array([5.0]))
+        cls.gp.scale._set(mm.array([5.0]))
 
     @classmethod
     def simulate(cls):

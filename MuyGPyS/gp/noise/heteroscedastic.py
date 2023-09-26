@@ -14,11 +14,11 @@ from typing import Callable
 import MuyGPyS._src.math as mm
 
 from MuyGPyS._src.gp.noise import _heteroscedastic_perturb
-from MuyGPyS.gp.hyperparameter import TensorHyperparameter
+from MuyGPyS.gp.hyperparameter import TensorParam
 from MuyGPyS.gp.noise.noise_fn import NoiseFn
 
 
-class HeteroscedasticNoise(TensorHyperparameter, NoiseFn):
+class HeteroscedasticNoise(TensorParam, NoiseFn):
     """
     A tensor noise parameter.
 
