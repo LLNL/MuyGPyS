@@ -235,7 +235,7 @@ multivariate outputs as interchangeable in terms of loss penalty. The function
 computes
 
 .. math::
-    \\ell_\\textrm{MSE}(\\bar{\\mu}, y) = 
+    \\ell_\\textrm{MSE}(\\bar{\\mu}, y) =
         \\frac{1}{b} \\sum_{i=1}^b (\\bar{\\mu}_i - y)^2.
 
 Args:
@@ -344,9 +344,9 @@ variance. The function computes
 
 .. math::
     \\ell_\\textrm{lool}(\\bar{\\mu}, y \\mid \\delta, \\bar{\\Sigma}) =
-        \\sum_{i=1}^b \\sum_{i=1}^s \\delta^2 
+        \\sum_{i=1}^b \\sum_{i=1}^s \\delta^2
         \\left ( \\sqrt{
-            1 + \\left ( 
+            1 + \\left (
                 \\frac{y_i - \\bar{\\mu}_i}{\\delta \\bar{\\Sigma}_{ii}}
             \\right )_j^2
         } - 1 \\right ) + \\left ( \\log \\bar{\\Sigma}_{ii} \\right )_j.
