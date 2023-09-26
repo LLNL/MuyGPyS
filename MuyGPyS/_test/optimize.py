@@ -12,7 +12,7 @@ from MuyGPyS._test.utils import _check_ndarray, _sq_rel_err
 from MuyGPyS._test.gp import benchmark_sample_full, BenchmarkGP
 from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.optimize.batch import sample_batch
@@ -51,8 +51,8 @@ class BenchmarkTestCase(parameterized.TestCase):
         }
 
         cls.params = {
-            "length_scale": ScalarHyperparameter(1e-1, (1e-2, 1e0)),
-            "nu": ScalarHyperparameter(0.78, (1e-1, 2e0)),
+            "length_scale": ScalarParam(1e-1, (1e-2, 1e0)),
+            "nu": ScalarParam(0.78, (1e-1, 2e0)),
             "noise": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
         }
 
@@ -63,12 +63,10 @@ class BenchmarkTestCase(parameterized.TestCase):
     def setUpGP(cls):
         cls.gp = BenchmarkGP(
             kernel=Matern(
-                nu=ScalarHyperparameter(cls.params["nu"]()),
+                nu=ScalarParam(cls.params["nu"]()),
                 deformation=Isotropy(
                     metric=l2,
-                    length_scale=ScalarHyperparameter(
-                        cls.params["length_scale"]()
-                    ),
+                    length_scale=ScalarParam(cls.params["length_scale"]()),
                 ),
             ),
             noise=HomoscedasticNoise(cls.params["noise"]()),

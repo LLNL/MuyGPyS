@@ -6,7 +6,7 @@ hyperparameter
 `MuyGPyS.gp.hyperparameters` module reference.
 
 .. default-role:: code
-.. autoclass:: MuyGPyS.gp.hyperparameter.scalar.ScalarHyperparameter
+.. autoclass:: MuyGPyS.gp.hyperparameter.scalar.Parameter
   :members:
   :special-members: __call__
 

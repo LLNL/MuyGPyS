@@ -52,7 +52,7 @@ def make_regressor(
     Example:
         >>> from MuyGPyS.examples.regress import make_regressor
         >>> from MuyGPyS.gp.deformation import F2, Isotropy
-        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.hyperparameter import Parameter
         >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -64,7 +64,7 @@ def make_regressor(
         ...     "kernel": RBF(
         ...         deformation=Isotropy(
         ...             metric=F2,
-        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...             length_scale=Parameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),
         ...     "noise": HomoscedasticNoise(1e-5),
@@ -215,7 +215,7 @@ def make_multivariate_regressor(
     Example:
         >>> from MuyGPyS.examples.regress import make_multivariate_regressor
         >>> from MuyGPyS.gp.deformation import F2, Isotropy
-        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.hyperparameter import Parameter
         >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -227,7 +227,7 @@ def make_multivariate_regressor(
         ...             "kernel": RBF(
         ...                 deformation=Isotropy(
         ...                     metric=F2,
-        ...                     length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...                     length_scale=Parameter(1.0, (1e-2, 1e2))
         ...                 )
         ...             ),
         ...             "noise": HomoscedasticNoise(1e-5),
@@ -237,7 +237,7 @@ def make_multivariate_regressor(
         ...             "kernel": RBF(
         ...                 deformation=Isotropy(
         ...                     metric=F2,
-        ...                     length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...                     length_scale=Parameter(1.0, (1e-2, 1e2))
         ...                 )
         ...             ),
         ...             "noise": HomoscedasticNoise(1e-5),
@@ -482,7 +482,7 @@ def do_regress(
     Example:
         >>> from MuyGPyS.examples.regress import do_regress
         >>> from MuyGPyS.gp.deformation import F2, Isotropy
-        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.hyperparameter import Parameter
         >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -496,7 +496,7 @@ def do_regress(
         ...     "kernel": RBF(
         ...         deformation=Isotropy(
         ...             metric=F2,
-        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...             length_scale=Parameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),
         ...     "noise": HomoscedasticNoise(1e-5),

@@ -14,11 +14,11 @@ from typing import Callable, Optional, Tuple, Union
 import MuyGPyS._src.math as mm
 
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.noise.noise_fn import NoiseFn
 
 
-class HomoscedasticNoise(ScalarHyperparameter, NoiseFn):
+class HomoscedasticNoise(ScalarParam, NoiseFn):
     """
     A scalar prior noise parameter.
 

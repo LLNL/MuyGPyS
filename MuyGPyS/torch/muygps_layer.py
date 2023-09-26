@@ -9,7 +9,7 @@ MuyGPs PyTorch implementation
 from MuyGPyS import config
 from MuyGPyS._src.math.torch import nn
 from MuyGPyS.gp.deformation import Isotropy
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.tensors import (
     pairwise_tensor,
@@ -49,10 +49,10 @@ class MuyGPs_layer(nn.Module):
         >>> from MuyGPyS.torch.muygps_layer import MuyGPs_layer
         >>> muygps_model = MuyGPS(
         ...     Matern(
-        ...         nu=ScalarHyperparameter(0.5),
+        ...         nu=ScalarParam(0.5),
         ...         deformation=Isotropy(
         ...             metric=l2,
-        ...             length_scale=ScalarHyperparameter(1.0)
+        ...             length_scale=ScalarParam(1.0)
         ...         ),
         ...     ),
         ...     noise=HomoscedasticNoise(1e-5),
@@ -108,7 +108,7 @@ class MuyGPs_layer(nn.Module):
                 f"{type(muygps_model.kernel.deformation)} deformations"
             )
         if not isinstance(
-            muygps_model.kernel.deformation.length_scale, ScalarHyperparameter
+            muygps_model.kernel.deformation.length_scale, ScalarParam
         ):
             raise NotImplementedError(
                 "MuyGPyS/torch optimization does not support "

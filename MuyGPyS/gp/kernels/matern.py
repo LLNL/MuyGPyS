@@ -17,10 +17,10 @@ object.
 Example:
     >>> from MuyGPyS.gp.kernels import Matern
     >>> kern = Matern(
-    ...     nu=ScalarHyperparameter("log_sample", (0.1, 2.5)),
+    ...     nu=ScalarParam("log_sample", (0.1, 2.5)),
     ...     deformation=Isotropy(
     ...         metric=l2,
-    ...         length_scale=ScalarHyperparameter(1.0),
+    ...         length_scale=ScalarParam(1.0),
     ...     ),
     ... )
 
@@ -54,14 +54,12 @@ from MuyGPyS.gp.deformation import (
     Isotropy,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
-from MuyGPyS.gp.kernels import (
-    KernelFn,
-)
+from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.kernels import KernelFn
 
 
 def _set_matern_fn(
-    nu: ScalarHyperparameter,
+    nu: ScalarParam,
     _backend_05_fn: Callable = _matern_05_fn,
     _backend_15_fn: Callable = _matern_15_fn,
     _backend_25_fn: Callable = _matern_25_fn,
@@ -120,9 +118,9 @@ class Matern(KernelFn):
 
     def __init__(
         self,
-        nu: ScalarHyperparameter = ScalarHyperparameter(0.5),
+        nu: ScalarParam = ScalarParam(0.5),
         deformation: DeformationFn = Isotropy(
-            l2, length_scale=ScalarHyperparameter(1.0)
+            l2, length_scale=ScalarParam(1.0)
         ),
         **_backend_fns
     ):

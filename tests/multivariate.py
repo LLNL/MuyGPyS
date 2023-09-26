@@ -31,7 +31,7 @@ from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.deformation import Isotropy, Anisotropy, l2
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, Scale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
@@ -47,18 +47,18 @@ class InitTest(parameterized.TestCase):
             [
                 {
                     "kernel": Matern(
-                        nu=ScalarHyperparameter(1.0),
+                        nu=ScalarParam(1.0),
                         deformation=Isotropy(
-                            metric=l2, length_scale=ScalarHyperparameter(7.2)
+                            metric=l2, length_scale=ScalarParam(7.2)
                         ),
                     ),
                     "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": Matern(
-                        nu=ScalarHyperparameter(1.2),
+                        nu=ScalarParam(1.2),
                         deformation=Isotropy(
-                            metric=l2, length_scale=ScalarHyperparameter(2.2)
+                            metric=l2, length_scale=ScalarParam(2.2)
                         ),
                     ),
                     "noise": HomoscedasticNoise(1e-6),
@@ -67,9 +67,9 @@ class InitTest(parameterized.TestCase):
             [
                 {
                     "kernel": Matern(
-                        nu=ScalarHyperparameter(1.0),
+                        nu=ScalarParam(1.0),
                         deformation=Isotropy(
-                            metric=l2, length_scale=ScalarHyperparameter(7.2)
+                            metric=l2, length_scale=ScalarParam(7.2)
                         ),
                     ),
                     "noise": HomoscedasticNoise(1e-5),
@@ -102,10 +102,10 @@ class ScaleTest(parameterized.TestCase):
                 [
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(1.5),
+                            nu=ScalarParam(1.5),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(7.2),
+                                length_scale=ScalarParam(7.2),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -113,10 +113,10 @@ class ScaleTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5),
+                            nu=ScalarParam(0.5),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(2.2),
+                                length_scale=ScalarParam(2.2),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-6),
@@ -124,10 +124,10 @@ class ScaleTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(mm.inf),
+                            nu=ScalarParam(mm.inf),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(12.4),
+                                length_scale=ScalarParam(12.4),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-6),
@@ -135,11 +135,11 @@ class ScaleTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(1.5),
+                            nu=ScalarParam(1.5),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(7.2),
-                                length_scale1=ScalarHyperparameter(0.5),
+                                length_scale0=ScalarParam(7.2),
+                                length_scale1=ScalarParam(0.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -147,11 +147,11 @@ class ScaleTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5),
+                            nu=ScalarParam(0.5),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(2.2),
-                                length_scale1=ScalarHyperparameter(0.5),
+                                length_scale0=ScalarParam(2.2),
+                                length_scale1=ScalarParam(0.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-6),
@@ -159,11 +159,11 @@ class ScaleTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(mm.inf),
+                            nu=ScalarParam(mm.inf),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(12.4),
-                                length_scale1=ScalarHyperparameter(0.5),
+                                length_scale0=ScalarParam(12.4),
+                                length_scale1=ScalarParam(0.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-6),
@@ -242,20 +242,20 @@ class OptimTest(parameterized.TestCase):
                     [
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter("sample", (1e-2, 1e0)),
+                                nu=ScalarParam("sample", (1e-2, 1e0)),
                                 deformation=Isotropy(
                                     metric=l2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 ),
                             ),
                             "noise": HomoscedasticNoise(1e-5),
                         },
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter("sample", (1e-2, 1e0)),
+                                nu=ScalarParam("sample", (1e-2, 1e0)),
                                 deformation=Isotropy(
                                     metric=l2,
-                                    length_scale=ScalarHyperparameter(0.7),
+                                    length_scale=ScalarParam(0.7),
                                 ),
                             ),
                             "noise": HomoscedasticNoise(1e-5),
@@ -375,42 +375,42 @@ class ClassifyTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.63),
+                            nu=ScalarParam(0.63),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.79),
+                            nu=ScalarParam(0.79),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(0.7),
+                                length_scale=ScalarParam(0.7),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.63),
+                            nu=ScalarParam(0.63),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(1.5),
-                                length_scale1=ScalarHyperparameter(0.5),
+                                length_scale0=ScalarParam(1.5),
+                                length_scale1=ScalarParam(0.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.79),
+                            nu=ScalarParam(0.79),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(0.7),
-                                length_scale1=ScalarHyperparameter(1.5),
+                                length_scale0=ScalarParam(0.7),
+                                length_scale1=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -472,42 +472,42 @@ class RegressTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(1.5),
+                            nu=ScalarParam(1.5),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            ScalarHyperparameter(0.5),
+                            ScalarParam(0.5),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(0.7),
+                                length_scale=ScalarParam(0.7),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(1.5),
+                            nu=ScalarParam(1.5),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(1.5),
-                                length_scale1=ScalarHyperparameter(0.5),
+                                length_scale0=ScalarParam(1.5),
+                                length_scale1=ScalarParam(0.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            ScalarHyperparameter(0.5),
+                            ScalarParam(0.5),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(0.7),
-                                length_scale1=ScalarHyperparameter(1.5),
+                                length_scale0=ScalarParam(0.7),
+                                length_scale1=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -582,42 +582,42 @@ class MakeClassifierTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.8),
+                            nu=ScalarParam(0.8),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(0.7),
+                                length_scale=ScalarParam(0.7),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(1.5),
-                                length_scale1=ScalarHyperparameter(0.5),
+                                length_scale0=ScalarParam(1.5),
+                                length_scale1=ScalarParam(0.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.8),
+                            nu=ScalarParam(0.8),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(0.7),
-                                length_scale1=ScalarHyperparameter(1.5),
+                                length_scale0=ScalarParam(0.7),
+                                length_scale1=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -704,10 +704,10 @@ class MakeRegressorTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -715,10 +715,10 @@ class MakeRegressorTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.8),
+                            nu=ScalarParam(0.8),
                             deformation=Isotropy(
                                 metric=l2,
-                                length_scale=ScalarHyperparameter(0.7),
+                                length_scale=ScalarParam(0.7),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -726,11 +726,11 @@ class MakeRegressorTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(1.5),
-                                length_scale1=ScalarHyperparameter(0.5),
+                                length_scale0=ScalarParam(1.5),
+                                length_scale1=ScalarParam(0.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -738,11 +738,11 @@ class MakeRegressorTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.8),
+                            nu=ScalarParam(0.8),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarHyperparameter(0.7),
-                                length_scale1=ScalarHyperparameter(1.5),
+                                length_scale0=ScalarParam(0.7),
+                                length_scale1=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),

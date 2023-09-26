@@ -14,7 +14,7 @@ from MuyGPyS._test.utils import _check_ndarray, _make_gaussian_data
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.deformation import Isotropy, l2
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
@@ -88,20 +88,20 @@ class RegressTest(parameterized.TestCase):
         model_args = [
             {
                 "kernel": Matern(
-                    nu=ScalarHyperparameter(model_nu),
+                    nu=ScalarParam(model_nu),
                     deformation=Isotropy(
                         metric=l2,
-                        length_scale=ScalarHyperparameter(model_length_scale),
+                        length_scale=ScalarParam(model_length_scale),
                     ),
                 ),
                 "noise": HomoscedasticNoise(measurement_noise),
             },
             {
                 "kernel": Matern(
-                    nu=ScalarHyperparameter(model_nu),
+                    nu=ScalarParam(model_nu),
                     deformation=Isotropy(
                         metric=l2,
-                        length_scale=ScalarHyperparameter(model_length_scale),
+                        length_scale=ScalarParam(model_length_scale),
                     ),
                 ),
                 "noise": HomoscedasticNoise(measurement_noise),
@@ -216,20 +216,20 @@ class MultivariateRegressTest(parameterized.TestCase):
         model_args = [
             {
                 "kernel": Matern(
-                    nu=ScalarHyperparameter(1.5),
+                    nu=ScalarParam(1.5),
                     deformation=Isotropy(
                         metric=l2,
-                        length_scale=ScalarHyperparameter(7.2),
+                        length_scale=ScalarParam(7.2),
                     ),
                 ),
                 "noise": HomoscedasticNoise(1e-5),
             },
             {
                 "kernel": Matern(
-                    nu=ScalarHyperparameter(0.5),
+                    nu=ScalarParam(0.5),
                     deformation=Isotropy(
                         metric=l2,
-                        length_scale=ScalarHyperparameter(2.2),
+                        length_scale=ScalarParam(2.2),
                     ),
                 ),
                 "noise": HomoscedasticNoise(1e-6),

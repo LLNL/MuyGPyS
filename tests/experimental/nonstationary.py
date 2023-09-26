@@ -12,7 +12,7 @@ import MuyGPyS._src.math.numpy as np
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.deformation import l2, Isotropy, Anisotropy
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalNonstationaryHyperparameter,
     sample_knots,
@@ -81,7 +81,7 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
             ]
             for knot_values in [
                 np.random.uniform(size=knot_count),
-                [ScalarHyperparameter(i) for i in range(knot_count)],
+                [ScalarParam(i) for i in range(knot_count)],
             ]
             for high_level_kernel in [RBF(), Matern()]
             for deformation in [

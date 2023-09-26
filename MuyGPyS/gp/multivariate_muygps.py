@@ -31,22 +31,22 @@ class MultivariateMuyGPS:
     Example:
         >>> from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
         >>> k_kwargs1 = {
-        ...     "noise": ScalarHyperparameter(1e-5),
+        ...     "noise": ScalarParam(1e-5),
         ...     "kernel": Matern(
-        ...         nu=ScalarHyperparameter(0.67, (0.1, 2.5)),
+        ...         nu=ScalarParam(0.67, (0.1, 2.5)),
         ...         deformation=Isotropy(
         ...             metric=l2,
-        ...             length_scale=ScalarHyperparameter(0.2),
+        ...             length_scale=ScalarParam(0.2),
         ...         scale=AnalyticScale(),
         ...     ),
         ... }
         >>> k_kwargs2 = {
-        ...     "noise": ScalarHyperparameter(1e-5),
+        ...     "noise": ScalarParam(1e-5),
         ...     "kernel": Matern(
-        ...         nu=ScalarHyperparameter(0.67, (0.1, 2.5)),
+        ...         nu=ScalarParam(0.67, (0.1, 2.5)),
         ...         deformation=Isotropy(
         ...             metric=l2,
-        ...             length_scale=ScalarHyperparameter(0.2),
+        ...             length_scale=ScalarParam(0.2),
         ...         scale=AnalyticScale(),
         ...     ),
         ... }

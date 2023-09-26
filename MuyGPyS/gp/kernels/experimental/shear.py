@@ -18,7 +18,7 @@ Example:
     >>> shear_fn = ShearKenrel(
     ...     deformation=Isotropy(
     ...         F2,
-    ...         length_scale=ScalarHyperparameter(1.0),
+    ...         length_scale=ScalarParam(1.0),
     ...     ),
     ... )
 
@@ -49,7 +49,7 @@ from MuyGPyS.gp.deformation import (
     F2,
 )
 from MuyGPyS.gp.kernels import KernelFn
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 
 
 @auto_str
@@ -73,9 +73,7 @@ class ShearKernel(KernelFn):
 
     def __init__(
         self,
-        deformation: Isotropy = Isotropy(
-            F2, length_scale=ScalarHyperparameter(1.0)
-        ),
+        deformation: Isotropy = Isotropy(F2, length_scale=ScalarParam(1.0)),
         _backend_fn: Callable = _shear_fn,
     ):
         super().__init__(deformation=deformation)

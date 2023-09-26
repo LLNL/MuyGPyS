@@ -10,7 +10,7 @@ import pandas as pd
 
 from MuyGPyS._test.gp import benchmark_sample, BenchmarkGP
 from MuyGPyS.gp.deformation import Isotropy, l2
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn
@@ -41,8 +41,8 @@ class UnivariateSampler(SamplerBase):
         view_lb=0.5,
         view_ub=0.6,
         kernel=Matern(
-            nu=ScalarHyperparameter(2.0),
-            deformation=Isotropy(l2, length_scale=ScalarHyperparameter(1.0)),
+            nu=ScalarParam(2.0),
+            deformation=Isotropy(l2, length_scale=ScalarParam(1.0)),
         ),
         noise=HomoscedasticNoise(1e-14),
         measurement_noise=HomoscedasticNoise(1e-5),
@@ -240,8 +240,8 @@ class UnivariateSampler2D(SamplerBase):
         points_per_dim=60,
         train_ratio=10,
         kernel=Matern(
-            nu=ScalarHyperparameter(2.0),
-            deformation=Isotropy(l2, length_scale=ScalarHyperparameter(1.0)),
+            nu=ScalarParam(2.0),
+            deformation=Isotropy(l2, length_scale=ScalarParam(1.0)),
         ),
         noise=HomoscedasticNoise(1e-14),
         measurement_noise=HomoscedasticNoise(1e-5),

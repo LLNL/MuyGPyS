@@ -54,7 +54,7 @@ def make_classifier(
     Example:
         >>> from MuyGPyS.examples.regress import make_classifier
         >>> from MuyGPyS.gp.deformation import F2, Isotropy
-        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.hyperparameter import Parameter
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.optimize import Bayes_optimize
@@ -65,7 +65,7 @@ def make_classifier(
         ...     "kernel": RBF(
         ...         deformation=Isotropy(
         ...             metric=F2,
-        ...             length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...             length_scale=Parameter(1.0, (1e-2, 1e2))
         ...         )
         ...     ),
         ...     "noise": HomoscedasticNoise(1e-5),
@@ -203,7 +203,7 @@ def make_multivariate_classifier(
     Example:
         >>> from MuyGPyS.examples.classify import make_multivariate_classifier
         >>> from MuyGPyS.gp.deformation import F2, Isotropy
-        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.hyperparameter import Parameter
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.optimize import Bayes_optimize
@@ -214,7 +214,7 @@ def make_multivariate_classifier(
         ...         "kernel": RBF(
         ...             deformation=Isotropy(
         ...                 metric=F2,
-        ...                 length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
+        ...                 length_scale=Parameter(0.5, (0.01, 1)),
         ...             ),
         ...         )
         ...         "noise": HomoscedasticNoise(1e-5),
@@ -223,7 +223,7 @@ def make_multivariate_classifier(
         ...         "kernel": RBF(
         ...             deformation=Isotropy(
         ...                 metric=F2,
-        ...                 length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
+        ...                 length_scale=Parameter(0.5, (0.01, 1)),
         ...             ),
         ...         )
         ...         "noise": HomoscedasticNoise(1e-5),
@@ -421,7 +421,7 @@ def do_classify(
         >>> import numpy as np
         >>> from MuyGPyS.examples.classify import do_classify
         >>> from MuyGPyS.gp.deformation import F2, Isotropy
-        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.hyperparameter import Parameter
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.optimize import Bayes_optimize
@@ -432,7 +432,7 @@ def do_classify(
         ...     "kernel": RBF(
         ...         deformation=Isotropy(
         ...             metric=F2,
-        ...             length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
+        ...             length_scale=Parameter(0.5, (0.01, 1)),
         ...         ),
         ...     )
         ...     "noise": HomoscedasticNoise(1e-5),

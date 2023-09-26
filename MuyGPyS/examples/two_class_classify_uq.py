@@ -95,7 +95,7 @@ def do_classify_uq(
         ...     "kernel": RBF(
         ...         deformation=Isotropy(
         ...             metric=F2,
-        ...             length_scale=ScalarHyperparameter(0.5, (0.01, 1)),
+        ...             length_scale=Parameter(0.5, (0.01, 1)),
         ...         ),
         ...     )
         ...     "noise": HomoscedasticNoise(1e-5),

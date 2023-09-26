@@ -17,7 +17,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.gp import MuyGPS
 
 from MuyGPyS.gp.deformation import Isotropy, l2
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, Scale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.experimental.chassis import (
@@ -139,14 +139,10 @@ class NuTest(MiniBatchBenchmarkTestCase):
             # set up MuyGPS object
             muygps = MuyGPS(
                 kernel=Matern(
-                    nu=ScalarHyperparameter(
-                        "sample", self.params["nu"].get_bounds()
-                    ),
+                    nu=ScalarParam("sample", self.params["nu"].get_bounds()),
                     deformation=Isotropy(
                         metric=l2,
-                        length_scale=ScalarHyperparameter(
-                            self.params["length_scale"]()
-                        ),
+                        length_scale=ScalarParam(self.params["length_scale"]()),
                     ),
                 ),
                 noise=HomoscedasticNoise(self.params["noise"]()),
@@ -225,10 +221,10 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
             # set up MuyGPS object
             muygps = MuyGPS(
                 kernel=Matern(
-                    nu=ScalarHyperparameter(self.params["nu"]()),
+                    nu=ScalarParam(self.params["nu"]()),
                     deformation=Isotropy(
                         metric=l2,
-                        length_scale=ScalarHyperparameter(
+                        length_scale=ScalarParam(
                             "sample", self.params["length_scale"].get_bounds()
                         ),
                     ),

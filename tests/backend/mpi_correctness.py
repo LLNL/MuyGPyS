@@ -88,7 +88,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import Anisotropy, Isotropy
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
@@ -136,7 +136,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_muygps(cls, nu, deformation, nu_bounds="fixed"):
         return MuyGPS(
             kernel=Matern(
-                nu=ScalarHyperparameter(nu, nu_bounds),
+                nu=ScalarParam(nu, nu_bounds),
                 deformation=deformation,
                 _backend_05_fn=matern_05_fn_n,
                 _backend_15_fn=matern_15_fn_n,
@@ -163,7 +163,7 @@ class TensorsTestCase(parameterized.TestCase):
         return cls._make_muygps(
             nu,
             deformation=Isotropy(
-                l2_n, length_scale=ScalarHyperparameter(cls.length_scale)
+                l2_n, length_scale=ScalarParam(cls.length_scale)
             ),
             **kwargs,
         )
@@ -174,8 +174,8 @@ class TensorsTestCase(parameterized.TestCase):
             nu,
             Anisotropy(
                 l2_n,
-                length_scale0=ScalarHyperparameter(cls.length_scale),
-                length_scale1=ScalarHyperparameter(cls.length_scale),
+                length_scale0=ScalarParam(cls.length_scale),
+                length_scale1=ScalarParam(cls.length_scale),
             ),
             **kwargs,
         )
@@ -204,7 +204,7 @@ class TensorsTestCase(parameterized.TestCase):
     @classmethod
     def _make_isotropic_muygps_rbf(cls):
         return cls._make_muygps_rbf(
-            Isotropy(F2_n, length_scale=ScalarHyperparameter(cls.length_scale))
+            Isotropy(F2_n, length_scale=ScalarParam(cls.length_scale))
         )
 
     @classmethod
@@ -212,8 +212,8 @@ class TensorsTestCase(parameterized.TestCase):
         return cls._make_muygps_rbf(
             Anisotropy(
                 F2_n,
-                length_scale0=ScalarHyperparameter(cls.length_scale),
-                length_scale1=ScalarHyperparameter(cls.length_scale),
+                length_scale0=ScalarParam(cls.length_scale),
+                length_scale1=ScalarParam(cls.length_scale),
             )
         )
 

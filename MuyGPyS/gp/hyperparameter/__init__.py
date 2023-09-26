@@ -3,6 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .scalar import ScalarHyperparameter
+from .scalar import Parameter, Parameter as ScalarParam
 from .tensor import TensorParam
 from .scale import AnalyticScale, Scale

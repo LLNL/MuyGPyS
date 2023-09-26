@@ -19,7 +19,7 @@ Example:
     >>> kernel_fn = RBF(
     ...     deformation=Isotropy(
     ...         metric=l2,
-    ...         length_scale=ScalarHyperparameter(1.0),
+    ...         length_scale=ScalarParam(1.0),
     ...     ),
     ... )
 
@@ -42,13 +42,9 @@ from typing import Callable
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels import _rbf_fn
 from MuyGPyS._src.util import auto_str
-from MuyGPyS.gp.deformation import (
-    DeformationFn,
-    Isotropy,
-    F2,
-)
+from MuyGPyS.gp.deformation import DeformationFn, Isotropy, F2
 from MuyGPyS.gp.kernels import KernelFn
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 
 
 @auto_str
@@ -76,7 +72,7 @@ class RBF(KernelFn):
     def __init__(
         self,
         deformation: DeformationFn = Isotropy(
-            F2, length_scale=ScalarHyperparameter(1.0)
+            F2, length_scale=ScalarParam(1.0)
         ),
         _backend_fn: Callable = _rbf_fn,
     ):

@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 
 
 @auto_str
@@ -39,11 +39,11 @@ class Isotropy(DeformationFn):
     def __init__(
         self,
         metric: Callable,
-        length_scale: ScalarHyperparameter,
+        length_scale: ScalarParam,
     ):
-        if not isinstance(length_scale, ScalarHyperparameter):
+        if not isinstance(length_scale, ScalarParam):
             raise ValueError(
-                "Expected ScalarHyperparameter type for length_scale, not "
+                "Expected ScalarParam type for length_scale, not "
                 f"{type(length_scale)}"
             )
         self.length_scale = length_scale

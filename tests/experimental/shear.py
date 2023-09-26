@@ -12,7 +12,7 @@ from MuyGPyS._src.math import numpy as np
 from MuyGPyS._src.gp.tensors import _pairwise_differences
 from MuyGPyS._test.utils import _check_ndarray
 from MuyGPyS.gp.deformation import Isotropy, F2
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.kernels.experimental import ShearKernel
 
 
@@ -51,7 +51,7 @@ class ShearKernelTest(parameterized.TestCase):
         # distance functor to be used
         dist_fn = Isotropy(
             metric=F2,
-            length_scale=ScalarHyperparameter(length_scale),
+            length_scale=ScalarParam(length_scale),
         )
 
         baseline_shears = np.zeros((3 * (n) ** 2, 3 * (n) ** 2))

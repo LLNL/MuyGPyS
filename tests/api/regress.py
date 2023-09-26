@@ -26,7 +26,7 @@ from MuyGPyS.gp.deformation import (
     F2,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, Scale
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn
@@ -83,10 +83,10 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                     [
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
+                                nu=ScalarParam("sample", (1e-1, 1e0)),
                                 deformation=Isotropy(
                                     l2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 ),
                             ),
                             "noise": HomoscedasticNoise(1e-3),
@@ -94,10 +94,10 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                         },
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
+                                nu=ScalarParam(0.5, (1e-1, 1e0)),
                                 deformation=Isotropy(
                                     l2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 ),
                             ),
                             "noise": HomoscedasticNoise(1e-3),
@@ -112,7 +112,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                             "kernel": RBF(
                                 deformation=Isotropy(
                                     F2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 )
                             ),
                             "noise": HomoscedasticNoise(1e-3),
@@ -122,7 +122,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                             "kernel": RBF(
                                 deformation=Isotropy(
                                     F2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 )
                             ),
                             "noise": HomoscedasticNoise(1e-3),
@@ -186,10 +186,10 @@ class HeatonTest(RegressionAPITest):
                     11.0,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Isotropy(
                                 l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
@@ -200,11 +200,11 @@ class HeatonTest(RegressionAPITest):
                     11.0,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Anisotropy(
                                 l2,
-                                length_scale0=ScalarHyperparameter(1.5),
-                                length_scale1=ScalarHyperparameter(1.5),
+                                length_scale0=ScalarParam(1.5),
+                                length_scale1=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
@@ -216,7 +216,7 @@ class HeatonTest(RegressionAPITest):
                 #     {
                 #         "kern": "rbf",
                 #         "metric": "F2",
-                #         "length_scale": ScalarHyperparameter(1.5, "bounds": (0.5, 1e1)},
+                #         "length_scale": ScalarParam(1.5, "bounds": (0.5, 1e1)},
                 #         "noise": HomoscedasticNoise(1e-3),
                 #     },
                 # ),

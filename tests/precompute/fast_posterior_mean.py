@@ -17,7 +17,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp.deformation import Isotropy, l2
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, Scale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn
@@ -40,10 +40,8 @@ class MakeFastRegressorTest(parameterized.TestCase):
             for k_kwargs in (
                 {
                     "kernel": Matern(
-                        nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
-                        deformation=Isotropy(
-                            l2, length_scale=ScalarHyperparameter(1.5)
-                        ),
+                        nu=ScalarParam("sample", (1e-1, 1e0)),
+                        deformation=Isotropy(l2, length_scale=ScalarParam(1.5)),
                     ),
                     "noise": HomoscedasticNoise(1e-5),
                 },
@@ -123,9 +121,9 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5),
+                            nu=ScalarParam(0.5),
                             deformation=Isotropy(
-                                l2, length_scale=ScalarHyperparameter(1.5)
+                                l2, length_scale=ScalarParam(1.5)
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -133,9 +131,9 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.8),
+                            nu=ScalarParam(0.8),
                             deformation=Isotropy(
-                                l2, length_scale=ScalarHyperparameter(0.7)
+                                l2, length_scale=ScalarParam(0.7)
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),

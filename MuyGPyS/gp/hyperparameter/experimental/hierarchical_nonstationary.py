@@ -13,7 +13,7 @@ from MuyGPyS._src.gp.tensors import (
     _pairwise_differences,
     _crosswise_differences,
 )
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 
 
 class HierarchicalNonstationaryHyperparameter:
@@ -39,7 +39,7 @@ class HierarchicalNonstationaryHyperparameter:
     def __init__(
         self,
         knot_features: mm.ndarray,
-        knot_values: Union[mm.ndarray, List[ScalarHyperparameter]],
+        knot_values: Union[mm.ndarray, List[ScalarParam]],
         kernel,
     ):
         """
@@ -52,8 +52,8 @@ class HierarchicalNonstationaryHyperparameter:
         self._knot_features = knot_features
         self._knot_value_params = [
             knot_value
-            if isinstance(knot_value, ScalarHyperparameter)
-            else ScalarHyperparameter(float(knot_value))
+            if isinstance(knot_value, ScalarParam)
+            else ScalarParam(float(knot_value))
             for knot_value in knot_values
         ]
         self._kernel = kernel

@@ -26,7 +26,7 @@ from MuyGPyS.gp.deformation import (
     F2,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn
@@ -69,9 +69,9 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
                     11.0,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Isotropy(
-                                l2, length_scale=ScalarHyperparameter(1.5)
+                                l2, length_scale=ScalarParam(1.5)
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
@@ -81,11 +81,11 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
                     11.0,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
+                            nu=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Anisotropy(
                                 l2,
-                                length_scale0=ScalarHyperparameter(1.5),
-                                length_scale1=ScalarHyperparameter(1.5),
+                                length_scale0=ScalarParam(1.5),
+                                length_scale1=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
@@ -146,20 +146,20 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                     [
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter("sample", (1e-1, 1e0)),
+                                nu=ScalarParam("sample", (1e-1, 1e0)),
                                 deformation=Isotropy(
                                     l2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 ),
                             ),
                             "noise": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter(0.5),
+                                nu=ScalarParam(0.5),
                                 deformation=Isotropy(
                                     l2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 ),
                             ),
                             "noise": HomoscedasticNoise(1e-3),
@@ -173,7 +173,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                             "kernel": RBF(
                                 deformation=Isotropy(
                                     F2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 )
                             ),
                             "noise": HomoscedasticNoise(1e-3),
@@ -182,7 +182,7 @@ class MultivariateStargalTest(FastPosteriorMeanAPITest):
                             "kernel": RBF(
                                 deformation=Isotropy(
                                     F2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 )
                             ),
                             "noise": HomoscedasticNoise(1e-3),
@@ -249,9 +249,9 @@ class StargalFastTest(FastPosteriorMeanAPITest):
                     1.0,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5),
+                            nu=ScalarParam(0.5),
                             deformation=Isotropy(
-                                l2, length_scale=ScalarHyperparameter(1.5)
+                                l2, length_scale=ScalarParam(1.5)
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
@@ -262,7 +262,7 @@ class StargalFastTest(FastPosteriorMeanAPITest):
                 #     {
                 #         "kernel": RBF(
                 #             deformation=Isotropy(
-                #                 F2, length_scale=ScalarHyperparameter(1.5)
+                #                 F2, length_scale=ScalarParam(1.5)
                 #             )
                 #         ),
                 #         "noise": HomoscedasticNoise(1e-3),

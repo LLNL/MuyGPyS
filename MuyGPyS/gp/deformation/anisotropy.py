@@ -9,7 +9,7 @@ import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
 
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 
 
 @auto_str
@@ -52,13 +52,13 @@ class Anisotropy(DeformationFn):
                 )
         if not (
             all(
-                isinstance(param, ScalarHyperparameter)
+                isinstance(param, ScalarParam)
                 for param in length_scales.values()
             )
         ):
             raise ValueError(
                 "Anisotropic model expects all values for the length_scale{i} "
-                "keyword arguments to be of type ScalarHyperparameter."
+                "keyword arguments to be of type ScalarParam."
             )
         self.length_scale = length_scales
 

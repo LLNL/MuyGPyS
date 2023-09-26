@@ -51,10 +51,10 @@ class MuyGPS:
         >>> from MuyGPyS.gp import MuyGPS
         >>> muygps = MuyGPS(
         ...    kernel=Matern(
-        ...        nu=ScalarHyperparameter( 0.38, (0.1, 2.5)),
+        ...        nu=ScalarParam( 0.38, (0.1, 2.5)),
         ...        deformation=Isotropy(
         ...            metric=F2,
-        ...            length_scale=ScalarHyperparameter(0.2),
+        ...            length_scale=ScalarParam(0.2),
         ...        ),
         ...    ),
         ...    noise=HomoscedasticNoise(1e-5),

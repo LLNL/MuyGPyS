@@ -21,7 +21,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp.deformation import Isotropy, F2, l2
 from MuyGPyS.examples.two_class_classify_uq import example_lambdas
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import cross_entropy_fn, mse_fn
@@ -87,10 +87,10 @@ class MNISTTest(ClassifyAPITest):
                     0.85,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
+                            nu=ScalarParam(0.5, (1e-1, 1e0)),
                             deformation=Isotropy(
                                 l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
@@ -168,10 +168,10 @@ class StargalClassifyTest(StargalTest):
                     0.92,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
+                            nu=ScalarParam(0.5, (1e-1, 1e0)),
                             deformation=Isotropy(
                                 l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
@@ -183,9 +183,7 @@ class StargalClassifyTest(StargalTest):
                         "kernel": RBF(
                             deformation=Isotropy(
                                 F2,
-                                length_scale=ScalarHyperparameter(
-                                    1.5, (0.5, 1e1)
-                                ),
+                                length_scale=ScalarParam(1.5, (0.5, 1e1)),
                             )
                         ),
                         "noise": HomoscedasticNoise(1e-3),
@@ -251,10 +249,10 @@ class StargalUQTest(StargalTest):
                     0.92,
                     {
                         "kernel": Matern(
-                            nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
+                            nu=ScalarParam(0.5, (1e-1, 1e0)),
                             deformation=Isotropy(
                                 l2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
@@ -266,7 +264,7 @@ class StargalUQTest(StargalTest):
                         "kernel": RBF(
                             deformation=Isotropy(
                                 F2,
-                                length_scale=ScalarHyperparameter(1.5),
+                                length_scale=ScalarParam(1.5),
                             )
                         ),
                         "noise": HomoscedasticNoise(1e-3),
@@ -325,20 +323,20 @@ class MultivariateStargalClassifyTest(StargalTest):
                     [
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
+                                nu=ScalarParam(0.5, (1e-1, 1e0)),
                                 deformation=Isotropy(
                                     l2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 ),
                             ),
                             "noise": HomoscedasticNoise(1e-3),
                         },
                         {
                             "kernel": Matern(
-                                nu=ScalarHyperparameter(0.5, (1e-1, 1e0)),
+                                nu=ScalarParam(0.5, (1e-1, 1e0)),
                                 deformation=Isotropy(
                                     l2,
-                                    length_scale=ScalarHyperparameter(1.5),
+                                    length_scale=ScalarParam(1.5),
                                 ),
                             ),
                             "noise": HomoscedasticNoise(1e-3),
@@ -352,9 +350,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                             "kernel": RBF(
                                 deformation=Isotropy(
                                     F2,
-                                    length_scale=ScalarHyperparameter(
-                                        1.5, (0.5, 1e1)
-                                    ),
+                                    length_scale=ScalarParam(1.5, (0.5, 1e1)),
                                 )
                             ),
                             "noise": HomoscedasticNoise(1e-3),
@@ -363,9 +359,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                             "kernel": RBF(
                                 deformation=Isotropy(
                                     F2,
-                                    length_scale=ScalarHyperparameter(
-                                        1.5, (0.5, 1e1)
-                                    ),
+                                    length_scale=ScalarParam(1.5, (0.5, 1e1)),
                                 )
                             ),
                             "noise": HomoscedasticNoise(1e-3),
