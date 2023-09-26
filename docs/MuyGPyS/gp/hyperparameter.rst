@@ -11,6 +11,11 @@ hyperparameter
   :special-members: __call__
 
 .. default-role:: code
+.. autoclass:: MuyGPyS.gp.hyperparameter.tensor.TensorParam
+  :members:
+  :special-members: __call__
+
+.. default-role:: code
 .. autoclass:: MuyGPyS.gp.hyperparameter.scale.Scale
   :members:
   :special-members: __call__
