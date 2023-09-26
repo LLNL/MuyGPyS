@@ -45,11 +45,6 @@ class MultivariateMuyGPs_layer(nn.Module):
     , and a vector of :math:`\\sigma^2` indicating the scale parameter
     associated with the posterior variance of each dimension of the response.
 
-    :math:`\\sigma^2` is the only parameter assumed to be a training target by
-    default, and is treated differently from all other hyperparameters. All
-    other training targets must be manually specified in the construction of
-    a MuyGPs_layer object.
-
     Example:
         >>> from MuyGPyS.torch.muygps_layer import MultivariateMuyGPs_layer
         >>> multivariate_muygps_model = MMuyGPs(

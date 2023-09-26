@@ -185,10 +185,10 @@ def do_fast_posterior_mean(
         >>> from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
         >>> from MuyGPyS.gp.distortion import IsotropicDistortion
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.optimize import Bayes_optimize_fn
-        >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
         >>> from MuyGPyS.optimize.objective import mse_fn
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> test_features, test_responses = make_test()  # stand-in function
@@ -200,7 +200,7 @@ def do_fast_posterior_mean(
         ...         )
         ...     ),
         ...     "noise": HomoscedasticNoise(1e-5),
-        ...     "sigma_sq": AnalyticSigmaSq(),
+        ...     "scale": AnalyticScale(),
         ... }
         >>> (
         ...     muygps, nbrs_lookup, predictions, precomputed_coefficients_matrix

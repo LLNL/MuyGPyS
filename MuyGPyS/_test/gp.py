@@ -5,9 +5,9 @@
 
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.gp.tensors import _pairwise_differences
+from MuyGPyS.gp.hyperparameter import Scale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
-from MuyGPyS.gp.sigma_sq import SigmaSq
 
 
 class BenchmarkGP:
@@ -33,7 +33,7 @@ class BenchmarkGP:
         """
         self.kernel = kernel
         self.noise = noise
-        self.sigma_sq = SigmaSq()
+        self.scale = Scale()
 
     def fixed(self) -> bool:
         """
@@ -96,7 +96,7 @@ def benchmark_prepare_cholK(
     """
     pairwise_diffs = _pairwise_differences(data)
     data_count, _ = data.shape
-    Kfull = gp.sigma_sq()[0] * (
+    Kfull = gp.scale()[0] * (
         gp.kernel(pairwise_diffs) + gp.noise() * np.eye(data_count)
     )
     return np.linalg.cholesky(Kfull)
@@ -127,6 +127,6 @@ def benchmark_sample_from_cholK(cholK: np.ndarray) -> np.ndarray:
     ).reshape(data_count, 1)
 
 
-def get_analytic_sigma_sq(K, y):
+def get_analytic_scale(K, y):
     assert y.shape[0] == K.shape[0]
     return (1 / y.shape[0]) * y.T @ np.linalg.solve(K, y)

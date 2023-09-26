@@ -102,7 +102,7 @@ def make_classifier(
             are fixed.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
-            metric, noise and sigma hyperparameter specifications, and
+            metric, noise and scale hyperparameter specifications, and
             specifications for kernel hyperparameters. See
             :ref:`MuyGPyS-gp-kernels` for examples and requirements. If all of
             the hyperparameters are fixed or are not given optimization bounds,
@@ -262,7 +262,7 @@ def make_multivariate_classifier(
         k_args:
             A list of `response_count` dicts containing kernel initialization
             keyword arguments. Each dict specifies parameters for the kernel,
-            possibly including noise and sigma hyperparameter specifications
+            possibly including noise and scale hyperparameter specifications
             and specifications for specific kernel hyperparameters. If all of
             the hyperparameters are fixed or are not given optimization bounds,
             no optimization will occur.
@@ -477,7 +477,7 @@ def do_classify(
             are fixed.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
-            metric, noise and sigma hyperparameter specifications, and
+            metric, noise and scale hyperparameter specifications, and
             specifications for kernel hyperparameters. If all of the
             hyperparameters are fixed or are not given optimization bounds, no
             optimization will occur. If `"kern"` is specified and `"k_kwargs"`

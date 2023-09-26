@@ -50,11 +50,9 @@ def _lool_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
-    sigma_sq: np.ndarray,
+    scale: np.ndarray,
 ) -> float:
-    return _lool_fn_unscaled(
-        predictions, targets, np.outer(variances, sigma_sq)
-    )
+    return _lool_fn_unscaled(predictions, targets, np.outer(variances, scale))
 
 
 def _pseudo_huber_fn(
@@ -87,12 +85,12 @@ def _looph_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
-    sigma_sq: np.ndarray,
+    scale: np.ndarray,
     boundary_scale: float = 1.5,
 ) -> float:
     return _looph_fn_unscaled(
         predictions,
         targets,
-        np.outer(variances, sigma_sq),
+        np.outer(variances, scale),
         boundary_scale=boundary_scale,
     )

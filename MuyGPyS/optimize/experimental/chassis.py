@@ -189,7 +189,7 @@ def optimize_from_tensors_mini_batch(
     kernel_fn = muygps.kernel.get_opt_fn()
     mean_fn = muygps.get_opt_mean_fn()
     var_fn = muygps.get_opt_var_fn()
-    sigma_sq_fn = muygps.sigma_sq.get_opt_fn(muygps)
+    scale_fn = muygps.scale.get_opt_fn(muygps)
 
     # Create bayes_opt kwargs
     x0_names, x0, bounds = _get_opt_lists(muygps, verbose=verbose)
@@ -247,7 +247,7 @@ def optimize_from_tensors_mini_batch(
             kernel_fn,
             mean_fn,
             var_fn,
-            sigma_sq_fn,
+            scale_fn,
             batch_pairwise_diffs,
             batch_crosswise_diffs,
             batch_nn_targets,
@@ -307,7 +307,7 @@ def optimize_from_tensors_mini_batch(
     # Compute optimal variance scaling hyperparameter
     new_muygpys = _new_muygps(muygps, x0_names, bounds, optimizer.max["params"])
 
-    new_muygpys = new_muygpys.optimize_sigma_sq(
+    new_muygpys = new_muygpys.optimize_scale(
         batch_pairwise_diffs, batch_nn_targets
     )
 

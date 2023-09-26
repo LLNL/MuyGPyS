@@ -87,7 +87,6 @@ def do_classify_uq(
 
     Example:
         >>> import numpy as np
-        >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
         >>> from MuyGPyS.examples.regress import do_classify_uq, do_uq
         >>> train_features, train_responses = make_train()  # stand-in function
         >>> test_features, test_responses = make_test()  # stand-in function
@@ -100,9 +99,8 @@ def do_classify_uq(
         ...         ),
         ...     )
         ...     "noise": HomoscedasticNoise(1e-5),
-        ...     "sigma_sq": AnalyticSigmaSq(),
         ... }
-        >>> muygps, nbrs_lookup, surrogate_predictions = do_classify(
+        >>> muygps, nbrs_lookup, surrogate_predictions = do_classify_uq(
         ...         test_features,
         ...         train_features,
         ...         train_responses,
@@ -157,7 +155,7 @@ def do_classify_uq(
             `MuyGPyS.examples.classify.example_lambdas` for examples.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
-            metric, noise and sigma hyperparameter specifications, and
+            metric, noise and scale hyperparameter specifications, and
             specifications for kernel hyperparameters. If all of the
             hyperparameters are fixed or are not given optimization bounds, no
             optimization will occur.

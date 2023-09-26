@@ -9,7 +9,7 @@ import MuyGPyS._src.math.jax as jnp
 
 
 @jit
-def _analytic_sigma_sq_optim_unnormalized(
+def _analytic_scale_optim_unnormalized(
     K: jnp.ndarray,
     nn_targets: jnp.ndarray,
 ) -> jnp.ndarray:
@@ -20,11 +20,11 @@ def _analytic_sigma_sq_optim_unnormalized(
 
 
 @jit
-def _analytic_sigma_sq_optim(
+def _analytic_scale_optim(
     K: jnp.ndarray,
     nn_targets: jnp.ndarray,
 ) -> jnp.ndarray:
     batch_count, nn_count, _ = nn_targets.shape
-    return _analytic_sigma_sq_optim_unnormalized(K, nn_targets) / (
+    return _analytic_scale_optim_unnormalized(K, nn_targets) / (
         batch_count * nn_count
     )

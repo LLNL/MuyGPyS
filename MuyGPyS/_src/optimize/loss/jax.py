@@ -66,11 +66,9 @@ def _lool_fn(
     predictions: jnp.ndarray,
     targets: jnp.ndarray,
     variances: jnp.ndarray,
-    sigma_sq: jnp.ndarray,
+    scale: jnp.ndarray,
 ) -> jnp.ndarray:
-    return _lool_fn_unscaled(
-        predictions, targets, jnp.outer(variances, sigma_sq)
-    )
+    return _lool_fn_unscaled(predictions, targets, jnp.outer(variances, scale))
 
 
 @jit
@@ -115,12 +113,12 @@ def _looph_fn(
     predictions: jnp.ndarray,
     targets: jnp.ndarray,
     variances: jnp.ndarray,
-    sigma_sq: jnp.ndarray,
+    scale: jnp.ndarray,
     boundary_scale: float = 1.5,
 ) -> float:
     return _looph_fn_unscaled(
         predictions,
         targets,
-        jnp.outer(variances, sigma_sq),
+        jnp.outer(variances, scale),
         boundary_scale=boundary_scale,
     )

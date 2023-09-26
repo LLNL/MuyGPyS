@@ -21,7 +21,7 @@ from MuyGPyS._test.utils import (
     _make_gaussian_matrix,
 )
 from MuyGPyS.gp.tensors import crosswise_tensor, pairwise_tensor
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import ScalarHyperparameter, Scale
 from MuyGPyS.gp.kernels import RBF, Matern
 from MuyGPyS.gp.distortion import (
     AnisotropicDistortion,
@@ -29,7 +29,6 @@ from MuyGPyS.gp.distortion import (
     F2,
     l2,
 )
-from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
 
 
@@ -158,9 +157,9 @@ class BackendConfigUser:
         config.update("muygpys_backend", self.state)
 
 
-class SigmaSqTest(parameterized.TestCase):
+class ScaleTest(parameterized.TestCase):
     def _do_untrained(self, val):
-        param = SigmaSq()
+        param = Scale()
         self.assertFalse(param.trained)
         self.assertEqual(mm.array([1.0]), param())
         param._set(val)
@@ -172,7 +171,7 @@ class SigmaSqTest(parameterized.TestCase):
         self._do_untrained(mm.atleast_1d(mm.array(val)))
 
     def test_untrained_bad(self):
-        with self.assertRaisesRegex(ValueError, "for SigmaSq value update"):
+        with self.assertRaisesRegex(ValueError, "for variance scale value"):
             self._do_untrained([5.0])
 
 

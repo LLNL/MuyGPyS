@@ -72,11 +72,11 @@ from MuyGPyS._src.optimize.loss.torch import (
     _pseudo_huber_fn as pseudo_huber_fn_t,
     _looph_fn as looph_fn_t,
 )
-from MuyGPyS._src.optimize.sigma_sq.numpy import (
-    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
+from MuyGPyS._src.optimize.scale.numpy import (
+    _analytic_scale_optim as analytic_scale_optim_n,
 )
-from MuyGPyS._src.optimize.sigma_sq.torch import (
-    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_t,
+from MuyGPyS._src.optimize.scale.torch import (
+    _analytic_scale_optim as analytic_scale_optim_t,
 )
 from MuyGPyS._test.utils import (
     _exact_nn_kwarg_options,
@@ -90,10 +90,9 @@ from MuyGPyS.gp.distortion import (
     AnisotropicDistortion,
     IsotropicDistortion,
 )
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HeteroscedasticNoise, HomoscedasticNoise
-from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import (
@@ -145,7 +144,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
-            sigma_sq=AnalyticSigmaSq(
+            scale=AnalyticScale(
                 _backend_ones=np.ones,
                 _backend_ndarray=np.ndarray,
                 _backend_ftype=np.ftype,
@@ -169,7 +168,7 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_gen_fn=matern_gen_fn_n,
             ),
             noise=noise,
-            sigma_sq=AnalyticSigmaSq(
+            scale=AnalyticScale(
                 _backend_ones=np.ones,
                 _backend_ndarray=np.ndarray,
                 _backend_ftype=np.ftype,
@@ -236,7 +235,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_t
             ),
-            sigma_sq=AnalyticSigmaSq(
+            scale=AnalyticScale(
                 _backend_ones=torch.ones,
                 _backend_ndarray=torch.ndarray,
                 _backend_ftype=torch.ftype,
@@ -260,7 +259,7 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_gen_fn=matern_gen_fn_t,
             ),
             noise=noise,
-            sigma_sq=AnalyticSigmaSq(
+            scale=AnalyticScale(
                 _backend_ones=torch.ones,
                 _backend_ndarray=torch.ndarray,
                 _backend_ftype=torch.ftype,
@@ -704,25 +703,25 @@ class MuyGPSTest(MuyGPSTestCase):
             )
         )
 
-    def test_sigma_sq_optim(self):
+    def test_scale_optim(self):
         self.assertTrue(
             np.allclose(
-                analytic_sigma_sq_optim_n(
+                analytic_scale_optim_n(
                     self.homoscedastic_K_n, self.batch_nn_targets_n
                 ),
-                analytic_sigma_sq_optim_t(
+                analytic_scale_optim_t(
                     self.homoscedastic_K_t, self.batch_nn_targets_t
                 ),
             )
         )
 
-    def test_sigma_sq_optim_heteroscedastic(self):
+    def test_scale_optim_heteroscedastic(self):
         self.assertTrue(
             np.allclose(
-                analytic_sigma_sq_optim_n(
+                analytic_scale_optim_n(
                     self.heteroscedastic_K_n, self.batch_nn_targets_n
                 ),
-                analytic_sigma_sq_optim_t(
+                analytic_scale_optim_t(
                     self.heteroscedastic_K_t, self.batch_nn_targets_t
                 ),
             )
@@ -1113,19 +1112,19 @@ class OptimTestCase(MuyGPSTestCase):
         cls.x0_map_n = {n: cls.x0_n[i] for i, n in enumerate(cls.x0_names)}
         cls.x0_map_t = {n: cls.x0_t[i] for i, n in enumerate(cls.x0_names)}
 
-    def _get_sigma_sq_fn_n(self):
-        return self.muygps_05_n.sigma_sq.get_opt_fn(self.muygps_05_n)
+    def _get_scale_fn_n(self):
+        return self.muygps_05_n.scale.get_opt_fn(self.muygps_05_n)
 
-    def _get_sigma_sq_fn_heteroscedastic_n(self):
-        return self.muygps_heteroscedastic_n.sigma_sq.get_opt_fn(
+    def _get_scale_fn_heteroscedastic_n(self):
+        return self.muygps_heteroscedastic_n.scale.get_opt_fn(
             self.muygps_heteroscedastic_n
         )
 
-    def _get_sigma_sq_fn_t(self):
-        return self.muygps_05_t.sigma_sq.get_opt_fn(self.muygps_05_t)
+    def _get_scale_fn_t(self):
+        return self.muygps_05_t.scale.get_opt_fn(self.muygps_05_t)
 
-    def _get_sigma_sq_fn_heteroscedastic_t(self):
-        return self.muygps_heteroscedastic_t.sigma_sq.get_opt_fn(
+    def _get_scale_fn_heteroscedastic_t(self):
+        return self.muygps_heteroscedastic_t.scale.get_opt_fn(
             self.muygps_heteroscedastic_t
         )
 
@@ -1135,7 +1134,7 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps_05_n.kernel.get_opt_fn(),
             self.muygps_05_n.get_opt_mean_fn(),
             self.muygps_05_n.get_opt_var_fn(),
-            self._get_sigma_sq_fn_n(),
+            self._get_scale_fn_n(),
             self.pairwise_diffs_n,
             self.crosswise_diffs_n,
             self.batch_nn_targets_n,
@@ -1148,7 +1147,7 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps_heteroscedastic_n.kernel.get_opt_fn(),
             self.muygps_heteroscedastic_n.get_opt_mean_fn(),
             self.muygps_heteroscedastic_n.get_opt_var_fn(),
-            self._get_sigma_sq_fn_heteroscedastic_n(),
+            self._get_scale_fn_heteroscedastic_n(),
             self.pairwise_diffs_n,
             self.crosswise_diffs_n,
             self.batch_nn_targets_n,
@@ -1161,7 +1160,7 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps_05_t.kernel.get_opt_fn(),
             self.muygps_05_t.get_opt_mean_fn(),
             self.muygps_05_t.get_opt_var_fn(),
-            self._get_sigma_sq_fn_t(),
+            self._get_scale_fn_t(),
             self.pairwise_diffs_t,
             self.crosswise_diffs_t,
             self.batch_nn_targets_t,
@@ -1174,7 +1173,7 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps_heteroscedastic_t.kernel.get_opt_fn(),
             self.muygps_heteroscedastic_t.get_opt_mean_fn(),
             self.muygps_heteroscedastic_t.get_opt_var_fn(),
-            self._get_sigma_sq_fn_heteroscedastic_t(),
+            self._get_scale_fn_heteroscedastic_t(),
             self.pairwise_diffs_t,
             self.crosswise_diffs_t,
             self.batch_nn_targets_t,
@@ -1187,8 +1186,8 @@ class ObjectiveTest(OptimTestCase):
     def setUpClass(cls):
         super(ObjectiveTest, cls).setUpClass()
 
-        cls.sigma_sq_n = cls.muygps_05_n.sigma_sq()
-        cls.sigma_sq_t = torch.array(cls.muygps_05_t.sigma_sq()).float()
+        cls.scale_n = cls.muygps_05_n.scale()
+        cls.scale_t = torch.array(cls.muygps_05_t.scale()).float()
 
     def test_mse(self):
         self.assertTrue(
@@ -1205,13 +1204,13 @@ class ObjectiveTest(OptimTestCase):
                     self.predictions_n,
                     self.batch_targets_n,
                     self.variances_n,
-                    self.sigma_sq_n,
+                    self.scale_n,
                 ),
                 lool_fn_t(
                     self.predictions_t,
                     self.batch_targets_t,
                     self.variances_t,
-                    self.sigma_sq_t,
+                    self.scale_t,
                 ),
             )
         )
@@ -1237,14 +1236,14 @@ class ObjectiveTest(OptimTestCase):
                     self.predictions_n,
                     self.batch_targets_n,
                     self.variances_n,
-                    self.sigma_sq_n,
+                    self.scale_n,
                     boundary_scale=boundary_scale,
                 ),
                 looph_fn_t(
                     self.predictions_t,
                     self.batch_targets_t,
                     self.variances_t,
-                    self.sigma_sq_t,
+                    self.scale_t,
                     boundary_scale=boundary_scale,
                 ),
             )
@@ -1361,9 +1360,9 @@ class ObjectiveTest(OptimTestCase):
             )
         )
 
-    def test_sigma_sq_fn(self):
-        ss_fn_n = self._get_sigma_sq_fn_n()
-        ss_fn_t = self._get_sigma_sq_fn_t()
+    def test_scale_fn(self):
+        ss_fn_n = self._get_scale_fn_n()
+        ss_fn_t = self._get_scale_fn_t()
         self.assertTrue(
             np.allclose(
                 ss_fn_n(
@@ -1379,9 +1378,9 @@ class ObjectiveTest(OptimTestCase):
             )
         )
 
-    def test_sigma_sq_heteroscedastic_fn(self):
-        ss_fn_n = self._get_sigma_sq_fn_heteroscedastic_n()
-        ss_fn_t = self._get_sigma_sq_fn_heteroscedastic_t()
+    def test_scale_heteroscedastic_fn(self):
+        ss_fn_n = self._get_scale_fn_heteroscedastic_n()
+        ss_fn_t = self._get_scale_fn_heteroscedastic_t()
         self.assertTrue(
             np.allclose(
                 ss_fn_n(

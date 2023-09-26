@@ -25,7 +25,7 @@ from MuyGPyS._test.utils import (
     _basic_opt_fn_and_kwarg_options,
     _check_ndarray,
     _consistent_assert,
-    _get_sigma_sq_series,
+    _get_scale_series,
     _make_gaussian_data,
     _make_gaussian_dict,
     _make_heteroscedastic_test_nugget,
@@ -35,10 +35,9 @@ from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
-from MuyGPyS.gp.sigma_sq import SigmaSq, AnalyticSigmaSq
 from MuyGPyS.gp.tensors import (
     make_train_tensors,
     make_predict_tensors,
@@ -71,11 +70,11 @@ class GPInitTest(parameterized.TestCase):
         self.assertEqual(noise(), muygps.noise())
         self.assertTrue(muygps.noise.fixed())
         if gp_type == MuyGPS:
-            self.assertFalse(muygps.sigma_sq.trained)
-            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+            self.assertFalse(muygps.scale.trained)
+            self.assertEqual(mm.array([1.0]), muygps.scale())
         # elif gp_type == BenchmarkGP:
-        #     self.assertFalse(muygps.sigma_sq.trained)
-        #     self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+        #     self.assertFalse(muygps.scale.trained)
+        #     self.assertEqual(mm.array([1.0]), muygps.scale())
 
     @parameterized.parameters(
         (kernel, e, gp)
@@ -157,11 +156,11 @@ class GPInitTest(parameterized.TestCase):
             self.assertFalse(muygps.noise.fixed())
             self.assertEqual(noise.get_bounds(), muygps.noise.get_bounds())
         if gp_type == MuyGPS:
-            self.assertFalse(muygps.sigma_sq.trained)
-            self.assertEqual(1.0, muygps.sigma_sq())
+            self.assertFalse(muygps.scale.trained)
+            self.assertEqual(1.0, muygps.scale())
         # elif gp_type == BenchmarkGP:
-        #     self.assertFalse(muygps.sigma_sq.trained)
-        #     self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+        #     self.assertFalse(muygps.scale.trained)
+        #     self.assertEqual(mm.array([1.0]), muygps.scale())
 
     @parameterized.parameters(
         (kernel, e, gp, 100)
@@ -703,14 +702,14 @@ class MakeRegressorTest(parameterized.TestCase):
                         nu=ScalarHyperparameter("sample", (1e-1, 1e0))
                     ),
                     "noise": HomoscedasticNoise(1e-5),
-                    "sigma_sq": SigmaSq(),
+                    "scale": Scale(),
                 },
                 {
                     "kernel": Matern(
                         nu=ScalarHyperparameter("sample", (1e-1, 1e0))
                     ),
                     "noise": HomoscedasticNoise(1e-5),
-                    "sigma_sq": AnalyticSigmaSq(),
+                    "scale": AnalyticScale(),
                 },
             )
         )
@@ -768,14 +767,14 @@ class MakeRegressorTest(parameterized.TestCase):
                     muygps.kernel._hyperparameters[name](),
                 )
 
-        self.assertTrue(muygps.sigma_sq.trained)
-        if isinstance(muygps.sigma_sq, AnalyticSigmaSq):
-            print(f"\toptimized sigma_sq to find value " f"{muygps.sigma_sq()}")
+        self.assertTrue(muygps.scale.trained)
+        if isinstance(muygps.scale, AnalyticScale):
+            print(f"\toptimized scale to find value " f"{muygps.scale()}")
         else:
-            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+            self.assertEqual(mm.array([1.0]), muygps.scale())
 
 
-class GPSigmaSqTest(GPTestCase):
+class GPScaleTest(GPTestCase):
     @parameterized.parameters(
         (
             (1000, f, r, 10, nn_kwargs, k_kwargs)
@@ -797,7 +796,7 @@ class GPSigmaSqTest(GPTestCase):
             )
         )
     )
-    def test_batch_sigma_sq_shapes(
+    def test_batch_scale_shapes(
         self,
         data_count,
         feature_count,
@@ -807,7 +806,7 @@ class GPSigmaSqTest(GPTestCase):
         k_kwargs,
     ):
         muygps = MuyGPS(
-            sigma_sq=AnalyticSigmaSq(response_count=response_count), **k_kwargs
+            scale=AnalyticScale(response_count=response_count), **k_kwargs
         )
 
         # prepare data
@@ -825,7 +824,7 @@ class GPSigmaSqTest(GPTestCase):
         )
 
         K = muygps.kernel(pairwise_diffs)
-        muygps = muygps.optimize_sigma_sq(pairwise_diffs, nn_targets)
+        muygps = muygps.optimize_scale(pairwise_diffs, nn_targets)
 
         K = _consistent_unchunk_tensor(K)
         nn_targets = _consistent_unchunk_tensor(nn_targets)
@@ -833,34 +832,34 @@ class GPSigmaSqTest(GPTestCase):
         _check_ndarray(self.assertEqual, nn_targets, mm.ftype)
 
         if response_count > 1:
-            self.assertEqual(len(muygps.sigma_sq()), response_count)
+            self.assertEqual(len(muygps.scale()), response_count)
             for i in range(response_count):
-                sigmas = _get_sigma_sq_series(
+                scales = _get_scale_series(
                     K,
                     nn_targets[:, :, i].reshape(data_count, nn_count, 1),
                     muygps.noise(),
                 )
-                _check_ndarray(self.assertEqual, sigmas, mm.ftype)
-                self.assertEqual(sigmas.shape, (data_count,))
+                _check_ndarray(self.assertEqual, scales, mm.ftype)
+                self.assertEqual(scales.shape, (data_count,))
                 _precision_assert(
                     self.assertAlmostEqual,
-                    np.array(muygps.sigma_sq()[i]),
-                    np.mean(np.array(sigmas)),
+                    np.array(muygps.scale()[i]),
+                    np.mean(np.array(scales)),
                     low_bound=0,
                     high_bound=5,
                 )
         else:
-            sigmas = _get_sigma_sq_series(
+            scales = _get_scale_series(
                 K,
                 nn_targets[:, :, 0].reshape(data_count, nn_count, 1),
                 muygps.noise(),
             )
-            self.assertEqual(sigmas.shape, (data_count,))
-            _check_ndarray(self.assertEqual, sigmas, mm.ftype)
+            self.assertEqual(scales.shape, (data_count,))
+            _check_ndarray(self.assertEqual, scales, mm.ftype)
             _precision_assert(
                 self.assertAlmostEqual,
-                np.array(muygps.sigma_sq()[0]),
-                np.mean(np.array(sigmas)),
+                np.array(muygps.scale()[0]),
+                np.mean(np.array(scales)),
                 low_bound=0,
                 high_bound=5,
             )

@@ -17,10 +17,9 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp.distortion import IsotropicDistortion, l2
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.optimize.loss import mse_fn
 
 if config.state.backend in ["mpi", "torch"]:
@@ -130,7 +129,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                     {
                         "kernel": Matern(
@@ -140,7 +139,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
-                        "sigma_sq": SigmaSq(),
+                        "scale": Scale(),
                     },
                 ),
             )
@@ -205,15 +204,15 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                         f"optimized to find value "
                         f"{muygps.kernel._hyperparameters[name]()}"
                     )
-                    self.assertTrue(muygps.sigma_sq.trained)
+                    self.assertTrue(muygps.scale.trained)
                 else:
                     self.assertEqual(
                         param(),
                         muygps.kernel._hyperparameters[name](),
                     )
-                    self.assertFalse(muygps.sigma_sq.trained)
-            self.assertFalse(muygps.sigma_sq.trained)
-            self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+                    self.assertFalse(muygps.scale.trained)
+            self.assertFalse(muygps.scale.trained)
+            self.assertEqual(mm.array([1.0]), muygps.scale())
 
 
 if __name__ == "__main__":

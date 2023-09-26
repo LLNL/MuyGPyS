@@ -53,9 +53,9 @@ def make_regressor(
         >>> from MuyGPyS.examples.regress import make_regressor
         >>> from MuyGPyS.gp.distortion import IsotropicDistortion
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
-        >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
         >>> from MuyGPyS.optimize import Bayes_optimize_fn
         >>> from MuyGPyS.examples.regress import make_regressor
         >>> train_features, train_responses = make_train()  # stand-in function
@@ -67,7 +67,7 @@ def make_regressor(
         ...         )
         ...     ),
         ...     "noise": HomoscedasticNoise(1e-5),
-        ...     "sigma_sq": AnalyticSigmaSq(),
+        ...     "scale": AnalyticScale(),
         ... }
         >>> muygps, nbrs_lookup = make_regressor(
         ...         train_features,
@@ -102,7 +102,7 @@ def make_regressor(
             are fixed.
         k_kwargs:
             Parameters for the kernel, possibly including kernel type, distance
-            metric, noise and sigma hyperparameter specifications, and
+            metric, noise and scale hyperparameter specifications, and
             specifications for kernel hyperparameters. See
             :ref:`MuyGPyS-gp-kernels` for examples and requirements. If all of
             the hyperparameters are fixed or are not given optimization bounds,
@@ -176,9 +176,9 @@ def make_regressor(
             )
         time_opt = perf_counter()
 
-        muygps = muygps.optimize_sigma_sq(pairwise_diffs, batch_nn_targets)
+        muygps = muygps.optimize_scale(pairwise_diffs, batch_nn_targets)
         if verbose is True:
-            print(f"Optimized sigma_sq values " f"{muygps.sigma_sq()}")
+            print(f"Optimized scale values " f"{muygps.scale()}")
         time_sopt = perf_counter()
 
         if verbose is True:
@@ -186,7 +186,7 @@ def make_regressor(
             print(f"batch sampling time: {time_batch - time_nn}s")
             print(f"tensor creation time: {time_tensor - time_batch}s")
             print(f"hyper opt time: {time_opt - time_tensor}s")
-            print(f"sigma_sq opt time: {time_sopt - time_opt}s")
+            print(f"scale opt time: {time_sopt - time_opt}s")
 
     return muygps, nbrs_lookup
 
@@ -204,99 +204,99 @@ def make_multivariate_regressor(
     verbose: bool = False,
 ) -> Tuple[MMuyGPS, NN_Wrapper]:
     """
-        Convenience function for creating a Multivariate MuyGPyS functor and
-        neighbor lookup data structure.
+    Convenience function for creating a Multivariate MuyGPyS functor and
+    neighbor lookup data structure.
 
-        Expected parameters include a list of keyword argument dicts specifying
-        kernel parameters and a dict listing nearest neighbor parameters. See the
-        docstrings of the appropriate functions for specifics.
+    Expected parameters include a list of keyword argument dicts specifying
+    kernel parameters and a dict listing nearest neighbor parameters. See the
+    docstrings of the appropriate functions for specifics.
 
-        Example:
-            >>> from MuyGPyS.examples.regress import make_multivariate_regressor
-            >>> from MuyGPyS.gp.distortion import IsotropicDistortion
-            >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
-            >>> from MuyGPyS.gp.kernels import RBF
-            >>> from MuyGPyS.gp.noise import HomoscedasticNoise
-            >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
-            >>> from MuyGPyS.optimize import Bayes_optimize_fn
-            >>> train_features, train_responses = make_train()  # stand-in function
-            >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
-            >>> k_args = [
-            ...         {
-            ...             "kernel": RBF(
-            ...                 metric=IsotropicDistortion(
-            ...                     length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
-            ...                 )
-            ...             ),
-            ...             "noise": HomoscedasticNoise(1e-5),
-            ...             "sigma_sq": AnalyticSigmaSq(),
-            ...         },
-            ...         {
-            ...             "kernel": RBF(
-            ...                 metric=IsotropicDistortion(
-            ...                     length_scale=ScalarHyperparameter(1.5, (1e-2, 1e2))
-            ...                 )
-            ...             ),
-            ...             "noise": HomoscedasticNoise(1e-5),
-            ...             "sigma_sq": AnalyticSigmaSq(),
-            ...         },
-            ... ]
-            >>> mmuygps, nbrs_lookup = make_multivariate_regressor(
-            ...         train_features,
-            ...         train_responses,
-            ...         nn_count=30,
-            ...         batch_count=200,
-            ...         loss_fn=lool_fn,
-            ...         opt_fn=Bayes_optimize_fn,
-            ...         k_args=k_args,
-            ...         nn_kwargs=nn_kwargs,
-            ...         verbose=False,
-            ... )
+    Example:
+        >>> from MuyGPyS.examples.regress import make_multivariate_regressor
+        >>> from MuyGPyS.gp.distortion import IsotropicDistortion
+        >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
+        >>> from MuyGPyS.gp.kernels import RBF
+        >>> from MuyGPyS.gp.noise import HomoscedasticNoise
+        >>> from MuyGPyS.optimize import Bayes_optimize_fn
+        >>> train_features, train_responses = make_train()  # stand-in function
+        >>> nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
+        >>> k_args = [
+        ...         {
+        ...             "kernel": RBF(
+        ...                 metric=IsotropicDistortion(
+        ...                     length_scale=ScalarHyperparameter(1.0, (1e-2, 1e2))
+        ...                 )
+        ...             ),
+        ...             "noise": HomoscedasticNoise(1e-5),
+        ...             "scale": AnalyticScale(),
+        ...         },
+        ...         {
+        ...             "kernel": RBF(
+        ...                 metric=IsotropicDistortion(
+        ...                     length_scale=ScalarHyperparameter(1.5, (1e-2, 1e2))
+        ...                 )
+        ...             ),
+        ...             "noise": HomoscedasticNoise(1e-5),
+        ...             "scale": AnalyticScale(),
+        ...         },
+        ... ]
+        >>> mmuygps, nbrs_lookup = make_multivariate_regressor(
+        ...         train_features,
+        ...         train_responses,
+        ...         nn_count=30,
+        ...         batch_count=200,
+        ...         loss_fn=lool_fn,
+        ...         opt_fn=Bayes_optimize_fn,
+        ...         k_args=k_args,
+        ...         nn_kwargs=nn_kwargs,
+        ...         verbose=False,
+        ... )
 
-        Args:
-            train_features:
-                A matrix of shape `(train_count, feature_count)` whose rows consist
-                of observation vectors of the train data.
-            train_targets:
-                A matrix of shape `(train_count, response_count)` whose rows consist
-                of response vectors of the train data.
-            nn_count:
-                The number of nearest neighbors to employ.
-            batch_count:
-                The number of elements to sample batch for hyperparameter
-                optimization.
-            loss_fn:
-                The loss method to use in hyperparameter optimization. Ignored if
-                all of the parameters specified by argument `k_kwargs` are fixed.
-            opt_fn:
-                The optimization functor to use in hyperparameter optimization.
-                Ignored if all of the parameters specified by argument `k_kwargs`
-                are fixed.
-            k_args:
-                A list of `response_count` dicts containing kernel initialization
-                keyword arguments. Each dict specifies parameters for the kernel,
-                possibly including noise and sigma hyperparameter specifications
-                and specifications for specific kernel hyperparameters. If all of
-    s            the hyperparameters are fixed or are not given optimization bounds,
-                no optimization will occur.
-            nn_kwargs:
-                Parameters for the nearest neighbors wrapper. See
-                :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
-                their parameters.
-            opt_kwargs:
-                Parameters for the wrapped optimizer. See the docs of the
-                corresponding library for supported parameters.
-            verbose:
-                If `True`, print summary statistics.
+    Args:
+        train_features:
+            A matrix of shape `(train_count, feature_count)` whose rows consist
+            of observation vectors of the train data.
+        train_targets:
+            A matrix of shape `(train_count, response_count)` whose rows consist
+            of response vectors of the train data.
+        nn_count:
+            The number of nearest neighbors to employ.
+        batch_count:
+            The number of elements to sample batch for hyperparameter
+            optimization.
+        loss_fn:
+            The loss method to use in hyperparameter optimization. Ignored if
+            all of the parameters specified by argument `k_kwargs` are fixed.
+        opt_fn:
+            The optimization functor to use in hyperparameter optimization.
+            Ignored if all of the parameters specified by argument `k_kwargs`
+            are fixed.
+        k_args:
+            A list of `response_count` dicts containing kernel initialization
+            keyword arguments. Each dict specifies parameters for the kernel,
+            possibly including noise and scale hyperparameter specifications
+            and specifications for specific kernel hyperparameters. If all of
+            the hyperparameters are fixed or are not given optimization bounds,
+            no optimization will occur.
+        nn_kwargs:
+            Parameters for the nearest neighbors wrapper. See
+            :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
+            their parameters.
+        opt_kwargs:
+            Parameters for the wrapped optimizer. See the docs of the
+            corresponding library for supported parameters.
+        verbose:
+            If `True`, print summary statistics.
 
-        Returns
-        -------
-        mmuygps:
-            A Multivariate MuyGPs object with a separate (possibly trained) kernel
-            function associated with each response dimension.
-        nbrs_lookup:
-            A data structure supporting nearest neighbor queries into
-            `train_features`.
+    Returns
+    -------
+    mmuygps:
+        A Multivariate MuyGPs object with a separate (possibly trained) kernel
+        function associated with each response dimension.
+    nbrs_lookup:
+        A data structure supporting nearest neighbor queries into
+        `train_features`.
     """
     train_count, response_count = train_targets.shape
     if response_count != len(k_args):
@@ -357,9 +357,9 @@ def make_multivariate_regressor(
                     )
         time_opt = perf_counter()
 
-        mmuygps = mmuygps.optimize_sigma_sq(pairwise_diffs, batch_nn_targets)
+        mmuygps = mmuygps.optimize_scale(pairwise_diffs, batch_nn_targets)
         if verbose is True:
-            print(f"Optimized sigma_sq values " f"{mmuygps.sigma_sq()}")
+            print(f"Optimized scale values " f"{mmuygps.scale()}")
         time_sopt = perf_counter()
 
         if verbose is True:
@@ -367,7 +367,7 @@ def make_multivariate_regressor(
             print(f"batch sampling time: {time_batch - time_nn}s")
             print(f"tensor creation time: {time_tensor - time_batch}s")
             print(f"hyper opt time: {time_opt - time_tensor}s")
-            print(f"sigma_sq opt time: {time_sopt - time_opt}s")
+            print(f"scale opt time: {time_sopt - time_opt}s")
 
     return mmuygps, nbrs_lookup
 
@@ -480,9 +480,9 @@ def do_regress(
         >>> from MuyGPyS.examples.regress import do_regress
         >>> from MuyGPyS.gp.distortion import IsotropicDistortion
         >>> from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+        >>> from MuyGPyS.gp.hyperparameter import AnalyticScale
         >>> from MuyGPyS.gp.kernels import RBF
         >>> from MuyGPyS.gp.noise import HomoscedasticNoise
-        >>> from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
         >>> from MuyGPyS.examples.regress import do_regress
         >>> from MuyGPyS.optimize import Bayes_optimize_fn
         >>> from MuyGPyS.optimize.objective import mse_fn
@@ -496,7 +496,7 @@ def do_regress(
         ...         )
         ...     ),
         ...     "noise": HomoscedasticNoise(1e-5),
-        ...     "sigma_sq": AnalyticSigmaSq(),
+        ...     "scale": AnalyticScale(),
         ... }
         >>> muygps, nbrs_lookup, predictions, variance = do_regress(
         ...         test_features,

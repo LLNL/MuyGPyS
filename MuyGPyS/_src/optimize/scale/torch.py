@@ -6,7 +6,7 @@
 import MuyGPyS._src.math.torch as torch
 
 
-def _analytic_sigma_sq_optim_unnormalized(
+def _analytic_scale_optim_unnormalized(
     K: torch.ndarray,
     nn_targets: torch.ndarray,
 ) -> torch.ndarray:
@@ -18,11 +18,11 @@ def _analytic_sigma_sq_optim_unnormalized(
     )
 
 
-def _analytic_sigma_sq_optim(
+def _analytic_scale_optim(
     K: torch.ndarray,
     nn_targets: torch.ndarray,
 ) -> torch.ndarray:
     batch_count, nn_count, _ = nn_targets.shape
-    return _analytic_sigma_sq_optim_unnormalized(K, nn_targets) / (
+    return _analytic_scale_optim_unnormalized(K, nn_targets) / (
         nn_count * batch_count
     )

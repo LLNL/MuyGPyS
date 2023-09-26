@@ -23,7 +23,7 @@ from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
     _basic_opt_fn_and_kwarg_options,
     _check_ndarray,
-    _get_sigma_sq_series,
+    _get_scale_series,
     _make_gaussian_dict,
     _make_gaussian_data,
 )
@@ -31,10 +31,9 @@ from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.distortion import IsotropicDistortion, AnisotropicDistortion, l2
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
@@ -91,10 +90,10 @@ class InitTest(parameterized.TestCase):
                 self.assertTrue(muygps.kernel._hyperparameters[name].fixed())
             self.assertEqual(this_kwargs["noise"](), muygps.noise())
             self.assertTrue(muygps.noise.fixed())
-            self.assertFalse(muygps.sigma_sq.trained)
+            self.assertFalse(muygps.scale.trained)
 
 
-class SigmaSqTest(parameterized.TestCase):
+class ScaleTest(parameterized.TestCase):
     @parameterized.parameters(
         (
             (1000, 2, 10, nn_kwargs, model_args)
@@ -110,7 +109,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                     {
                         "kernel": Matern(
@@ -121,7 +120,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-6),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                     {
                         "kernel": Matern(
@@ -132,7 +131,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-6),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                     {
                         "kernel": Matern(
@@ -144,7 +143,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                     {
                         "kernel": Matern(
@@ -156,7 +155,7 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-6),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                     {
                         "kernel": Matern(
@@ -168,13 +167,13 @@ class SigmaSqTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-6),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                 ],
             )
         )
     )
-    def test_batch_sigma_sq_shapes(
+    def test_batch_scale_shapes(
         self,
         data_count,
         feature_count,
@@ -195,24 +194,24 @@ class SigmaSqTest(parameterized.TestCase):
         nn_targets = _consistent_chunk_tensor(data["output"][nn_indices, :])
         pairwise_diffs = pairwise_tensor(data["input"], nn_indices)
 
-        # fit sigmas
-        mmuygps = mmuygps.optimize_sigma_sq(pairwise_diffs, nn_targets)
+        # fit scales
+        mmuygps = mmuygps.optimize_scale(pairwise_diffs, nn_targets)
 
         K = mm.zeros((data_count, nn_count, nn_count))
         nn_targets = _consistent_unchunk_tensor(nn_targets)
         for i, model in enumerate(mmuygps.models):
             K = _consistent_unchunk_tensor(model.kernel(pairwise_diffs))
-            sigmas = _get_sigma_sq_series(
+            scales = _get_scale_series(
                 K,
                 nn_targets[:, :, i].reshape(data_count, nn_count, 1),
                 model.noise(),
             )
-            _check_ndarray(self.assertEqual, sigmas, mm.ftype)
-            _check_ndarray(self.assertEqual, model.sigma_sq(), mm.ftype)
-            self.assertEqual(sigmas.shape, (data_count,))
+            _check_ndarray(self.assertEqual, scales, mm.ftype)
+            _check_ndarray(self.assertEqual, model.scale(), mm.ftype)
+            self.assertEqual(scales.shape, (data_count,))
             self.assertAlmostEqual(
-                np.array(model.sigma_sq()[0]),
-                np.mean(np.array(sigmas)),
+                np.array(model.scale()[0]),
+                np.mean(np.array(scales)),
                 5,
             )
 
@@ -545,7 +544,7 @@ class RegressTest(parameterized.TestCase):
         )
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
 
-        self.assertFalse(mmuygps.sigma_sq.trained)
+        self.assertFalse(mmuygps.scale.trained)
 
         predictions, diagonal_variance, _ = regress_any(
             mmuygps,
@@ -712,7 +711,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                     {
                         "kernel": Matern(
@@ -723,7 +722,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                     {
                         "kernel": Matern(
@@ -735,7 +734,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                     {
                         "kernel": Matern(
@@ -747,7 +746,7 @@ class MakeRegressorTest(parameterized.TestCase):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
-                        "sigma_sq": SigmaSq(),
+                        "scale": Scale(),
                     },
                 ),
             )
@@ -810,14 +809,11 @@ class MakeRegressorTest(parameterized.TestCase):
                         param(),
                         muygps.kernel._hyperparameters[name](),
                     )
-            self.assertTrue(muygps.sigma_sq.trained)
-            if isinstance(muygps.sigma_sq, AnalyticSigmaSq):
-                print(
-                    f"\toptimized sigma_sq to find value "
-                    f"{muygps.sigma_sq()}"
-                )
+            self.assertTrue(muygps.scale.trained)
+            if isinstance(muygps.scale, AnalyticScale):
+                print(f"\toptimized scale to find value " f"{muygps.scale()}")
             else:
-                self.assertEqual(mm.array([1.0]), muygps.sigma_sq())
+                self.assertEqual(mm.array([1.0]), muygps.scale())
 
 
 if __name__ == "__main__":

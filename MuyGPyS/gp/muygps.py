@@ -12,16 +12,16 @@ from copy import deepcopy
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
-from MuyGPyS.gp.kernels import KernelFn
-from MuyGPyS.gp.mean import _muygps_posterior_mean, PosteriorMean
-from MuyGPyS.gp.sigma_sq import SigmaSq
-from MuyGPyS.gp.variance import _muygps_diagonal_variance, PosteriorVariance
-from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
-from MuyGPyS.gp.fast_mean import _muygps_fast_posterior_mean, FastPosteriorMean
 from MuyGPyS.gp.fast_precompute import (
     _muygps_fast_posterior_mean_precompute,
     FastPrecomputeCoefficients,
 )
+from MuyGPyS.gp.fast_mean import _muygps_fast_posterior_mean, FastPosteriorMean
+from MuyGPyS.gp.hyperparameter import Scale
+from MuyGPyS.gp.kernels import KernelFn
+from MuyGPyS.gp.mean import _muygps_posterior_mean, PosteriorMean
+from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
+from MuyGPyS.gp.variance import _muygps_diagonal_variance, PosteriorVariance
 
 
 @auto_str
@@ -47,10 +47,6 @@ class MuyGPS:
     :math:`\\sigma^2` indicating the scale parameter associated with the
     posterior variance of each dimension of the response.
 
-    :math:`\\sigma^2` is the only parameter assumed to be a training target by
-    default, and is treated differently from all other hyperparameters. All
-    other training targets must be manually specified in `k_kwargs`.
-
     Example:
         >>> from MuyGPyS.gp import MuyGPS
         >>> muygps = MuyGPS(
@@ -62,7 +58,7 @@ class MuyGPS:
         ...        ),
         ...    ),
         ...    noise=HomoscedasticNoise(1e-5),
-        ...    sigma_sq=AnalyticSigmaSq(),
+        ...    scale=AnalyticScale(),
         ... )
 
     MuyGPyS depends upon linear operations on specially-constructed tensors in
@@ -87,7 +83,7 @@ class MuyGPS:
             The kernel to be used.
         noise:
             A noise model.
-        sigma_sq:
+        scale:
             A variance scale parameter.
         response_count:
             The number of response dimensions.
@@ -97,14 +93,14 @@ class MuyGPS:
         self,
         kernel: KernelFn,
         noise: NoiseFn = HomoscedasticNoise(0.0, "fixed"),
-        sigma_sq: SigmaSq = SigmaSq(response_count=1),
+        scale: Scale = Scale(response_count=1),
         _backend_mean_fn: Callable = _muygps_posterior_mean,
         _backend_var_fn: Callable = _muygps_diagonal_variance,
         _backend_fast_mean_fn: Callable = _muygps_fast_posterior_mean,
         _backend_fast_precompute_fn: Callable = _muygps_fast_posterior_mean_precompute,
     ):
         self.kernel = kernel
-        self.sigma_sq = sigma_sq
+        self.scale = scale
         self.noise = noise
         self._backend_mean_fn = _backend_mean_fn
         self._backend_var_fn = _backend_var_fn
@@ -118,7 +114,7 @@ class MuyGPS:
             self.noise, _backend_fn=self._backend_mean_fn
         )
         self._var_fn = PosteriorVariance(
-            self.noise, self.sigma_sq, _backend_fn=self._backend_var_fn
+            self.noise, self.scale, _backend_fn=self._backend_var_fn
         )
         self._fast_posterior_mean_fn = FastPosteriorMean(
             _backend_fn=self._backend_fast_mean_fn
@@ -360,7 +356,7 @@ class MuyGPS:
         ret = deepcopy(self)
         ret.noise = new_noise
         ret._mean_fn = PosteriorMean(ret.noise)
-        ret._var_fn = PosteriorVariance(ret.noise, ret.sigma_sq)
+        ret._var_fn = PosteriorVariance(ret.noise, ret.scale)
         return ret
 
     def get_opt_mean_fn(self) -> Callable:
@@ -393,12 +389,12 @@ class MuyGPS:
         """
         return self._var_fn.get_opt_fn()
 
-    def optimize_sigma_sq(
+    def optimize_scale(
         self, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
     ):
         K = self.kernel(pairwise_diffs)
-        opt_fn = self.sigma_sq.get_opt_fn(self)
-        self.sigma_sq._set(opt_fn(K, nn_targets))
+        opt_fn = self.scale.get_opt_fn(self)
+        self.scale._set(opt_fn(K, nn_targets))
         self._make()
         return self
 
@@ -412,7 +408,7 @@ class MuyGPS:
                         for h in self.kernel._hyperparameters
                     ),
                     self.noise() == rhs.noise(),
-                    self.sigma_sq() == rhs.sigma_sq(),
+                    self.scale() == rhs.scale(),
                 )
             )
         else:

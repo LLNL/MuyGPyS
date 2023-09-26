@@ -9,10 +9,10 @@ Multivariate MuyGPs implementation
 from copy import deepcopy
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _mmuygps_fast_posterior_mean
+from MuyGPyS.gp.hyperparameter import Scale
 from MuyGPyS.gp.muygps import MuyGPS
 from MuyGPyS.gp.mean import PosteriorMean
 from MuyGPyS.gp.noise import HeteroscedasticNoise
-from MuyGPyS.gp.sigma_sq import SigmaSq
 from MuyGPyS.gp.variance import PosteriorVariance
 
 
@@ -37,7 +37,7 @@ class MultivariateMuyGPS:
         ...         metric=IsotropicDistortion(
         ...             metric=l2,
         ...             length_scale=ScalarHyperparameter(0.2),
-        ...         sigma_sq=AnalyticSigmaSq(),
+        ...         scale=AnalyticScale(),
         ...     ),
         ... }
         >>> k_kwargs2 = {
@@ -47,7 +47,7 @@ class MultivariateMuyGPS:
         ...         metric=IsotropicDistortion(
         ...             metric=l2,
         ...             length_scale=ScalarHyperparameter(0.2),
-        ...         sigma_sq=AnalyticSigmaSq(),
+        ...         scale=AnalyticScale(),
         ...     ),
         ... }
         >>> k_args = [k_kwargs1, k_kwargs2]
@@ -75,7 +75,7 @@ class MultivariateMuyGPS:
         *model_args,
     ):
         self.models = [MuyGPS(**args) for args in model_args]
-        self.sigma_sq = SigmaSq(response_count=len(self.models))
+        self.scale = Scale(response_count=len(self.models))
 
     def fixed(self) -> bool:
         """
@@ -205,7 +205,7 @@ class MultivariateMuyGPS:
         for i, model in enumerate(self.models):
             K = model.kernel(pairwise_diffs)
             Kcross = model.kernel(crosswise_diffs)
-            ss = self.sigma_sq()[i]
+            ss = self.scale()[i]
             diagonal_variance = mm.assign(
                 diagonal_variance,
                 model.posterior_variance(K, Kcross).reshape(batch_count) * ss,
@@ -322,7 +322,7 @@ class MultivariateMuyGPS:
             )
         return _mmuygps_fast_posterior_mean(Kcross, coeffs_tensor)
 
-    def optimize_sigma_sq(
+    def optimize_scale(
         self, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
     ):
         """
@@ -357,7 +357,7 @@ class MultivariateMuyGPS:
                 element.
 
         Returns:
-            The MultivariateMuyGPs model whose sigma_sq parameter (and those of
+            The MultivariateMuyGPs model whose scale parameter (and those of
             its submodels) has been optimized.
         """
         batch_count, nn_count, response_count = nn_targets.shape
@@ -366,17 +366,17 @@ class MultivariateMuyGPS:
                 f"Response count ({response_count}) does not match the number "
                 f"of models ({len(self.models)})."
             )
-        sigma_sqs = mm.zeros((response_count,))
+        scales = mm.zeros((response_count,))
         for i, model in enumerate(self.models):
             K = model.kernel(pairwise_diffs)
-            opt_fn = model.sigma_sq.get_opt_fn(model)
-            new_sigma_val = opt_fn(
+            opt_fn = model.scale.get_opt_fn(model)
+            new_scale_val = opt_fn(
                 K,
                 nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
             )
-            model.sigma_sq._set(new_sigma_val)
-            sigma_sqs = mm.assign(sigma_sqs, new_sigma_val[0], i)
-        self.sigma_sq._set(sigma_sqs)
+            model.scale._set(new_scale_val)
+            scales = mm.assign(scales, new_scale_val[0], i)
+        self.scale._set(scales)
         return self
 
     def apply_new_noise(self, new_noise):
@@ -398,5 +398,5 @@ class MultivariateMuyGPS:
         for i, model in enumerate(ret.models):
             model.noise = HeteroscedasticNoise(new_noise[:, :, :, i], "fixed")
             model._mean_fn = PosteriorMean(model.noise)
-            model._var_fn = PosteriorVariance(model.noise, model.sigma_sq)
+            model._var_fn = PosteriorVariance(model.noise, model.scale)
         return ret

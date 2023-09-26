@@ -5,3 +5,4 @@
 
 from .scalar import ScalarHyperparameter
 from .tensor import TensorHyperparameter
+from .scale import AnalyticScale, Scale

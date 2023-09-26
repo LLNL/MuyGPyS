@@ -5,7 +5,7 @@
 
 from MuyGPyS._src.util import _collect_implementation
 
-[_analytic_sigma_sq_optim] = _collect_implementation(
-    "MuyGPyS._src.optimize.sigma_sq",
-    "_analytic_sigma_sq_optim",
+[_analytic_scale_optim] = _collect_implementation(
+    "MuyGPyS._src.optimize.scale",
+    "_analytic_scale_optim",
 )

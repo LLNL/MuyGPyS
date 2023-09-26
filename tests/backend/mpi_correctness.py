@@ -52,11 +52,11 @@ from MuyGPyS._src.gp.noise.numpy import (
 from MuyGPyS._src.gp.noise.mpi import (
     _homoscedastic_perturb as homoscedastic_perturb_m,
 )
-from MuyGPyS._src.optimize.sigma_sq.numpy import (
-    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_n,
+from MuyGPyS._src.optimize.scale.numpy import (
+    _analytic_scale_optim as analytic_scale_optim_n,
 )
-from MuyGPyS._src.optimize.sigma_sq.mpi import (
-    _analytic_sigma_sq_optim as analytic_sigma_sq_optim_m,
+from MuyGPyS._src.optimize.scale.mpi import (
+    _analytic_scale_optim as analytic_scale_optim_m,
 )
 from MuyGPyS._src.optimize.loss.numpy import (
     _cross_entropy_fn as cross_entropy_fn_n,
@@ -88,10 +88,9 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.distortion import AnisotropicDistortion, IsotropicDistortion
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import (
@@ -148,7 +147,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
-            sigma_sq=AnalyticSigmaSq(
+            scale=AnalyticScale(
                 _backend_ones=np.ones,
                 _backend_ndarray=np.ndarray,
                 _backend_ftype=np.ftype,
@@ -191,7 +190,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
-            sigma_sq=AnalyticSigmaSq(
+            scale=AnalyticScale(
                 _backend_ones=np.ones,
                 _backend_ndarray=np.ndarray,
                 _backend_ftype=np.ftype,
@@ -1062,18 +1061,18 @@ class MuyGPSTest(MuyGPSTestCase):
     def test_batch_diagonal_variance(self):
         self._compare_tensors(self.batch_variance, self.batch_variance_chunk)
 
-    def test_sigma_sq_optim(self):
-        parallel_sigma_sq = analytic_sigma_sq_optim_m(
+    def test_scale_optim(self):
+        parallel_scale = analytic_scale_optim_m(
             self.batch_homoscedastic_covariance_gen_chunk,
             self.batch_nn_targets_chunk,
         )
 
         if rank == 0:
-            serial_sigma_sq = analytic_sigma_sq_optim_n(
+            serial_scale = analytic_scale_optim_n(
                 self.batch_homoscedastic_covariance_gen,
                 self.batch_nn_targets,
             )
-            self.assertAlmostEqual(serial_sigma_sq[0], parallel_sigma_sq[0])
+            self.assertAlmostEqual(serial_scale[0], parallel_scale[0])
 
 
 class OptimTestCase(MuyGPSTestCase):
@@ -1091,11 +1090,11 @@ class OptimTestCase(MuyGPSTestCase):
             "allow_duplicate_points": True,
         }
 
-    def _get_sigma_sq_fn_n(self):
-        return self.muygps_gen.sigma_sq.get_opt_fn(self.muygps_gen)
+    def _get_scale_fn_n(self):
+        return self.muygps_gen.scale.get_opt_fn(self.muygps_gen)
 
-    def _get_sigma_sq_fn_m(self):
-        return self.muygps_gen.sigma_sq.get_opt_fn(self.muygps_gen)
+    def _get_scale_fn_m(self):
+        return self.muygps_gen.scale.get_opt_fn(self.muygps_gen)
 
     # Numpy objective functions
     def _get_obj_fn_n(self):
@@ -1104,7 +1103,7 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps_gen.kernel.get_opt_fn(),
             self.muygps_gen.get_opt_mean_fn(),
             self.muygps_gen.get_opt_var_fn(),
-            self._get_sigma_sq_fn_n(),
+            self._get_scale_fn_n(),
             self.batch_pairwise_diffs,
             self.batch_crosswise_diffs,
             self.batch_nn_targets,
@@ -1117,7 +1116,7 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps_anisotropic_gen.kernel.get_opt_fn(),
             self.muygps_anisotropic_gen.get_opt_mean_fn(),
             self.muygps_anisotropic_gen.get_opt_var_fn(),
-            self._get_sigma_sq_fn_n(),
+            self._get_scale_fn_n(),
             self.batch_pairwise_diffs,
             self.batch_crosswise_diffs,
             self.batch_nn_targets,
@@ -1131,7 +1130,7 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps_gen.kernel.get_opt_fn(),
             self.muygps_gen.get_opt_mean_fn(),
             self.muygps_gen.get_opt_var_fn(),
-            self._get_sigma_sq_fn_m(),
+            self._get_scale_fn_m(),
             self.batch_pairwise_diffs_chunk,
             self.batch_crosswise_diffs_chunk,
             self.batch_nn_targets_chunk,
@@ -1144,7 +1143,7 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps_anisotropic_gen.kernel.get_opt_fn(),
             self.muygps_anisotropic_gen.get_opt_mean_fn(),
             self.muygps_anisotropic_gen.get_opt_var_fn(),
-            self._get_sigma_sq_fn_m(),
+            self._get_scale_fn_m(),
             self.batch_pairwise_diffs_chunk,
             self.batch_crosswise_diffs_chunk,
             self.batch_nn_targets_chunk,
@@ -1187,7 +1186,7 @@ class LossTest(OptimTestCase):
     @classmethod
     def setUpClass(cls):
         super(LossTest, cls).setUpClass()
-        cls.batch_sigma_sq = cls.muygps_gen.sigma_sq()
+        cls.batch_scale = cls.muygps_gen.scale()
 
     def test_mse(self):
         parallel_mse = mse_fn_m(
@@ -1217,7 +1216,7 @@ class LossTest(OptimTestCase):
             self.batch_prediction_chunk,
             self.batch_targets_chunk,
             self.batch_variance_chunk,
-            self.batch_sigma_sq,
+            self.batch_scale,
             boundary_scale=boundary_scale,
         )
         if rank == 0:
@@ -1225,7 +1224,7 @@ class LossTest(OptimTestCase):
                 self.batch_prediction,
                 self.batch_targets,
                 self.batch_variance,
-                self.batch_sigma_sq,
+                self.batch_scale,
                 boundary_scale=boundary_scale,
             )
             self.assertAlmostEqual(serial_looph, parallel_looph)
@@ -1235,7 +1234,7 @@ class LossTest(OptimTestCase):
             self.batch_prediction_chunk,
             self.batch_targets_chunk,
             self.batch_variance_chunk,
-            self.batch_sigma_sq,
+            self.batch_scale,
         )
 
         if rank == 0:
@@ -1243,7 +1242,7 @@ class LossTest(OptimTestCase):
                 self.batch_prediction,
                 self.batch_targets,
                 self.batch_variance,
-                self.batch_sigma_sq,
+                self.batch_scale,
             )
             self.assertAlmostEqual(serial_lool, parallel_lool)
 
@@ -1309,9 +1308,9 @@ class ObjectiveTest(OptimTestCase):
 
         self._compare_tensors(var, var_chunk)
 
-    def test_sigma_sq_fn(self):
+    def test_scale_fn(self):
         if rank == 0:
-            ss_fn_n = self._get_sigma_sq_fn_n()
+            ss_fn_n = self._get_scale_fn_n()
             ss = ss_fn_n(
                 self.batch_covariance_gen,
                 self.batch_nn_targets,
@@ -1320,7 +1319,7 @@ class ObjectiveTest(OptimTestCase):
         else:
             ss = None
 
-        ss_fn_m = self._get_sigma_sq_fn_m()
+        ss_fn_m = self._get_scale_fn_m()
         ss_chunk = ss_fn_m(
             self.batch_covariance_gen_chunk,
             self.batch_nn_targets_chunk,

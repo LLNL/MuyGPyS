@@ -296,13 +296,13 @@ def _normalize(X: mm.ndarray) -> mm.ndarray:
     return X * mm.sqrt(X.shape[1] / mm.sum(X**2, axis=1))[:, None]
 
 
-def _get_sigma_sq_series(
+def _get_scale_series(
     K: mm.ndarray,
     nn_targets_column: mm.ndarray,
     noise_variance: float,
 ) -> mm.ndarray:
     """
-    Return the series of sigma^2 scale parameters for each neighborhood
+    Return the series of :math:`sigma^2` scale parameters for each neighborhood
     solve.
 
     NOTE[bwp]: This function is only for testing purposes.
@@ -318,18 +318,18 @@ def _get_sigma_sq_series(
             each batch element.
 
     Returns:
-        A vector of shape `(response_count)` listing the value of sigma^2
-        for the given response dimension.
+        A vector of shape `(response_count)` listing the value of the scale
+        parameter for the given response dimension.
     """
     batch_count, nn_count, _ = nn_targets_column.shape
 
-    sigmas = np.zeros((batch_count,))
-    for i, el in enumerate(_get_sigma_sq(K, nn_targets_column, noise_variance)):
-        sigmas[i] = el
-    return mm.array(sigmas / nn_count)
+    scales = np.zeros((batch_count,))
+    for i, el in enumerate(_get_scale(K, nn_targets_column, noise_variance)):
+        scales[i] = el
+    return mm.array(scales / nn_count)
 
 
-def _get_sigma_sq(
+def _get_scale(
     K: mm.ndarray,
     nn_targets_column: mm.ndarray,
     noise_variance: float,
@@ -356,9 +356,9 @@ def _get_sigma_sq(
             each batch element.
 
     Return:
-        A generator producing `batch_count` optimal values of
-        :math:`\\sigma^2` for each neighborhood for the given response
-        dimension.
+        A generator producing `batch_count` optimal values of the
+        :math:`\\sigma^2` variance scale parameter for each neighborhood for the
+        given response dimension.
     """
     batch_count, nn_count, _ = nn_targets_column.shape
     for j in range(batch_count):

@@ -26,10 +26,9 @@ from MuyGPyS.gp.distortion import (
     F2,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.optimize.loss import mse_fn
 
 if config.state.backend == "torch":
@@ -91,7 +90,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                 ),
                             ),
                             "noise": HomoscedasticNoise(1e-3),
-                            "sigma_sq": AnalyticSigmaSq(),
+                            "scale": AnalyticScale(),
                         },
                         {
                             "kernel": Matern(
@@ -102,7 +101,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                 ),
                             ),
                             "noise": HomoscedasticNoise(1e-3),
-                            "sigma_sq": AnalyticSigmaSq(),
+                            "scale": AnalyticScale(),
                         },
                     ],
                 ),
@@ -117,7 +116,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                 )
                             ),
                             "noise": HomoscedasticNoise(1e-3),
-                            "sigma_sq": SigmaSq(),
+                            "scale": Scale(),
                         },
                         {
                             "kernel": RBF(
@@ -127,7 +126,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
                                 )
                             ),
                             "noise": HomoscedasticNoise(1e-3),
-                            "sigma_sq": SigmaSq(),
+                            "scale": Scale(),
                         },
                     ],
                 ),
@@ -194,7 +193,7 @@ class HeatonTest(RegressionAPITest):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
-                        "sigma_sq": AnalyticSigmaSq(),
+                        "scale": AnalyticScale(),
                     },
                 ),
                 (
@@ -209,7 +208,7 @@ class HeatonTest(RegressionAPITest):
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),
-                        "sigma_sq": SigmaSq(),
+                        "scale": Scale(),
                     },
                 ),
                 # (

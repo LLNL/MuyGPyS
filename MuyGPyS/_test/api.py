@@ -308,11 +308,11 @@ class RegressionAPITest(parameterized.TestCase):
             test_count, response_count = targets.shape
             self.assertEqual(variance.shape, (test_count, response_count))
             if regressor.fixed():
-                self.assertFalse(regressor.sigma_sq.trained)
+                self.assertFalse(regressor.scale.trained)
             else:
-                self.assertTrue(regressor.sigma_sq.trained)
-            self.assertEqual(regressor.sigma_sq.shape, (response_count,))
-            _check_ndarray(self.assertEqual, regressor.sigma_sq(), np.ftype)
+                self.assertTrue(regressor.scale.trained)
+            self.assertEqual(regressor.scale.shape, (response_count,))
+            _check_ndarray(self.assertEqual, regressor.scale(), np.ftype)
 
     def _do_regress(
         self,

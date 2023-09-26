@@ -11,7 +11,7 @@ from MuyGPyS._src.gp.tensors import _pairwise_differences
 
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
-from MuyGPyS._test.gp import get_analytic_sigma_sq
+from MuyGPyS._test.gp import get_analytic_scale
 from MuyGPyS._test.optimize import BenchmarkTestCase
 from MuyGPyS._test.utils import (
     _advanced_opt_fn_and_kwarg_options,
@@ -22,10 +22,9 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.gp import MuyGPS
 
 from MuyGPyS.gp.distortion import IsotropicDistortion, l2
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarHyperparameter, Scale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.gp.sigma_sq import AnalyticSigmaSq, SigmaSq
 from MuyGPyS.gp.tensors import pairwise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
@@ -72,30 +71,30 @@ class BenchmarkTest(BenchmarkTestCase):
         )
 
 
-class SigmaSqTest(BenchmarkTestCase):
+class ScaleTest(BenchmarkTestCase):
     @classmethod
     def setUpClass(cls):
-        super(SigmaSqTest, cls).setUpClass()
+        super(ScaleTest, cls).setUpClass()
 
-    def test_sigma_sq(self):
+    def test_scale(self):
         mrse = 0.0
         pairwise_diffs = _pairwise_differences(self.train_features)
         K = self.gp.kernel(pairwise_diffs) + self.gp.noise() * mm.eye(
             self.feature_count
         )
         for i in range(self.its):
-            ss = get_analytic_sigma_sq(K, self.train_features)
-            mrse += _sq_rel_err(self.gp.sigma_sq(), ss)
+            ss = get_analytic_scale(K, self.train_features)
+            mrse += _sq_rel_err(self.gp.scale(), ss)
 
         mrse /= self.its
         print(f"optimizes with mean relative squared error {mrse}")
-        self.assertLessEqual(mrse, self.sigma_tol)
+        self.assertLessEqual(mrse, self.scale_tol)
 
 
-class SigmaSqOptimTest(BenchmarkTestCase):
+class ScaleOptimTest(BenchmarkTestCase):
     @classmethod
     def setUpClass(cls):
-        super(SigmaSqOptimTest, cls).setUpClass()
+        super(ScaleOptimTest, cls).setUpClass()
 
     @parameterized.parameters(
         (
@@ -105,7 +104,7 @@ class SigmaSqOptimTest(BenchmarkTestCase):
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
         )
     )
-    def test_sigma_sq_optim(
+    def test_scale_optim(
         self,
         batch_count,
         nn_count,
@@ -127,7 +126,7 @@ class SigmaSqOptimTest(BenchmarkTestCase):
                     ),
                 ),
                 noise=HomoscedasticNoise(self.params["noise"]()),
-                sigma_sq=AnalyticSigmaSq(),
+                scale=AnalyticScale(),
             )
             _, batch_nn_indices = sample_batch(
                 nbrs_lookup, batch_count, self.train_count
@@ -139,15 +138,15 @@ class SigmaSqOptimTest(BenchmarkTestCase):
                 self.train_responses[i, batch_nn_indices, :]
             )
 
-            muygps = muygps.optimize_sigma_sq(
+            muygps = muygps.optimize_scale(
                 batch_pairwise_diffs, batch_nn_targets
             )
-            estimate = muygps.sigma_sq()[0]
+            estimate = muygps.scale()[0]
 
-            mrse += _sq_rel_err(self.gp.sigma_sq(), estimate)
+            mrse += _sq_rel_err(self.gp.scale(), estimate)
         mrse /= self.its
         print(f"optimizes with mean relative squared error {mrse}")
-        self.assertLessEqual(mrse, self.sigma_tol)
+        self.assertLessEqual(mrse, self.scale_tol)
 
 
 class NuTest(BenchmarkTestCase):
@@ -161,16 +160,16 @@ class NuTest(BenchmarkTestCase):
                 b,
                 n,
                 nn_kwargs,
-                loss_kwargs_and_sigma_sq,
+                loss_kwargs_and_scale,
                 opt_fn_and_kwargs,
             )
             for b in [250]
             for n in [20]
-            for loss_kwargs_and_sigma_sq in [
-                ["lool", lool_fn, dict(), AnalyticSigmaSq()],
-                ["mse", mse_fn, dict(), SigmaSq()],
-                ["huber", pseudo_huber_fn, {"boundary_scale": 1.5}, SigmaSq()],
-                ["looph", looph_fn, {"boundary_scale": 1.5}, AnalyticSigmaSq()],
+            for loss_kwargs_and_scale in [
+                ["lool", lool_fn, dict(), AnalyticScale()],
+                ["mse", mse_fn, dict(), Scale()],
+                ["huber", pseudo_huber_fn, {"boundary_scale": 1.5}, Scale()],
+                ["looph", looph_fn, {"boundary_scale": 1.5}, AnalyticScale()],
             ]
             # for nn_kwargs in _basic_nn_kwarg_options
             for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
@@ -185,15 +184,15 @@ class NuTest(BenchmarkTestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_kwargs_and_sigma_sq,
+        loss_kwargs_and_scale,
         opt_fn_and_kwargs,
     ):
         (
             loss_name,
             loss_fn,
             loss_kwargs,
-            sigma_sq,
-        ) = loss_kwargs_and_sigma_sq
+            scale,
+        ) = loss_kwargs_and_scale
         opt_fn, opt_kwargs = opt_fn_and_kwargs
 
         mrse = 0.0
@@ -216,7 +215,7 @@ class NuTest(BenchmarkTestCase):
                     ),
                 ),
                 noise=HomoscedasticNoise(self.params["noise"]()),
-                sigma_sq=sigma_sq,
+                scale=scale,
             )
 
             mrse += self._optim_chassis(
@@ -247,12 +246,12 @@ class LengthScaleTest(BenchmarkTestCase):
                 b,
                 n,
                 nn_kwargs,
-                loss_and_sigma_sq,
+                loss_and_scale,
                 opt_fn_and_kwargs,
             )
             for b in [250]
             for n in [20]
-            for loss_and_sigma_sq in [["lool", lool_fn, AnalyticSigmaSq()]]
+            for loss_and_scale in [["lool", lool_fn, AnalyticScale()]]
             # for nn_kwargs in _basic_nn_kwarg_options
             for opt_fn_and_kwargs in _advanced_opt_fn_and_kwarg_options
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
@@ -266,10 +265,10 @@ class LengthScaleTest(BenchmarkTestCase):
         batch_count,
         nn_count,
         nn_kwargs,
-        loss_and_sigma_sq,
+        loss_and_scale,
         opt_fn_and_kwargs,
     ):
-        loss_name, loss_fn, sigma_sq = loss_and_sigma_sq
+        loss_name, loss_fn, scale = loss_and_scale
         opt_fn, opt_kwargs = opt_fn_and_kwargs
 
         error_vector = mm.zeros((self.its,))
@@ -290,7 +289,7 @@ class LengthScaleTest(BenchmarkTestCase):
                     ),
                 ),
                 noise=HomoscedasticNoise(self.params["noise"]()),
-                sigma_sq=sigma_sq,
+                scale=scale,
             )
 
             error_vector[i] = self._optim_chassis(

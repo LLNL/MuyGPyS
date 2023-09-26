@@ -52,9 +52,9 @@ def _lool_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
-    sigma_sq: np.ndarray,
+    scale: np.ndarray,
 ) -> float:
-    local_likelihoods = _lool_fn_n(predictions, targets, variances, sigma_sq)
+    local_likelihoods = _lool_fn_n(predictions, targets, variances, scale)
     global_likelihood = world.allreduce(local_likelihoods, op=MPI.SUM)
     return global_likelihood
 
@@ -81,11 +81,11 @@ def _looph_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
-    sigma_sq: np.ndarray,
+    scale: np.ndarray,
     boundary_scale: float = 1.5,
 ) -> float:
     local_looph = _looph_fn_n(
-        predictions, targets, variances, sigma_sq, boundary_scale=boundary_scale
+        predictions, targets, variances, scale, boundary_scale=boundary_scale
     )
     global_looph = world.allreduce(local_looph, op=MPI.SUM)
     return global_looph

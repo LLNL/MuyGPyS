@@ -34,7 +34,7 @@ class OptimizeFn:
             `(muygps, obj_fn, verbose=verbose, **kwargs) -> MuyGPS`.
         make_obj_fn:
             A Callable taking the following objects, in order:
-            `loss_fn`, `kernel_fn`, `mean_fn`, `var_fn`, `sigma_sq_fn`,
+            `loss_fn`, `kernel_fn`, `mean_fn`, `var_fn`, `scale_fn`,
             `pairwise_diffs`, `crosswise_diffs` `batch_nn_targets`,
             `batch_targets` `batch_features`, `loss_kwargs`.
     """
@@ -98,14 +98,14 @@ class OptimizeFn:
         kernel_fn = muygps.kernel.get_opt_fn()
         mean_fn = muygps.get_opt_mean_fn()
         var_fn = muygps.get_opt_var_fn()
-        sigma_sq_fn = muygps.sigma_sq.get_opt_fn(muygps)
+        scale_fn = muygps.scale.get_opt_fn(muygps)
 
         obj_fn = self._make_obj_fn(
             loss_fn,
             kernel_fn,
             mean_fn,
             var_fn,
-            sigma_sq_fn,
+            scale_fn,
             pairwise_diffs,
             crosswise_diffs,
             batch_nn_targets,

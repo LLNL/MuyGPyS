@@ -36,7 +36,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.response_count = 1
         cls.length_scale = 1e-2
 
-        cls.sigma_tol = 5e-1
+        cls.scale_tol = 5e-1
         cls.nu_tol = {
             "mse": 2.5e-1,
             "lool": 2.5e-1,
@@ -73,7 +73,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             ),
             noise=HomoscedasticNoise(cls.params["noise"]()),
         )
-        cls.gp.sigma_sq._set(mm.array([5.0]))
+        cls.gp.scale._set(mm.array([5.0]))
 
     @classmethod
     def simulate(cls):

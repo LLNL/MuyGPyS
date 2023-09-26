@@ -11,11 +11,11 @@ hyperparameter
   :special-members: __call__
 
 .. default-role:: code
-.. autoclass:: MuyGPyS.gp.sigma_sq.SigmaSq
+.. autoclass:: MuyGPyS.gp.hyperparameter.scale.Scale
   :members:
   :special-members: __call__
 
 .. default-role:: code
-.. autoclass:: MuyGPyS.gp.sigma_sq.AnalyticSigmaSq
+.. autoclass:: MuyGPyS.gp.hyperparameter.scale.AnalyticScale
   :members:
   :special-members: __call__
