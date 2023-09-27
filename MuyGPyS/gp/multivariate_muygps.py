@@ -6,14 +6,10 @@
 """
 Multivariate MuyGPs implementation
 """
-from copy import deepcopy
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _mmuygps_fast_posterior_mean
 from MuyGPyS.gp.hyperparameter import FixedScale
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.gp.mean import PosteriorMean
-from MuyGPyS.gp.noise import HeteroscedasticNoise
-from MuyGPyS.gp.variance import PosteriorVariance
 
 
 class MultivariateMuyGPS:

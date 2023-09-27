@@ -8,7 +8,6 @@ MuyGPs implementation
 """
 
 from typing import Callable, List, Tuple
-from copy import deepcopy
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
