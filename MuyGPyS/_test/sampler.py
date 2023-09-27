@@ -41,7 +41,7 @@ class UnivariateSampler(SamplerBase):
         view_lb=0.5,
         view_ub=0.6,
         kernel=Matern(
-            nu=ScalarParam(2.0),
+            smoothness=ScalarParam(2.0),
             deformation=Isotropy(l2, length_scale=ScalarParam(1.0)),
         ),
         noise=HomoscedasticNoise(1e-14),
@@ -240,7 +240,7 @@ class UnivariateSampler2D(SamplerBase):
         points_per_dim=60,
         train_ratio=10,
         kernel=Matern(
-            nu=ScalarParam(2.0),
+            smoothness=ScalarParam(2.0),
             deformation=Isotropy(l2, length_scale=ScalarParam(1.0)),
         ),
         noise=HomoscedasticNoise(1e-14),
@@ -495,7 +495,7 @@ def print_results(targets, *args, **kwargs):
         table.append(
             [
                 name,
-                muygps.kernel.nu(),
+                muygps.kernel.smoothness(),
                 get_length_scale(muygps),
                 muygps.noise(),
                 muygps.scale()[0],
@@ -509,7 +509,7 @@ def print_results(targets, *args, **kwargs):
         table,
         columns=[
             "name",
-            "nu",
+            "smoothness",
             "length scale",
             "noise variance",
             "variance scale",

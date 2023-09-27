@@ -85,6 +85,13 @@ def parse_args():
         help="number of nearest neighbors to query.",
     )
     parser.add_argument(
+        "-s",
+        "--smoothness",
+        type=float,
+        default=0.5,
+        help="Matérn smoothness parameter.",
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -101,7 +108,7 @@ def main():
     muygps = MuyGPS(
         Matern(
             deformation=Isotropy(l2, length_scale=Parameter(1.0, (1e-1, 1e1))),
-            nu=Parameter(1 / 2),
+            smoothness=Parameter(args.smoothness),
         ),
         noise=HomoscedasticNoise(1e-3),
         scale=AnalyticScale(),
@@ -149,7 +156,7 @@ class BenchmarkPipeline:
             self._muygps.kernel.deformation, self._params
         )
         self.kernel_only_fn = benchmark_fn(
-            self._muygps.kernel._kernel_fn, self._params
+            self._muygps.kernel._fn, self._params
         )
         self.kernel_fn = benchmark_fn(self._muygps.kernel, self._params)
         self.mean_fn = benchmark_fn(self._muygps.posterior_mean, self._params)

@@ -81,10 +81,10 @@ class MiniBatchBenchmarkTestCase(BenchmarkTestCase):
         return _check_ndarray(self.assertEqual, *args, **kwargs)
 
 
-class NuTest(MiniBatchBenchmarkTestCase):
+class SmoothnessTest(MiniBatchBenchmarkTestCase):
     @classmethod
     def setUpClass(cls):
-        super(NuTest, cls).setUpClass()
+        super(SmoothnessTest, cls).setUpClass()
 
     @parameterized.parameters(
         (
@@ -122,7 +122,7 @@ class NuTest(MiniBatchBenchmarkTestCase):
             ]
         )
     )
-    def test_nu_mini_batch(
+    def test_smoothness_mini_batch(
         self,
         batch_count,
         nn_count,
@@ -144,7 +144,9 @@ class NuTest(MiniBatchBenchmarkTestCase):
             # set up MuyGPS object
             muygps = MuyGPS(
                 kernel=Matern(
-                    nu=ScalarParam("sample", self.params["nu"].get_bounds()),
+                    smoothness=ScalarParam(
+                        "sample", self.params["smoothness"].get_bounds()
+                    ),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(self.params["length_scale"]()),
@@ -156,7 +158,7 @@ class NuTest(MiniBatchBenchmarkTestCase):
 
             mrse += self._optim_chassis_mini_batch(
                 muygps,
-                "nu",
+                "smoothness",
                 i,
                 nn_count,
                 batch_count,
@@ -166,9 +168,9 @@ class NuTest(MiniBatchBenchmarkTestCase):
                 loss_kwargs=loss_kwargs,
             )
         mrse /= self.its
-        print(f"optimizes nu with mean relative squared error {mrse}")
+        print(f"optimizes smoothness with mean relative squared error {mrse}")
         # Is this a strong enough guarantee?
-        self.assertLessEqual(mrse, self.nu_tol[loss_name])
+        self.assertLessEqual(mrse, self.smoothness_tol[loss_name])
 
 
 class LengthScaleTest(MiniBatchBenchmarkTestCase):
@@ -226,7 +228,7 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
             # set up MuyGPS object
             muygps = MuyGPS(
                 kernel=Matern(
-                    nu=ScalarParam(self.params["nu"]()),
+                    smoothness=ScalarParam(self.params["smoothness"]()),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(

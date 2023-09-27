@@ -117,7 +117,7 @@ class ScaleOptimTest(BenchmarkTestCase):
         for i in range(self.its):
             muygps = MuyGPS(
                 kernel=Matern(
-                    nu=ScalarParam(self.params["nu"]()),
+                    smoothness=ScalarParam(self.params["smoothness"]()),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(self.params["length_scale"]()),
@@ -147,10 +147,10 @@ class ScaleOptimTest(BenchmarkTestCase):
         self.assertLessEqual(mrse, self.scale_tol)
 
 
-class NuTest(BenchmarkTestCase):
+class SmoothnessTest(BenchmarkTestCase):
     @classmethod
     def setUpClass(cls):
-        super(NuTest, cls).setUpClass()
+        super(SmoothnessTest, cls).setUpClass()
 
     @parameterized.parameters(
         (
@@ -182,7 +182,7 @@ class NuTest(BenchmarkTestCase):
             # ]
         )
     )
-    def test_nu(
+    def test_smoothness(
         self,
         batch_count,
         nn_count,
@@ -207,7 +207,9 @@ class NuTest(BenchmarkTestCase):
             # set up MuyGPS object
             muygps = MuyGPS(
                 kernel=Matern(
-                    nu=ScalarParam("sample", self.params["nu"].get_bounds()),
+                    smoothness=ScalarParam(
+                        "sample", self.params["smoothness"].get_bounds()
+                    ),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(self.params["length_scale"]()),
@@ -219,7 +221,7 @@ class NuTest(BenchmarkTestCase):
 
             mrse += self._optim_chassis(
                 muygps,
-                "nu",
+                "smoothness",
                 i,
                 nbrs_lookup,
                 batch_count,
@@ -229,9 +231,9 @@ class NuTest(BenchmarkTestCase):
                 loss_kwargs=loss_kwargs,
             )
         mrse /= self.its
-        print(f"optimizes nu with mean relative squared error {mrse}")
+        print(f"optimizes smoothness with mean relative squared error {mrse}")
         # Is this a strong enough guarantee?
-        self.assertLessEqual(mrse, self.nu_tol[loss_name])
+        self.assertLessEqual(mrse, self.smoothness_tol[loss_name])
 
 
 class LengthScaleTest(BenchmarkTestCase):
@@ -279,7 +281,7 @@ class LengthScaleTest(BenchmarkTestCase):
             # set up MuyGPS object
             muygps = MuyGPS(
                 kernel=Matern(
-                    nu=ScalarParam(self.params["nu"]()),
+                    smoothness=ScalarParam(self.params["smoothness"]()),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(

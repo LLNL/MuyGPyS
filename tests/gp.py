@@ -52,7 +52,7 @@ class GPInitTest(parameterized.TestCase):
     @parameterized.parameters(
         (kernel, noise, gp)
         for kernel in (
-            Matern(nu=ScalarParam(1.0)),
+            Matern(smoothness=ScalarParam(1.0)),
             RBF(),
         )
         for noise in ((HomoscedasticNoise(1e-5),))
@@ -82,19 +82,19 @@ class GPInitTest(parameterized.TestCase):
         (kernel, e, gp)
         for kernel in (
             Matern(
-                nu=ScalarParam(1.0, (1e-2, 5e4)),
+                smoothness=ScalarParam(1.0, (1e-2, 5e4)),
                 deformation=Isotropy(
                     l2, length_scale=ScalarParam(2.0, (0.0, 3.0))
                 ),
             ),
             Matern(
-                nu=ScalarParam(1.0),
+                smoothness=ScalarParam(1.0),
                 deformation=Isotropy(
                     l2, length_scale=ScalarParam(2.0, (0.0, 3.0))
                 ),
             ),
             Matern(
-                nu=ScalarParam(1.0, (1e-2, 5e4)),
+                smoothness=ScalarParam(1.0, (1e-2, 5e4)),
                 deformation=Anisotropy(
                     l2,
                     length_scale0=ScalarParam(2.0, (0.0, 3.0)),
@@ -102,7 +102,7 @@ class GPInitTest(parameterized.TestCase):
                 ),
             ),
             Matern(
-                nu=ScalarParam(1.0),
+                smoothness=ScalarParam(1.0),
                 deformation=Anisotropy(
                     l2,
                     length_scale0=ScalarParam(2.0, (0.0, 3.0)),
@@ -168,7 +168,7 @@ class GPInitTest(parameterized.TestCase):
         (kernel, e, gp, 100)
         for kernel in (
             Matern(
-                nu=ScalarParam("sample", (1e-2, 5e4)),
+                smoothness=ScalarParam("sample", (1e-2, 5e4)),
                 deformation=Isotropy(
                     l2, length_scale=ScalarParam(2.0, (0.0, 3.0))
                 ),
@@ -179,7 +179,7 @@ class GPInitTest(parameterized.TestCase):
                 )
             ),
             Matern(
-                nu=ScalarParam("log_sample", (1e-2, 5e4)),
+                smoothness=ScalarParam("log_sample", (1e-2, 5e4)),
                 deformation=Isotropy(
                     l2, length_scale=ScalarParam(2.0, (0.0, 3.0))
                 ),
@@ -190,7 +190,7 @@ class GPInitTest(parameterized.TestCase):
                 )
             ),
             Matern(
-                nu=ScalarParam("log_sample", (1e-2, 5e4)),
+                smoothness=ScalarParam("log_sample", (1e-2, 5e4)),
                 deformation=Anisotropy(
                     l2,
                     length_scale0=ScalarParam(2.0, (0.0, 3.0)),
@@ -304,7 +304,7 @@ class GPTensorShapesTest(GPTestCase):
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for kwargs in (
                 {
-                    "kernel": Matern(nu=ScalarParam(1.5)),
+                    "kernel": Matern(smoothness=ScalarParam(1.5)),
                     "noise": HomoscedasticNoise(1e-5),
                 },
                 {
@@ -372,7 +372,7 @@ class HomoscedasticNoiseTest(GPTestCase):
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for kwargs in (
                 {
-                    "kernel": Matern(nu=ScalarParam(1.5)),
+                    "kernel": Matern(smoothness=ScalarParam(1.5)),
                     "noise": HomoscedasticNoise(1e-5),
                 },
                 {
@@ -423,7 +423,7 @@ class HeteroscedasticNoiseTest(GPTestCase):
             # for r in [1]
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for kernel in (
-                Matern(nu=ScalarParam(1.5)),
+                Matern(smoothness=ScalarParam(1.5)),
                 RBF(),
             )
         )
@@ -482,7 +482,7 @@ class GPSolveTest(GPTestCase):
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for kwargs in (
                 {
-                    "kernel": Matern(nu=ScalarParam(1.5)),
+                    "kernel": Matern(smoothness=ScalarParam(1.5)),
                     "noise": HomoscedasticNoise(1e-5),
                 },
                 {
@@ -559,7 +559,7 @@ class GPDiagonalVariance(GPTestCase):
             # for r in [10]
             for kwargs in (
                 {
-                    "kernel": Matern(nu=ScalarParam(1.5)),
+                    "kernel": Matern(smoothness=ScalarParam(1.5)),
                     "noise": HomoscedasticNoise(1e-5),
                 },
                 {
@@ -626,7 +626,9 @@ class MakeClassifierTest(parameterized.TestCase):
             for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             for kwargs in (
                 {
-                    "kernel": Matern(nu=ScalarParam("sample", (1e-1, 1e0))),
+                    "kernel": Matern(
+                        smoothness=ScalarParam("sample", (1e-1, 1e0))
+                    ),
                     "noise": HomoscedasticNoise(1e-5),
                 },
             )
@@ -698,12 +700,16 @@ class MakeRegressorTest(parameterized.TestCase):
             # for ssm in ["analytic"]
             for k_kwargs in (
                 {
-                    "kernel": Matern(nu=ScalarParam("sample", (1e-1, 1e0))),
+                    "kernel": Matern(
+                        smoothness=ScalarParam("sample", (1e-1, 1e0))
+                    ),
                     "noise": HomoscedasticNoise(1e-5),
                     "scale": FixedScale(),
                 },
                 {
-                    "kernel": Matern(nu=ScalarParam("sample", (1e-1, 1e0))),
+                    "kernel": Matern(
+                        smoothness=ScalarParam("sample", (1e-1, 1e0))
+                    ),
                     "noise": HomoscedasticNoise(1e-5),
                     "scale": AnalyticScale(),
                 },
@@ -782,7 +788,7 @@ class GPScaleTest(GPTestCase):
             # for nn_kwargs in [_basic_nn_kwarg_options[0]]
             for k_kwargs in (
                 {
-                    "kernel": Matern(nu=ScalarParam(1.5)),
+                    "kernel": Matern(smoothness=ScalarParam(1.5)),
                     "noise": HomoscedasticNoise(1e-5),
                 },
                 {

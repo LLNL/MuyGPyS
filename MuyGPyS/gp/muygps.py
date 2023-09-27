@@ -8,7 +8,6 @@ MuyGPs implementation
 """
 
 from typing import Callable, List, Tuple
-from copy import deepcopy
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
@@ -51,7 +50,7 @@ class MuyGPS:
         >>> from MuyGPyS.gp import MuyGPS
         >>> muygps = MuyGPS(
         ...    kernel=Matern(
-        ...        nu=Parameter(0.38, (0.1, 2.5)),
+        ...        smoothness=Parameter(0.38, (0.1, 2.5)),
         ...        deformation=Isotropy(
         ...            metric=F2,
         ...            length_scale=Parameter(0.2),

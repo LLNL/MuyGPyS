@@ -40,7 +40,7 @@ class MakeFastRegressorTest(parameterized.TestCase):
             for k_kwargs in (
                 {
                     "kernel": Matern(
-                        nu=ScalarParam("sample", (1e-1, 1e0)),
+                        smoothness=ScalarParam("sample", (1e-1, 1e0)),
                         deformation=Isotropy(l2, length_scale=ScalarParam(1.5)),
                     ),
                     "noise": HomoscedasticNoise(1e-5),
@@ -121,7 +121,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.5),
+                            smoothness=ScalarParam(0.5),
                             deformation=Isotropy(
                                 l2, length_scale=ScalarParam(1.5)
                             ),
@@ -131,7 +131,7 @@ class MakeFastMultivariateRegressorTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.8),
+                            smoothness=ScalarParam(0.8),
                             deformation=Isotropy(
                                 l2, length_scale=ScalarParam(0.7)
                             ),

@@ -17,7 +17,7 @@ object.
 Example:
     >>> from MuyGPyS.gp.kernels import Matern
     >>> kern = Matern(
-    ...     nu=Parameter("log_sample", (0.1, 2.5)),
+    ...     smoothness=Parameter("log_sample", (0.1, 2.5)),
     ...     deformation=Isotropy(
     ...         metric=l2,
     ...         length_scale=Parameter(1.0),
@@ -59,21 +59,21 @@ from MuyGPyS.gp.kernels import KernelFn
 
 
 def _set_matern_fn(
-    nu: ScalarParam,
+    smoothness: ScalarParam,
     _backend_05_fn: Callable = _matern_05_fn,
     _backend_15_fn: Callable = _matern_15_fn,
     _backend_25_fn: Callable = _matern_25_fn,
     _backend_inf_fn: Callable = _matern_inf_fn,
     _backend_gen_fn: Callable = _matern_gen_fn,
 ):
-    if nu.fixed() is True:
-        if nu() == 0.5:
+    if smoothness.fixed() is True:
+        if smoothness() == 0.5:
             return _backend_05_fn
-        elif nu() == 1.5:
+        elif smoothness() == 1.5:
             return _backend_15_fn
-        elif nu() == 2.5:
+        elif smoothness() == 2.5:
             return _backend_25_fn
-        elif nu() == mm.inf:
+        elif smoothness() == mm.inf:
             return _backend_inf_fn
         else:
             return _backend_gen_fn
@@ -109,8 +109,9 @@ class Matern(KernelFn):
     :math:`\\ell_2` norm of the difference of the operands.
 
     Args:
-        nu:
-            A hyperparameter dict defining the length_scale parameter.
+        smoothness:
+            A parameter determining the differentiability of the function
+            distribution.
         deformation:
             The deformation functor to be used. Includes length_scale
             hyperparameter information via the `MuyGPyS.gp.deformation` module.
@@ -118,22 +119,22 @@ class Matern(KernelFn):
 
     def __init__(
         self,
-        nu: ScalarParam = ScalarParam(0.5),
+        smoothness: ScalarParam = ScalarParam(0.5),
         deformation: DeformationFn = Isotropy(
             l2, length_scale=ScalarParam(1.0)
         ),
         **_backend_fns
     ):
         super().__init__(deformation=deformation)
-        self.nu = nu
+        self.smoothness = smoothness
         self._backend_fns = _backend_fns
         self._make()
 
     def _make(self):
         super()._make_base()
-        self._hyperparameters["nu"] = self.nu
-        self._kernel_fn = _set_matern_fn(self.nu, **self._backend_fns)
-        self._fn = self.nu.apply_fn(self._kernel_fn, "nu")
+        self._hyperparameters["smoothness"] = self.smoothness
+        self._kernel_fn = _set_matern_fn(self.smoothness, **self._backend_fns)
+        self._fn = self.smoothness.apply_fn(self._kernel_fn, "smoothness")
         self._fn = self.deformation.embed_fn(self._fn)
 
     def __call__(self, diffs, **kwargs):
@@ -172,7 +173,7 @@ class Matern(KernelFn):
                 A list of unfixed hyperparameter bound tuples.
         """
         names, params, bounds = super().get_opt_params()
-        self.nu.append_lists("nu", names, params, bounds)
+        self.smoothness.append_lists("smoothness", names, params, bounds)
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:

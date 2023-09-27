@@ -18,7 +18,7 @@ hyperparameters.
 Example:
     >>> from MuyGPyS.gp.kernels import Matern
     >>> kern = Matern(
-    ...     nu=Parameter("log_sample", (0.1, 2.5)),
+    ...     smoothness=Parameter("log_sample", (0.1, 2.5)),
     ...     deformation=Isotropy(
     ...         metric=l2,
     ...         length_scale=Parameter(1.0),

@@ -176,10 +176,12 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_muygps_n(cls, nu, noise, deformation, nu_bounds="fixed"):
+    def _make_muygps_n(
+        cls, smoothness, noise, deformation, smoothness_bounds="fixed"
+    ):
         return MuyGPS(
             kernel=Matern(
-                nu=ScalarParam(nu, nu_bounds),
+                smoothness=ScalarParam(smoothness, smoothness_bounds),
                 deformation=deformation,
                 _backend_05_fn=matern_05_fn_n,
                 _backend_15_fn=matern_15_fn_n,
@@ -202,9 +204,9 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_homoscedastic_muygps_n(cls, nu, deformation, **kwargs):
+    def _make_homoscedastic_muygps_n(cls, smoothness, deformation, **kwargs):
         return cls._make_muygps_n(
-            nu,
+            smoothness,
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
@@ -213,9 +215,9 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_isotropic_muygps_n(cls, nu, **kwargs):
+    def _make_isotropic_muygps_n(cls, smoothness, **kwargs):
         return cls._make_homoscedastic_muygps_n(
-            nu,
+            smoothness,
             deformation=Isotropy(
                 l2_n, length_scale=ScalarParam(cls.length_scale)
             ),
@@ -223,9 +225,9 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_anisotropic_muygps_n(cls, nu, **kwargs):
+    def _make_anisotropic_muygps_n(cls, smoothness, **kwargs):
         return cls._make_homoscedastic_muygps_n(
-            nu,
+            smoothness,
             deformation=Anisotropy(
                 l2_n,
                 length_scale0=ScalarParam(cls.length_scale),
@@ -235,9 +237,9 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_heteroscedastic_muygps_n(cls, nu, noise, **kwargs):
+    def _make_heteroscedastic_muygps_n(cls, smoothness, noise, **kwargs):
         return cls._make_muygps_n(
-            nu,
+            smoothness,
             noise=HeteroscedasticNoise(
                 noise, _backend_fn=heteroscedastic_perturb_n
             ),
@@ -271,10 +273,12 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_muygps_j(cls, nu, noise, deformation, nu_bounds="fixed"):
+    def _make_muygps_j(
+        cls, smoothness, noise, deformation, smoothness_bounds="fixed"
+    ):
         return MuyGPS(
             kernel=Matern(
-                nu=ScalarParam(nu, nu_bounds),
+                smoothness=ScalarParam(smoothness, smoothness_bounds),
                 deformation=deformation,
                 _backend_05_fn=matern_05_fn_j,
                 _backend_15_fn=matern_15_fn_j,
@@ -297,9 +301,9 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_homoscedastic_muygps_j(cls, nu, deformation, **kwargs):
+    def _make_homoscedastic_muygps_j(cls, smoothness, deformation, **kwargs):
         return cls._make_muygps_j(
-            nu,
+            smoothness,
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_j
             ),
@@ -308,17 +312,17 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_isotropic_muygps_j(cls, nu, **kwargs):
+    def _make_isotropic_muygps_j(cls, smoothness, **kwargs):
         return cls._make_homoscedastic_muygps_j(
-            nu,
+            smoothness,
             Isotropy(l2_j, length_scale=ScalarParam(cls.length_scale)),
             **kwargs,
         )
 
     @classmethod
-    def _make_anisotropic_muygps_j(cls, nu, **kwargs):
+    def _make_anisotropic_muygps_j(cls, smoothness, **kwargs):
         return cls._make_homoscedastic_muygps_j(
-            nu,
+            smoothness,
             Anisotropy(
                 l2_j,
                 length_scale0=ScalarParam(cls.length_scale),
@@ -328,9 +332,9 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_heteroscedastic_muygps_j(cls, nu, noise, **kwargs):
+    def _make_heteroscedastic_muygps_j(cls, smoothness, noise, **kwargs):
         return cls._make_muygps_j(
-            nu,
+            smoothness,
             noise=HeteroscedasticNoise(
                 noise, _backend_fn=heteroscedastic_perturb_j
             ),
@@ -350,8 +354,8 @@ class TensorsTestCase(parameterized.TestCase):
         cls.nn_count = 40
         cls.batch_count = 500
         cls.length_scale = 1.0
-        cls.nu = 0.55
-        cls.nu_bounds = (1e-1, 1e1)
+        cls.smoothness = 0.55
+        cls.smoothness_bounds = (1e-1, 1e1)
         cls.noise = 1e-3
         cls.noise_heteroscedastic_n = cls.noise * np.ones(
             (cls.batch_count, cls.nn_count)
@@ -388,14 +392,14 @@ class TensorsTestCase(parameterized.TestCase):
         cls.muygps_rbf_j = cls._make_muygps_rbf_j()
 
         cls.muygps_gen_n = cls._make_isotropic_muygps_n(
-            cls.nu, nu_bounds=cls.nu_bounds
+            cls.smoothness, smoothness_bounds=cls.smoothness_bounds
         )
         cls.muygps_05_n = cls._make_isotropic_muygps_n(0.5)
         cls.muygps_15_n = cls._make_isotropic_muygps_n(1.5)
         cls.muygps_25_n = cls._make_isotropic_muygps_n(2.5)
         cls.muygps_inf_n = cls._make_isotropic_muygps_n(np.inf)
         cls.muygps_gen_j = cls._make_isotropic_muygps_j(
-            cls.nu, nu_bounds=cls.nu_bounds
+            cls.smoothness, smoothness_bounds=cls.smoothness_bounds
         )
         cls.muygps_05_j = cls._make_isotropic_muygps_j(0.5)
         cls.muygps_15_j = cls._make_isotropic_muygps_j(1.5)
@@ -406,18 +410,26 @@ class TensorsTestCase(parameterized.TestCase):
         cls.muygps_15_anisotropic_n = cls._make_anisotropic_muygps_n(1.5)
         cls.muygps_25_anisotropic_n = cls._make_anisotropic_muygps_n(2.5)
         cls.muygps_inf_anisotropic_n = cls._make_anisotropic_muygps_n(np.inf)
-        cls.muygps_gen_anisotropic_n = cls._make_anisotropic_muygps_n(cls.nu)
+        cls.muygps_gen_anisotropic_n = cls._make_anisotropic_muygps_n(
+            cls.smoothness
+        )
         cls.muygps_05_anisotropic_j = cls._make_anisotropic_muygps_j(0.5)
         cls.muygps_15_anisotropic_j = cls._make_anisotropic_muygps_j(1.5)
         cls.muygps_25_anisotropic_j = cls._make_anisotropic_muygps_j(2.5)
         cls.muygps_inf_anisotropic_j = cls._make_anisotropic_muygps_j(jnp.inf)
-        cls.muygps_gen_anisotropic_j = cls._make_anisotropic_muygps_j(cls.nu)
+        cls.muygps_gen_anisotropic_j = cls._make_anisotropic_muygps_j(
+            cls.smoothness
+        )
 
         cls.muygps_heteroscedastic_n = cls._make_heteroscedastic_muygps_n(
-            cls.nu, cls.noise_heteroscedastic_n, nu_bounds=cls.nu_bounds
+            cls.smoothness,
+            cls.noise_heteroscedastic_n,
+            smoothness_bounds=cls.smoothness_bounds,
         )
         cls.muygps_heteroscedastic_j = cls._make_heteroscedastic_muygps_j(
-            cls.nu, cls.noise_heteroscedastic_j, nu_bounds=cls.nu_bounds
+            cls.smoothness,
+            cls.noise_heteroscedastic_j,
+            smoothness_bounds=cls.smoothness_bounds,
         )
 
         cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
@@ -1022,8 +1034,8 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.nn_count = 40
         cls.batch_count = 500
         cls.length_scale = 1.0
-        cls.nu = 0.55
-        cls.nu_bounds = (1e-1, 1e1)
+        cls.smoothness = 0.55
+        cls.smoothness_bounds = (1e-1, 1e1)
         cls.noise = 1e-3
         cls.noise_heteroscedastic_n = _make_heteroscedastic_test_nugget(
             cls.batch_count, cls.nn_count, cls.noise
@@ -1038,7 +1050,9 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.k_kwargs_n = [
             {
                 "kernel": Matern(
-                    nu=ScalarParam(cls.nu, cls.nu_bounds),
+                    smoothness=ScalarParam(
+                        cls.smoothness, cls.smoothness_bounds
+                    ),
                     deformation=Isotropy(
                         l2_n,
                         length_scale=ScalarParam(cls.length_scale),
@@ -1051,7 +1065,9 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             },
             {
                 "kernel": Matern(
-                    nu=ScalarParam(cls.nu, cls.nu_bounds),
+                    smoothness=ScalarParam(
+                        cls.smoothness, cls.smoothness_bounds
+                    ),
                     deformation=Isotropy(
                         l2_n,
                         length_scale=ScalarParam(cls.length_scale),
@@ -1615,9 +1631,13 @@ class OptimTest(OptimTestCase):
         mopt_het_n = scipy_optimize_n(
             self.muygps_heteroscedastic_n, obj_fn_het_n, **self.sopt_kwargs
         )
-        self.assertTrue(allclose_gen(mopt_n.kernel.nu(), mopt_j.kernel.nu()))
         self.assertTrue(
-            allclose_inv(mopt_het_n.kernel.nu(), mopt_het_j.kernel.nu())
+            allclose_gen(mopt_n.kernel.smoothness(), mopt_j.kernel.smoothness())
+        )
+        self.assertTrue(
+            allclose_inv(
+                mopt_het_n.kernel.smoothness(), mopt_het_j.kernel.smoothness()
+            )
         )
 
 
@@ -1656,9 +1676,13 @@ class BayesOptimTest(OptimTestCase):
         mopt_het_n = bayes_optimize_n(
             self.muygps_heteroscedastic_n, obj_fn_het_n, **self.bopt_kwargs
         )
-        self.assertTrue(allclose_inv(mopt_n.kernel.nu(), mopt_j.kernel.nu()))
         self.assertTrue(
-            allclose_inv(mopt_het_n.kernel.nu(), mopt_het_j.kernel.nu())
+            allclose_inv(mopt_n.kernel.smoothness(), mopt_j.kernel.smoothness())
+        )
+        self.assertTrue(
+            allclose_inv(
+                mopt_het_n.kernel.smoothness(), mopt_het_j.kernel.smoothness()
+            )
         )
 
 
