@@ -337,28 +337,6 @@ class MuyGPS:
         """
         return self._fast_posterior_mean_fn(Kcross, coeffs_tensor)
 
-    def apply_new_noise(self, new_noise: NoiseFn):
-        """
-        Updates the homo/heteroscedastic noise parameter(s) of a MuyGPs model.
-        To be used when the MuyGPs model has been trained and needs to be
-        used for prediction, or if multiple batches are needed during training
-        of a heteroscedastic model.
-
-        Args:
-            new_noise:
-                If homoscedastic, a float to update the nugget parameter.
-                If heteroscedastic, a matrix of shape
-                `(test_count, nn_count)` containing the measurement
-                noise corresponding to the nearest neighbors of each test point.
-        Returns:
-            A MuyGPs model with updated noise parameter(s).
-        """
-        ret = deepcopy(self)
-        ret.noise = new_noise
-        ret._mean_fn = PosteriorMean(ret.noise)
-        ret._var_fn = PosteriorVariance(ret.noise, ret.scale)
-        return ret
-
     def get_opt_mean_fn(self) -> Callable:
         """
         Return a posterior mean function for use in optimization.

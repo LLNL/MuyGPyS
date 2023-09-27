@@ -378,25 +378,3 @@ class MultivariateMuyGPS:
             scales = mm.assign(scales, new_scale_val[0], i)
         self.scale._set(scales)
         return self
-
-    def apply_new_noise(self, new_noise):
-        """
-        Updates the heteroscedastic noise parameters of a MultivariateMuyGPs
-        model.
-
-        Args:
-            new_noise:
-                A matrix of shape
-                `(test_count, nn_count, nn_count, response_count)` containing
-                the measurement noise corresponding to the nearest neighbors
-                of each test point and each response.
-        Returns:
-            A MultivariateMuyGPs model with updated heteroscedastic noise
-            parameters.
-        """
-        ret = deepcopy(self)
-        for i, model in enumerate(ret.models):
-            model.noise = HeteroscedasticNoise(new_noise[:, :, :, i], "fixed")
-            model._mean_fn = PosteriorMean(model.noise)
-            model._var_fn = PosteriorVariance(model.noise, model.scale)
-        return ret
