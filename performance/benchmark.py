@@ -13,19 +13,15 @@ import MuyGPyS._src.math as mm
 from MuyGPyS import config
 from MuyGPyS._src.mpi_utils import _rank0, _print0
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.distortion import IsotropicDistortion, l2
-from MuyGPyS.gp.hyperparameter import ScalarHyperparameter
+from MuyGPyS.gp.deformation import Isotropy, l2
+from MuyGPyS.gp.hyperparameter import AnalyticScale, Parameter
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import make_train_tensors, make_predict_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import lool_fn, mse_fn
-from MuyGPyS.optimize.objective import make_obj_fn
-from MuyGPyS.optimize.sigma_sq import (
-    make_sigma_sq_optim,
-    muygps_analytic_sigma_sq_optim,
-)
+from MuyGPyS.optimize.objective import make_loo_crossval_fn
 
 
 def print_line():
@@ -104,12 +100,11 @@ def main():
     nn_kwargs = {"nn_method": "exact", "algorithm": "ball_tree"}
     muygps = MuyGPS(
         Matern(
-            metric=IsotropicDistortion(
-                l2, length_scale=ScalarHyperparameter(1.0, (1e-1, 1e1))
-            ),
-            nu=ScalarHyperparameter(1 / 2),
+            deformation=Isotropy(l2, length_scale=Parameter(1.0, (1e-1, 1e1))),
+            nu=Parameter(1 / 2),
         ),
-        eps=HomoscedasticNoise(1e-3),
+        noise=HomoscedasticNoise(1e-3),
+        scale=AnalyticScale(),
     )
 
     pipeline = BenchmarkPipeline(muygps, args, nn_kwargs)
@@ -119,7 +114,6 @@ def main():
 
 
 def get_obj_fn(
-    loss_method,
     loss_fn,
     muygps,
     pairwise_diffs,
@@ -130,15 +124,13 @@ def get_obj_fn(
     kernel_fn = muygps.kernel.get_opt_fn()
     mean_fn = muygps.get_opt_mean_fn()
     var_fn = muygps.get_opt_var_fn()
-    sigma_sq_fn = make_sigma_sq_optim("analytic", muygps)
-    return make_obj_fn(
-        "loo_crossval",
-        loss_method,
+    scale_fn = muygps.scale.get_opt_fn(muygps)
+    return make_loo_crossval_fn(
         loss_fn,
         kernel_fn,
         mean_fn,
         var_fn,
-        sigma_sq_fn,
+        scale_fn,
         pairwise_diffs,
         crosswise_diffs,
         batch_nn_targets,
@@ -153,8 +145,8 @@ class BenchmarkPipeline:
         self.prepare_data(nn_kwargs)
         self.values = dict()
         self.timings = dict()
-        self.distortion_fn = benchmark_fn(
-            self._muygps.kernel.distortion_fn, self._params
+        self.deformation = benchmark_fn(
+            self._muygps.kernel.deformation, self._params
         )
         self.kernel_only_fn = benchmark_fn(
             self._muygps.kernel._kernel_fn, self._params
@@ -167,7 +159,6 @@ class BenchmarkPipeline:
         self.mse_fn = benchmark_fn(mse_fn, self._params)
         self.mse_obj_fn = benchmark_fn(
             get_obj_fn(
-                "mse",
                 mse_fn,
                 self._muygps,
                 self._batch_pairwise_diffs,
@@ -180,7 +171,6 @@ class BenchmarkPipeline:
         self.lool_fn = benchmark_fn(lool_fn, self._params)
         self.lool_obj_fn = benchmark_fn(
             get_obj_fn(
-                "lool",
                 lool_fn,
                 self._muygps,
                 self._batch_pairwise_diffs,
@@ -191,8 +181,8 @@ class BenchmarkPipeline:
             self._params,
         )
         # self.cross_entropy_fn = benchmark_fn(cross_entropy_fn, params)
-        self.sigma_sq_fn = benchmark_fn(
-            muygps_analytic_sigma_sq_optim, self._params
+        self.scale_fn = benchmark_fn(
+            self._muygps.scale.get_opt_fn(muygps), self._params
         )
 
     def profile(self, name, value_timing):
@@ -209,9 +199,9 @@ class BenchmarkPipeline:
         # batch profiling
         batch_pairwise_dists = self.profile(
             "batch pairwise distances",
-            self.distortion_fn(
+            self.deformation(
                 self._batch_pairwise_diffs,
-                self._muygps.kernel.distortion_fn.length_scale(),
+                self._muygps.kernel.deformation.length_scale(),
             ),
         )
         self.profile(
@@ -234,9 +224,10 @@ class BenchmarkPipeline:
         # opt profiling
         self.profile("mse fn", self.mse_fn(batch_mean, self._batch_targets))
         self.profile(
-            "sigma_sq optim",
-            self.sigma_sq_fn(
-                self._muygps, self._batch_pairwise_diffs, self._batch_nn_targets
+            "scale analytic optim",
+            self.scale_fn(
+                self._muygps.kernel(self._batch_pairwise_diffs),
+                self._batch_nn_targets,
             ),
         )
         self.profile(
@@ -245,7 +236,7 @@ class BenchmarkPipeline:
                 batch_mean,
                 self._batch_targets,
                 batch_var,
-                self._muygps.sigma_sq(),
+                self._muygps.scale(),
             ),
         )
         self.profile("mse objective fn", self.mse_obj_fn(length_scale=2.0))
@@ -253,9 +244,9 @@ class BenchmarkPipeline:
         # test profiling
         test_pairwise_dists = self.profile(
             "test pairwise distances",
-            self.distortion_fn(
+            self.deformation(
                 self._test_pairwise_diffs,
-                self._muygps.kernel.distortion_fn.length_scale(),
+                self._muygps.kernel.deformation.length_scale(),
             ),
         )
         self.profile(
