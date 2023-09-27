@@ -136,7 +136,7 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_muygps(cls, smoothness, deformation, smoothness_bounds="fixed"):
         return MuyGPS(
             kernel=Matern(
-                nu=ScalarParam(smoothness, smoothness_bounds),
+                smoothness=ScalarParam(smoothness, smoothness_bounds),
                 deformation=deformation,
                 _backend_05_fn=matern_05_fn_n,
                 _backend_15_fn=matern_15_fn_n,
