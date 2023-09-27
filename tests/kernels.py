@@ -416,28 +416,30 @@ class ParamTest(KernelTest):
             (k_kwargs, alt_kwargs)
             for k_kwargs in [
                 {
-                    "nu": ScalarParam(0.42, (1e-4, 5e1)),
+                    "smoothness": ScalarParam(0.42, (1e-4, 5e1)),
                     "length_scale": ScalarParam(1.0, (1e-5, 1e1)),
                 }
             ]
             for alt_kwargs in [
                 {
-                    "nu": ScalarParam(1.0, (1e-2, 5e4)),
+                    "smoothness": ScalarParam(1.0, (1e-2, 5e4)),
                     "length_scale": ScalarParam(7.2, (2e-5, 2e1)),
                 },
                 {
-                    "nu": ScalarParam(1.0),
+                    "smoothness": ScalarParam(1.0),
                     "length_scale": ScalarParam("sample", (2e-5, 2e1)),
                 },
                 {
-                    "nu": ScalarParam("sample", (1e-2, 5e4)),
+                    "smoothness": ScalarParam("sample", (1e-2, 5e4)),
                 },
             ]
         )
     )
     def test_matern(self, k_kwargs, alt_kwargs):
         deformation_model = Isotropy(l2, length_scale=k_kwargs["length_scale"])
-        kern_fn = Matern(deformation=deformation_model, nu=k_kwargs["nu"])
+        kern_fn = Matern(
+            deformation=deformation_model, smoothness=k_kwargs["smoothness"]
+        )
         self._test_chassis(kern_fn, k_kwargs, alt_kwargs)
 
     def _test_chassis(self, kern_fn, k_kwargs, alt_kwargs):
@@ -455,23 +457,23 @@ class MaternTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": ScalarParam(0.42, "fixed"),
+                    "smoothness": ScalarParam(0.42, "fixed"),
                     "length_scale": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarParam(0.5),
+                    "smoothness": ScalarParam(0.5),
                     "length_scale": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarParam(1.5),
+                    "smoothness": ScalarParam(1.5),
                     "length_scale": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarParam(2.5),
+                    "smoothness": ScalarParam(2.5),
                     "length_scale": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarParam(mm.inf),
+                    "smoothness": ScalarParam(mm.inf),
                     "length_scale": ScalarParam(1.0),
                 },
             ]
@@ -480,7 +482,7 @@ class MaternTest(KernelTest):
             # for nn_kwargs in [_basic_nn_kwarg_options[1]]
             # for k_kwargs in [
             #     {
-            #         "nu": {"val": mm.inf, "bounds": "fixed"},
+            #         "smoothness": {"val": mm.inf, "bounds": "fixed"},
             #         "length_scale": {"val": 1.0, "bounds": (1e-5, 1e1)},
             #     }
             # ]
@@ -495,15 +497,18 @@ class MaternTest(KernelTest):
         nn_kwargs,
         k_kwargs,
     ):
-        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
+        if config.state.backend == "torch" and k_kwargs["smoothness"][
+            "val"
+        ] not in [
             0.5,
             1.5,
             2.5,
             mm.inf,
         ]:
-            bad_nu = k_kwargs["nu"]["val"]
+            bad_smoothness = k_kwargs["smoothness"]["val"]
             _warn0(
-                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+                "Skipping test because torch cannot handle Matern "
+                f"smoothness={bad_smoothness}"
             )
             return
         train = _make_gaussian_matrix(train_count, feature_count)
@@ -513,14 +518,17 @@ class MaternTest(KernelTest):
         nn_dists = mm.sqrt(nn_dists)
         pairwise_diffs = pairwise_tensor(train, nn_indices)
         deformation_model = Isotropy(l2, length_scale=k_kwargs["length_scale"])
-        mtn = Matern(nu=k_kwargs["nu"], deformation=deformation_model)
+        mtn = Matern(
+            smoothness=k_kwargs["smoothness"], deformation=deformation_model
+        )
         # mtn = Matern(**k_kwargs)
         self._check_params_chassis(mtn, **k_kwargs)
         kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
         self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         sk_mtn = sk_Matern(
-            nu=mtn.nu(), length_scale=deformation_model.length_scale()
+            nu=mtn.smoothness(),
+            length_scale=deformation_model.length_scale(),
         )
         sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
         self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
@@ -549,7 +557,7 @@ class AnisotropicShapesTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": ScalarParam(0.42, "fixed"),
+                    "smoothness": ScalarParam(0.42, "fixed"),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(2.0),
                 },
@@ -565,15 +573,18 @@ class AnisotropicShapesTest(KernelTest):
         nn_kwargs,
         k_kwargs,
     ):
-        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
+        if config.state.backend == "torch" and k_kwargs["smoothness"][
+            "val"
+        ] not in [
             0.5,
             1.5,
             2.5,
             mm.inf,
         ]:
-            bad_nu = k_kwargs["nu"]["val"]
+            bad_smoothness = k_kwargs["smoothness"]["val"]
             _warn0(
-                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+                "Skipping test because torch cannot handle Matern "
+                f"smoothness={bad_smoothness}"
             )
             return
         train = _make_gaussian_matrix(train_count, feature_count)
@@ -587,7 +598,9 @@ class AnisotropicShapesTest(KernelTest):
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
-        mtn = Matern(nu=k_kwargs["nu"], deformation=deformation_model)
+        mtn = Matern(
+            smoothness=k_kwargs["smoothness"], deformation=deformation_model
+        )
         with self.assertRaisesRegex(ValueError, "Difference tensor of shape "):
             _ = _consistent_unchunk_tensor(mtn(pairwise_diffs))
 
@@ -601,27 +614,27 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": ScalarParam(0.42, "fixed"),
+                    "smoothness": ScalarParam(0.42, "fixed"),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "nu": ScalarParam(0.5),
+                    "smoothness": ScalarParam(0.5),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "nu": ScalarParam(1.5),
+                    "smoothness": ScalarParam(1.5),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "nu": ScalarParam(2.5),
+                    "smoothness": ScalarParam(2.5),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(2.0),
                 },
                 {
-                    "nu": ScalarParam(mm.inf),
+                    "smoothness": ScalarParam(mm.inf),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(2.0),
                 },
@@ -637,15 +650,13 @@ class AnisotropicTest(KernelTest):
         nn_kwargs,
         k_kwargs,
     ):
-        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
-            0.5,
-            1.5,
-            2.5,
-            mm.inf,
-        ]:
-            bad_nu = k_kwargs["nu"]["val"]
+        if config.state.backend == "torch" and k_kwargs["smoothness"][
+            "val"
+        ] not in [0.5, 1.5, 2.5, mm.inf]:
+            bad_smoothness = k_kwargs["smoothness"]["val"]
             _warn0(
-                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+                "Skipping test because torch cannot handle Matern "
+                f"smoothness={bad_smoothness}"
             )
             return
         train = _make_gaussian_matrix(train_count, feature_count)
@@ -659,12 +670,14 @@ class AnisotropicTest(KernelTest):
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
-        mtn = Matern(nu=k_kwargs["nu"], deformation=deformation_model)
+        mtn = Matern(
+            smoothness=k_kwargs["smoothness"], deformation=deformation_model
+        )
         # mtn = Matern(**k_kwargs)
         self._check_params_chassis(
             mtn,
             **{
-                "nu": k_kwargs["nu"],
+                "smoothness": k_kwargs["smoothness"],
                 "length_scale0": k_kwargs["length_scale0"],
                 "length_scale1": k_kwargs["length_scale1"],
             },
@@ -675,7 +688,7 @@ class AnisotropicTest(KernelTest):
         length_scale0 = k_kwargs["length_scale0"]
         length_scale1 = k_kwargs["length_scale1"]
         sk_mtn = sk_Matern(
-            nu=mtn.nu(),
+            nu=mtn.smoothness(),
             length_scale=mm.array([length_scale0(), length_scale1()]),
         )
         sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
@@ -735,15 +748,13 @@ class AnisotropicTest(KernelTest):
         nn_kwargs,
         k_kwargs,
     ):
-        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
-            0.5,
-            1.5,
-            2.5,
-            mm.inf,
-        ]:
-            bad_nu = k_kwargs["nu"]["val"]
+        if config.state.backend == "torch" and k_kwargs["smoothness"][
+            "val"
+        ] not in [0.5, 1.5, 2.5, mm.inf]:
+            bad_smoothness = k_kwargs["smoothness"]["val"]
             _warn0(
-                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+                "Skipping test because torch cannot handle Matern "
+                f"smoothness={bad_smoothness}"
             )
             return
         train = _make_gaussian_matrix(train_count, feature_count)
@@ -828,15 +839,13 @@ class AnisotropicTest(KernelTest):
         nn_kwargs,
         k_kwargs,
     ):
-        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
-            0.5,
-            1.5,
-            2.5,
-            mm.inf,
-        ]:
-            bad_nu = k_kwargs["nu"]["val"]
+        if config.state.backend == "torch" and k_kwargs["smoothness"][
+            "val"
+        ] not in [0.5, 1.5, 2.5, mm.inf]:
+            bad_smoothness = k_kwargs["smoothness"]["val"]
             _warn0(
-                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+                "Skipping test because torch cannot handle Matern "
+                f"smoothness={bad_smoothness}"
             )
             return
         train = _make_gaussian_matrix(train_count, feature_count)
@@ -888,27 +897,27 @@ class AnisotropicTest(KernelTest):
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
                 {
-                    "nu": ScalarParam(0.42, "fixed"),
+                    "smoothness": ScalarParam(0.42, "fixed"),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarParam(0.5),
+                    "smoothness": ScalarParam(0.5),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarParam(1.5),
+                    "smoothness": ScalarParam(1.5),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarParam(2.5),
+                    "smoothness": ScalarParam(2.5),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(1.0),
                 },
                 {
-                    "nu": ScalarParam(mm.inf),
+                    "smoothness": ScalarParam(mm.inf),
                     "length_scale0": ScalarParam(1.0),
                     "length_scale1": ScalarParam(1.0),
                 },
@@ -924,15 +933,13 @@ class AnisotropicTest(KernelTest):
         nn_kwargs,
         k_kwargs,
     ):
-        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
-            0.5,
-            1.5,
-            2.5,
-            mm.inf,
-        ]:
-            bad_nu = k_kwargs["nu"]["val"]
+        if config.state.backend == "torch" and k_kwargs["smoothness"][
+            "val"
+        ] not in [0.5, 1.5, 2.5, mm.inf]:
+            bad_smoothness = k_kwargs["smoothness"]["val"]
             _warn0(
-                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+                "Skipping test because torch cannot handle Matern "
+                f"smoothness={bad_smoothness}"
             )
             return
         train = _make_gaussian_matrix(train_count, feature_count)
@@ -947,13 +954,14 @@ class AnisotropicTest(KernelTest):
             length_scale1=k_kwargs["length_scale1"],
         )
         mtn_aniso = Matern(
-            nu=k_kwargs["nu"], deformation=deformation_model_aniso
+            smoothness=k_kwargs["smoothness"],
+            deformation=deformation_model_aniso,
         )
 
         self._check_params_chassis(
             mtn_aniso,
             **{
-                "nu": k_kwargs["nu"],
+                "smoothness": k_kwargs["smoothness"],
                 "length_scale0": k_kwargs["length_scale0"],
                 "length_scale1": k_kwargs["length_scale1"],
             },
@@ -964,12 +972,14 @@ class AnisotropicTest(KernelTest):
             metric=l2,
             length_scale=k_kwargs["length_scale0"],
         )
-        mtn_iso = Matern(nu=k_kwargs["nu"], deformation=deformation_model_iso)
+        mtn_iso = Matern(
+            smoothness=k_kwargs["smoothness"], deformation=deformation_model_iso
+        )
 
         self._check_params_chassis(
             mtn_iso,
             **{
-                "nu": k_kwargs["nu"],
+                "smoothness": k_kwargs["smoothness"],
                 "length_scale": k_kwargs["length_scale0"],
             },
         )
@@ -1006,15 +1016,13 @@ class AnisotropicTest(KernelTest):
         nn_kwargs,
         k_kwargs,
     ):
-        if config.state.backend == "torch" and k_kwargs["nu"]["val"] not in [
-            0.5,
-            1.5,
-            2.5,
-            mm.inf,
-        ]:
-            bad_nu = k_kwargs["nu"]["val"]
+        if config.state.backend == "torch" and k_kwargs["smoothness"][
+            "val"
+        ] not in [0.5, 1.5, 2.5, mm.inf]:
+            bad_smoothness = k_kwargs["smoothness"]["val"]
             _warn0(
-                f"Skipping test because torch cannot handle Matern nu={bad_nu}"
+                "Skipping test because torch cannot handle Matern "
+                f"smoothness={bad_smoothness}"
             )
             return
         train = _make_gaussian_matrix(train_count, feature_count)

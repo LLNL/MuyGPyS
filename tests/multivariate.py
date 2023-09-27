@@ -47,7 +47,7 @@ class InitTest(parameterized.TestCase):
             [
                 {
                     "kernel": Matern(
-                        nu=ScalarParam(1.0),
+                        smoothness=ScalarParam(1.0),
                         deformation=Isotropy(
                             metric=l2, length_scale=ScalarParam(7.2)
                         ),
@@ -56,7 +56,7 @@ class InitTest(parameterized.TestCase):
                 },
                 {
                     "kernel": Matern(
-                        nu=ScalarParam(1.2),
+                        smoothness=ScalarParam(1.2),
                         deformation=Isotropy(
                             metric=l2, length_scale=ScalarParam(2.2)
                         ),
@@ -67,7 +67,7 @@ class InitTest(parameterized.TestCase):
             [
                 {
                     "kernel": Matern(
-                        nu=ScalarParam(1.0),
+                        smoothness=ScalarParam(1.0),
                         deformation=Isotropy(
                             metric=l2, length_scale=ScalarParam(7.2)
                         ),
@@ -102,7 +102,7 @@ class ScaleTest(parameterized.TestCase):
                 [
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(1.5),
+                            smoothness=ScalarParam(1.5),
                             deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarParam(7.2),
@@ -113,7 +113,7 @@ class ScaleTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.5),
+                            smoothness=ScalarParam(0.5),
                             deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarParam(2.2),
@@ -124,7 +124,7 @@ class ScaleTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(mm.inf),
+                            smoothness=ScalarParam(mm.inf),
                             deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarParam(12.4),
@@ -135,7 +135,7 @@ class ScaleTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(1.5),
+                            smoothness=ScalarParam(1.5),
                             deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarParam(7.2),
@@ -147,7 +147,7 @@ class ScaleTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.5),
+                            smoothness=ScalarParam(0.5),
                             deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarParam(2.2),
@@ -159,7 +159,7 @@ class ScaleTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(mm.inf),
+                            smoothness=ScalarParam(mm.inf),
                             deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarParam(12.4),
@@ -242,7 +242,7 @@ class OptimTest(parameterized.TestCase):
                     [
                         {
                             "kernel": Matern(
-                                nu=ScalarParam("sample", (1e-2, 1e0)),
+                                smoothness=ScalarParam("sample", (1e-2, 1e0)),
                                 deformation=Isotropy(
                                     metric=l2,
                                     length_scale=ScalarParam(1.5),
@@ -252,7 +252,7 @@ class OptimTest(parameterized.TestCase):
                         },
                         {
                             "kernel": Matern(
-                                nu=ScalarParam("sample", (1e-2, 1e0)),
+                                smoothness=ScalarParam("sample", (1e-2, 1e0)),
                                 deformation=Isotropy(
                                     metric=l2,
                                     length_scale=ScalarParam(0.7),
@@ -355,7 +355,9 @@ class OptimTest(parameterized.TestCase):
                     opt_fn=opt_fn,
                     **opt_kwargs,
                 )
-                estimate = mmuygps.models[i].kernel._hyperparameters["nu"]()
+                estimate = mmuygps.models[i].kernel._hyperparameters[
+                    "smoothness"
+                ]()
                 mse += mm.sum(estimate - target[i]) ** 2
         mse /= its * response_count
         print(f"optimizes with mse {mse}")
@@ -375,7 +377,7 @@ class ClassifyTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.63),
+                            smoothness=ScalarParam(0.63),
                             deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarParam(1.5),
@@ -385,7 +387,7 @@ class ClassifyTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.79),
+                            smoothness=ScalarParam(0.79),
                             deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarParam(0.7),
@@ -395,7 +397,7 @@ class ClassifyTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.63),
+                            smoothness=ScalarParam(0.63),
                             deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarParam(1.5),
@@ -406,7 +408,7 @@ class ClassifyTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.79),
+                            smoothness=ScalarParam(0.79),
                             deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarParam(0.7),
@@ -472,7 +474,7 @@ class RegressTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(1.5),
+                            smoothness=ScalarParam(1.5),
                             deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarParam(1.5),
@@ -492,7 +494,7 @@ class RegressTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(1.5),
+                            smoothness=ScalarParam(1.5),
                             deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarParam(1.5),
@@ -582,7 +584,7 @@ class MakeClassifierTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarParam("sample", (1e-1, 1e0)),
+                            smoothness=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarParam(1.5),
@@ -592,7 +594,7 @@ class MakeClassifierTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.8),
+                            smoothness=ScalarParam(0.8),
                             deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarParam(0.7),
@@ -602,7 +604,7 @@ class MakeClassifierTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam("sample", (1e-1, 1e0)),
+                            smoothness=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarParam(1.5),
@@ -613,7 +615,7 @@ class MakeClassifierTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.8),
+                            smoothness=ScalarParam(0.8),
                             deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarParam(0.7),
@@ -704,7 +706,7 @@ class MakeRegressorTest(parameterized.TestCase):
                 (
                     {
                         "kernel": Matern(
-                            nu=ScalarParam("sample", (1e-1, 1e0)),
+                            smoothness=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarParam(1.5),
@@ -715,7 +717,7 @@ class MakeRegressorTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.8),
+                            smoothness=ScalarParam(0.8),
                             deformation=Isotropy(
                                 metric=l2,
                                 length_scale=ScalarParam(0.7),
@@ -726,7 +728,7 @@ class MakeRegressorTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam("sample", (1e-1, 1e0)),
+                            smoothness=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarParam(1.5),
@@ -738,7 +740,7 @@ class MakeRegressorTest(parameterized.TestCase):
                     },
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.8),
+                            smoothness=ScalarParam(0.8),
                             deformation=Anisotropy(
                                 metric=l2,
                                 length_scale0=ScalarParam(0.7),

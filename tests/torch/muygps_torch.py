@@ -81,14 +81,14 @@ class RegressTest(parameterized.TestCase):
         _check_ndarray(self.assertEqual, batch_targets, torch.ftype)
         _check_ndarray(self.assertEqual, batch_nn_targets, torch.ftype)
 
-        model_nu = 0.5
+        model_smoothness = 0.5
         model_length_scale = 1.0
         measurement_noise = 1e-6
 
         model_args = [
             {
                 "kernel": Matern(
-                    nu=ScalarParam(model_nu),
+                    smoothness=ScalarParam(model_smoothness),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(model_length_scale),
@@ -98,7 +98,7 @@ class RegressTest(parameterized.TestCase):
             },
             {
                 "kernel": Matern(
-                    nu=ScalarParam(model_nu),
+                    smoothness=ScalarParam(model_smoothness),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(model_length_scale),
@@ -216,7 +216,7 @@ class MultivariateRegressTest(parameterized.TestCase):
         model_args = [
             {
                 "kernel": Matern(
-                    nu=ScalarParam(1.5),
+                    smoothness=ScalarParam(1.5),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(7.2),
@@ -226,7 +226,7 @@ class MultivariateRegressTest(parameterized.TestCase):
             },
             {
                 "kernel": Matern(
-                    nu=ScalarParam(0.5),
+                    smoothness=ScalarParam(0.5),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(2.2),

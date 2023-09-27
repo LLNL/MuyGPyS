@@ -36,10 +36,11 @@ class MultivariateMuyGPs_layer(nn.Module):
     future releases.
 
     PyTorch does not currently support the Bessel function required to compute
-    the Matern kernel for non-special values of :math:`\\nu`, e.g. 1/2, 3/2,
-    5/2, and :math:`\\infty`. The MuyGPs layer allows the lengthscale parameter
-    :math:`\\rho` to be trained (provided an initial value by the user) as well
-    as the homoscedastic :math:`\\tau^2` noise prior variance parameter.
+    the Matern kernel for non-special case smoothness values of :math:`\\nu`,
+    e.g. 1/2, 3/2, 5/2, and :math:`\\infty`. The MuyGPs layer allows the
+    lengthscale parameter :math:`\\rho` to be trained (provided an initial value
+    by the user) as well as the homoscedastic :math:`\\tau^2` noise prior
+    variance parameter.
 
     The MultivariateMuyGPs layer returns the posterior mean, posterior variance
     , and a vector of :math:`\\sigma^2` indicating the scale parameter
@@ -49,7 +50,7 @@ class MultivariateMuyGPs_layer(nn.Module):
         >>> from MuyGPyS.torch.muygps_layer import MultivariateMuyGPs_layer
         >>> multivariate_muygps_model = MMuyGPs(
         ...     Matern(
-        ...         nu=ScalarParam(0.5),
+        ...         smoothness=ScalarParam(0.5),
         ...         deformation=Isotropy(
         ...             metric=l2,
         ...             length_scale=ScalarParam(1.0)

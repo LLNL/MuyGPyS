@@ -137,7 +137,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
         model_args = [
             {
                 "kernel": Matern(
-                    nu=ScalarParam(1.5),
+                    smoothness=ScalarParam(1.5),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(7.2),
@@ -147,7 +147,7 @@ class MultivariateStargalRegressTest(RegressionAPITest):
             },
             {
                 "kernel": Matern(
-                    nu=ScalarParam(0.5),
+                    smoothness=ScalarParam(0.5),
                     deformation=Isotropy(
                         metric=l2,
                         length_scale=ScalarParam(2.2),
@@ -282,7 +282,7 @@ class HeatonTest(RegressionAPITest):
 
         muygps_model = MuyGPS(
             Matern(
-                nu=ScalarParam(1.5),
+                smoothness=ScalarParam(1.5),
                 deformation=Isotropy(
                     metric=l2,
                     length_scale=ScalarParam(1.0),

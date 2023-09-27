@@ -38,19 +38,21 @@ def _matern_inf_fn(dists: jnp.ndarray, **kwargs) -> jnp.ndarray:
 
 
 @jit
-def _matern_gen_fn(dists: jnp.ndarray, nu: float, **kwargs) -> jnp.ndarray:
+def _matern_gen_fn(
+    dists: jnp.ndarray, smoothness: float, **kwargs
+) -> jnp.ndarray:
     K = dists
     diag_indices = jnp.arange(K.shape[1])
     if len(K.shape) == 3:
         K = K.at[:, diag_indices, diag_indices].set(1.0)
-    tmp = jnp.sqrt(2 * nu) * K
-    const_val = (2 ** (1.0 - nu)) / jnp.exp(gammaln(nu))
+    tmp = jnp.sqrt(2 * smoothness) * K
+    const_val = (2 ** (1.0 - smoothness)) / jnp.exp(gammaln(smoothness))
     if len(K.shape) == 2:
         K = K.at[:, :].set(const_val)
     elif len(K.shape) == 3:
         K = K.at[:, :, :].set(const_val)
-    K *= tmp**nu
-    K *= tfp.math.bessel_kve(nu, tmp) / jnp.exp(jnp.abs(tmp))
+    K *= tmp**smoothness
+    K *= tfp.math.bessel_kve(smoothness, tmp) / jnp.exp(jnp.abs(tmp))
     if len(K.shape) == 3:
         K = K.at[:, jnp.arange(K.shape[1]), jnp.arange(K.shape[1])].set(1.0)
     return K

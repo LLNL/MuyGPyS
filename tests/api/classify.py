@@ -87,7 +87,7 @@ class MNISTTest(ClassifyAPITest):
                     0.85,
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.5, (1e-1, 1e0)),
+                            smoothness=ScalarParam(0.5, (1e-1, 1e0)),
                             deformation=Isotropy(
                                 l2,
                                 length_scale=ScalarParam(1.5),
@@ -168,7 +168,7 @@ class StargalClassifyTest(StargalTest):
                     0.92,
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.5, (1e-1, 1e0)),
+                            smoothness=ScalarParam(0.5, (1e-1, 1e0)),
                             deformation=Isotropy(
                                 l2,
                                 length_scale=ScalarParam(1.5),
@@ -249,7 +249,7 @@ class StargalUQTest(StargalTest):
                     0.92,
                     {
                         "kernel": Matern(
-                            nu=ScalarParam(0.5, (1e-1, 1e0)),
+                            smoothness=ScalarParam(0.5, (1e-1, 1e0)),
                             deformation=Isotropy(
                                 l2,
                                 length_scale=ScalarParam(1.5),
@@ -323,7 +323,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                     [
                         {
                             "kernel": Matern(
-                                nu=ScalarParam(0.5, (1e-1, 1e0)),
+                                smoothness=ScalarParam(0.5, (1e-1, 1e0)),
                                 deformation=Isotropy(
                                     l2,
                                     length_scale=ScalarParam(1.5),
@@ -333,7 +333,7 @@ class MultivariateStargalClassifyTest(StargalTest):
                         },
                         {
                             "kernel": Matern(
-                                nu=ScalarParam(0.5, (1e-1, 1e0)),
+                                smoothness=ScalarParam(0.5, (1e-1, 1e0)),
                                 deformation=Isotropy(
                                     l2,
                                     length_scale=ScalarParam(1.5),

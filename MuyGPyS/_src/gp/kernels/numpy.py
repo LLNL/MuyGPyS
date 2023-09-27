@@ -31,11 +31,13 @@ def _matern_inf_fn(dists: np.ndarray, **kwargs) -> np.ndarray:
     return np.exp(-(dists**2) / 2.0)
 
 
-def _matern_gen_fn(dists: np.ndarray, nu: float, **kwargs) -> np.ndarray:
+def _matern_gen_fn(
+    dists: np.ndarray, smoothness: float, **kwargs
+) -> np.ndarray:
     K = dists
     K[K == 0.0] += np.finfo(float).eps
-    tmp = np.sqrt(2 * nu) * K
-    K.fill((2 ** (1.0 - nu)) / gamma(nu))
-    K *= tmp**nu
-    K *= kv(nu, tmp)
+    tmp = np.sqrt(2 * smoothness) * K
+    K.fill((2 ** (1.0 - smoothness)) / gamma(smoothness))
+    K *= tmp**smoothness
+    K *= kv(smoothness, tmp)
     return K

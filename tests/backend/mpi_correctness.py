@@ -133,10 +133,10 @@ size = world.Get_size()
 
 class TensorsTestCase(parameterized.TestCase):
     @classmethod
-    def _make_muygps(cls, nu, deformation, nu_bounds="fixed"):
+    def _make_muygps(cls, smoothness, deformation, smoothness_bounds="fixed"):
         return MuyGPS(
             kernel=Matern(
-                nu=ScalarParam(nu, nu_bounds),
+                nu=ScalarParam(smoothness, smoothness_bounds),
                 deformation=deformation,
                 _backend_05_fn=matern_05_fn_n,
                 _backend_15_fn=matern_15_fn_n,
@@ -159,9 +159,9 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_isotropic_muygps(cls, nu, **kwargs):
+    def _make_isotropic_muygps(cls, smoothness, **kwargs):
         return cls._make_muygps(
-            nu,
+            smoothness,
             deformation=Isotropy(
                 l2_n, length_scale=ScalarParam(cls.length_scale)
             ),
@@ -169,9 +169,9 @@ class TensorsTestCase(parameterized.TestCase):
         )
 
     @classmethod
-    def _make_anisotropic_muygps(cls, nu, **kwargs):
+    def _make_anisotropic_muygps(cls, smoothness, **kwargs):
         return cls._make_muygps(
-            nu,
+            smoothness,
             Anisotropy(
                 l2_n,
                 length_scale0=ScalarParam(cls.length_scale),
@@ -227,11 +227,11 @@ class TensorsTestCase(parameterized.TestCase):
         cls.nn_count = 10
         cls.batch_count = 500
         cls.length_scale = 1.0
-        cls.nu = 0.5
-        cls.nu_bounds = (1e-1, 2)
+        cls.smoothness = 0.5
+        cls.smoothness_bounds = (1e-1, 2)
         cls.noise = 1e-3
         cls.muygps_gen = cls._make_isotropic_muygps(
-            cls.nu, nu_bounds=cls.nu_bounds
+            cls.smoothness, smoothness_bounds=cls.smoothness_bounds
         )
         cls.muygps_05 = cls._make_isotropic_muygps(0.5)
         cls.muygps_15 = cls._make_isotropic_muygps(1.5)
@@ -240,7 +240,7 @@ class TensorsTestCase(parameterized.TestCase):
         cls.muygps_rbf = cls._make_isotropic_muygps_rbf()
 
         cls.muygps_anisotropic_gen = cls._make_isotropic_muygps(
-            cls.nu, nu_bounds=cls.nu_bounds
+            cls.smoothness, smoothness_bounds=cls.smoothness_bounds
         )
         cls.muygps_anisotropic_05 = cls._make_anisotropic_muygps(0.5)
         cls.muygps_anisotropic_15 = cls._make_anisotropic_muygps(1.5)
@@ -1357,7 +1357,9 @@ class ScipyOptimTest(OptimTestCase):
             opt_n = scipy_optimize_n(
                 self.muygps_gen, obj_fn_n, **self.sopt_kwargs
             )
-            self.assertAlmostEqual(opt_m.kernel.nu(), opt_n.kernel.nu())
+            self.assertAlmostEqual(
+                opt_m.kernel.smoothness(), opt_n.kernel.smoothness()
+            )
 
 
 class BayesOptimTest(OptimTestCase):
@@ -1376,7 +1378,9 @@ class BayesOptimTest(OptimTestCase):
             model_n = bayes_optimize_n(
                 self.muygps_gen, obj_fn_n, **self.bopt_kwargs
             )
-            self.assertAlmostEqual(model_m.kernel.nu(), model_n.kernel.nu())
+            self.assertAlmostEqual(
+                model_m.kernel.smoothness(), model_n.kernel.smoothness()
+            )
 
 
 if __name__ == "__main__":

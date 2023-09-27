@@ -37,7 +37,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.length_scale = 1e-2
 
         cls.scale_tol = 5e-1
-        cls.nu_tol = {
+        cls.smoothness_tol = {
             "mse": 2.5e-1,
             "lool": 2.5e-1,
             "huber": 5e-1,
@@ -52,7 +52,7 @@ class BenchmarkTestCase(parameterized.TestCase):
 
         cls.params = {
             "length_scale": ScalarParam(1e-1, (1e-2, 1e0)),
-            "nu": ScalarParam(0.78, (1e-1, 2e0)),
+            "smoothness": ScalarParam(0.78, (1e-1, 2e0)),
             "noise": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
         }
 
@@ -63,7 +63,7 @@ class BenchmarkTestCase(parameterized.TestCase):
     def setUpGP(cls):
         cls.gp = BenchmarkGP(
             kernel=Matern(
-                nu=ScalarParam(cls.params["nu"]()),
+                smoothness=ScalarParam(cls.params["smoothness"]()),
                 deformation=Isotropy(
                     metric=l2,
                     length_scale=ScalarParam(cls.params["length_scale"]()),

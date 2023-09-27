@@ -23,8 +23,10 @@ def _matern_inf_fn(dists: torch.ndarray, **kwargs) -> torch.ndarray:
     return torch.exp(-(dists**2) / 2.0)
 
 
-def _matern_gen_fn(dists: torch.ndarray, nu: float, **kwargs) -> torch.ndarray:
+def _matern_gen_fn(
+    dists: torch.ndarray, smoothness: float, **kwargs
+) -> torch.ndarray:
     raise NotImplementedError(
-        f'Function "matern_gen_fn" does not support nu={nu}. '
+        f'Function "matern_gen_fn" does not support smoothness={smoothness}. '
         f"Torch only supports 1/2, 3/2, 5/2 and torch.inf."
     )

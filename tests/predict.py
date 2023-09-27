@@ -3,13 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
-
 from MuyGPyS.examples.classify import classify_any
 from MuyGPyS.examples.two_class_classify_uq import (
     classify_two_class_uq,
@@ -52,14 +50,14 @@ class ClassifyTest(parameterized.TestCase):
             for k_kwargs in (
                 {
                     "kernel": Matern(
-                        nu=ScalarParam(0.38),
+                        smoothness=ScalarParam(0.38),
                         deformation=Isotropy(l2, length_scale=ScalarParam(1.5)),
                     ),
                     "noise": HomoscedasticNoise(1e-5),
                 },
                 {
                     "kernel": Matern(
-                        nu=ScalarParam(0.38),
+                        smoothness=ScalarParam(0.38),
                         deformation=Anisotropy(
                             l2,
                             length_scale0=ScalarParam(1.5),
@@ -119,7 +117,7 @@ class ClassifyUQTest(parameterized.TestCase):
             for k_kwargs in (
                 {
                     "kernel": Matern(
-                        nu=ScalarParam(0.38),
+                        smoothness=ScalarParam(0.38),
                         deformation=Isotropy(l2, length_scale=ScalarParam(1.5)),
                     ),
                     "noise": HomoscedasticNoise(1e-5),
@@ -132,7 +130,7 @@ class ClassifyUQTest(parameterized.TestCase):
                 },
                 {
                     "kernel": Matern(
-                        nu=ScalarParam(0.38),
+                        smoothness=ScalarParam(0.38),
                         deformation=Anisotropy(
                             l2,
                             length_scale0=ScalarParam(1.5),
