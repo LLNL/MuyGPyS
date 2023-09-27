@@ -153,7 +153,7 @@ def fast_nn_update(
     Returns:
         An integral matrix of shape `(train_count, nn_count)` that is similar
         to the input, but the most distant neighbor index is removed and the
-        ``self'' index has been inserted.
+        index reference to self has been inserted.
     """
     return _fast_nn_update(train_nn_indices)
 

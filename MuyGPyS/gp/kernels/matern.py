@@ -109,8 +109,9 @@ class Matern(KernelFn):
     :math:`\\ell_2` norm of the difference of the operands.
 
     Args:
-        nu:
-            A hyperparameter dict defining the length_scale parameter.
+        smoothness:
+            A parameter determining the differentiability of the function
+            distribution.
         deformation:
             The deformation functor to be used. Includes length_scale
             hyperparameter information via the `MuyGPyS.gp.deformation` module.
