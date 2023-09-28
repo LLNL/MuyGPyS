@@ -174,17 +174,21 @@ class AnalyticScale(ScaleFn):
         Get a function to optimize the value of the :math:`\\sigma^2` scale
         parameter for each response dimension.
 
-        We approximate :math:`\\sigma^2` by way of averaging over the analytic
-        solution from each local kernel.
+        We approximate a scalar :math:`\\sigma^2` by way of averaging over the
+        analytic solution from each local kernel. Given observations :math:`X`
+        with responses :math:`Y`, noise model :math:`\\varepsilon`, and kernel
+        function :math:`K_\\theta(\\cdot, \\cdot)`, computes:
 
         .. math::
-            \\sigma^2 = \\frac{1}{bk} * \\sum_{i \\in B}
-                        Y_{nn_i}^T K_{nn_i}^{-1} Y_{nn_i}
+            \\sigma^2 = \\frac{1}{bk} * \\sum_{i \\in B} Y(X_{N_i})^T
+                \\left (
+                    K_\\theta(X_{N_i}, X_{N_i}) + \\varepsilon_{N_i}
+                \\right )^{-1}
+                Y(X_{N_i}).
 
-        Here :math:`Y_{nn_i}` and :math:`K_{nn_i}` are the target and kernel
-        matrices with respect to the nearest neighbor set in scope, where
-        :math:`k` is the number of nearest neighbors and :math:`b = |B|` is the
-        number of batch elements considered.
+        Here :math:`N_i` is the set of nearest neighbor indices of the
+        :math:`i`th batch element, :math:`k` is the number of nearest neighbors
+        and :math:`b = |B|` is the number of batch elements considered.
 
         Args:
             muygps:
