@@ -79,13 +79,14 @@ class MuyGPS:
 
     Args:
         kernel:
-            The kernel to be used.
+            The kernel to be used. Defines :math:`K_\\theta(\\cdot, \\cdot)` as
+            referenced in `MuyGPS` functions.
         noise:
-            A noise model.
+            A noise model. Defines :math:`\\varepsilon` as referenced in
+            `MuyGPS` functions.
         scale:
-            A variance scale parameter.
-        response_count:
-            The number of response dimensions.
+            A variance scale parameter. Defines :math:`\\sigma^2` as referenced
+            in `MuyGPS` functions.
     """
 
     def __init__(
@@ -158,51 +159,6 @@ class MuyGPS:
         self.noise.append_lists("noise", names, params, bounds)
         return names, mm.array(params), mm.array(bounds)
 
-    def fast_coefficients(
-        self,
-        K: mm.ndarray,
-        train_nn_targets_fast: mm.ndarray,
-    ) -> mm.ndarray:
-        """
-        Produces coefficient matrix for the fast posterior mean given in
-        Equation (8) of [dunton2022fast]_.
-
-        To form each row of this matrix, we compute
-
-        .. math::
-            \\mathbf{C}_{N^*}(i, :) =
-                (K_{\\hat{\\theta}} (X_{N^*}, X_{N^*})
-                + \\varepsilon)^{-1} Y(X_{N^*}).
-
-        Here :math:`X_{N^*}` is the union of the nearest neighbor of the ith
-        test point and the `nn_count - 1` nearest neighbors of this nearest
-        neighbor, :math:`K_{\\hat{\\theta}}` is the trained kernel functor
-        specified by `self.kernel`, :math:`\\varepsilon` is a diagonal
-        noise matrix whose diagonal elements are informed by the `self.noise`
-        hyperparameter, and :math:`Y(X_{N^*})` is the `(train_count,)` vector of
-        responses corresponding to the training features indexed by $N^*$.
-
-        Args:
-            K:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count)`-shaped kernel matrices corresponding
-                to each of the batch elements.
-            Kcross:
-                A matrix of shape `(batch_count, nn_count)` whose rows consist
-                of `(1, nn_count)`-shaped cross-covariance vector corresponding
-                to each of the batch elements and its nearest neighbors.
-
-        Returns:
-            A matrix of shape `(train_count, nn_count)` whose rows are
-            the precomputed coefficients for fast posterior mean inference.
-
-        """
-
-        return self._fast_precompute_fn(
-            K,
-            train_nn_targets_fast,
-        )
-
     def posterior_mean(
         self, K: mm.ndarray, Kcross: mm.ndarray, batch_nn_targets: mm.ndarray
     ) -> mm.ndarray:
@@ -218,23 +174,18 @@ class MuyGPS:
 
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations, as computed in
-        Equation (3.4) of [muyskens2021muygps]_. For each batch element
-        :math:`\\mathbf{x}_i`, we compute
+        Equation (3.4) of [muyskens2021muygps]_. Given observation set
+        :math:`X` with responses :math:`Y`, noise prior set
+        :math:`\\varepsilon`, and kernel function
+        :math:`K_\\theta(\\cdot, \\cdot)`, computes the following for each
+        prediction element :math:`\\mathbf{z}_i` with nearest neighbors index
+        set :math:`N_i`:
 
         .. math::
-            \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}) =
-                K_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon)^{-1}
+            \\widehat{Y} (\\mathbf{z}_i \\mid X_{N_i}) =
+                \\sigma^2 K_\\theta (\\mathbf{z}_i, X_{N_i})
+                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon_{N_i})^{-1}
                 Y(X_{N_i}).
-
-        Here :math:`X_{N_i}` is the set of nearest neighbors of
-        :math:`\\mathbf{x}_i` in the training data, :math:`K_\\theta` is the
-        kernel functor specified by `self.kernel`, :math:`\\varepsilon` is a
-        diagonal noise matrix whose diagonal elements are informed by the
-        `self.noise` hyperparameter, and :math:`Y(X_{N_i})` is the
-        `(nn_count, response_count)` matrix of responses of the nearest
-        neighbors given by the second two dimensions of the `batch_nn_targets`
-        argument.
 
         Args:
             K:
@@ -262,19 +213,29 @@ class MuyGPS:
         Kcross: mm.ndarray,
     ) -> mm.ndarray:
         """
-        Returns the posterior mean from the provided covariance and
+        Returns the posterior variance from the provided covariance and
         cross-covariance tensors.
 
         Return the local posterior variances of each prediction, corresponding
-        to the diagonal elements of a covariance matrix. For each batch element
-        :math:`\\mathbf{x}_i`, we compute
+        to the diagonal elements of a covariance matrix. Given observation set
+        :math:`X` with responses :math:`Y`, noise prior set
+        :math:`\\varepsilon`, and kernel function
+        :math:`K_\\theta(\\cdot, \\cdot)`, computes the following for each
+        prediction element :math:`\\mathbf{z}_i` with nearest neighbors index
+        set :math:`N_i`:
 
         .. math::
-            Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})) =
-                K_\\theta (\\mathbf{x}_i, \\mathbf{x}_i) -
-                K_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon)^{-1}
-                K_\\theta (X_{N_i}, \\mathbf{x}_i).
+            Var \\left (
+                \\widehat{Y} (\\mathbf{z}_i \\mid X_{N_i})
+            \\right) =
+                \\sigma^2 \\left (
+                    K_\\theta (\\mathbf{z}_i, \\mathbf{z}_i) -
+                    K_\\theta (\\mathbf{z}_i, X_{N_i})
+                    \\left (
+                        K_\\theta (X_{N_i}, X_{N_i}
+                    \\right ) + \\varepsilon_{N_i})^{-1}
+                    K_\\theta (X_{N_i}, \\mathbf{z}_i)
+                \\right ).
 
         Args:
             K:
@@ -292,6 +253,45 @@ class MuyGPS:
         """
         return self._var_fn(K, Kcross)
 
+    def fast_coefficients(
+        self,
+        K: mm.ndarray,
+        train_nn_targets_fast: mm.ndarray,
+    ) -> mm.ndarray:
+        """
+        Produces coefficient matrix for the fast posterior mean given in
+        Equation (8) of [dunton2022fast]_.
+
+        Given observation set :math:`X` with responses :math:`Y`, noise prior
+        set :math:`\\varepsilon`, and kernel function
+        :math:`K_\\theta(\\cdot, \\cdot)`, computes the following for
+        each observation element :math:`\\mathbf{x}_i` with nearest neighbors
+        index set :math:`N^*_i`, containing `i` and the indices of the
+        `nn_count - 1` nearest neighbors of :math:`\\mathbf{x}_i`:
+
+        .. math::
+            C_i =
+                \\left ( K_\\theta (X_{N_i}, X_{N_i} \\right )
+                + \\varepsilon_{N_i})^{-1} Y(X_{N_i}).
+
+        Args:
+            K:
+                A tensor of shape `(batch_count, nn_count, nn_count)` containing
+                the `(nn_count, nn_count)`-shaped kernel matrices corresponding
+                to each of the batch elements.
+            Kcross:
+                A matrix of shape `(batch_count, nn_count)` whose rows consist
+                of `(1, nn_count)`-shaped cross-covariance vector corresponding
+                to each of the batch elements and its nearest neighbors.
+
+        Returns:
+            A matrix :math:`C` of shape `(train_count, nn_count)` whose rows are
+            the precomputed coefficients for fast posterior mean inference.
+
+        """
+
+        return self._fast_precompute_fn(K, train_nn_targets_fast)
+
     def fast_posterior_mean(
         self,
         Kcross: mm.ndarray,
@@ -306,19 +306,19 @@ class MuyGPS:
 
         Returns the predicted response in the form of a posterior
         mean for each element of the batch of observations, as computed in
-        Equation (9) of [dunton2022fast]_. For each test point
-        :math:`\\mathbf{z}`, we compute
+        Equation (9) of [dunton2022fast]_. Given the coefficients :math:`C`
+        created by :func:`~MuyGPyS.gp.muygps.MuyGPS.fast_coefficients` and
+        Equation (8) of [dunton2022fast]_, observation set
+        :math:`X`, noise prior set :math:`\\varepsilon`, and kernel function
+        :math:`K_\\theta(\\cdot, \\cdot)`, computes the following for each test
+        point :math:`\\mathbf{z}` and index set :math:`N^*_i` containing the
+        union of the index :math:`i` of the nearest neighbor
+        :math:`\\mathbf{x}_i` of :math:`\\mathbf{z}` and the `nn_count - 1`
+        nearest neighbors of :math:`\\mathbf{x}_i`:
 
         .. math::
-            \\widehat{Y} (\\mathbf{z} \\mid X) =
-                K_\\theta (\\mathbf{z}, X_{N^*}) \\mathbf{C}_{N^*}.
-
-        Here :math:`X_{N^*}` is the union of the nearest neighbor of the queried
-        test point :math:`\\mathbf{z}` and the nearest neighbors of that
-        training point, :math:`K_\\theta` is the kernel functor
-        specified by `self.kernel`, and :math:`\\mathbf{C}_{N^*}` is
-        the matrix of precomputed coefficients given in Equation (8)
-        of [dunton2022fast]_.
+            \\widehat{Y} \\left ( \\mathbf{z} \\mid X \\right ) =
+                \\sigma^2 K_\\theta(\\mathbf{z}, X_{N^*_i}) C_i.
 
         Args:
             Kcross:
@@ -369,6 +369,29 @@ class MuyGPS:
     def optimize_scale(
         self, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
     ):
+        """
+        Optimize the value of the :math:`sigma^2` scale parameter.
+
+        Uses the optimization method specified by the type of the `scale`
+        parameter to optimize its value.
+
+        Args:
+            pairwise_diffs:
+                A tensor of shape
+                `(batch_count, nn_count, nn_count, feature_count)` containing
+                the `(nn_count, nn_count, feature_count)`-shaped pairwise
+                nearest neighbor difference tensors corresponding to each of the
+                batch elements.
+            nn_targets:
+                Tensor of floats of shape
+                `(batch_count, nn_count, response_count)` containing the
+                expected response for each nearest neighbor of each batch
+                element.
+
+        Returns:
+            A reference to this model with a freshly-optimized `scale`
+            parameter.
+        """
         K = self.kernel(pairwise_diffs)
         opt_fn = self.scale.get_opt_fn(self)
         self.scale._set(opt_fn(K, nn_targets))

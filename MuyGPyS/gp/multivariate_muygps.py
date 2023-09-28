@@ -105,22 +105,20 @@ class MultivariateMuyGPS:
         element of the batch of observations by solving a system of linear
         equations induced by each kernel functor, one per response dimension, in
         a generalization of Equation (3.4) of [muyskens2021muygps]_. For each
-        batch element :math:`\\mathbf{x}_i` we compute
+        response dimension :math:`j`, given observation set :math:`X` with
+        responses :math:`Y`, noise prior set :math:`\\varepsilon^{(j)}`, and
+        kernel function :math:`K_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the
+        following for each prediction element :math:`\\mathbf{z}_i` with nearest
+        neighbors index set :math:`N_i`:
 
         .. math::
-            \\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i})_{:,j} =
-                K^{(j)}_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K^{(j)}_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon_j)^{-1}
+            \\widehat{Y} (\\mathbf{z}_i \\mid X_{N_i})_j =
+                \\sigma^2_j K_{\\theta^{(j)}} (\\mathbf{z}_i, X_{N_i})
+                \\left (
+                    K_{\\theta^{(j)}} (X_{N_i}, X_{N_i})
+                    + \\varepsilon^{(j)}_{N_i}
+                \\right )^{-1}
                 Y(X_{N_i})_{:,j}.
-
-        Here :math:`X_{N_i}` is the set of nearest neighbors of
-        :math:`\\mathbf{x}_i` in the training data, :math:`K^{(j)}_\\theta` is
-        the kernel functor associated with the jth internal model, corresponding
-        to the jth response dimension, :math:`\\varepsilon_j` is a diagonal
-        noise matrix whose diagonal elements are informed by the value of the
-        `self.models[j].noise` hyperparameter, and :math:`Y(X_{N_i})_{:,j}` is
-        the `(batch_count,)` vector of the jth responses of the nearest
-        neighbors given by a slice of the `batch_nn_targets` argument.
 
         Args:
             pairwise_diffs:
@@ -165,19 +163,28 @@ class MultivariateMuyGPS:
         crosswise_diffs: mm.ndarray,
     ) -> mm.ndarray:
         """
-        Performs simultaneous posterior variance inference on provided
-        difference tensors.
+        Returns the posterior variance from the provided difference tensors.
 
         Return the local posterior variances of each prediction, corresponding
-        to the diagonal elements of a covariance matrix. For each batch element
-        :math:`\\mathbf{x}_i`, we compute
+        to the diagonal elements of a covariance matrix. For each response
+        dimension, given observation set :math:`X` with responses :math:`Y`,
+        noise prior set :math:`\\varepsilon^{(j)}`, and kernel function
+        :math:`K_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the following for
+        each prediction element :math:`\\mathbf{z}_i` with nearest neighbors
+        index set :math:`N_i`:
 
         .. math::
-            Var(\\widehat{Y}_{NN} (\\mathbf{x}_i \\mid X_{N_i}))_j =
-                K^{(j)}_\\theta (\\mathbf{x}_i, \\mathbf{x}_i) -
-                K^{(j)}_\\theta (\\mathbf{x}_i, X_{N_i})
-                (K^{(j)}_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon_j)^{-1}
-                K^{(j)}_\\theta (X_{N_i}, \\mathbf{x}_i).
+            Var \\left (
+                \\widehat{Y} (\\mathbf{z}_i \\mid X_{N_i})
+            \\right)_j =
+                \\sigma_j^2 \\left (
+                    K_{\\theta^{(j)}} (\\mathbf{z}_i, \\mathbf{z}_i) -
+                    K_{\\theta^{(j)}} (\\mathbf{z}_i, X_{N_i})
+                    \\left (
+                        K_{\\theta^{(j)}} (X_{N_i}, X_{N_i}
+                    \\right ) + \\varepsilon^{(j)}_{N_i})^{-1}
+                    K_{\\theta^{(j)}} (X_{N_i}, \\mathbf{z}_i)
+                \\right ).
 
         Args:
             pairwise_diffs:
@@ -216,24 +223,24 @@ class MultivariateMuyGPS:
         train_nn_targets_fast: mm.ndarray,
     ) -> mm.ndarray:
         """
-        Produces coefficient tensor for fast posterior mean inference given in
-        Equation (8) of [dunton2022fast]_.
+        Produces coefficient matrix for the fast posterior mean given in
+        Equation (8) of [dunton2022fast]_ for each response dimenion.
 
-        To form the tensor, we compute
+        Fro each response dimension :math:`j`, given observation set :math:`X`
+        with responses :math:`Y`, noise prior set :math:`\\varepsilon^{(j)}`, and
+        kernel function :math:`K_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the
+        following for each observation element :math:`\\mathbf{x}_i` with
+        nearest neighbors index set :math:`N^*_i`, containing `i` and the
+        indices of the `nn_count - 1` nearest neighbors of
+        :math:`\\mathbf{x}_i`:
 
         .. math::
-            \\mathbf{C}_{N^*}(i, :, j) =
-                (K_{\\hat{\\theta_j}} (X_{N^*}, X_{N^*}) +
-                \\varepsilon_j)^{-1} Y(X_{N^*}).
-
-        Here :math:`X_{N^*}` is the union of the nearest neighbor of the ith
-        test point and the `nn_count - 1` nearest neighbors of this nearest
-        neighbor, :math:`K_{\\hat{\\theta_j}}` is the trained kernel functor
-        corresponding the jth response and specified by `self.models`,
-        :math:`\\varepsilon_j` is a diagonal noise matrix whose diagonal
-        elements are informed by the `self.noise` hyperparameter, and
-        :math:`Y(X_{N^*})` is the `(train_count, response_count)` matrix of
-        responses corresponding to the training features indexed by $N^*$.
+            C^{(j)}_i =
+                \\left (
+                    K_{\\theta^{(j)}}(X_{N_i}, X_{N_i})
+                    + \\varepsilon^{(j)}_{N_i}
+                \\right )^{-1}
+                Y(X_{N_i})_{:, j}.
 
         Args:
             pairwise_diffs:
@@ -276,23 +283,25 @@ class MultivariateMuyGPS:
         coeffs_tensor: mm.ndarray,
     ) -> mm.ndarray:
         """
-        Performs fast posterior mean inference using provided crosswise
-        differences and precomputed coefficient matrix.
+        Performs fast posterior mean inference using provided cross-covariance
+        and precomputed coefficient matrix for each response dimension.
 
-        Returns the predicted response in the form of a posterior
-        mean for each element of the batch of observations, as computed in
-        Equation (9) of [dunton2022fast]_. For each test point
-        :math:`\\mathbf{z}`, we compute
+        Returns the predicted response across each response dimension in the
+        form of a posterior mean for each element of the batch of observations,
+        as computed in Equation (9) of [dunton2022fast]_. For each response
+        dimension :math:`j`, given the coefficients :math:`C^{(j)}` created by
+        :func:`~MuyGPyS.gp.muygps.MultivariateMuyGPS.fast_coefficients` and
+        Equation (8) of [dunton2022fast]_, observation set :math:`X`, noise
+        prior set :math:`\\varepsilon^{(j)}`, and kernel function
+        :math:`K_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the following for each
+        test point :math:`\\mathbf{z}` and index set :math:`N^*_i` containing
+        the union of the index :math:`i` of the nearest neighbor
+        :math:`\\mathbf{x}_i` of :math:`\\mathbf{z}` and the `nn_count - 1`
+        nearest neighbors of :math:`\\mathbf{x}_i`:
 
         .. math::
-            \\widehat{Y} (\\mathbf{z} \\mid X) =
-                K_\\theta (\\mathbf{z}, X_{N^*}) \\mathbf{C}_{N^*}.
-
-        Here :math:`X_{N^*}` is the union of the nearest neighbor of the queried
-        test point :math:`\\mathbf{z}` and the nearest neighbors of that
-        training point, :math:`K_\\theta` is the kernel functor specified by
-        `self.kernel`, and :math:`\\mathbf{C}_{N^*}` is the matrix of
-        precomputed coefficients given in Equation (8) of [dunton2022fast]_.
+            \\widehat{Y} \\left ( \\mathbf{z} \\mid X \\right )_j =
+                \\sigma^2 K_{\\theta^{(j)}}(\\mathbf{z}, X_{N^*_i}) C^{(j)}_i.
 
         Args:
             crosswise_diffs:
@@ -322,24 +331,13 @@ class MultivariateMuyGPS:
         self, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
     ):
         """
-        Optimize the value of the :math:`\\sigma^2` scale parameter for each
+        Optimize the value of the :math:`sigma^2` scale parameter for each
         response dimension.
 
-        We approximate :math:`\\sigma^2` by way of averaging over the analytic
-        solution from each local kernel.
-
-        .. math::
-            \\sigma^2 = \\frac{1}{bk} * \\sum_{i \\in B}
-                        Y_{nn_i}^T K_{nn_i}^{-1} Y_{nn_i}
-
-        Here :math:`Y_{nn_i}` and :math:`K_{nn_i}` are the target and kernel
-        matrices with respect to the nearest neighbor set in scope, where
-        :math:`k` is the number of nearest neighbors and :math:`b = |B|` is the
-        number of batch elements considered.
+        Uses the optimization method specified by the types of the `scale`
+        parameters to optimize their value.
 
         Args:
-            muygps:
-                The model to be optimized.
             pairwise_diffs:
                 A tensor of shape
                 `(batch_count, nn_count, nn_count, feature_count)` containing
@@ -353,8 +351,8 @@ class MultivariateMuyGPS:
                 element.
 
         Returns:
-            The MultivariateMuyGPs model whose scale parameter (and those of
-            its submodels) has been optimized.
+            A reference to this model whose global scale parameter (and those
+            of its submodels) has been optimized.
         """
         batch_count, nn_count, response_count = nn_targets.shape
         if response_count != len(self.models):
