@@ -10,8 +10,12 @@ Variance scale hyperparameter
 from typing import Callable, Tuple, Type
 
 import MuyGPyS._src.math as mm
+import MuyGPyS._src.math.numpy as np
 from MuyGPyS._src.util import _fullname
-from MuyGPyS._src.optimize.scale import _analytic_scale_optim
+from MuyGPyS._src.optimize.scale import (
+    _analytic_scale_optim,
+    _analytic_scale_optim_unnormalized,
+)
 
 
 class ScaleFn:
@@ -40,13 +44,22 @@ class ScaleFn:
         _backend_outer: Callable = mm.outer,
         **kwargs,
     ):
-        self.val = _backend_ones(response_count)
+        self.val = _backend_ones(
+            self._check_positive_integer(response_count, "response")
+        )
         self._trained = False
 
         self._backend_ndarray = _backend_ndarray
         self._backend_ftype = _backend_ftype
         self._backend_farray = _backend_farray
         self._backend_outer = _backend_outer
+
+    def _check_positive_integer(self, count, name) -> int:
+        if not isinstance(count, int) or count < 0:
+            raise ValueError(
+                f"{name} count must be a positive integer, not {count}"
+            )
+        return count
 
     def __str__(self, **kwargs):
         return f"{type(self).__name__}({self.val})"
@@ -169,6 +182,10 @@ class AnalyticScale(ScaleFn):
             The integer number of response dimensions.
     """
 
+    def __init__(self, _backend_fn: Callable = _analytic_scale_optim, **kwargs):
+        super().__init__(**kwargs)
+        self._fn = _backend_fn
+
     def get_opt_fn(self, muygps) -> Callable:
         """
         Get a function to optimize the value of the :math:`\\sigma^2` scale
@@ -203,6 +220,82 @@ class AnalyticScale(ScaleFn):
         """
 
         def analytic_scale_opt_fn(K, nn_targets, *args, **kwargs):
-            return _analytic_scale_optim(muygps.noise.perturb(K), nn_targets)
+            return self._fn(muygps.noise.perturb(K), nn_targets)
 
         return analytic_scale_opt_fn
+
+
+class DownSampleScale(ScaleFn):
+    """
+    An optimizable :math:`\\sigma^2` covariance scale parameter.
+
+    Identical to :class:`~MuyGPyS.gp.scale.FixedScale`, save that its
+    `get_opt_fn` method performs an analytic optimization.
+
+    Args:
+        response_count:
+            The integer number of response dimensions.
+        down_count:
+            The integer number of neighbors to sample, without replacement.
+            Must be less than `nn_count`.
+        iteration_count:
+            The number of iterations to
+    """
+
+    def __init__(
+        self,
+        down_count: int = 10,
+        iteration_count: int = 10,
+        _backend_fn: Callable = _analytic_scale_optim_unnormalized,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self._down_count = self._check_positive_integer(
+            down_count, "down sample"
+        )
+        self._iteration_count = self._check_positive_integer(
+            iteration_count, "down sample iteration"
+        )
+        self._fn = _backend_fn
+
+    def get_opt_fn(self, muygps) -> Callable:
+        """
+        Args:
+            muygps:
+                The model to used to create and perturb the kernel.
+
+        Returns:
+            A function with signature
+            `(K, nn_targets, *args, **kwargs) -> mm.ndarray` that perturbs the
+            `(batch_count, nn_count, nn_count)` tensor `K` with `muygps`'s noise
+            model before solving it against the
+            `(batch_count, nn_count, response_count)` tensor `nn_targets`.
+        """
+
+        def downsample_analytic_scale_opt_fn(K, nn_targets, *args, **kwargs):
+            batch_count, nn_count, _ = K.shape
+            if nn_count <= self._down_count:
+                raise ValueError(
+                    f"bad attempt to downsample {self._down_count} elements "
+                    f"from a set of only {nn_count} options"
+                )
+            pK = muygps.noise.perturb(K)
+            scales = []
+            for _ in range(self._iteration_count):
+                sampled_indices = np.random.choice(
+                    np.arange(nn_count),
+                    size=self._down_count,
+                    replace=False,
+                )
+                sampled_indices.sort()
+
+                pK_down = pK[:, sampled_indices, :]
+                pK_down = pK_down[:, :, sampled_indices]
+                nn_targets_down = nn_targets[:, sampled_indices, :]
+                scales.append(self._fn(pK_down, nn_targets_down))
+
+            return mm.atleast_1d(np.median(scales, axis=0)) / (
+                self._down_count * batch_count
+            )
+
+        return downsample_analytic_scale_opt_fn

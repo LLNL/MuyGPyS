@@ -40,6 +40,7 @@ all_tests:
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/neighbors.py
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/kernels.py
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/gp.py
+    - salloc -N1 -ppvis -A muygps --mpibind=on python tests/scale_opt.py
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/optimize.py
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/predict.py
     - salloc -N1 -ppvis -A muygps --mpibind=on python tests/multivariate.py
@@ -52,6 +53,7 @@ all_tests:
     - echo "performing MPI tests"
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/kernels.py
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/gp.py
+    - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/scale_opt.py
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/optimize.py
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/predict.py
     - salloc -N1 --tasks-per-node=36 -ppvis -A muygps --mpibind=on python tests/multivariate.py

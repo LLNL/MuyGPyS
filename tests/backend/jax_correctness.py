@@ -165,6 +165,7 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
             scale=AnalyticScale(
+                _backend_fn=analytic_scale_optim_n,
                 _backend_ones=np.ones,
                 _backend_ndarray=np.ndarray,
                 _backend_ftype=np.ftype,
@@ -191,6 +192,7 @@ class TensorsTestCase(parameterized.TestCase):
             ),
             noise=noise,
             scale=AnalyticScale(
+                _backend_fn=analytic_scale_optim_n,
                 _backend_ones=np.ones,
                 _backend_ndarray=np.ndarray,
                 _backend_ftype=np.ftype,
@@ -262,6 +264,7 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.noise, _backend_fn=homoscedastic_perturb_j
             ),
             scale=AnalyticScale(
+                _backend_fn=analytic_scale_optim_j,
                 _backend_ones=jnp.ones,
                 _backend_ndarray=jnp.ndarray,
                 _backend_ftype=jnp.ftype,
@@ -288,6 +291,7 @@ class TensorsTestCase(parameterized.TestCase):
             ),
             noise=noise,
             scale=AnalyticScale(
+                _backend_fn=analytic_scale_optim_j,
                 _backend_ones=jnp.ones,
                 _backend_ndarray=jnp.ndarray,
                 _backend_ftype=jnp.ftype,
@@ -850,10 +854,10 @@ class MuyGPSTest(MuyGPSTestCase):
     def test_scale_optim(self):
         self.assertTrue(
             allclose_inv(
-                analytic_scale_optim_n(
+                self.muygps_gen_n.scale.get_opt_fn(self.muygps_gen_n)(
                     self.homoscedastic_K_n, self.batch_nn_targets_n
                 ),
-                analytic_scale_optim_j(
+                self.muygps_gen_j.scale.get_opt_fn(self.muygps_gen_j)(
                     self.homoscedastic_K_j, self.batch_nn_targets_j
                 ),
             )
@@ -862,12 +866,12 @@ class MuyGPSTest(MuyGPSTestCase):
     def test_scale_optim_heteroscedastic(self):
         self.assertTrue(
             allclose_inv(
-                analytic_scale_optim_n(
-                    self.heteroscedastic_K_n, self.batch_nn_targets_n
-                ),
-                analytic_scale_optim_j(
-                    self.heteroscedastic_K_j, self.batch_nn_targets_j
-                ),
+                self.muygps_heteroscedastic_n.scale.get_opt_fn(
+                    self.muygps_heteroscedastic_n
+                )(self.heteroscedastic_K_n, self.batch_nn_targets_n),
+                self.muygps_heteroscedastic_j.scale.get_opt_fn(
+                    self.muygps_heteroscedastic_j
+                )(self.heteroscedastic_K_j, self.batch_nn_targets_j),
             )
         )
 
