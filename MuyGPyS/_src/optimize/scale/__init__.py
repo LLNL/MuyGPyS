@@ -5,7 +5,11 @@
 
 from MuyGPyS._src.util import _collect_implementation
 
-[_analytic_scale_optim] = _collect_implementation(
+[
+    _analytic_scale_optim,
+    _analytic_scale_optim_unnormalized,
+] = _collect_implementation(
     "MuyGPyS._src.optimize.scale",
     "_analytic_scale_optim",
+    "_analytic_scale_optim_unnormalized",
 )

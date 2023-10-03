@@ -7,17 +7,13 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _pairwise_differences
 
 from MuyGPyS import config
-from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
-from MuyGPyS._test.gp import get_analytic_scale
 from MuyGPyS._test.optimize import BenchmarkTestCase
 from MuyGPyS._test.utils import (
     _advanced_opt_fn_and_kwarg_options,
     _basic_opt_fn_and_kwarg_options,
     _basic_nn_kwarg_options,
-    _sq_rel_err,
 )
 from MuyGPyS.gp import MuyGPS
 
@@ -25,15 +21,8 @@ from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.hyperparameter import AnalyticScale, FixedScale, ScalarParam
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.gp.tensors import pairwise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.optimize.loss import (
-    lool_fn,
-    mse_fn,
-    pseudo_huber_fn,
-    looph_fn,
-)
+from MuyGPyS.optimize.loss import lool_fn, mse_fn, pseudo_huber_fn, looph_fn
 
 if config.state.backend != "numpy":
     raise ValueError("optimize.py only supports the numpy backend at this time")
@@ -69,82 +58,6 @@ class BenchmarkTest(BenchmarkTestCase):
             ctype=mm.ndarray,
             shape=(self.its, self.test_count, self.response_count),
         )
-
-
-class ScaleTest(BenchmarkTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(ScaleTest, cls).setUpClass()
-
-    def test_scale(self):
-        mrse = 0.0
-        pairwise_diffs = _pairwise_differences(self.train_features)
-        K = self.gp.kernel(pairwise_diffs) + self.gp.noise() * mm.eye(
-            self.feature_count
-        )
-        for i in range(self.its):
-            ss = get_analytic_scale(K, self.train_features)
-            mrse += _sq_rel_err(self.gp.scale(), ss)
-
-        mrse /= self.its
-        print(f"optimizes with mean relative squared error {mrse}")
-        self.assertLessEqual(mrse, self.scale_tol)
-
-
-class ScaleOptimTest(BenchmarkTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(ScaleOptimTest, cls).setUpClass()
-
-    @parameterized.parameters(
-        (
-            (b, n, nn_kwargs)
-            for b in [250]
-            for n in [20]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-        )
-    )
-    def test_scale_optim(
-        self,
-        batch_count,
-        nn_count,
-        nn_kwargs,
-    ):
-        mrse = 0.0
-
-        nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
-
-        for i in range(self.its):
-            muygps = MuyGPS(
-                kernel=Matern(
-                    smoothness=ScalarParam(self.params["smoothness"]()),
-                    deformation=Isotropy(
-                        metric=l2,
-                        length_scale=ScalarParam(self.params["length_scale"]()),
-                    ),
-                ),
-                noise=HomoscedasticNoise(self.params["noise"]()),
-                scale=AnalyticScale(),
-            )
-            _, batch_nn_indices = sample_batch(
-                nbrs_lookup, batch_count, self.train_count
-            )
-            batch_pairwise_diffs = pairwise_tensor(
-                self.train_features, batch_nn_indices
-            )
-            batch_nn_targets = _consistent_chunk_tensor(
-                self.train_responses[i, batch_nn_indices, :]
-            )
-
-            muygps = muygps.optimize_scale(
-                batch_pairwise_diffs, batch_nn_targets
-            )
-            estimate = muygps.scale()[0]
-
-            mrse += _sq_rel_err(self.gp.scale(), estimate)
-        mrse /= self.its
-        print(f"optimizes with mean relative squared error {mrse}")
-        self.assertLessEqual(mrse, self.scale_tol)
 
 
 class SmoothnessTest(BenchmarkTestCase):

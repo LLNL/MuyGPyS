@@ -142,6 +142,7 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
             scale=AnalyticScale(
+                _backend_fn=analytic_scale_optim_n,
                 _backend_ones=np.ones,
                 _backend_ndarray=np.ndarray,
                 _backend_ftype=np.ftype,
@@ -166,6 +167,7 @@ class TensorsTestCase(parameterized.TestCase):
             ),
             noise=noise,
             scale=AnalyticScale(
+                _backend_fn=analytic_scale_optim_n,
                 _backend_ones=np.ones,
                 _backend_ndarray=np.ndarray,
                 _backend_ftype=np.ftype,
@@ -233,6 +235,7 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.noise, _backend_fn=homoscedastic_perturb_t
             ),
             scale=AnalyticScale(
+                _backend_fn=analytic_scale_optim_t,
                 _backend_ones=torch.ones,
                 _backend_ndarray=torch.ndarray,
                 _backend_ftype=torch.ftype,
@@ -257,6 +260,7 @@ class TensorsTestCase(parameterized.TestCase):
             ),
             noise=noise,
             scale=AnalyticScale(
+                _backend_fn=analytic_scale_optim_t,
                 _backend_ones=torch.ones,
                 _backend_ndarray=torch.ndarray,
                 _backend_ftype=torch.ftype,
@@ -649,12 +653,12 @@ class MuyGPSTest(MuyGPSTestCase):
     def test_posterior_mean(self):
         self.assertTrue(
             _allclose(
-                muygps_posterior_mean_n(
+                self.muygps_05_n.posterior_mean(
                     self.homoscedastic_K_n,
                     self.Kcross_n,
                     self.batch_nn_targets_n,
                 ),
-                muygps_posterior_mean_t(
+                self.muygps_05_t.posterior_mean(
                     self.homoscedastic_K_t,
                     self.Kcross_t,
                     self.batch_nn_targets_t,
@@ -665,12 +669,12 @@ class MuyGPSTest(MuyGPSTestCase):
     def test_posterior_mean_heteroscedastic(self):
         self.assertTrue(
             _allclose(
-                muygps_posterior_mean_n(
+                self.muygps_heteroscedastic_n.posterior_mean(
                     self.heteroscedastic_K_n,
                     self.Kcross_n,
                     self.batch_nn_targets_n,
                 ),
-                muygps_posterior_mean_t(
+                self.muygps_heteroscedastic_t.posterior_mean(
                     self.heteroscedastic_K_t,
                     self.Kcross_t,
                     self.batch_nn_targets_t,
@@ -681,10 +685,10 @@ class MuyGPSTest(MuyGPSTestCase):
     def test_diagonal_variance(self):
         self.assertTrue(
             np.allclose(
-                muygps_diagonal_variance_n(
+                self.muygps_05_n.posterior_variance(
                     self.homoscedastic_K_n, self.Kcross_n
                 ),
-                muygps_diagonal_variance_t(
+                self.muygps_05_t.posterior_variance(
                     self.homoscedastic_K_t, self.Kcross_t
                 ),
             )
@@ -693,10 +697,10 @@ class MuyGPSTest(MuyGPSTestCase):
     def test_diagonal_variance_heteroscedastic(self):
         self.assertTrue(
             np.allclose(
-                muygps_diagonal_variance_n(
+                self.muygps_heteroscedastic_n.posterior_variance(
                     self.heteroscedastic_K_n, self.Kcross_n
                 ),
-                muygps_diagonal_variance_t(
+                self.muygps_heteroscedastic_t.posterior_variance(
                     self.heteroscedastic_K_t, self.Kcross_t
                 ),
             )
@@ -705,10 +709,10 @@ class MuyGPSTest(MuyGPSTestCase):
     def test_scale_optim(self):
         self.assertTrue(
             np.allclose(
-                analytic_scale_optim_n(
+                self.muygps_rbf_n.scale.get_opt_fn(self.muygps_rbf_n)(
                     self.homoscedastic_K_n, self.batch_nn_targets_n
                 ),
-                analytic_scale_optim_t(
+                self.muygps_rbf_t.scale.get_opt_fn(self.muygps_rbf_t)(
                     self.homoscedastic_K_t, self.batch_nn_targets_t
                 ),
             )
@@ -717,12 +721,12 @@ class MuyGPSTest(MuyGPSTestCase):
     def test_scale_optim_heteroscedastic(self):
         self.assertTrue(
             np.allclose(
-                analytic_scale_optim_n(
-                    self.heteroscedastic_K_n, self.batch_nn_targets_n
-                ),
-                analytic_scale_optim_t(
-                    self.heteroscedastic_K_t, self.batch_nn_targets_t
-                ),
+                self.muygps_heteroscedastic_n.scale.get_opt_fn(
+                    self.muygps_heteroscedastic_n
+                )(self.heteroscedastic_K_n, self.batch_nn_targets_n),
+                self.muygps_heteroscedastic_t.scale.get_opt_fn(
+                    self.muygps_heteroscedastic_t
+                )(self.heteroscedastic_K_t, self.batch_nn_targets_t),
             )
         )
 
