@@ -98,12 +98,14 @@ def _looph_fn_unscaled(
 ) -> float:
     boundary_scale_sq = boundary_scale**2
     return jnp.sum(
-        boundary_scale_sq
-        * jnp.sqrt(
-            1
-            + jnp.divide(targets - predictions, variances * boundary_scale) ** 2
+        jnp.divide(
+            boundary_scale_sq
+            * jnp.sqrt(
+                1 + jnp.divide(targets - predictions, boundary_scale) ** 2
+            )
+            - boundary_scale_sq,
+            variances * 0.5,
         )
-        - boundary_scale_sq
         + jnp.log(variances)
     )
 

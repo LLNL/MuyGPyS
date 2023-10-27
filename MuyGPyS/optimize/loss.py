@@ -257,7 +257,7 @@ response. Treats multivariate outputs as interchangeable in terms of loss
 penalty. The function computes
 
 .. math::
-    \\ell_\\textrm{lool}(\\bar{\\mu}, y \\mid \\bar{\\Sigma}) =
+    \\ell_\\textrm{lool}(\\bar{\\mu}, y, \\bar{\\Sigma}) =
     \\sum_{i=1}^b \\sum_{j=1}^s
     \\left ( \\frac{\\bar{\\mu}_i - y}{\\bar{\\Sigma}_{ii}} \\right )_j^2
     +  \\left ( \\log \\bar{\\Sigma}_{ii} \\right )_j
@@ -287,7 +287,7 @@ penalty. Unlike lool_fn, does not require scale as an argument. The function
 computes
 
 .. math::
-    \\ell_\\textrm{lool}(\\bar{\\mu}, y \\mid \\bar{\\Sigma}) = \\sum_{i=1}^b
+    \\ell_\\textrm{lool}(\\bar{\\mu}, y, \\bar{\\Sigma}) = \\sum_{i=1}^b
     \\frac{(\\bar{\\mu}_i - y)^2}{\\bar{\\Sigma}_{ii}} + \\log \\bar{\\Sigma}_{ii}.
 
 Args:
@@ -340,14 +340,17 @@ Variance-regularized pseudo-Huber loss function.
 Computes a smooth approximation to the Huber loss function, similar to
 :func:`pseudo_huber_fn`, with the addition of both a variance scaling and a
 additive logarithmic variance regularization term to avoid exploding the
-variance. The function computes
+variance. This is intended to be an outlier-robust replacement to the lool
+function. Similar to pseudo-Huber, the `boundary_scale` parameter is sensitive
+to the units of the responses, and must be set accordingly. The function
+computes
 
 .. math::
-    \\ell_\\textrm{lool}(\\bar{\\mu}, y \\mid \\delta, \\bar{\\Sigma}) =
-        \\sum_{i=1}^b \\sum_{i=1}^s \\delta^2
+    \\ell_\\textrm{lool}(\\bar{\\mu}, y, \\bar{\\Sigma} \\mid \\delta) =
+        \\sum_{i=1}^b \\sum_{i=1}^s \\frac{2\\delta^2}{\\bar{\\Sigma}_{ii}}
         \\left ( \\sqrt{
             1 + \\left (
-                \\frac{y_i - \\bar{\\mu}_i}{\\delta \\bar{\\Sigma}_{ii}}
+                \\frac{y_i - \\bar{\\mu}_i}{\\delta}
             \\right )_j^2
         } - 1 \\right ) + \\left ( \\log \\bar{\\Sigma}_{ii} \\right )_j.
 
