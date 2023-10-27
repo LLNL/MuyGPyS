@@ -30,6 +30,7 @@ DOCS_REQUIRES = [
     "ipython==7.30.1",
     "ipykernel==6.6.0",
     "torchvision>=0.14.1",
+    "cblind>=2.3.1",
 ]
 
 HNSWLIB_REQUIRES = [
