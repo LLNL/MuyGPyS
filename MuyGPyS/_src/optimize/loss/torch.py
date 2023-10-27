@@ -78,13 +78,14 @@ def _looph_fn_unscaled(
 ) -> float:
     boundary_scale_sq = boundary_scale**2
     return torch.sum(
-        boundary_scale_sq
-        * torch.sqrt(
-            1
-            + torch.divide(targets - predictions, variances * boundary_scale)
-            ** 2
+        torch.divide(
+            boundary_scale_sq
+            * torch.sqrt(
+                1 + torch.divide(targets - predictions, boundary_scale) ** 2
+            )
+            - boundary_scale_sq,
+            variances * 0.5,
         )
-        - boundary_scale_sq
         + torch.log(variances)
     )
 

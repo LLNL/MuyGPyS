@@ -71,12 +71,12 @@ def _looph_fn_unscaled(
 ) -> float:
     boundary_scale_sq = boundary_scale**2
     return np.sum(
-        boundary_scale_sq
-        * np.sqrt(
-            1
-            + np.divide(targets - predictions, variances * boundary_scale) ** 2
+        np.divide(
+            boundary_scale_sq
+            * np.sqrt(1 + np.divide(targets - predictions, boundary_scale) ** 2)
+            - boundary_scale_sq,
+            variances * 0.5,
         )
-        - boundary_scale_sq
         + np.log(variances)
     )
 
