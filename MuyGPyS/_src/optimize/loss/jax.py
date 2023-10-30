@@ -94,17 +94,20 @@ def _looph_fn_unscaled(
     predictions: jnp.ndarray,
     targets: jnp.ndarray,
     variances: jnp.ndarray,
-    boundary_scale: float = 1.5,
+    boundary_scale: float = 3.0,
 ) -> float:
     boundary_scale_sq = boundary_scale**2
     return jnp.sum(
-        jnp.divide(
-            boundary_scale_sq
-            * jnp.sqrt(
-                1 + jnp.divide(targets - predictions, boundary_scale) ** 2
+        2
+        * boundary_scale_sq
+        * (
+            jnp.sqrt(
+                1
+                + jnp.divide(
+                    (targets - predictions) ** 2, boundary_scale_sq * variances
+                )
             )
-            - boundary_scale_sq,
-            variances * 0.5,
+            - 1
         )
         + jnp.log(variances)
     )
@@ -116,7 +119,7 @@ def _looph_fn(
     targets: jnp.ndarray,
     variances: jnp.ndarray,
     scale: jnp.ndarray,
-    boundary_scale: float = 1.5,
+    boundary_scale: float = 3.0,
 ) -> float:
     return _looph_fn_unscaled(
         predictions,

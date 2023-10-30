@@ -11,7 +11,7 @@ import MuyGPyS._src.math as mm
 from MuyGPyS import config
 from MuyGPyS._test.optimize import BenchmarkTestCase
 from MuyGPyS._test.utils import (
-    _advanced_opt_fn_and_kwarg_options,
+    # _advanced_opt_fn_and_kwarg_options,
     _basic_opt_fn_and_kwarg_options,
     _basic_nn_kwarg_options,
 )
@@ -77,7 +77,6 @@ class SmoothnessTest(BenchmarkTestCase):
             for b in [250]
             for n in [20]
             for loss_kwargs_and_scale in [
-                ["lool", lool_fn, dict(), AnalyticScale()],
                 ["mse", mse_fn, dict(), FixedScale()],
                 [
                     "huber",
@@ -85,7 +84,8 @@ class SmoothnessTest(BenchmarkTestCase):
                     {"boundary_scale": 1.5},
                     FixedScale(),
                 ],
-                ["looph", looph_fn, {"boundary_scale": 2.5}, AnalyticScale()],
+                ["lool", lool_fn, dict(), AnalyticScale()],
+                ["looph", looph_fn, {"boundary_scale": 3.0}, AnalyticScale()],
             ]
             # for nn_kwargs in _basic_nn_kwarg_options
             # for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
@@ -163,13 +163,14 @@ class LengthScaleTest(BenchmarkTestCase):
             )
             for b in [250]
             for n in [20]
-            for loss_and_scale in [["lool", lool_fn, AnalyticScale()]]
+            for loss_and_scale in [
+                ["lool", lool_fn, dict(), AnalyticScale()],
+                ["looph", looph_fn, {"boundary_scale": 3.0}, AnalyticScale()],
+            ]
             # for nn_kwargs in _basic_nn_kwarg_options
-            for opt_fn_and_kwargs in _advanced_opt_fn_and_kwarg_options
+            # for opt_fn_and_kwargs in _advanced_opt_fn_and_kwarg_options
             for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            # for opt_fn_and_kwargs in [
-            #     _basic_opt_fn_and_kwarg_options[0]
-            # ]
+            for opt_fn_and_kwargs in [_basic_opt_fn_and_kwarg_options[0]]
         )
     )
     def test_length_scale(
@@ -180,7 +181,7 @@ class LengthScaleTest(BenchmarkTestCase):
         loss_and_scale,
         opt_fn_and_kwargs,
     ):
-        loss_name, loss_fn, scale = loss_and_scale
+        loss_name, loss_fn, loss_kwargs, scale = loss_and_scale
         opt_fn, opt_kwargs = opt_fn_and_kwargs
 
         error_vector = mm.zeros((self.its,))
@@ -213,6 +214,7 @@ class LengthScaleTest(BenchmarkTestCase):
                 loss_fn,
                 opt_fn,
                 opt_kwargs,
+                loss_kwargs=loss_kwargs,
             )
         median_error = mm.median(error_vector)
         print(

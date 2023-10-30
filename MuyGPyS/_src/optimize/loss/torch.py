@@ -74,17 +74,20 @@ def _looph_fn_unscaled(
     predictions: torch.ndarray,
     targets: torch.ndarray,
     variances: torch.ndarray,
-    boundary_scale: float = 1.5,
+    boundary_scale: float = 3.0,
 ) -> float:
     boundary_scale_sq = boundary_scale**2
     return torch.sum(
-        torch.divide(
-            boundary_scale_sq
-            * torch.sqrt(
-                1 + torch.divide(targets - predictions, boundary_scale) ** 2
+        2
+        * boundary_scale_sq
+        * (
+            torch.sqrt(
+                1
+                + torch.divide(
+                    (targets - predictions) ** 2, boundary_scale_sq * variances
+                )
             )
-            - boundary_scale_sq,
-            variances * 0.5,
+            - 1
         )
         + torch.log(variances)
     )
@@ -95,7 +98,7 @@ def _looph_fn(
     targets: torch.ndarray,
     variances: torch.ndarray,
     scale: torch.ndarray,
-    boundary_scale: float = 1.5,
+    boundary_scale: float = 3.0,
 ) -> float:
     return _looph_fn_unscaled(
         predictions,

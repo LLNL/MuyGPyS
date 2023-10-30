@@ -82,7 +82,7 @@ def _looph_fn(
     targets: np.ndarray,
     variances: np.ndarray,
     scale: np.ndarray,
-    boundary_scale: float = 1.5,
+    boundary_scale: float = 3.0,
 ) -> float:
     local_looph = _looph_fn_n(
         predictions, targets, variances, scale, boundary_scale=boundary_scale
