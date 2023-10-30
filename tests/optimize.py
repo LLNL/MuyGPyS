@@ -11,7 +11,7 @@ import MuyGPyS._src.math as mm
 from MuyGPyS import config
 from MuyGPyS._test.optimize import BenchmarkTestCase
 from MuyGPyS._test.utils import (
-    _advanced_opt_fn_and_kwarg_options,
+    # _advanced_opt_fn_and_kwarg_options,
     _basic_opt_fn_and_kwarg_options,
     _basic_nn_kwarg_options,
 )
