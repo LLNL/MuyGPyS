@@ -366,7 +366,9 @@ Args:
         The scale variance scaling parameter of shape `(response_count,)`.
     boundary_scale:
         The boundary value for the residual beyond which the loss becomes
-        approximately linear. Useful values depend on the scale of the response.
+        approximately linear. Corresponds to the number of standard deviations
+        beyond which to linearize the loss. The default value is 3.0, which is
+        sufficiently tight for most realistic problems.
 
 Returns:
     The sum of leave-one-out pseudo-Huber losses of the predictions.

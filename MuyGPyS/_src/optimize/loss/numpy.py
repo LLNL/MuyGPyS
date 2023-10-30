@@ -67,15 +67,20 @@ def _looph_fn_unscaled(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
-    boundary_scale: float = 1.5,
+    boundary_scale: float = 3.0,
 ) -> float:
     boundary_scale_sq = boundary_scale**2
     return np.sum(
-        np.divide(
-            boundary_scale_sq
-            * np.sqrt(1 + np.divide(targets - predictions, boundary_scale) ** 2)
-            - boundary_scale_sq,
-            variances * 0.5,
+        2
+        * boundary_scale_sq
+        * (
+            np.sqrt(
+                1
+                + np.divide(
+                    (targets - predictions) ** 2, boundary_scale_sq * variances
+                )
+            )
+            - 1
         )
         + np.log(variances)
     )
@@ -86,7 +91,7 @@ def _looph_fn(
     targets: np.ndarray,
     variances: np.ndarray,
     scale: np.ndarray,
-    boundary_scale: float = 1.5,
+    boundary_scale: float = 3.0,
 ) -> float:
     return _looph_fn_unscaled(
         predictions,
