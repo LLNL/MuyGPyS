@@ -259,7 +259,7 @@ penalty. The function computes
 .. math::
     \\ell_\\textrm{lool}(\\bar{\\mu}, y, \\bar{\\Sigma}) =
     \\sum_{i=1}^b \\sum_{j=1}^s
-    \\left ( \\frac{\\bar{\\mu}_i - y}{\\bar{\\Sigma}_{ii}} \\right )_j^2
+    \\left ( \\frac{(\\bar{\\mu}_i - y)^2}{\\bar{\\Sigma}_{ii}} \\right )_j
     +  \\left ( \\log \\bar{\\Sigma}_{ii} \\right )_j
 
 Args:
@@ -347,11 +347,11 @@ computes
 
 .. math::
     \\ell_\\textrm{lool}(\\bar{\\mu}, y, \\bar{\\Sigma} \\mid \\delta) =
-        \\sum_{i=1}^b \\sum_{i=1}^s \\frac{2\\delta^2}{\\bar{\\Sigma}_{ii}}
+        \\sum_{i=1}^b \\sum_{j=1}^s 2\\delta^2
         \\left ( \\sqrt{
             1 + \\left (
-                \\frac{y_i - \\bar{\\mu}_i}{\\delta}
-            \\right )_j^2
+                \\frac{(y_i - \\bar{\\mu}_i)^2}{\\delta^2 \\bar{\\Sigma}_{ii}}
+            \\right )_j
         } - 1 \\right ) + \\left ( \\log \\bar{\\Sigma}_{ii} \\right )_j.
 
 Args:
