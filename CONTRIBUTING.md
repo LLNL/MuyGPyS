@@ -37,8 +37,8 @@ branch targeting the LLNL `develop` branch
 
 ## Forking MuyGPyS
 
-If you are not a `MuyGPyS` developer at LLNL, you will not have permissions to 
-push new branches to the repository.
+If you are not a `MuyGPyS` developer at LLNL, you will not have the necessary
+permissions to push new branches to the repository.
 Even `MuyGPyS` developers at LLNL will want to use forks for most contributions.
 This will create a clean copy of the repository that you own, and will allow for 
 exploration and experimentation without muddying the history of the central 
@@ -94,7 +94,11 @@ Be sure that your test runs successfully.
 Make sure that you follow our [formatting guidelines](#formatting-guidlines) for 
 any changes to the source code or build system. 
 If you create new methods or classes, please add ReStructuredText documentation
-and make sure that it builds locally. 
+and make sure that the documentation builds locally.
+If you create additional documentation notebooks, or modify existing ones,
+please ensure that you use `Kernel > Restart and Clear Output` and save your
+local version of the notebook before committing so that you do not accidentally
+commit execution state to the git history.
 
 Once your feature is complete and your tests are passing, ensure that your 
 remote fork is up-to-date and 
@@ -104,7 +108,8 @@ remote fork is up-to-date and
 
 Firstly, please check to ensure that the bug you have found has not already been
 fixed in `develop`. 
-If it has, we suggest that you either temporarily swap to the `develop` branch.
+If it has, we suggest that you temporarily swap your environment to use the
+`develop` branch or ask for a new release.
 
 If you have identified an unsolved bug, you can document the problem and create
 an [issue](https://github.com/LLNL/MuyGPyS/issues).
@@ -131,7 +136,7 @@ Please update function and class documentation to reflect any changes as
 appropriate, and follow our [formatting guidlines](#formatting-guidelines) with 
 any new code.
 
-Once your are satisfied that the bug is fixed, ensure that your remote fork is 
+Once you are satisfied that the bug is fixed, ensure that your remote fork is 
 up-to-date and [create a PR](https://github.com/LLNL/MuyGPyS/compare). 
 
 # Tests
@@ -148,21 +153,21 @@ existing tests that will ensure the correctness of the new code.
 `MuyGPyS`'s tests are contained in the `test` directory, and make use of the 
 `absl` library. 
 pip install muygpys from source using the `tests` extras flags to automatically
-populate your environment with all of the dependencies needed to run tests.
+populate your environment with all the dependencies needed to run tests.
 
 # Formatting Guidelines
 
 ## Partitioning Math Functions
 
-All significant math functions in `MuyGPyS` must have both pure numpy and 
-JAX-compiled implementations, which are located within `MuyGPyS._src`.
+All significant math functions in `MuyGPyS` must have both pure numpy, 
+JAX, MPI, and Torch implementations, which are located within `MuyGPyS._src`.
 The front-end version of the functions, located within the proper subpackages,
-call the appropriate function based upon whether JAX is enabled when the 
-function is imported. 
+import the appropriate function based upon the `MUYGPYS_BACKEND` environment
+variable as explained in the README. 
 Examples proliferate in the code.
 Here is a particular example using `_mse_fn()` for illustration:
 
-`MuyGPyS._src.optimize.numpy_objective` contains the following function:
+`MuyGPyS._src.optimize.loss.numpy` contains the following function:
 ```
 def _mse_fn(
     predictions: np.ndarray,
@@ -172,7 +177,7 @@ def _mse_fn(
     squared_errors = np.sum((predictions - targets) ** 2)
     return squared_errors / (batch_count * response_count)
 ```
-while `MuyGPyS._src.optimize.jax_objective` contains a JAX-compiled version
+while `MuyGPyS._src.optimize.loss.jax` contains a JAX version
 ```
 @jit
 def _mse_fn(
@@ -183,16 +188,12 @@ def _mse_fn(
     squared_errors = jnp.sum((predictions - targets) ** 2)
     return squared_errors / (batch_count * response_count)
 ```
-Note that the two functions share the same signature.
-Meanwhile, the API in `MuyGPyS.optimize.objective` contains the following code
+There are MPI and torch versions in similarly-named files.
+Note that these implementations share the same signature.
+Meanwhile, API files import `_mse_fn` from `MuyGPyS._src.optimize.loss`
 (irrelevant bits omitted):
 ```
-from MuyGPyS import config
-
-if config.jax_enabled() is False:
-    from MuyGPyS._src.optimize.numpy_objective import _mse_fn
-else:
-    from MuyGPyS._src.optimize.jax_objective import _mse_fn
+from MuyGPyS._src.optimize.loss import _mse_fn
 
 def mse_fn(
     predictions: np.ndarray,
@@ -200,9 +201,54 @@ def mse_fn(
 ) -> float:
     return _mse_fn(predictions, targets)
 ```
-So, the state of `MuyGPyS.config.jax_enabled()` at import time determines which
-implementation the API uses.
-All significant math functions must support similar functionality.
+`MuyGPyS/_src/optimize/loss/__init__.py` has the following magic function call
+that specifies the correct import behavior:
+```
+(
+    _mse_fn,
+    _cross_entropy_fn,
+    _lool_fn,
+    _lool_fn_unscaled,
+    _pseudo_huber_fn,
+    _looph_fn,
+) = _collect_implementation(
+    "MuyGPyS._src.optimize.loss",
+    "_mse_fn",
+    "_cross_entropy_fn",
+    "_lool_fn",
+    "_lool_fn_unscaled",
+    "_pseudo_huber_fn",
+    "_looph_fn",
+)
+```
+All imports of math functions hit such an `__init__.py` file, which mysteriously
+imports the correct function implementations based upon the `MUYGPYS_BACKEND`
+environment variable. 
+All significant math functions must support the same code workflow to maintain
+correct backend behavior.
+If a function is not possible to implement in a particular backend, still create
+the function signature and have it throw a `NotImplementedError`.
+There are several examples of this in the codebase.
+
+## Commonly-used math operations and imports
+
+Insofar as possible, please do not contribute code to the core library that
+directly imports any backend math libraries, such as numpy or Torch.
+Instead of, e.g., `import numpy as np`, please instead use
+`import MuyGPyS._src.math as mm`.
+`MuyGPyS._src.math` is intended to be an abstraction of all backend math
+engines, including `numpy`, `jax.numpy`, and `torch`.
+This involves some remapping of namespaces for consistency.
+For example, `mm.ndarray` can refer to `numpy.ndarray`, `jax.numpy.ndarray`, or
+`torch.Tensor`, depending on the state of `MUYGPYS_BACKEND` at import time.
+`MuyGPyS._src.math` is used heavily throughout the code, and usage should be
+clear from examples.
+
+Not all backend operations are currently supported.
+Add additionally functions to `MuyGPyS/_src/math/numpy.py`,
+`MuyGPyS/_src/math/jax.py`, et cetera and update the corresponding invocation of
+`_collect_implementation` in `MuyGPyS/_src/math/__init__.py` as needed.
+
 ## Naming Style
 
 In general, all names in `MuyGPyS` should be as succinct as possible while 
@@ -327,7 +373,7 @@ def array_multiplier(fun_array: np.array, coeff: float = 2.5) -> np.array
     return coeff * fun_array
 ```
 Meanwhile, here is a similar function with multiple return values.
-Note the different formating of the returns.
+Note the different formatting of the returns.
 ```
 from typing import Tuple
 

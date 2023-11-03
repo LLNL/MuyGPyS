@@ -47,8 +47,10 @@ project = "MuyGPyS"
 copyright = "2021, Lawrence Livermore National Security, LLC"
 author = "Benjamin W. Priest"
 
+# The short X.Y.Z version
+version = "v" + __version__
 # The full version, including alpha/beta/rc tags
-release = __version__
+release = "beta"
 
 
 # -- General configuration ---------------------------------------------------
