@@ -13,8 +13,8 @@ def _kk_fn(
     sum_sq_diffs,
     prod_sq_diffs,
     sum_quad_diffs,
-    a=1,
-    length_scale=1,
+    a=1.0,
+    length_scale=1.0,
 ):
     return (
         1
@@ -37,8 +37,8 @@ def _kg1_fn(
     exp_inv_scaled_sum_sq_diffs,
     diff_xy_quad_diffs,
     diff_yx_sq_diffs,
-    a=1,
-    length_scale=1,
+    a=1.0,
+    length_scale=1.0,
 ):
     return (
         1
@@ -53,7 +53,11 @@ def _kg1_fn(
 
 
 def _kg2_fn(
-    exp_inv_scaled_sum_sq_diffs, sum_sq_diffs, prod_diffs, a=1, length_scale=1
+    exp_inv_scaled_sum_sq_diffs,
+    sum_sq_diffs,
+    prod_diffs,
+    a=1.0,
+    length_scale=1.0,
 ):
     return (
         1
@@ -74,8 +78,8 @@ def _g1g1_fn(
     sum_sq_diffs,
     sum_quad_diffs,
     prod_sq_diffs,
-    a=1,
-    length_scale=1,
+    a=1.0,
+    length_scale=1.0,
 ):
     return (
         1
@@ -98,8 +102,8 @@ def _g1g2_fn(
     exp_inv_scaled_sum_sq_diffs,
     diff_xy_sq_diffs,
     prod_diffs,
-    a=1,
-    length_scale=1,
+    a=1.0,
+    length_scale=1.0,
 ):
     return (
         1
@@ -119,8 +123,8 @@ def _g2g2_fn(
     exp_inv_scaled_sum_sq_diffs,
     sum_sq_diffs,
     prod_sq_diffs,
-    a=1,
-    length_scale=1,
+    a=1.0,
+    length_scale=1.0,
 ):
     return (
         1
@@ -136,7 +140,7 @@ def _g2g2_fn(
 
 
 # compute the full covariance matrix
-def _shear_fn(diffs, a=1, length_scale=1):
+def _shear_fn(diffs, a=1.0, length_scale=1.0):
     shape = torch.array(diffs.shape[:-1], dtype=int)
     shape[-1] *= 3
     shape[-2] *= 3

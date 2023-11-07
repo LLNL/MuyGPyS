@@ -87,7 +87,16 @@ class ShearKernel(KernelFn):
 
     def _make(self):
         super()._make_base()
-        self._fn = self._kernel_fn
+
+        # Need length_scale passthrough
+        def embedded_fn(diffs, *args, length_scale=None, **kwargs):
+            if length_scale is None:
+                length_scale = self.deformation.length_scale()
+            return self._kernel_fn(
+                diffs, *args, length_scale=length_scale, **kwargs
+            )
+
+        self._fn = embedded_fn
 
     def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
         """
