@@ -13,23 +13,17 @@ def _kk_fn(
     sum_sq_diffs,
     prod_sq_diffs,
     sum_quad_diffs,
-    a=1.0,
     length_scale=1.0,
 ):
-    return (
-        1
-        / 4
-        * (
-            a
-            * (
-                8 * length_scale**2
-                - 8 * length_scale * sum_sq_diffs
-                + 2 * prod_sq_diffs
-                + sum_quad_diffs
-            )
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
+    return 0.25 * (
+        (
+            8 * length_scale**2
+            - 8 * length_scale * sum_sq_diffs
+            + 2 * prod_sq_diffs
+            + sum_quad_diffs
         )
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
@@ -37,18 +31,12 @@ def _kg1_fn(
     exp_inv_scaled_sum_sq_diffs,
     diff_xy_quad_diffs,
     diff_yx_sq_diffs,
-    a=1.0,
     length_scale=1.0,
 ):
-    return (
-        1
-        / 4
-        * (
-            a
-            * (6 * length_scale * diff_yx_sq_diffs + diff_xy_quad_diffs)
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
-        )
+    return 0.25 * (
+        (6 * length_scale * diff_yx_sq_diffs + diff_xy_quad_diffs)
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
@@ -56,20 +44,14 @@ def _kg2_fn(
     exp_inv_scaled_sum_sq_diffs,
     sum_sq_diffs,
     prod_diffs,
-    a=1.0,
     length_scale=1.0,
 ):
     return (
-        1
-        / 4
-        * (
-            2
-            * a
-            * prod_diffs
-            * (-6 * length_scale + sum_sq_diffs)
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
-        )
+        0.5
+        * prod_diffs
+        * (-6 * length_scale + sum_sq_diffs)
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
@@ -78,23 +60,17 @@ def _g1g1_fn(
     sum_sq_diffs,
     sum_quad_diffs,
     prod_sq_diffs,
-    a=1.0,
     length_scale=1.0,
 ):
-    return (
-        1
-        / 4
-        * (
-            a
-            * (
-                4 * length_scale**2
-                - 4 * length_scale * sum_sq_diffs
-                - 2 * prod_sq_diffs
-                + sum_quad_diffs
-            )
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
+    return 0.25 * (
+        (
+            4 * length_scale**2
+            - 4 * length_scale * sum_sq_diffs
+            - 2 * prod_sq_diffs
+            + sum_quad_diffs
         )
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
@@ -102,20 +78,14 @@ def _g1g2_fn(
     exp_inv_scaled_sum_sq_diffs,
     diff_xy_sq_diffs,
     prod_diffs,
-    a=1.0,
     length_scale=1.0,
 ):
     return (
-        1
-        / 4
-        * (
-            2
-            * a
-            * prod_diffs
-            * diff_xy_sq_diffs
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
-        )
+        0.5
+        * prod_diffs
+        * diff_xy_sq_diffs
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
@@ -123,24 +93,17 @@ def _g2g2_fn(
     exp_inv_scaled_sum_sq_diffs,
     sum_sq_diffs,
     prod_sq_diffs,
-    a=1.0,
     length_scale=1.0,
 ):
     return (
-        1
-        / 4
-        * (
-            4
-            * a
-            * (length_scale**2 - length_scale * sum_sq_diffs + prod_sq_diffs)
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
-        )
+        (length_scale**2 - length_scale * sum_sq_diffs + prod_sq_diffs)
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
 # compute the full covariance matrix
-def _shear_fn(diffs, a=1.0, length_scale=1.0):
+def _shear_fn(diffs, length_scale=1.0):
     shape = torch.array(diffs.shape[:-1], dtype=int)
     n = torch.clone(shape[-2])
     n2 = 2 * n
@@ -168,39 +131,34 @@ def _shear_fn(diffs, a=1.0, length_scale=1.0):
         sum_sq_diffs,
         prod_sq_diffs,
         sum_quad_diffs,
-        a,
         length_scale,
     )
     full_m[..., :n, m:m2] = full_m[..., n:n2, :m] = _kg1_fn(
         exp_inv_scaled_sum_sq_diffs,
         diff_xy_quad_diffs,
         diff_yx_sq_diffs,
-        a,
         length_scale,
     )
     full_m[..., :n, m2:] = full_m[..., n2:, :m] = _kg2_fn(
-        exp_inv_scaled_sum_sq_diffs, sum_sq_diffs, prod_diffs, a, length_scale
+        exp_inv_scaled_sum_sq_diffs, sum_sq_diffs, prod_diffs, length_scale
     )
     full_m[..., n:n2, m:m2] = _g1g1_fn(
         exp_inv_scaled_sum_sq_diffs,
         sum_sq_diffs,
         sum_quad_diffs,
         prod_sq_diffs,
-        a,
         length_scale,
     )
     full_m[..., n:n2, m2:] = full_m[..., n2:, m:m2] = _g1g2_fn(
         exp_inv_scaled_sum_sq_diffs,
         diff_xy_sq_diffs,
         prod_diffs,
-        a,
         length_scale,
     )
     full_m[..., n2:, m2:] = _g2g2_fn(
         exp_inv_scaled_sum_sq_diffs,
         sum_sq_diffs,
         prod_sq_diffs,
-        a,
         length_scale,
     )
 
