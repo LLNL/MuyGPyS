@@ -134,7 +134,7 @@ class ScaleFn:
         return scaled_fn
 
     def get_opt_fn(self, muygps) -> Callable:
-        def noop_scale_opt_fn(K, nn_targets, *args, **kwargs):
+        def noop_scale_opt_fn(Kcov, nn_targets, *args, **kwargs):
             return muygps.scale()
 
         return noop_scale_opt_fn
@@ -164,7 +164,7 @@ class FixedScale(ScaleFn):
             A function that always returns the value of this scale parameter.
         """
 
-        def noop_scale_opt_fn(K, nn_targets, *args, **kwargs):
+        def noop_scale_opt_fn(Kcov, nn_targets, *args, **kwargs):
             return muygps.scale()
 
         return noop_scale_opt_fn
@@ -194,12 +194,12 @@ class AnalyticScale(ScaleFn):
         We approximate a scalar :math:`\\sigma^2` by way of averaging over the
         analytic solution from each local kernel. Given observations :math:`X`
         with responses :math:`Y`, noise model :math:`\\varepsilon`, and kernel
-        function :math:`K_\\theta(\\cdot, \\cdot)`, computes:
+        function :math:`Kcov_\\theta(\\cdot, \\cdot)`, computes:
 
         .. math::
             \\sigma^2 = \\frac{1}{bk} * \\sum_{i \\in B} Y(X_{N_i})^T
                 \\left (
-                    K_\\theta(X_{N_i}, X_{N_i}) + \\varepsilon_{N_i}
+                    Kcov_\\theta(X_{N_i}, X_{N_i}) + \\varepsilon_{N_i}
                 \\right )^{-1}
                 Y(X_{N_i}).
 
@@ -213,14 +213,14 @@ class AnalyticScale(ScaleFn):
 
         Returns:
             A function with signature
-            `(K, nn_targets, *args, **kwargs) -> mm.ndarray` that perturbs the
-            `(batch_count, nn_count, nn_count)` tensor `K` with `muygps`'s noise
+            `(Kcov, nn_targets, *args, **kwargs) -> mm.ndarray` that perturbs the
+            `(batch_count, nn_count, nn_count)` tensor `Kcov` with `muygps`'s noise
             model before solving it against the
             `(batch_count, nn_count, response_count)` tensor `nn_targets`.
         """
 
-        def analytic_scale_opt_fn(K, nn_targets, *args, **kwargs):
-            return self._fn(muygps.noise.perturb(K), nn_targets)
+        def analytic_scale_opt_fn(Kcov, nn_targets, *args, **kwargs):
+            return self._fn(muygps.noise.perturb(Kcov), nn_targets)
 
         return analytic_scale_opt_fn
 
@@ -266,20 +266,20 @@ class DownSampleScale(ScaleFn):
 
         Returns:
             A function with signature
-            `(K, nn_targets, *args, **kwargs) -> mm.ndarray` that perturbs the
-            `(batch_count, nn_count, nn_count)` tensor `K` with `muygps`'s noise
+            `(Kcov, nn_targets, *args, **kwargs) -> mm.ndarray` that perturbs the
+            `(batch_count, nn_count, nn_count)` tensor `Kcov` with `muygps`'s noise
             model before solving it against the
             `(batch_count, nn_count, response_count)` tensor `nn_targets`.
         """
 
-        def downsample_analytic_scale_opt_fn(K, nn_targets, *args, **kwargs):
-            batch_count, nn_count, _ = K.shape
+        def downsample_analytic_scale_opt_fn(Kcov, nn_targets, *args, **kwargs):
+            batch_count, nn_count, _ = Kcov.shape
             if nn_count <= self._down_count:
                 raise ValueError(
                     f"bad attempt to downsample {self._down_count} elements "
                     f"from a set of only {nn_count} options"
                 )
-            pK = muygps.noise.perturb(K)
+            pK = muygps.noise.perturb(Kcov)
             scales = []
             for _ in range(self._iteration_count):
                 sampled_indices = np.random.choice(

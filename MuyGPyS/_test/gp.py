@@ -127,6 +127,6 @@ def benchmark_sample_from_cholK(cholK: np.ndarray) -> np.ndarray:
     ).reshape(data_count, 1)
 
 
-def get_analytic_scale(K, y):
-    assert y.shape[0] == K.shape[0]
-    return (1 / y.shape[0]) * y.T @ np.linalg.solve(K, y)
+def get_analytic_scale(Kcov, y):
+    assert y.shape[0] == Kcov.shape[0]
+    return (1 / y.shape[0]) * y.T @ np.linalg.solve(Kcov, y)

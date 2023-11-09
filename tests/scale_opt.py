@@ -40,11 +40,11 @@ class ScaleTest(BenchmarkTestCase):
     def test_scale(self):
         mrse = 0.0
         pairwise_diffs = _pairwise_differences(self.train_features)
-        K = self.gp.kernel(pairwise_diffs) + self.gp.noise() * mm.eye(
+        Kcov = self.gp.kernel(pairwise_diffs) + self.gp.noise() * mm.eye(
             self.feature_count
         )
         for i in range(self.its):
-            ss = get_analytic_scale(K, self.train_features)
+            ss = get_analytic_scale(Kcov, self.train_features)
             mrse += _sq_rel_err(self.gp.scale(), ss)
 
         mrse /= self.its

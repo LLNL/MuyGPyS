@@ -45,17 +45,17 @@ class HeteroscedasticNoise(TensorParam, NoiseFn):
             )
         self._perturb_fn = _backend_fn
 
-    def perturb(self, K: mm.ndarray, **kwargs) -> mm.ndarray:
+    def perturb(self, Kcov: mm.ndarray, **kwargs) -> mm.ndarray:
         """
         Perturb a kernel tensor with heteroscedastic noise.
 
         Applies a heteroscedastic noise model to a kernel tensor, whose last two
         dimensions are assumed to be the same length. For each such square
-        submatrix :math:`K`, computes the form :math:`K + D`, where :math:`D`
+        submatrix :math:`Kcov`, computes the form :math:`Kcov + D`, where :math:`D`
         is the diagonal matrix containing the observation-wise noise priors.
 
         Args:
-            K:
+            Kcov:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
                 the `(nn_count, nn_count)`-shaped kernel matrices corresponding
                 to each of the batch elements.
@@ -63,9 +63,9 @@ class HeteroscedasticNoise(TensorParam, NoiseFn):
         Returns:
             A tensor of shape `(batch_count, nn_count, nn_count)` where the
             final two dimensions consist of the perturbed matrices of the input
-            :math:`K`.
+            :math:`Kcov`.
         """
-        return self._perturb_fn(K, self._val)
+        return self._perturb_fn(Kcov, self._val)
 
     def perturb_fn(self, fn: Callable) -> Callable:
         """
@@ -88,8 +88,8 @@ class HeteroscedasticNoise(TensorParam, NoiseFn):
             perturbation to its first argument.
         """
 
-        def perturbed_fn(K, *args, **kwargs):
-            return fn(self.perturb(K), *args, **kwargs)
+        def perturbed_fn(Kcov, *args, **kwargs):
+            return fn(self.perturb(Kcov), *args, **kwargs)
 
         return perturbed_fn
 

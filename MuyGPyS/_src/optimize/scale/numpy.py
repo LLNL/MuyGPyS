@@ -7,20 +7,20 @@ import MuyGPyS._src.math.numpy as np
 
 
 def _analytic_scale_optim_unnormalized(
-    K: np.ndarray,
+    Kcov: np.ndarray,
     nn_targets: np.ndarray,
 ) -> np.ndarray:
     return np.sum(
-        np.einsum("ijk,ijk->ik", nn_targets, np.linalg.solve(K, nn_targets)),
+        np.einsum("ijk,ijk->ik", nn_targets, np.linalg.solve(Kcov, nn_targets)),
         axis=0,
     )
 
 
 def _analytic_scale_optim(
-    K: np.ndarray,
+    Kcov: np.ndarray,
     nn_targets: np.ndarray,
 ) -> np.ndarray:
     batch_count, nn_count, _ = nn_targets.shape
-    return _analytic_scale_optim_unnormalized(K, nn_targets) / (
+    return _analytic_scale_optim_unnormalized(Kcov, nn_targets) / (
         nn_count * batch_count
     )

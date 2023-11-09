@@ -134,16 +134,16 @@ class MultivariateMuyGPs_layer(nn.Module):
         batch_count, nn_count, response_count = self.batch_nn_targets.shape
 
         Kcross = torch.zeros(batch_count, nn_count, response_count)
-        K = torch.zeros(batch_count, nn_count, nn_count, response_count)
+        Kcov = torch.zeros(batch_count, nn_count, nn_count, response_count)
 
         for i, model in enumerate(self.multivariate_muygps_model.models):
             Kcross[:, :, i] = model.kernel(crosswise_diffs)
-            K[:, :, :, i] = model.kernel(pairwise_diffs)
+            Kcov[:, :, :, i] = model.kernel(pairwise_diffs)
 
-        variances = self.multivariate_muygps_model.posterior_variance(K, Kcross)
+        variances = self.multivariate_muygps_model.posterior_variance(Kcov, Kcross)
 
         predictions = self.multivariate_muygps_model.posterior_mean(
-            K, Kcross, self.batch_nn_targets
+            Kcov, Kcross, self.batch_nn_targets
         )
 
         return predictions, variances

@@ -33,7 +33,7 @@ matrix. See the following example, which assumes that you have already
 constructed the differenece tensors and kernel as shown above.
 
 Example:
-    >>> K = kern(pairwise_diffs)
+    >>> Kcov = kern(pairwise_diffs)
     >>> Kcross = kern(crosswise_diffs)
 """
 
@@ -100,10 +100,10 @@ class Matern(KernelFn):
     .. math::
          k(x_i, x_j) =  \\frac{1}{\\Gamma(\\nu)2^{\\nu-1}}\\Bigg(
          \\frac{\\sqrt{2\\nu}}{l} d_\\ell(x_i , x_j )
-         \\Bigg)^\\nu K_\\nu\\Bigg(
+         \\Bigg)^\\nu Kcov_\\nu\\Bigg(
          \\frac{\\sqrt{2\\nu}}{l} d(x_i , x_j )\\Bigg),
 
-    where :math:`K_{\\nu}(\\cdot)` is a modified Bessel function and
+    where :math:`Kcov_{\\nu}(\\cdot)` is a modified Bessel function and
     :math:`\\Gamma(\\cdot)` is the gamma function.
     Typically, :math:`d(\\cdot,\\cdot)` is the Euclidean distance or
     :math:`\\ell_2` norm of the difference of the operands.

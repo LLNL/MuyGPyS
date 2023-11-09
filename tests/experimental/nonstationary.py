@@ -142,11 +142,11 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
 
         batch_features = batch_features_tensor(data["input"], batch_indices)
 
-        K = muygps.kernel(pairwise_diffs, batch_features)
+        Kcov = muygps.kernel(pairwise_diffs, batch_features)
 
         _check_ndarray(
             self.assertEqual,
-            K,
+            Kcov,
             mm.ftype,
             shape=(batch_count, nn_count, nn_count),
         )

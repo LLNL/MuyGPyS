@@ -30,11 +30,11 @@ class PosteriorVariance:
 
     def __call__(
         self,
-        K: mm.ndarray,
+        Kcov: mm.ndarray,
         Kcross: mm.ndarray,
         **kwargs,
     ) -> mm.ndarray:
-        return self._fn(K, Kcross, **kwargs)
+        return self._fn(Kcov, Kcross, **kwargs)
 
     def get_opt_fn(self) -> Callable:
         return self._fn

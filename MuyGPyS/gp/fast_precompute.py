@@ -28,8 +28,8 @@ class FastPrecomputeCoefficients:
 
     def __call__(
         self,
-        K: mm.ndarray,
+        Kcov: mm.ndarray,
         train_nn_targets_fast: mm.ndarray,
         **kwargs,
     ) -> mm.ndarray:
-        return self._fn(K, train_nn_targets_fast, **kwargs)
+        return self._fn(Kcov, train_nn_targets_fast, **kwargs)

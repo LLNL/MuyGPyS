@@ -74,10 +74,10 @@ def make_fast_regressor(
     nn_indices = fast_nn_update(nn_indices)
 
     train_nn_targets = train_targets[nn_indices]
-    K = muygps.kernel(pairwise_tensor(train_features, nn_indices))
+    Kcov = muygps.kernel(pairwise_tensor(train_features, nn_indices))
 
     precomputed_coefficients_matrix = muygps.fast_coefficients(
-        K, train_nn_targets
+        Kcov, train_nn_targets
     )
 
     return precomputed_coefficients_matrix, nn_indices

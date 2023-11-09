@@ -89,8 +89,8 @@ def make_loo_crossval_fn(
     )
 
     def obj_fn(*args, **kwargs):
-        K, Kcross = kernels_fn(*args, batch_features=batch_features, **kwargs)
-        return predict_and_loss_fn(K, Kcross, *args, **kwargs)
+        Kcov, Kcross = kernels_fn(*args, batch_features=batch_features, **kwargs)
+        return predict_and_loss_fn(Kcov, Kcross, *args, **kwargs)
 
     return obj_fn
 
@@ -101,8 +101,8 @@ def make_kernels_fn(
     crosswise_diffs: mm.ndarray,
 ) -> Callable:
     def kernels_fn(*args, **kwargs):
-        K = kernel_fn(pairwise_diffs, *args, **kwargs)
+        Kcov = kernel_fn(pairwise_diffs, *args, **kwargs)
         Kcross = kernel_fn(crosswise_diffs, *args, **kwargs)
-        return K, Kcross
+        return Kcov, Kcross
 
     return kernels_fn

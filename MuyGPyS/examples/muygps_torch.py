@@ -117,13 +117,13 @@ def predict_single_model(
     pairwise_diffs = pairwise_tensor(train_features_embedded, nn_indices_test)
 
     Kcross = model.GP_layer.muygps_model.kernel(crosswise_diffs)
-    K = model.GP_layer.muygps_model.kernel(pairwise_diffs)
+    Kcov = model.GP_layer.muygps_model.kernel(pairwise_diffs)
 
     predictions = model.GP_layer.muygps_model.posterior_mean(
-        K, Kcross, test_nn_targets
+        Kcov, Kcross, test_nn_targets
     )
 
-    variances = model.GP_layer.muygps_model.posterior_variance(K, Kcross)
+    variances = model.GP_layer.muygps_model.posterior_variance(Kcov, Kcross)
 
     return predictions, variances
 
@@ -204,20 +204,20 @@ def predict_multiple_model(
     ) = model.batch_nn_targets.shape
 
     Kcross = torch.zeros(test_count, nn_count, response_count)
-    K = torch.zeros(test_count, nn_count, nn_count, response_count)
+    Kcov = torch.zeros(test_count, nn_count, nn_count, response_count)
 
     for i, muygps_model in enumerate(
         model.GP_layer.multivariate_muygps_model.models
     ):
         Kcross[:, :, i] = muygps_model.kernel(crosswise_diffs)
-        K[:, :, :, i] = muygps_model.kernel(pairwise_diffs)
+        Kcov[:, :, :, i] = muygps_model.kernel(pairwise_diffs)
 
     predictions = model.GP_layer.multivariate_muygps_model.posterior_mean(
-        K, Kcross, test_nn_targets
+        Kcov, Kcross, test_nn_targets
     )
 
     variances = model.GP_layer.multivariate_muygps_model.posterior_variance(
-        K, Kcross
+        Kcov, Kcross
     )
 
     return predictions, variances

@@ -135,9 +135,9 @@ def fast_nn_update(
         ...     train_features,
         ...     train_responses,
         ... )
-        >>> K = muygps_fast.kernel(pairwise_diffs)
+        >>> Kcov = muygps_fast.kernel(pairwise_diffs)
         >>> precomputed_coefficients_matrix = muygps_fast.fast_coefficients(
-        ...     K, nn_targets
+        ...     Kcov, nn_targets
         ... )
         >>> # Late on, once test data is encountered
         >>> test_indices = np.arange(test_count)

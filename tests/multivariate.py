@@ -197,12 +197,12 @@ class ScaleTest(parameterized.TestCase):
         # fit scales
         mmuygps = mmuygps.optimize_scale(pairwise_diffs, nn_targets)
 
-        K = mm.zeros((data_count, nn_count, nn_count))
+        Kcov = mm.zeros((data_count, nn_count, nn_count))
         nn_targets = _consistent_unchunk_tensor(nn_targets)
         for i, model in enumerate(mmuygps.models):
-            K = _consistent_unchunk_tensor(model.kernel(pairwise_diffs))
+            Kcov = _consistent_unchunk_tensor(model.kernel(pairwise_diffs))
             scales = _get_scale_series(
-                K,
+                Kcov,
                 nn_targets[:, :, i].reshape(data_count, nn_count, 1),
                 model.noise(),
             )
