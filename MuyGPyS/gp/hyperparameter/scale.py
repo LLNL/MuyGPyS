@@ -180,10 +180,18 @@ class AnalyticScale(ScaleFn):
     Args:
         response_count:
             The integer number of response dimensions.
+        iteration_count:
+            The number of iterations to run during optimization
     """
 
-    def __init__(self, _backend_fn: Callable = _analytic_scale_optim, **kwargs):
+    def __init__(
+        self,
+        iteration_count: int = 10,
+        _backend_fn: Callable = _analytic_scale_optim,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
+        self.iteration_count = iteration_count
         self._fn = _backend_fn
 
     def get_opt_fn(self, muygps) -> Callable:
@@ -220,7 +228,10 @@ class AnalyticScale(ScaleFn):
         """
 
         def analytic_scale_opt_fn(K, nn_targets, *args, **kwargs):
-            return self._fn(muygps.noise.perturb(K), nn_targets)
+            scale = self.val
+            for _ in range(self.iteration_count):
+                scale = self._fn(scale * muygps.noise.perturb(K), nn_targets)
+            return scale
 
         return analytic_scale_opt_fn
 
