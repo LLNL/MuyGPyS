@@ -136,7 +136,7 @@ def _g2g2_fn(
 
 
 # compute the full covariance matrix
-def _shear_fn(diffs, a=1, length_scale=1):
+def _shear_fn(diffs, a=1, length_scale=1, **kwargs):
     shape = torch.array(diffs.shape[:-1], dtype=int)
     shape[-1] *= 3
     shape[-2] *= 3
