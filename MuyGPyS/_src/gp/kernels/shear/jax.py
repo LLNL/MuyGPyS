@@ -16,23 +16,17 @@ def _kk_fn(
     sum_sq_diffs,
     prod_sq_diffs,
     sum_quad_diffs,
-    a=1,
-    length_scale=1,
+    length_scale=1.0,
 ):
-    return (
-        1
-        / 4
-        * (
-            a
-            * (
-                8 * length_scale**2
-                - 8 * length_scale * sum_sq_diffs
-                + 2 * prod_sq_diffs
-                + sum_quad_diffs
-            )
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
+    return 0.25 * (
+        (
+            8 * length_scale**2
+            - 8 * length_scale * sum_sq_diffs
+            + 2 * prod_sq_diffs
+            + sum_quad_diffs
         )
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
@@ -41,36 +35,28 @@ def _kg1_fn(
     exp_inv_scaled_sum_sq_diffs,
     diff_xy_quad_diffs,
     diff_yx_sq_diffs,
-    a=1,
-    length_scale=1,
+    length_scale=1.0,
 ):
-    return (
-        1
-        / 4
-        * (
-            a
-            * (6 * length_scale * diff_yx_sq_diffs + diff_xy_quad_diffs)
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
-        )
+    return 0.25 * (
+        (6 * length_scale * diff_yx_sq_diffs + diff_xy_quad_diffs)
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
 @jit
 def _kg2_fn(
-    exp_inv_scaled_sum_sq_diffs, sum_sq_diffs, prod_diffs, a=1, length_scale=1
+    exp_inv_scaled_sum_sq_diffs,
+    sum_sq_diffs,
+    prod_diffs,
+    length_scale=1.0,
 ):
     return (
-        1
-        / 4
-        * (
-            2
-            * a
-            * prod_diffs
-            * (-6 * length_scale + sum_sq_diffs)
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
-        )
+        0.5
+        * prod_diffs
+        * (-6 * length_scale + sum_sq_diffs)
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
@@ -80,23 +66,17 @@ def _g1g1_fn(
     sum_sq_diffs,
     sum_quad_diffs,
     prod_sq_diffs,
-    a=1,
-    length_scale=1,
+    length_scale=1.0,
 ):
-    return (
-        1
-        / 4
-        * (
-            a
-            * (
-                4 * length_scale**2
-                - 4 * length_scale * sum_sq_diffs
-                - 2 * prod_sq_diffs
-                + sum_quad_diffs
-            )
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
+    return 0.25 * (
+        (
+            4 * length_scale**2
+            - 4 * length_scale * sum_sq_diffs
+            - 2 * prod_sq_diffs
+            + sum_quad_diffs
         )
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
@@ -105,20 +85,14 @@ def _g1g2_fn(
     exp_inv_scaled_sum_sq_diffs,
     diff_xy_sq_diffs,
     prod_diffs,
-    a=1,
-    length_scale=1,
+    length_scale=1.0,
 ):
     return (
-        1
-        / 4
-        * (
-            2
-            * a
-            * prod_diffs
-            * diff_xy_sq_diffs
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
-        )
+        0.5
+        * prod_diffs
+        * diff_xy_sq_diffs
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
@@ -127,26 +101,23 @@ def _g2g2_fn(
     exp_inv_scaled_sum_sq_diffs,
     sum_sq_diffs,
     prod_sq_diffs,
-    a=1,
-    length_scale=1,
+    length_scale=1.0,
 ):
     return (
-        1
-        / 4
-        * (
-            4
-            * a
-            * (length_scale**2 - length_scale * sum_sq_diffs + prod_sq_diffs)
-            * exp_inv_scaled_sum_sq_diffs
-            / length_scale**4
-        )
+        (length_scale**2 - length_scale * sum_sq_diffs + prod_sq_diffs)
+        * exp_inv_scaled_sum_sq_diffs
+        / length_scale**4
     )
 
 
 # compute the full covariance matrix
 @jit
-def _shear_fn(diffs, a=1, length_scale=1, **kwargs):
+def _shear_fn(diffs, length_scale=1.0, **kwargs):
     shape = np.array(diffs.shape[:-1], dtype=int)
+    n = shape[-2]
+    n2 = 2 * n
+    m = shape[-1]
+    m2 = 2 * m
     shape[-1] *= 3
     shape[-2] *= 3
     full_m = jnp.zeros(shape)
@@ -163,62 +134,56 @@ def _shear_fn(diffs, a=1, length_scale=1, **kwargs):
     diff_xy_quad_diffs = quad_diffs[..., 0] - quad_diffs[..., 1]
     exp_inv_scaled_sum_sq_diffs = jnp.exp(-sum_sq_diffs / (2 * length_scale))
 
-    full_m = full_m.at[..., 0::3, 0::3].set(
+    full_m = full_m.at[..., :n, :m].set(
         _kk_fn(
             exp_inv_scaled_sum_sq_diffs,
             sum_sq_diffs,
             prod_sq_diffs,
             sum_quad_diffs,
-            a,
             length_scale,
         )
     )
-    full_m = full_m.at[..., 0::3, 1::3].set(
+    full_m = full_m.at[..., :n, m:m2].set(
         _kg1_fn(
             exp_inv_scaled_sum_sq_diffs,
             diff_xy_quad_diffs,
             diff_yx_sq_diffs,
-            a,
             length_scale,
         )
     )
-    full_m = full_m.at[..., 1::3, 0::3].set(full_m[..., 0::3, 1::3])
-    full_m = full_m.at[..., 0::3, 2::3].set(
+    full_m = full_m.at[..., n:n2, :m].set(full_m[..., :n, m:m2])
+    full_m = full_m.at[..., :n, m2:].set(
         _kg2_fn(
             exp_inv_scaled_sum_sq_diffs,
             sum_sq_diffs,
             prod_diffs,
-            a,
             length_scale,
         )
     )
-    full_m = full_m.at[..., 2::3, 0::3].set(full_m[..., 0::3, 2::3])
-    full_m = full_m.at[..., 1::3, 1::3].set(
+    full_m = full_m.at[..., n2:, :m].set(full_m[..., :n, m2:])
+    full_m = full_m.at[..., n:n2, m:m2].set(
         _g1g1_fn(
             exp_inv_scaled_sum_sq_diffs,
             sum_sq_diffs,
             sum_quad_diffs,
             prod_sq_diffs,
-            a,
             length_scale,
         )
     )
-    full_m = full_m.at[..., 1::3, 2::3].set(
+    full_m = full_m.at[..., n:n2, m2:].set(
         _g1g2_fn(
             exp_inv_scaled_sum_sq_diffs,
             diff_xy_sq_diffs,
             prod_diffs,
-            a,
             length_scale,
         )
     )
-    full_m = full_m.at[..., 2::3, 1::3].set(full_m[..., 1::3, 2::3])
-    full_m = full_m.at[..., 2::3, 2::3].set(
+    full_m = full_m.at[..., n2:, m:m2].set(full_m[..., n:n2, m2:])
+    full_m = full_m.at[..., n2:, m2:].set(
         _g2g2_fn(
             exp_inv_scaled_sum_sq_diffs,
             sum_sq_diffs,
             prod_sq_diffs,
-            a,
             length_scale,
         )
     )
