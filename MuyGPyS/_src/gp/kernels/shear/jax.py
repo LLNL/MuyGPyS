@@ -112,7 +112,7 @@ def _g2g2_fn(
 
 # compute the full covariance matrix
 @jit
-def _shear_fn(diffs, length_scale=1.0):
+def _shear_fn(diffs, length_scale=1.0, **kwargs):
     shape = np.array(diffs.shape[:-1], dtype=int)
     n = shape[-2]
     n2 = 2 * n
