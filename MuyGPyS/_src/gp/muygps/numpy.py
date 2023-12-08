@@ -12,11 +12,7 @@ def _muygps_posterior_mean(
     batch_nn_targets: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    batch_count, nn_count, response_count = batch_nn_targets.shape
-    responses = Kcross.reshape(batch_count, 1, nn_count) @ np.linalg.solve(
-        K, batch_nn_targets
-    )
-    return responses.reshape(batch_count, response_count)
+    return np.squeeze(Kcross @ np.linalg.solve(K, batch_nn_targets))
 
 
 def _muygps_diagonal_variance(
@@ -24,13 +20,8 @@ def _muygps_diagonal_variance(
     Kcross: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    batch_count, nn_count = Kcross.shape
-    return 1 - np.sum(
-        Kcross
-        * np.linalg.solve(K, Kcross.reshape(batch_count, nn_count, 1)).reshape(
-            batch_count, nn_count
-        ),
-        axis=1,
+    return np.squeeze(
+        1 - Kcross @ np.linalg.solve(K, Kcross.transpose(0, 2, 1))
     )
 
 

@@ -31,7 +31,13 @@ class PosteriorMean:
         batch_nn_targets: mm.ndarray,
         **kwargs,
     ) -> mm.ndarray:
-        return self._fn(K, Kcross, batch_nn_targets, **kwargs)
+        if len(Kcross.shape) == 2:
+            batch_count, nn_count = Kcross.shape
+            Kcross = Kcross.reshape(batch_count, 1, nn_count)
+        responses = self._fn(K, Kcross, batch_nn_targets, **kwargs)
+        if len(responses.shape) == 1:
+            responses = responses.reshape(responses.shape[0], 1)
+        return responses
 
     def get_opt_fn(self) -> Callable:
-        return self._fn
+        return self.__call__
