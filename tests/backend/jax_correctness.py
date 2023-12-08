@@ -896,8 +896,10 @@ class FastPredictTest(MuyGPSTestCase):
             l2_n(cls.K_fast_n),
         )
 
-        cls.heteroscedastic_K_fast_n = heteroscedastic_perturb_n(
-            l2_n(cls.K_fast_n), cls.noise_heteroscedastic_train_n
+        cls.heteroscedastic_K_fast_n = (
+            cls.muygps_heteroscedastic_n.noise.perturb(
+                l2_n(cls.K_fast_n),
+            )
         )
 
         cls.fast_regress_coeffs_n = cls.muygps_gen_n.fast_coefficients(
@@ -944,8 +946,10 @@ class FastPredictTest(MuyGPSTestCase):
             l2_j(cls.K_fast_j),
         )
 
-        cls.heteroscedastic_K_fast_j = heteroscedastic_perturb_j(
-            l2_j(cls.K_fast_j), cls.noise_heteroscedastic_train_j
+        cls.heteroscedastic_K_fast_j = (
+            cls.muygps_heteroscedastic_j.noise.perturb(
+                l2_j(cls.K_fast_j),
+            )
         )
 
         cls.fast_regress_coeffs_j = cls.muygps_gen_j.fast_coefficients(
@@ -1120,18 +1124,20 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             cls.train_responses_n,
         )
 
-        cls.homoscedastic_K_fast_n = homoscedastic_perturb_n(
-            l2_n(cls.K_fast_n), cls.noise
+        cls.homoscedastic_K_fast_n = cls.muygps_gen_n.noise.perturb(
+            l2_n(cls.K_fast_n),
         )
-        cls.fast_regress_coeffs_n = muygps_fast_posterior_mean_precompute_n(
+        cls.fast_regress_coeffs_n = cls.muygps_gen_n.fast_coefficients(
             cls.homoscedastic_K_fast_n, cls.train_nn_targets_fast_n
         )
 
-        cls.heteroscedastic_K_fast_n = heteroscedastic_perturb_n(
-            l2_n(cls.K_fast_n), cls.noise_heteroscedastic_train_n
+        cls.heteroscedastic_K_fast_n = (
+            cls.muygps_heteroscedastic_n.noise.perturb(
+                l2_n(cls.K_fast_n),
+            )
         )
         cls.fast_regress_coeffs_heteroscedastic_n = (
-            muygps_fast_posterior_mean_precompute_n(
+            cls.muygps_heteroscedastic_n.fast_coefficients(
                 cls.heteroscedastic_K_fast_n, cls.train_nn_targets_fast_n
             )
         )
@@ -1171,19 +1177,21 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             cls.train_responses_j,
         )
 
-        cls.homoscedastic_K_fast_j = homoscedastic_perturb_j(
-            l2_j(cls.K_fast_j), cls.noise
+        cls.homoscedastic_K_fast_j = cls.muygps_gen_j.noise.perturb(
+            l2_j(cls.K_fast_j),
         )
-        cls.fast_regress_coeffs_j = muygps_fast_posterior_mean_precompute_j(
+        cls.fast_regress_coeffs_j = cls.muygps_gen_j.fast_coefficients(
             cls.homoscedastic_K_fast_j, cls.train_nn_targets_fast_j
         )
 
-        cls.heteroscedastic_K_fast_j = heteroscedastic_perturb_j(
-            l2_n(cls.K_fast_j), cls.noise_heteroscedastic_train_j
+        cls.heteroscedastic_K_fast_j = (
+            cls.muygps_heteroscedastic_j.noise.perturb(
+                l2_n(cls.K_fast_j), cls.noise_heteroscedastic_train_j
+            )
         )
 
         cls.fast_regress_coeffs_heteroscedastic_j = (
-            muygps_fast_posterior_mean_precompute_j(
+            cls.muygps_heteroscedastic_j.fast_coefficients(
                 cls.heteroscedastic_K_fast_j, cls.train_nn_targets_fast_j
             )
         )
