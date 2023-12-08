@@ -1100,17 +1100,21 @@ class OptimTestCase(MuyGPSTestCase):
     @classmethod
     def setUpClass(cls):
         super(OptimTestCase, cls).setUpClass()
-        cls.predictions_t = muygps_posterior_mean_t(
+        cls.predictions_t = cls.muygps_05_t.posterior_mean(
             cls.homoscedastic_K_t, cls.Kcross_t, cls.batch_nn_targets_t
         )
-        cls.variances_t = muygps_diagonal_variance_t(
+        cls.variances_t = cls.muygps_05_t.posterior_variance(
             cls.homoscedastic_K_t, cls.Kcross_t
         )
-        cls.predictions_heteroscedastic_t = muygps_posterior_mean_t(
-            cls.heteroscedastic_K_t, cls.Kcross_t, cls.batch_nn_targets_t
+        cls.predictions_heteroscedastic_t = (
+            cls.muygps_heteroscedastic_t.posterior_mean(
+                cls.heteroscedastic_K_t, cls.Kcross_t, cls.batch_nn_targets_t
+            )
         )
-        cls.variances_heteroscedastic_t = muygps_diagonal_variance_t(
-            cls.heteroscedastic_K_t, cls.Kcross_t
+        cls.variances_heteroscedastic_t = (
+            cls.muygps_heteroscedastic_t.posterior_variance(
+                cls.heteroscedastic_K_t, cls.Kcross_t
+            )
         )
         cls.predictions_n = cls.predictions_t.detach().numpy()
         cls.variances_n = cls.variances_t.detach().numpy()
