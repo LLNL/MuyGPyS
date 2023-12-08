@@ -753,11 +753,11 @@ class FastPredictTest(MuyGPSTestCase):
         cls.heteroscedastic_K_fast_n = (
             cls.muygps_heteroscedastic_train_n.noise.perturb(l2_n(cls.K_fast_n))
         )
-        cls.fast_regress_coeffs_n = muygps_fast_posterior_mean_precompute_n(
+        cls.fast_regress_coeffs_n = cls.muygps_05_n.fast_coefficients(
             cls.homoscedastic_K_fast_n, cls.train_nn_targets_fast_n
         )
         cls.fast_regress_coeffs_heteroscedastic_n = (
-            muygps_fast_posterior_mean_precompute_n(
+            cls.muygps_heteroscedastic_train_n.fast_coefficients(
                 cls.heteroscedastic_K_fast_n, cls.train_nn_targets_fast_n
             )
         )
@@ -798,11 +798,11 @@ class FastPredictTest(MuyGPSTestCase):
         cls.heteroscedastic_K_fast_t = (
             cls.muygps_heteroscedastic_train_t.noise.perturb(l2_t(cls.K_fast_t))
         )
-        cls.fast_regress_coeffs_t = muygps_fast_posterior_mean_precompute_t(
+        cls.fast_regress_coeffs_t = cls.muygps_05_t.fast_coefficients(
             cls.homoscedastic_K_fast_t, cls.train_nn_targets_fast_t
         )
         cls.fast_regress_coeffs_heteroscedastic_t = (
-            muygps_fast_posterior_mean_precompute_t(
+            cls.muygps_heteroscedastic_train_t.fast_coefficients(
                 cls.heteroscedastic_K_fast_t, cls.train_nn_targets_fast_t
             )
         )
@@ -855,11 +855,11 @@ class FastPredictTest(MuyGPSTestCase):
     def test_fast_predict(self):
         self.assertTrue(
             _allclose(
-                muygps_fast_posterior_mean_n(
+                self.muygps_05_n.fast_posterior_mean(
                     self.Kcross_fast_n,
                     self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
                 ),
-                muygps_fast_posterior_mean_t(
+                self.muygps_05_t.fast_posterior_mean(
                     self.Kcross_fast_t,
                     self.fast_regress_coeffs_t[self.closest_neighbor_t, :],
                 ),
@@ -869,13 +869,13 @@ class FastPredictTest(MuyGPSTestCase):
     def test_fast_predict_heteroscedastic(self):
         self.assertTrue(
             _allclose(
-                muygps_fast_posterior_mean_n(
+                self.muygps_heteroscedastic_n.fast_posterior_mean(
                     self.Kcross_fast_n,
                     self.fast_regress_coeffs_heteroscedastic_n[
                         self.closest_neighbor_n, :
                     ],
                 ),
-                muygps_fast_posterior_mean_t(
+                self.muygps_heteroscedastic_t.fast_posterior_mean(
                     self.Kcross_fast_t,
                     self.fast_regress_coeffs_heteroscedastic_t[
                         self.closest_neighbor_t, :
