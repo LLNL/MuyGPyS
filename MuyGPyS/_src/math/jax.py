@@ -43,6 +43,7 @@ from jax.numpy import (
     repeat,
     reshape,
     sqrt,
+    squeeze,
     sum,
     tile,
     unique,

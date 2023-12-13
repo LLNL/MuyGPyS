@@ -34,7 +34,13 @@ class PosteriorVariance:
         Kcross: mm.ndarray,
         **kwargs,
     ) -> mm.ndarray:
-        return self._fn(Kcov, Kcross, **kwargs)
+        if len(Kcross.shape) == 2:
+            batch_count, nn_count = Kcross.shape
+            Kcross = Kcross.reshape(batch_count, 1, nn_count)
+        variances = self._fn(Kcov, Kcross, **kwargs)
+        if len(variances.shape) == 1:
+            variances = variances.reshape(variances.shape[0], 1)
+        return variances
 
     def get_opt_fn(self) -> Callable:
-        return self._fn
+        return self.__call__

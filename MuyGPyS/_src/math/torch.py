@@ -38,6 +38,7 @@ from torch import (
     rand,
     reshape,
     sqrt,
+    squeeze,
     tile,
     unique,
     unsqueeze,

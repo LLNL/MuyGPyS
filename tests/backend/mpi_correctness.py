@@ -42,10 +42,6 @@ from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_diagonal_variance as muygps_diagonal_variance_n,
     _muygps_posterior_mean as muygps_posterior_mean_n,
 )
-from MuyGPyS._src.gp.muygps.mpi import (
-    _muygps_diagonal_variance as muygps_diagonal_variance_m,
-    _muygps_posterior_mean as muygps_posterior_mean_m,
-)
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb as homoscedastic_perturb_n,
 )
@@ -1012,12 +1008,12 @@ class MuyGPSTestCase(KernelTestCase):
             cls.batch_homoscedastic_covariance_gen = homoscedastic_perturb_n(
                 cls.batch_covariance_gen, cls.muygps_gen.noise()
             )
-            cls.batch_prediction = muygps_posterior_mean_n(
+            cls.batch_prediction = cls.muygps_gen.posterior_mean(
                 cls.batch_homoscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
                 cls.batch_nn_targets,
             )
-            cls.batch_variance = muygps_diagonal_variance_n(
+            cls.batch_variance = cls.muygps_gen.posterior_variance(
                 cls.batch_homoscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
             )
@@ -1029,12 +1025,12 @@ class MuyGPSTestCase(KernelTestCase):
         cls.batch_homoscedastic_covariance_gen_chunk = homoscedastic_perturb_m(
             cls.batch_covariance_gen_chunk, cls.muygps_gen.noise()
         )
-        cls.batch_prediction_chunk = muygps_posterior_mean_m(
+        cls.batch_prediction_chunk = cls.muygps_gen.posterior_mean(
             cls.batch_homoscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
             cls.batch_nn_targets_chunk,
         )
-        cls.batch_variance_chunk = muygps_diagonal_variance_m(
+        cls.batch_variance_chunk = cls.muygps_gen.posterior_variance(
             cls.batch_homoscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
         )

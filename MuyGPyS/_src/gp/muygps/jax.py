@@ -15,11 +15,7 @@ def _muygps_posterior_mean(
     batch_nn_targets: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
-    batch_count, nn_count, response_count = batch_nn_targets.shape
-    responses = Kcross.reshape(batch_count, 1, nn_count) @ jnp.linalg.solve(
-        Kcov, batch_nn_targets
-    )
-    return responses.reshape(batch_count, response_count)
+    return jnp.squeeze(Kcross @ jnp.linalg.solve(Kcov, batch_nn_targets))
 
 
 @jit
@@ -28,13 +24,8 @@ def _muygps_diagonal_variance(
     Kcross: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
-    batch_count, nn_count = Kcross.shape
-    return 1 - jnp.sum(
-        Kcross
-        * jnp.linalg.solve(Kcov, Kcross.reshape(batch_count, nn_count, 1)).reshape(
-            batch_count, nn_count
-        ),
-        axis=1,
+    return jnp.squeeze(
+        1 - Kcross @ jnp.linalg.solve(Kcov, Kcross.transpose(0, 2, 1))
     )
 
 
