@@ -33,7 +33,7 @@ constructed the difference `numpy.nparrays` and the kernel `kernel_fn` as shown
 above.
 
 Example:
-    >>> K = kernel_fn(pairwise_diffs)
+    >>> Kin = kernel_fn(pairwise_diffs)
     >>> Kcross = kernel_fn(crosswise_diffs)
 """
 
@@ -58,7 +58,7 @@ class RBF(KernelFn):
     The kernel is defined by
 
     .. math::
-        K(x_i, x_j) = \\exp\\left(- d_\\ell(x_i, x_j)\\right).
+        Kin(x_i, x_j) = \\exp\\left(- d_\\ell(x_i, x_j)\\right).
 
     Typically, :math:`d(\\cdot,\\cdot)` is the squared Euclidean distance
     or second frequency moment of the difference of the operands.

@@ -148,12 +148,12 @@ class MuyGPs_layer(nn.Module):
         pairwise_diffs = pairwise_tensor(x, self.batch_nn_indices)
 
         Kcross = self.muygps_model.kernel(crosswise_diffs)
-        K = self.muygps_model.kernel(pairwise_diffs)
+        Kin = self.muygps_model.kernel(pairwise_diffs)
 
         predictions = self.muygps_model.posterior_mean(
-            K, Kcross, self.batch_nn_targets
+            Kin, Kcross, self.batch_nn_targets
         )
 
-        variances = self.muygps_model.posterior_variance(K, Kcross)
+        variances = self.muygps_model.posterior_variance(Kin, Kcross)
 
         return predictions, variances

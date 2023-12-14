@@ -7,21 +7,21 @@ import MuyGPyS._src.math.torch as torch
 
 
 def _muygps_posterior_mean(
-    K: torch.ndarray,
+    Kin: torch.ndarray,
     Kcross: torch.ndarray,
     batch_nn_targets: torch.ndarray,
     **kwargs,
 ) -> torch.ndarray:
-    return torch.squeeze(Kcross @ torch.linalg.solve(K, batch_nn_targets))
+    return torch.squeeze(Kcross @ torch.linalg.solve(Kin, batch_nn_targets))
 
 
 def _muygps_diagonal_variance(
-    K: torch.ndarray,
+    Kin: torch.ndarray,
     Kcross: torch.ndarray,
     **kwargs,
 ) -> torch.ndarray:
     return torch.squeeze(
-        1 - Kcross @ torch.linalg.solve(K, Kcross.transpose(1, -1))
+        1 - Kcross @ torch.linalg.solve(Kin, Kcross.transpose(1, -1))
     )
 
 
@@ -40,7 +40,7 @@ def _mmuygps_fast_posterior_mean(
 
 
 def _muygps_fast_posterior_mean_precompute(
-    K: torch.ndarray,
+    Kin: torch.ndarray,
     train_nn_targets_fast: torch.ndarray,
 ) -> torch.ndarray:
-    return torch.linalg.solve(K, train_nn_targets_fast)
+    return torch.linalg.solve(Kin, train_nn_targets_fast)

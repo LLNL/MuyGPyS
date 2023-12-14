@@ -35,7 +35,7 @@ constructed the difference `numpy.ndarrays` and the kernel `kern` as shown
 above.
 
 Example:
-    >>> K = kern(pairwise_diffs)
+    >>> Kin = kern(pairwise_diffs)
     >>> Kcross = kern(crosswise_diffs)
 """
 

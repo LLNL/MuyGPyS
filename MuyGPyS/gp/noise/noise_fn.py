@@ -23,7 +23,7 @@ class NoiseFn:
     def fixed(self) -> bool:
         raise NotImplementedError("base NoiseFn cannot be invoked!")
 
-    def perturb(self, K: mm.ndarray, **kwargs) -> mm.ndarray:
+    def perturb(self, Kin: mm.ndarray, **kwargs) -> mm.ndarray:
         raise NotImplementedError("base NoiseFn cannot be invoked!")
 
     def perturb_fn(self, fn: Callable) -> Callable:

@@ -73,13 +73,13 @@ class MuyGPS:
     `crosswise_diffs` matrix.
 
     Example:
-        >>> K = muygps.kernel(pairwise_diffs)
+        >>> Kin = muygps.kernel(pairwise_diffs)
         >>> Kcross = muygps.kernel(crosswise_diffs)
 
 
     Args:
         kernel:
-            The kernel to be used. Defines :math:`K_\\theta(\\cdot, \\cdot)` as
+            The kernel to be used. Defines :math:`Kin_\\theta(\\cdot, \\cdot)` as
             referenced in `MuyGPS` functions.
         noise:
             A noise model. Defines :math:`\\varepsilon` as referenced in
@@ -160,16 +160,16 @@ class MuyGPS:
         return names, mm.array(params), mm.array(bounds)
 
     def posterior_mean(
-        self, K: mm.ndarray, Kcross: mm.ndarray, batch_nn_targets: mm.ndarray
+        self, Kin: mm.ndarray, Kcross: mm.ndarray, batch_nn_targets: mm.ndarray
     ) -> mm.ndarray:
         """
         Returns the posterior mean from the provided covariance,
         cross-covariance, and target tensors.
 
         Computes parallelized local solves of systems of linear equations using
-        the last two dimensions of `K` along with `Kcross` and
+        the last two dimensions of `Kin` along with `Kcross` and
         `batch_nn_targets` to predict responses in terms of the posterior mean.
-        Assumes that kernel tensor `K` and cross-covariance
+        Assumes that kernel tensor `Kin` and cross-covariance
         matrix `Kcross` are already computed and given as arguments.
 
         Returns the predicted response in the form of a posterior
@@ -177,18 +177,18 @@ class MuyGPS:
         Equation (3.4) of [muyskens2021muygps]_. Given observation set
         :math:`X` with responses :math:`Y`, noise prior set
         :math:`\\varepsilon`, and kernel function
-        :math:`K_\\theta(\\cdot, \\cdot)`, computes the following for each
+        :math:`Kin_\\theta(\\cdot, \\cdot)`, computes the following for each
         prediction element :math:`\\mathbf{z}_i` with nearest neighbors index
         set :math:`N_i`:
 
         .. math::
             \\widehat{Y} (\\mathbf{z}_i \\mid X_{N_i}) =
-                \\sigma^2 K_\\theta (\\mathbf{z}_i, X_{N_i})
-                (K_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon_{N_i})^{-1}
+                \\sigma^2 Kin_\\theta (\\mathbf{z}_i, X_{N_i})
+                (Kin_\\theta (X_{N_i}, X_{N_i}) + \\varepsilon_{N_i})^{-1}
                 Y(X_{N_i}).
 
         Args:
-            K:
+            Kin:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
                 the `(nn_count, nn_count)`-shaped kernel matrices corresponding
                 to each of the batch elements.
@@ -205,11 +205,11 @@ class MuyGPS:
             A matrix of shape `(batch_count, response_count)` whose rows are
             the predicted response for each of the given indices.
         """
-        return self._mean_fn(K, Kcross, batch_nn_targets)
+        return self._mean_fn(Kin, Kcross, batch_nn_targets)
 
     def posterior_variance(
         self,
-        K: mm.ndarray,
+        Kin: mm.ndarray,
         Kcross: mm.ndarray,
     ) -> mm.ndarray:
         """
@@ -220,7 +220,7 @@ class MuyGPS:
         to the diagonal elements of a covariance matrix. Given observation set
         :math:`X` with responses :math:`Y`, noise prior set
         :math:`\\varepsilon`, and kernel function
-        :math:`K_\\theta(\\cdot, \\cdot)`, computes the following for each
+        :math:`Kin_\\theta(\\cdot, \\cdot)`, computes the following for each
         prediction element :math:`\\mathbf{z}_i` with nearest neighbors index
         set :math:`N_i`:
 
@@ -229,16 +229,16 @@ class MuyGPS:
                 \\widehat{Y} (\\mathbf{z}_i \\mid X_{N_i})
             \\right) =
                 \\sigma^2 \\left (
-                    K_\\theta (\\mathbf{z}_i, \\mathbf{z}_i) -
-                    K_\\theta (\\mathbf{z}_i, X_{N_i})
+                    Kin_\\theta (\\mathbf{z}_i, \\mathbf{z}_i) -
+                    Kin_\\theta (\\mathbf{z}_i, X_{N_i})
                     \\left (
-                        K_\\theta (X_{N_i}, X_{N_i}
+                        Kin_\\theta (X_{N_i}, X_{N_i}
                     \\right ) + \\varepsilon_{N_i})^{-1}
-                    K_\\theta (X_{N_i}, \\mathbf{z}_i)
+                    Kin_\\theta (X_{N_i}, \\mathbf{z}_i)
                 \\right ).
 
         Args:
-            K:
+            Kin:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
                 the `(nn_count, nn_count)`-shaped kernel matrices corresponding
                 to each of the batch elements.
@@ -251,11 +251,11 @@ class MuyGPS:
             A vector of shape `(batch_count, response_count)` consisting of the
             diagonal elements of the posterior variance.
         """
-        return self._var_fn(K, Kcross)
+        return self._var_fn(Kin, Kcross)
 
     def fast_coefficients(
         self,
-        K: mm.ndarray,
+        Kin: mm.ndarray,
         train_nn_targets_fast: mm.ndarray,
     ) -> mm.ndarray:
         """
@@ -264,18 +264,18 @@ class MuyGPS:
 
         Given observation set :math:`X` with responses :math:`Y`, noise prior
         set :math:`\\varepsilon`, and kernel function
-        :math:`K_\\theta(\\cdot, \\cdot)`, computes the following for
+        :math:`Kin_\\theta(\\cdot, \\cdot)`, computes the following for
         each observation element :math:`\\mathbf{x}_i` with nearest neighbors
         index set :math:`N^*_i`, containing `i` and the indices of the
         `nn_count - 1` nearest neighbors of :math:`\\mathbf{x}_i`:
 
         .. math::
             C_i =
-                \\left ( K_\\theta (X_{N_i}, X_{N_i} \\right )
+                \\left ( Kin_\\theta (X_{N_i}, X_{N_i} \\right )
                 + \\varepsilon_{N_i})^{-1} Y(X_{N_i}).
 
         Args:
-            K:
+            Kin:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
                 the `(nn_count, nn_count)`-shaped kernel matrices corresponding
                 to each of the batch elements.
@@ -290,7 +290,7 @@ class MuyGPS:
 
         """
 
-        return self._fast_precompute_fn(K, train_nn_targets_fast)
+        return self._fast_precompute_fn(Kin, train_nn_targets_fast)
 
     def fast_posterior_mean(
         self,
@@ -310,7 +310,7 @@ class MuyGPS:
         created by :func:`~MuyGPyS.gp.muygps.MuyGPS.fast_coefficients` and
         Equation (8) of [dunton2022fast]_, observation set
         :math:`X`, noise prior set :math:`\\varepsilon`, and kernel function
-        :math:`K_\\theta(\\cdot, \\cdot)`, computes the following for each test
+        :math:`Kin_\\theta(\\cdot, \\cdot)`, computes the following for each test
         point :math:`\\mathbf{z}` and index set :math:`N^*_i` containing the
         union of the index :math:`i` of the nearest neighbor
         :math:`\\mathbf{x}_i` of :math:`\\mathbf{z}` and the `nn_count - 1`
@@ -318,7 +318,7 @@ class MuyGPS:
 
         .. math::
             \\widehat{Y} \\left ( \\mathbf{z} \\mid X \\right ) =
-                \\sigma^2 K_\\theta(\\mathbf{z}, X_{N^*_i}) C_i.
+                \\sigma^2 Kin_\\theta(\\mathbf{z}, X_{N^*_i}) C_i.
 
         Args:
             Kcross:
@@ -392,9 +392,9 @@ class MuyGPS:
             A reference to this model with a freshly-optimized `scale`
             parameter.
         """
-        K = self.kernel(pairwise_diffs)
+        Kin = self.kernel(pairwise_diffs)
         opt_fn = self.scale.get_opt_fn(self)
-        self.scale._set(opt_fn(K, nn_targets))
+        self.scale._set(opt_fn(Kin, nn_targets))
         self._make()
         return self
 
