@@ -619,16 +619,16 @@ class MuyGPSTestCase(KernelTestCase):
     @classmethod
     def setUpClass(cls):
         super(MuyGPSTestCase, cls).setUpClass()
-        cls.Kcov_n = cls.muygps_05_n.kernel(cls.pairwise_diffs_n)
-        cls.Kcov_t = cls.muygps_05_t.kernel(cls.pairwise_diffs_t)
-        cls.homoscedastic_Kcov_n = cls.muygps_05_n.noise.perturb(cls.Kcov_n)
+        cls.Kin_n = cls.muygps_05_n.kernel(cls.pairwise_diffs_n)
+        cls.Kin_t = cls.muygps_05_t.kernel(cls.pairwise_diffs_t)
+        cls.homoscedastic_Kin_n = cls.muygps_05_n.noise.perturb(cls.Kin_n)
 
-        cls.heteroscedastic_Kcov_n = cls.muygps_heteroscedastic_n.noise.perturb(
-            cls.Kcov_n,
+        cls.heteroscedastic_Kin_n = cls.muygps_heteroscedastic_n.noise.perturb(
+            cls.Kin_n,
         )
-        cls.homoscedastic_Kcov_t = cls.muygps_05_t.noise.perturb(cls.Kcov_t)
-        cls.heteroscedastic_Kcov_t = cls.muygps_heteroscedastic_t.noise.perturb(
-            cls.Kcov_t
+        cls.homoscedastic_Kin_t = cls.muygps_05_t.noise.perturb(cls.Kin_t)
+        cls.heteroscedastic_Kin_t = cls.muygps_heteroscedastic_t.noise.perturb(
+            cls.Kin_t
         )
 
         cls.Kcross_n = cls.muygps_05_n.kernel(cls.crosswise_diffs_n)
@@ -642,13 +642,13 @@ class MuyGPSTest(MuyGPSTestCase):
 
     def test_homoscedastic_noise(self):
         self.assertTrue(
-            np.allclose(self.homoscedastic_Kcov_n, self.homoscedastic_Kcov_t)
+            np.allclose(self.homoscedastic_Kin_n, self.homoscedastic_Kin_t)
         )
 
     def test_heteroscedastic_noise(self):
         self.assertTrue(
             np.allclose(
-                self.heteroscedastic_Kcov_n, self.heteroscedastic_Kcov_t
+                self.heteroscedastic_Kin_n, self.heteroscedastic_Kin_t
             )
         )
 
@@ -656,12 +656,12 @@ class MuyGPSTest(MuyGPSTestCase):
         self.assertTrue(
             _allclose(
                 self.muygps_05_n.posterior_mean(
-                    self.homoscedastic_Kcov_n,
+                    self.homoscedastic_Kin_n,
                     self.Kcross_n,
                     self.batch_nn_targets_n,
                 ),
                 self.muygps_05_t.posterior_mean(
-                    self.homoscedastic_Kcov_t,
+                    self.homoscedastic_Kin_t,
                     self.Kcross_t,
                     self.batch_nn_targets_t,
                 ),
@@ -672,12 +672,12 @@ class MuyGPSTest(MuyGPSTestCase):
         self.assertTrue(
             _allclose(
                 self.muygps_heteroscedastic_n.posterior_mean(
-                    self.heteroscedastic_Kcov_n,
+                    self.heteroscedastic_Kin_n,
                     self.Kcross_n,
                     self.batch_nn_targets_n,
                 ),
                 self.muygps_heteroscedastic_t.posterior_mean(
-                    self.heteroscedastic_Kcov_t,
+                    self.heteroscedastic_Kin_t,
                     self.Kcross_t,
                     self.batch_nn_targets_t,
                 ),
@@ -688,10 +688,10 @@ class MuyGPSTest(MuyGPSTestCase):
         self.assertTrue(
             np.allclose(
                 self.muygps_05_n.posterior_variance(
-                    self.homoscedastic_Kcov_n, self.Kcross_n
+                    self.homoscedastic_Kin_n, self.Kcross_n
                 ),
                 self.muygps_05_t.posterior_variance(
-                    self.homoscedastic_Kcov_t, self.Kcross_t
+                    self.homoscedastic_Kin_t, self.Kcross_t
                 ),
             )
         )
@@ -700,10 +700,10 @@ class MuyGPSTest(MuyGPSTestCase):
         self.assertTrue(
             np.allclose(
                 self.muygps_heteroscedastic_n.posterior_variance(
-                    self.heteroscedastic_Kcov_n, self.Kcross_n
+                    self.heteroscedastic_Kin_n, self.Kcross_n
                 ),
                 self.muygps_heteroscedastic_t.posterior_variance(
-                    self.heteroscedastic_Kcov_t, self.Kcross_t
+                    self.heteroscedastic_Kin_t, self.Kcross_t
                 ),
             )
         )
@@ -712,10 +712,10 @@ class MuyGPSTest(MuyGPSTestCase):
         self.assertTrue(
             np.allclose(
                 self.muygps_rbf_n.scale.get_opt_fn(self.muygps_rbf_n)(
-                    self.homoscedastic_Kcov_n, self.batch_nn_targets_n
+                    self.homoscedastic_Kin_n, self.batch_nn_targets_n
                 ),
                 self.muygps_rbf_t.scale.get_opt_fn(self.muygps_rbf_t)(
-                    self.homoscedastic_Kcov_t, self.batch_nn_targets_t
+                    self.homoscedastic_Kin_t, self.batch_nn_targets_t
                 ),
             )
         )
@@ -725,10 +725,10 @@ class MuyGPSTest(MuyGPSTestCase):
             np.allclose(
                 self.muygps_heteroscedastic_n.scale.get_opt_fn(
                     self.muygps_heteroscedastic_n
-                )(self.heteroscedastic_Kcov_n, self.batch_nn_targets_n),
+                )(self.heteroscedastic_Kin_n, self.batch_nn_targets_n),
                 self.muygps_heteroscedastic_t.scale.get_opt_fn(
                     self.muygps_heteroscedastic_t
-                )(self.heteroscedastic_Kcov_t, self.batch_nn_targets_t),
+                )(self.heteroscedastic_Kin_t, self.batch_nn_targets_t),
             )
         )
 
@@ -741,7 +741,7 @@ class FastPredictTest(MuyGPSTestCase):
             np.arange(0, cls.train_count)
         )
         (
-            cls.Kcov_fast_n,
+            cls.Kin_fast_n,
             cls.train_nn_targets_fast_n,
         ) = make_fast_predict_tensors_n(
             cls.nn_indices_all_n,
@@ -749,20 +749,20 @@ class FastPredictTest(MuyGPSTestCase):
             cls.train_responses_n,
         )
 
-        cls.homoscedastic_Kcov_fast_n = cls.muygps_05_n.noise.perturb(
-            l2_n(cls.Kcov_fast_n)
+        cls.homoscedastic_Kin_fast_n = cls.muygps_05_n.noise.perturb(
+            l2_n(cls.Kin_fast_n)
         )
-        cls.heteroscedastic_Kcov_fast_n = (
+        cls.heteroscedastic_Kin_fast_n = (
             cls.muygps_heteroscedastic_train_n.noise.perturb(
-                l2_n(cls.Kcov_fast_n)
+                l2_n(cls.Kin_fast_n)
             )
         )
         cls.fast_regress_coeffs_n = cls.muygps_05_n.fast_coefficients(
-            cls.homoscedastic_Kcov_fast_n, cls.train_nn_targets_fast_n
+            cls.homoscedastic_Kin_fast_n, cls.train_nn_targets_fast_n
         )
         cls.fast_regress_coeffs_heteroscedastic_n = (
             cls.muygps_heteroscedastic_train_n.fast_coefficients(
-                cls.heteroscedastic_Kcov_fast_n, cls.train_nn_targets_fast_n
+                cls.heteroscedastic_Kin_fast_n, cls.train_nn_targets_fast_n
             )
         )
 
@@ -788,7 +788,7 @@ class FastPredictTest(MuyGPSTestCase):
         )
         cls.nn_indices_all_t = torch.from_numpy(cls.nn_indices_all_t)
         (
-            cls.Kcov_fast_t,
+            cls.Kin_fast_t,
             cls.train_nn_targets_fast_t,
         ) = make_fast_predict_tensors_t(
             cls.nn_indices_all_t,
@@ -796,20 +796,20 @@ class FastPredictTest(MuyGPSTestCase):
             cls.train_responses_t,
         )
 
-        cls.homoscedastic_Kcov_fast_t = cls.muygps_05_t.noise.perturb(
-            l2_t(cls.Kcov_fast_t)
+        cls.homoscedastic_Kin_fast_t = cls.muygps_05_t.noise.perturb(
+            l2_t(cls.Kin_fast_t)
         )
-        cls.heteroscedastic_Kcov_fast_t = (
+        cls.heteroscedastic_Kin_fast_t = (
             cls.muygps_heteroscedastic_train_t.noise.perturb(
-                l2_t(cls.Kcov_fast_t)
+                l2_t(cls.Kin_fast_t)
             )
         )
         cls.fast_regress_coeffs_t = cls.muygps_05_t.fast_coefficients(
-            cls.homoscedastic_Kcov_fast_t, cls.train_nn_targets_fast_t
+            cls.homoscedastic_Kin_fast_t, cls.train_nn_targets_fast_t
         )
         cls.fast_regress_coeffs_heteroscedastic_t = (
             cls.muygps_heteroscedastic_train_t.fast_coefficients(
-                cls.heteroscedastic_Kcov_fast_t, cls.train_nn_targets_fast_t
+                cls.heteroscedastic_Kin_fast_t, cls.train_nn_targets_fast_t
             )
         )
 
@@ -837,7 +837,7 @@ class FastPredictTest(MuyGPSTestCase):
         )
 
     def test_make_fast_predict_tensors(self):
-        self.assertTrue(np.allclose(self.Kcov_fast_n, self.Kcov_fast_t))
+        self.assertTrue(np.allclose(self.Kin_fast_n, self.Kin_fast_t))
         self.assertTrue(
             np.allclose(
                 self.train_nn_targets_fast_n, self.train_nn_targets_fast_t
@@ -847,15 +847,15 @@ class FastPredictTest(MuyGPSTestCase):
     def test_homoscedastic_kernel_tensors(self):
         self.assertTrue(
             np.allclose(
-                self.homoscedastic_Kcov_fast_n, self.homoscedastic_Kcov_fast_t
+                self.homoscedastic_Kin_fast_n, self.homoscedastic_Kin_fast_t
             )
         )
 
     def test_heteroscedastic_kernel_tensors(self):
         self.assertTrue(
             np.allclose(
-                self.heteroscedastic_Kcov_fast_n,
-                self.heteroscedastic_Kcov_fast_t,
+                self.heteroscedastic_Kin_fast_n,
+                self.heteroscedastic_Kin_fast_t,
             )
         )
 
@@ -985,7 +985,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             np.arange(0, cls.train_count)
         )
         (
-            cls.Kcov_fast_n,
+            cls.Kin_fast_n,
             cls.train_nn_targets_fast_n,
         ) = make_fast_predict_tensors_n(
             cls.nn_indices_all_n,
@@ -993,17 +993,17 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             cls.train_responses_n,
         )
 
-        cls.homoscedastic_Kcov_fast_n = cls.muygps_05_n.noise.perturb(
-            l2_n(cls.Kcov_fast_n)
+        cls.homoscedastic_Kin_fast_n = cls.muygps_05_n.noise.perturb(
+            l2_n(cls.Kin_fast_n)
         )
-        cls.heteroscedastic_Kcov_fast_n = (
+        cls.heteroscedastic_Kin_fast_n = (
             cls.muygps_heteroscedastic_train_n.noise.perturb(
-                l2_n(cls.Kcov_fast_n)
+                l2_n(cls.Kin_fast_n)
             )
         )
 
         cls.fast_regress_coeffs_n = cls.muygps_05_n.fast_coefficients(
-            cls.homoscedastic_Kcov_fast_n, cls.train_nn_targets_fast_n
+            cls.homoscedastic_Kin_fast_n, cls.train_nn_targets_fast_n
         )
 
         cls.test_neighbors_n, _ = cls.nbrs_lookup.get_nns(cls.test_features_n)
@@ -1033,7 +1033,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.nn_indices_all_t = torch.from_numpy(cls.nn_indices_all_n)
 
         (
-            cls.Kcov_fast_t,
+            cls.Kin_fast_t,
             cls.train_nn_targets_fast_t,
         ) = make_fast_predict_tensors_t(
             cls.nn_indices_all_t,
@@ -1041,23 +1041,23 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             cls.train_responses_t,
         )
 
-        cls.homoscedastic_Kcov_fast_t = cls.muygps_05_t.noise.perturb(
-            l2_t(cls.Kcov_fast_t),
+        cls.homoscedastic_Kin_fast_t = cls.muygps_05_t.noise.perturb(
+            l2_t(cls.Kin_fast_t),
         )
 
-        cls.heteroscedastic_Kcov_fast_t = (
+        cls.heteroscedastic_Kin_fast_t = (
             cls.muygps_heteroscedastic_train_t.noise.perturb(
-                l2_t(cls.Kcov_fast_t)
+                l2_t(cls.Kin_fast_t)
             )
         )
 
         cls.fast_regress_coeffs_t = cls.muygps_05_t.fast_coefficients(
-            cls.homoscedastic_Kcov_fast_t, cls.train_nn_targets_fast_t
+            cls.homoscedastic_Kin_fast_t, cls.train_nn_targets_fast_t
         )
 
         cls.fast_regress_coeffs_heteroscedastic_t = (
             cls.muygps_heteroscedastic_train_t.fast_coefficients(
-                cls.heteroscedastic_Kcov_fast_t, cls.train_nn_targets_fast_t
+                cls.heteroscedastic_Kin_fast_t, cls.train_nn_targets_fast_t
             )
         )
 
@@ -1077,7 +1077,7 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.Kcross_fast_t = torch.from_numpy(Kcross_fast_n)
 
     def test_make_fast_multivariate_predict_tensors(self):
-        self.assertTrue(np.allclose(self.Kcov_fast_n, self.Kcov_fast_t))
+        self.assertTrue(np.allclose(self.Kin_fast_n, self.Kin_fast_t))
         self.assertTrue(
             np.allclose(
                 self.train_nn_targets_fast_n, self.train_nn_targets_fast_t
@@ -1112,19 +1112,19 @@ class OptimTestCase(MuyGPSTestCase):
     def setUpClass(cls):
         super(OptimTestCase, cls).setUpClass()
         cls.predictions_t = cls.muygps_05_t.posterior_mean(
-            cls.homoscedastic_Kcov_t, cls.Kcross_t, cls.batch_nn_targets_t
+            cls.homoscedastic_Kin_t, cls.Kcross_t, cls.batch_nn_targets_t
         )
         cls.variances_t = cls.muygps_05_t.posterior_variance(
-            cls.homoscedastic_Kcov_t, cls.Kcross_t
+            cls.homoscedastic_Kin_t, cls.Kcross_t
         )
         cls.predictions_heteroscedastic_t = (
             cls.muygps_heteroscedastic_t.posterior_mean(
-                cls.heteroscedastic_Kcov_t, cls.Kcross_t, cls.batch_nn_targets_t
+                cls.heteroscedastic_Kin_t, cls.Kcross_t, cls.batch_nn_targets_t
             )
         )
         cls.variances_heteroscedastic_t = (
             cls.muygps_heteroscedastic_t.posterior_variance(
-                cls.heteroscedastic_Kcov_t, cls.Kcross_t
+                cls.heteroscedastic_Kin_t, cls.Kcross_t
             )
         )
         cls.predictions_n = cls.predictions_t.detach().numpy()
@@ -1312,13 +1312,13 @@ class ObjectiveTest(OptimTestCase):
         self.assertTrue(
             _allclose(
                 mean_fn_n(
-                    self.Kcov_n,
+                    self.Kin_n,
                     self.Kcross_n,
                     self.batch_nn_targets_n,
                     **self.x0_map_n,
                 ),
                 mean_fn_t(
-                    self.Kcov_t,
+                    self.Kin_t,
                     self.Kcross_t,
                     self.batch_nn_targets_t,
                     **self.x0_map_t,
@@ -1332,13 +1332,13 @@ class ObjectiveTest(OptimTestCase):
         self.assertTrue(
             _allclose(
                 mean_fn_n(
-                    self.Kcov_n,
+                    self.Kin_n,
                     self.Kcross_n,
                     self.batch_nn_targets_n,
                     **self.x0_map_n,
                 ),
                 mean_fn_t(
-                    self.Kcov_t,
+                    self.Kin_t,
                     self.Kcross_t,
                     self.batch_nn_targets_t,
                     **self.x0_map_t,
@@ -1352,12 +1352,12 @@ class ObjectiveTest(OptimTestCase):
         self.assertTrue(
             np.allclose(
                 var_fn_n(
-                    self.Kcov_n,
+                    self.Kin_n,
                     self.Kcross_n,
                     **self.x0_map_n,
                 ),
                 var_fn_t(
-                    self.Kcov_t,
+                    self.Kin_t,
                     self.Kcross_t,
                     **self.x0_map_t,
                 ),
@@ -1370,12 +1370,12 @@ class ObjectiveTest(OptimTestCase):
         self.assertTrue(
             np.allclose(
                 var_fn_n(
-                    self.Kcov_n,
+                    self.Kin_n,
                     self.Kcross_n,
                     **self.x0_map_n,
                 ),
                 var_fn_t(
-                    self.Kcov_t,
+                    self.Kin_t,
                     self.Kcross_t,
                     **self.x0_map_t,
                 ),
@@ -1388,12 +1388,12 @@ class ObjectiveTest(OptimTestCase):
         self.assertTrue(
             np.allclose(
                 ss_fn_n(
-                    self.Kcov_n,
+                    self.Kin_n,
                     self.batch_nn_targets_n,
                     **self.x0_map_n,
                 ),
                 ss_fn_t(
-                    self.Kcov_t,
+                    self.Kin_t,
                     self.batch_nn_targets_t,
                     **self.x0_map_t,
                 ),
@@ -1406,12 +1406,12 @@ class ObjectiveTest(OptimTestCase):
         self.assertTrue(
             np.allclose(
                 ss_fn_n(
-                    self.Kcov_n,
+                    self.Kin_n,
                     self.batch_nn_targets_n,
                     **self.x0_map_n,
                 ),
                 ss_fn_t(
-                    self.Kcov_t,
+                    self.Kin_t,
                     self.batch_nn_targets_t,
                     **self.x0_map_t,
                 ),

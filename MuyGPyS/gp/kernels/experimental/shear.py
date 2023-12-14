@@ -32,7 +32,7 @@ constructed the difference `numpy.nparrays` and the kernel `kernel_fn` as shown
 above.
 
 Example:
-    >>> Kcov = shear_fn(pairwise_diffs)
+    >>> Kin = shear_fn(pairwise_diffs)
     >>> Kcross = shear_fn(crosswise_diffs)
 
 Note that the :class:`~MuyGPyS.gp.kernels.experimental.shear.ShearKernel`
@@ -63,7 +63,7 @@ class ShearKernel(KernelFn):
     The kernel is defined by
 
     .. math::
-        Kcov(x_i, x_j) = \\dots
+        Kin(x_i, x_j) = \\dots
 
     Args:
         deformation:

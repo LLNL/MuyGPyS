@@ -7,21 +7,21 @@ import MuyGPyS._src.math.numpy as np
 
 
 def _muygps_posterior_mean(
-    Kcov: np.ndarray,
+    Kin: np.ndarray,
     Kcross: np.ndarray,
     batch_nn_targets: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    return np.squeeze(Kcross @ np.linalg.solve(Kcov, batch_nn_targets))
+    return np.squeeze(Kcross @ np.linalg.solve(Kin, batch_nn_targets))
 
 
 def _muygps_diagonal_variance(
-    Kcov: np.ndarray,
+    Kin: np.ndarray,
     Kcross: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
     return np.squeeze(
-        1 - Kcross @ np.linalg.solve(Kcov, Kcross.transpose(0, 2, 1))
+        1 - Kcross @ np.linalg.solve(Kin, Kcross.transpose(0, 2, 1))
     )
 
 
@@ -42,8 +42,8 @@ def _mmuygps_fast_posterior_mean(
 
 
 def _muygps_fast_posterior_mean_precompute(
-    Kcov: np.ndarray,
+    Kin: np.ndarray,
     train_nn_targets_fast: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    return np.linalg.solve(Kcov, train_nn_targets_fast)
+    return np.linalg.solve(Kin, train_nn_targets_fast)

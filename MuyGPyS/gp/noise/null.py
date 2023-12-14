@@ -29,14 +29,14 @@ class NullNoise(ScalarParam, NoiseFn):
     def __call__(self, *args, **kwargs):
         return 0.0
 
-    def perturb(self, Kcov: mm.ndarray, **kwargs) -> mm.ndarray:
+    def perturb(self, Kin: mm.ndarray, **kwargs) -> mm.ndarray:
         """
         Null noise perturbation.
 
         Simply returns the input tensor unchanged.
 
         Args:
-            Kcov:
+            Kin:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
                 the `(nn_count, nn_count)`-shaped kernel matrices corresponding
                 to each of the batch elements.
@@ -44,7 +44,7 @@ class NullNoise(ScalarParam, NoiseFn):
         Returns:
             The same tensor.
         """
-        return Kcov
+        return Kin
 
     def perturb_fn(self, fn: Callable) -> Callable:
         return fn

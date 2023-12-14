@@ -10,22 +10,22 @@ import MuyGPyS._src.math.jax as jnp
 
 @jit
 def _muygps_posterior_mean(
-    Kcov: jnp.ndarray,
+    Kin: jnp.ndarray,
     Kcross: jnp.ndarray,
     batch_nn_targets: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
-    return jnp.squeeze(Kcross @ jnp.linalg.solve(Kcov, batch_nn_targets))
+    return jnp.squeeze(Kcross @ jnp.linalg.solve(Kin, batch_nn_targets))
 
 
 @jit
 def _muygps_diagonal_variance(
-    Kcov: jnp.ndarray,
+    Kin: jnp.ndarray,
     Kcross: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
     return jnp.squeeze(
-        1 - Kcross @ jnp.linalg.solve(Kcov, Kcross.transpose(0, 2, 1))
+        1 - Kcross @ jnp.linalg.solve(Kin, Kcross.transpose(0, 2, 1))
     )
 
 
@@ -47,7 +47,7 @@ def _mmuygps_fast_posterior_mean(
 
 @jit
 def _muygps_fast_posterior_mean_precompute(
-    Kcov: jnp.ndarray,
+    Kin: jnp.ndarray,
     train_nn_targets_fast: jnp.ndarray,
 ) -> jnp.ndarray:
-    return jnp.linalg.solve(Kcov, train_nn_targets_fast)
+    return jnp.linalg.solve(Kin, train_nn_targets_fast)

@@ -28,7 +28,7 @@ def _mmuygps_fast_posterior_mean(
 
 
 def _muygps_fast_posterior_mean_precompute(
-    Kcov: np.ndarray,
+    Kin: np.ndarray,
     train_nn_targets_fast: np.ndarray,
     **kwargs,
 ) -> np.ndarray:

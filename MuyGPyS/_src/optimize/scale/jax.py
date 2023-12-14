@@ -10,21 +10,21 @@ import MuyGPyS._src.math.jax as jnp
 
 @jit
 def _analytic_scale_optim_unnormalized(
-    Kcov: jnp.ndarray,
+    Kin: jnp.ndarray,
     nn_targets: jnp.ndarray,
 ) -> jnp.ndarray:
     return jnp.sum(
-        jnp.einsum("ijk,ijk->ik", nn_targets, jnp.linalg.solve(Kcov, nn_targets)),
+        jnp.einsum("ijk,ijk->ik", nn_targets, jnp.linalg.solve(Kin, nn_targets)),
         axis=0,
     )
 
 
 @jit
 def _analytic_scale_optim(
-    Kcov: jnp.ndarray,
+    Kin: jnp.ndarray,
     nn_targets: jnp.ndarray,
 ) -> jnp.ndarray:
     batch_count, nn_count, _ = nn_targets.shape
-    return _analytic_scale_optim_unnormalized(Kcov, nn_targets) / (
+    return _analytic_scale_optim_unnormalized(Kin, nn_targets) / (
         batch_count * nn_count
     )

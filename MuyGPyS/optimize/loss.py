@@ -35,7 +35,7 @@ def make_raw_predict_and_loss_fn(
     """
     Make a predict_and_loss function that depends only on the posterior mean.
 
-    Assembles a new function with signature `(Kcov, Kcross, *args, **kwargs)` that
+    Assembles a new function with signature `(Kin, Kcross, *args, **kwargs)` that
     computes the posterior mean and uses the passed `loss_fn` to score it
     against the batch targets.
 
@@ -46,18 +46,18 @@ def make_raw_predict_and_loss_fn(
             `targets` are matrices of shape `(batch_count, response_count)`.
         mean_fn:
             A MuyGPS posterior mean function Callable with signature
-            `(Kcov, Kcross, batch_nn_targets)`, which are tensors of shape
+            `(Kin, Kcross, batch_nn_targets)`, which are tensors of shape
             `(batch_count, nn_count, nn_count)`, `(batch_count, nn_count)`, and
             `(batch_count, nn_count, response_count)`, respectively.
         var_fn:
             A MuyGPS posterior variance function Callable with signature
-            `(Kcov, Kcross)`, which are tensors of shape
+            `(Kin, Kcross)`, which are tensors of shape
             `(batch_count, nn_count, nn_count)` and `(batch_count, nn_count)`,
             respectively. Unused by this function, but still required by the
             signature.
         scale_fn:
             A MuyGPS `scale` optimization function Callable with signature
-            `(Kcov, batch_nn_targets)`, which are tensors of shape
+            `(Kin, batch_nn_targets)`, which are tensors of shape
             `(batch_count, nn_count, nn_count)` and
             `(batch_count, nn_count, response_count)`, respectively. Unused by
             this function, but still required by the signature.
@@ -72,14 +72,14 @@ def make_raw_predict_and_loss_fn(
             Additionall keyword arguments used by the loss function.
 
     Returns:
-        A Callable with signature `(Kcov, Kcross, *args, **kwargs) -> float` that
+        A Callable with signature `(Kin, Kcross, *args, **kwargs) -> float` that
         computes the posterior mean and applies the loss function to it and the
         `batch_targets`.
     """
 
-    def predict_and_loss_fn(Kcov, Kcross, *args, **kwargs):
+    def predict_and_loss_fn(Kin, Kcross, *args, **kwargs):
         predictions = mean_fn(
-            Kcov,
+            Kin,
             Kcross,
             batch_nn_targets,
             **kwargs,
@@ -103,7 +103,7 @@ def make_var_predict_and_loss_fn(
     Make a predict_and_loss function that depends on the posterior mean and
     variance.
 
-    Assembles a new function with signature `(Kcov, Kcross, *args, **kwargs)` that
+    Assembles a new function with signature `(Kin, Kcross, *args, **kwargs)` that
     computes the posterior mean and variance and uses the passed `loss_fn` to
     score them against the batch targets.
 
@@ -114,17 +114,17 @@ def make_var_predict_and_loss_fn(
             `targets` are matrices of shape `(batch_count, response_count)`.
         mean_fn:
             A MuyGPS posterior mean function Callable with signature
-            `(Kcov, Kcross, batch_nn_targets)`, which are tensors of shape
+            `(Kin, Kcross, batch_nn_targets)`, which are tensors of shape
             `(batch_count, nn_count, nn_count)`, `(batch_count, nn_count)`, and
             `(batch_count, nn_count, response_count)`, respectively.
         var_fn:
             A MuyGPS posterior variance function Callable with signature
-            `(Kcov, Kcross)`, which are tensors of shape
+            `(Kin, Kcross)`, which are tensors of shape
             `(batch_count, nn_count, nn_count)` and `(batch_count, nn_count)`,
             respectively.
         scale_fn:
             A MuyGPS `scale` optimization function Callable with signature
-            `(Kcov, batch_nn_targets)`, which are tensors of shape
+            `(Kin, batch_nn_targets)`, which are tensors of shape
             `(batch_count, nn_count, nn_count)` and
             `(batch_count, nn_count, response_count)`, respectively.
         batch_nn_targets:
@@ -138,21 +138,21 @@ def make_var_predict_and_loss_fn(
             Additionall keyword arguments used by the loss function.
 
     Returns:
-        A Callable with signature `(Kcov, Kcross, *args, **kwargs) -> float` that
+        A Callable with signature `(Kin, Kcross, *args, **kwargs) -> float` that
         computes the posterior mean and applies the loss function to it and the
         `batch_targets`.
     """
 
-    def predict_and_loss_fn(Kcov, Kcross, *args, **kwargs):
+    def predict_and_loss_fn(Kin, Kcross, *args, **kwargs):
         predictions = mean_fn(
-            Kcov,
+            Kin,
             Kcross,
             batch_nn_targets,
             **kwargs,
         )
-        scale = scale_fn(Kcov, batch_nn_targets, **kwargs)
+        scale = scale_fn(Kin, batch_nn_targets, **kwargs)
 
-        variances = var_fn(Kcov, Kcross, **kwargs)
+        variances = var_fn(Kin, Kcross, **kwargs)
 
         return -loss_fn(
             predictions, batch_targets, variances, scale, **loss_kwargs

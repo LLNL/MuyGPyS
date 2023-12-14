@@ -297,7 +297,7 @@ def _normalize(X: mm.ndarray) -> mm.ndarray:
 
 
 def _get_scale_series(
-    Kcov: mm.ndarray,
+    Kin: mm.ndarray,
     nn_targets_column: mm.ndarray,
     noise_variance: float,
 ) -> mm.ndarray:
@@ -308,7 +308,7 @@ def _get_scale_series(
     NOTE[bwp]: This function is only for testing purposes.
 
     Args:
-        Kcov:
+        Kin:
             A tensor of shape `(batch_count, nn_count, nn_count)` containing
             the `(nn_count, nn_count` -shaped kernel matrices corresponding
             to each of the batch elements.
@@ -324,13 +324,13 @@ def _get_scale_series(
     batch_count, nn_count, _ = nn_targets_column.shape
 
     scales = np.zeros((batch_count,))
-    for i, el in enumerate(_get_scale(Kcov, nn_targets_column, noise_variance)):
+    for i, el in enumerate(_get_scale(Kin, nn_targets_column, noise_variance)):
         scales[i] = el
     return mm.array(scales / nn_count)
 
 
 def _get_scale(
-    Kcov: mm.ndarray,
+    Kin: mm.ndarray,
     nn_targets_column: mm.ndarray,
     noise_variance: float,
 ) -> Generator[float, None, None]:
@@ -339,14 +339,14 @@ def _get_scale(
     individual solve along a single dimension:
 
     .. math::
-        \\sigma^2 = \\frac{1}{k} * Y_{nn}^T Kcov_{nn}^{-1} Y_{nn}
+        \\sigma^2 = \\frac{1}{k} * Y_{nn}^T Kin_{nn}^{-1} Y_{nn}
 
-    Here :math:`Y_{nn}` and :math:`Kcov_{nn}` are the target and kernel
+    Here :math:`Y_{nn}` and :math:`Kin_{nn}` are the target and kernel
     matrices with respect to the nearest neighbor set in scope, where
     :math:`k` is the number of nearest neighbors.
 
     Args:
-        Kcov:
+        Kin:
             A tensor of shape `(batch_count, nn_count, nn_count)` containing
             the `(nn_count, nn_count` -shaped kernel matrices corresponding
             to each of the batch elements.
@@ -364,7 +364,7 @@ def _get_scale(
     for j in range(batch_count):
         Y_0 = nn_targets_column[j, :, 0]
         yield Y_0 @ mm.linalg.solve(
-            Kcov[j, :, :] + noise_variance * mm.eye(nn_count), Y_0
+            Kin[j, :, :] + noise_variance * mm.eye(nn_count), Y_0
         )
 
 

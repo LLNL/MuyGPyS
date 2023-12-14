@@ -17,11 +17,11 @@ world = config.mpi_state.comm_world
 
 
 def _analytic_scale_optim(
-    Kcov: np.ndarray,
+    Kin: np.ndarray,
     nn_targets: np.ndarray,
 ) -> np.ndarray:
     local_batch_count, nn_count, _ = nn_targets.shape
-    local_sum = _analytic_scale_optim_unnormalized(Kcov, nn_targets)
+    local_sum = _analytic_scale_optim_unnormalized(Kin, nn_targets)
     global_sum = world.allreduce(local_sum, op=MPI.SUM)
     global_batch_count = world.allreduce(local_batch_count, op=MPI.SUM)
     return global_sum / (nn_count * global_batch_count)

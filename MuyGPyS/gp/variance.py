@@ -30,14 +30,14 @@ class PosteriorVariance:
 
     def __call__(
         self,
-        Kcov: mm.ndarray,
+        Kin: mm.ndarray,
         Kcross: mm.ndarray,
         **kwargs,
     ) -> mm.ndarray:
         if len(Kcross.shape) == 2:
             batch_count, nn_count = Kcross.shape
             Kcross = Kcross.reshape(batch_count, 1, nn_count)
-        variances = self._fn(Kcov, Kcross, **kwargs)
+        variances = self._fn(Kin, Kcross, **kwargs)
         if len(variances.shape) == 1:
             variances = variances.reshape(variances.shape[0], 1)
         return variances

@@ -6,16 +6,16 @@
 import MuyGPyS._src.math.numpy as np
 
 
-def _homoscedastic_perturb(Kcov: np.ndarray, noise_variance: float) -> np.ndarray:
-    _, nn_count, _ = Kcov.shape
-    return Kcov + noise_variance * np.eye(nn_count)
+def _homoscedastic_perturb(Kin: np.ndarray, noise_variance: float) -> np.ndarray:
+    _, nn_count, _ = Kin.shape
+    return Kin + noise_variance * np.eye(nn_count)
 
 
 def _heteroscedastic_perturb(
-    Kcov: np.ndarray, noise_variances: np.ndarray
+    Kin: np.ndarray, noise_variances: np.ndarray
 ) -> np.ndarray:
-    ret = Kcov.copy()
-    batch_count, nn_count, _ = Kcov.shape
+    ret = Kin.copy()
+    batch_count, nn_count, _ = Kin.shape
     indices = (
         np.repeat(range(batch_count), nn_count),
         np.tile(np.arange(nn_count), batch_count),
