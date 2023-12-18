@@ -156,17 +156,16 @@ class ScaleTest(parameterized.TestCase):
     def _do_untrained(self, val):
         param = FixedScale()
         self.assertFalse(param.trained)
-        self.assertEqual(mm.array([1.0]), param())
+        self.assertEqual(1.0, param())
         param._set(val)
         self.assertEqual(val, param())
-        self.assertEqual(mm.ndarray, type(param()))
 
     @parameterized.parameters(v for v in [5.0])
     def test_untrained_good(self, val):
-        self._do_untrained(mm.atleast_1d(mm.array(val)))
+        self._do_untrained(val)
 
     def test_untrained_bad(self):
-        with self.assertRaisesRegex(ValueError, "for variance scale value"):
+        with self.assertRaisesRegex(ValueError, "Nonscalar scale"):
             self._do_untrained([5.0])
 
 

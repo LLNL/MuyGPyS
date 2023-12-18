@@ -96,7 +96,7 @@ def benchmark_prepare_cholK(
     """
     pairwise_diffs = _pairwise_differences(data)
     data_count, _ = data.shape
-    Kfull = gp.scale()[0] * (
+    Kfull = gp.scale() * (
         gp.kernel(pairwise_diffs) + gp.noise() * np.eye(data_count)
     )
     return np.linalg.cholesky(Kfull)
@@ -129,4 +129,4 @@ def benchmark_sample_from_cholK(cholK: np.ndarray) -> np.ndarray:
 
 def get_analytic_scale(Kin, y):
     assert y.shape[0] == Kin.shape[0]
-    return (1 / y.shape[0]) * y.T @ np.linalg.solve(Kin, y)
+    return (1 / y.shape[0]) * np.squeeze(y.T @ np.linalg.solve(Kin, y))

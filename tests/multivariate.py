@@ -207,10 +207,9 @@ class ScaleTest(parameterized.TestCase):
                 model.noise(),
             )
             _check_ndarray(self.assertEqual, scales, mm.ftype)
-            _check_ndarray(self.assertEqual, model.scale(), mm.ftype)
             self.assertEqual(scales.shape, (data_count,))
             self.assertAlmostEqual(
-                np.array(model.scale()[0]),
+                np.array(model.scale()),
                 np.mean(np.array(scales)),
                 5,
             )
@@ -546,7 +545,8 @@ class RegressTest(parameterized.TestCase):
         )
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
 
-        self.assertFalse(mmuygps.scale.trained)
+        for model in mmuygps.models:
+            self.assertFalse(model.scale.trained)
 
         predictions, diagonal_variance, _ = regress_any(
             mmuygps,
@@ -815,7 +815,7 @@ class MakeRegressorTest(parameterized.TestCase):
             if isinstance(muygps.scale, AnalyticScale):
                 print(f"\toptimized scale to find value " f"{muygps.scale()}")
             else:
-                self.assertEqual(mm.array([1.0]), muygps.scale())
+                self.assertEqual(1.0, muygps.scale())
 
 
 if __name__ == "__main__":

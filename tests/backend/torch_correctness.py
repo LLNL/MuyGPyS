@@ -647,9 +647,7 @@ class MuyGPSTest(MuyGPSTestCase):
 
     def test_heteroscedastic_noise(self):
         self.assertTrue(
-            np.allclose(
-                self.heteroscedastic_Kin_n, self.heteroscedastic_Kin_t
-            )
+            np.allclose(self.heteroscedastic_Kin_n, self.heteroscedastic_Kin_t)
         )
 
     def test_posterior_mean(self):
@@ -1209,7 +1207,7 @@ class ObjectiveTest(OptimTestCase):
         super(ObjectiveTest, cls).setUpClass()
 
         cls.scale_n = cls.muygps_05_n.scale()
-        cls.scale_t = torch.array(cls.muygps_05_t.scale()).float()
+        cls.scale_t = cls.muygps_05_t.scale()
 
     def test_mse(self):
         self.assertTrue(

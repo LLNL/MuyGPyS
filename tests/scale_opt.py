@@ -43,7 +43,7 @@ class ScaleTest(BenchmarkTestCase):
         Kin = self.gp.kernel(pairwise_diffs) + self.gp.noise() * mm.eye(
             self.feature_count
         )
-        for i in range(self.its):
+        for _ in range(self.its):
             ss = get_analytic_scale(Kin, self.train_features)
             mrse += _sq_rel_err(self.gp.scale(), ss)
 
@@ -100,7 +100,7 @@ class AnalyticOptimTest(BenchmarkTestCase):
             muygps = muygps.optimize_scale(
                 batch_pairwise_diffs, batch_nn_targets
             )
-            estimate = muygps.scale()[0]
+            estimate = muygps.scale()
 
             mrse += _sq_rel_err(self.gp.scale(), estimate)
         mrse /= self.its
@@ -162,7 +162,7 @@ class DownSampleOptimTest(BenchmarkTestCase):
             muygps = muygps.optimize_scale(
                 batch_pairwise_diffs, batch_nn_targets
             )
-            estimate = muygps.scale()[0]
+            estimate = muygps.scale()
 
             mrse += _sq_rel_err(self.gp.scale(), estimate)
         mrse /= self.its

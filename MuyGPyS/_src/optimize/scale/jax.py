@@ -14,8 +14,7 @@ def _analytic_scale_optim_unnormalized(
     nn_targets: jnp.ndarray,
 ) -> jnp.ndarray:
     return jnp.sum(
-        jnp.einsum("ijk,ijk->ik", nn_targets, jnp.linalg.solve(Kin, nn_targets)),
-        axis=0,
+        jnp.einsum("ijk,ijk->ik", nn_targets, jnp.linalg.solve(Kin, nn_targets))
     )
 
 
@@ -24,7 +23,7 @@ def _analytic_scale_optim(
     Kin: jnp.ndarray,
     nn_targets: jnp.ndarray,
 ) -> jnp.ndarray:
-    batch_count, nn_count, _ = nn_targets.shape
+    batch_count, nn_count = nn_targets.shape[:2]
     return _analytic_scale_optim_unnormalized(Kin, nn_targets) / (
         batch_count * nn_count
     )

@@ -802,9 +802,7 @@ class MuyGPSTest(MuyGPSTestCase):
 
     def test_heteroscedastic_perturb(self):
         self.assertTrue(
-            allclose_gen(
-                self.heteroscedastic_Kin_n, self.heteroscedastic_Kin_j
-            )
+            allclose_gen(self.heteroscedastic_Kin_n, self.heteroscedastic_Kin_j)
         )
 
     def test_posterior_mean(self):
@@ -1390,7 +1388,7 @@ class LossTest(OptimTestCase):
         super(LossTest, cls).setUpClass()
 
         cls.scale_n = cls.muygps_gen_n.scale()
-        cls.scale_j = jnp.array(cls.muygps_gen_j.scale())
+        cls.scale_j = cls.muygps_gen_j.scale()
 
     def test_mse(self):
         self.assertTrue(
@@ -1486,7 +1484,7 @@ class ObjectivePartsTest(OptimTestCase):
         super(ObjectivePartsTest, cls).setUpClass()
 
         cls.scale_n = cls.muygps_gen_n.scale()
-        cls.scale_j = jnp.array(cls.muygps_gen_j.scale())
+        cls.scale_j = cls.muygps_gen_j.scale()
 
     def test_kernel_fn(self):
         self.assertTrue(
@@ -1619,7 +1617,7 @@ class ObjectiveTest(OptimTestCase):
         super(ObjectiveTest, cls).setUpClass()
 
         cls.scale_n = cls.muygps_gen_n.scale()
-        cls.scale_j = jnp.array(cls.muygps_gen_j.scale())
+        cls.scale_j = cls.muygps_gen_j.scale()
 
     def test_loo_crossval(self):
         obj_fn_n = self._get_obj_fn_n()

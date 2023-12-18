@@ -779,9 +779,8 @@ class MakeRegressorTest(parameterized.TestCase):
 class GPScaleTest(GPTestCase):
     @parameterized.parameters(
         (
-            (1000, f, r, 10, nn_kwargs, k_kwargs)
+            (1000, f, 10, nn_kwargs, k_kwargs)
             for f in [50, 1]
-            for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [10]
@@ -802,17 +801,16 @@ class GPScaleTest(GPTestCase):
         self,
         data_count,
         feature_count,
-        response_count,
         nn_count,
         nn_kwargs,
         k_kwargs,
     ):
-        muygps = MuyGPS(
-            scale=AnalyticScale(response_count=response_count), **k_kwargs
-        )
+        muygps = MuyGPS(scale=AnalyticScale(), **k_kwargs)
+
+        print("TODO - add MultiScale test")
 
         # prepare data
-        data = _make_gaussian_dict(data_count, feature_count, response_count)
+        data = _make_gaussian_dict(data_count, feature_count, 1)
 
         # neighbors and differences
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
@@ -833,38 +831,20 @@ class GPScaleTest(GPTestCase):
         _check_ndarray(self.assertEqual, Kin, mm.ftype)
         _check_ndarray(self.assertEqual, nn_targets, mm.ftype)
 
-        if response_count > 1:
-            self.assertEqual(len(muygps.scale()), response_count)
-            for i in range(response_count):
-                scales = _get_scale_series(
-                    Kin,
-                    nn_targets[:, :, i].reshape(data_count, nn_count, 1),
-                    muygps.noise(),
-                )
-                _check_ndarray(self.assertEqual, scales, mm.ftype)
-                self.assertEqual(scales.shape, (data_count,))
-                _precision_assert(
-                    self.assertAlmostEqual,
-                    np.array(muygps.scale()[i]),
-                    np.mean(np.array(scales)),
-                    low_bound=0,
-                    high_bound=5,
-                )
-        else:
-            scales = _get_scale_series(
-                Kin,
-                nn_targets[:, :, 0].reshape(data_count, nn_count, 1),
-                muygps.noise(),
-            )
-            self.assertEqual(scales.shape, (data_count,))
-            _check_ndarray(self.assertEqual, scales, mm.ftype)
-            _precision_assert(
-                self.assertAlmostEqual,
-                np.array(muygps.scale()[0]),
-                np.mean(np.array(scales)),
-                low_bound=0,
-                high_bound=5,
-            )
+        scales = _get_scale_series(
+            Kin,
+            nn_targets[:, :, 0].reshape(data_count, nn_count, 1),
+            muygps.noise(),
+        )
+        self.assertEqual(scales.shape, (data_count,))
+        _check_ndarray(self.assertEqual, scales, mm.ftype)
+        _precision_assert(
+            self.assertAlmostEqual,
+            np.array(muygps.scale()),
+            np.mean(np.array(scales)),
+            low_bound=0,
+            high_bound=5,
+        )
 
 
 if __name__ == "__main__":
