@@ -14,6 +14,19 @@ from MuyGPyS._src.gp.muygps import _muygps_posterior_mean
 from MuyGPyS.gp.noise import NoiseFn
 
 
+def _reshaper_to_be_removed(fn: Callable) -> Callable:
+    def reshaped_fn(Kin, Kcross, *args, **kwargs):
+        if len(Kcross.shape) == 2:
+            batch_count, nn_count = Kcross.shape
+            Kcross = Kcross.reshape(batch_count, 1, nn_count)
+        ret = fn(Kin, Kcross, *args, **kwargs)
+        if len(ret.shape) == 1:
+            ret = ret.reshape(ret.shape[0], 1)
+        return ret
+
+    return reshaped_fn
+
+
 class PosteriorMean:
     def __init__(
         self,
@@ -23,6 +36,7 @@ class PosteriorMean:
     ):
         self._fn = _backend_fn
         self._fn = noise.perturb_fn(self._fn)
+        self._fn = _reshaper_to_be_removed(self._fn)
 
     def __call__(
         self,
@@ -31,13 +45,7 @@ class PosteriorMean:
         batch_nn_targets: mm.ndarray,
         **kwargs,
     ) -> mm.ndarray:
-        if len(Kcross.shape) == 2:
-            batch_count, nn_count = Kcross.shape
-            Kcross = Kcross.reshape(batch_count, 1, nn_count)
-        responses = self._fn(Kin, Kcross, batch_nn_targets, **kwargs)
-        if len(responses.shape) == 1:
-            responses = responses.reshape(responses.shape[0], 1)
-        return responses
+        return self._fn(Kin, Kcross, batch_nn_targets, **kwargs)
 
     def get_opt_fn(self) -> Callable:
         return self.__call__

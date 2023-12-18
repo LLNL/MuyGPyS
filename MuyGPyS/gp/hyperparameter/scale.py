@@ -7,11 +7,11 @@
 Variance scale hyperparameter
 """
 
-from typing import Callable, Tuple, Type
+from collections.abc import Sequence
+from typing import Callable
 
 import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
-from MuyGPyS._src.util import _fullname
 from MuyGPyS._src.optimize.scale import (
     _analytic_scale_optim,
     _analytic_scale_optim_unnormalized,
@@ -23,36 +23,20 @@ class ScaleFn:
     A :math:`\\sigma^2` covariance scale parameter base functor.
 
     :math:`\\sigma^2` is a scaling parameter that one multiplies with the
-    found diagonal variances of a :class:`MuyGPyS.gp.muygps.MuyGPS` or
-    :class:`MuyGPyS.gp.muygps.MultivariateMuyGPS` regression in order to obtain
-    the predicted posterior variance. Trained values assume a number of
-    dimensions equal to the number of response dimensions, and correspond to
-    scalar scaling parameters along the corresponding dimensions.
+    found diagonal variances of a :class:`MuyGPyS.gp.muygps.MuyGPS` regression
+    in order to obtain the predicted posterior variance. Trained values assume a
+    number of dimensions equal to the number of response dimensions, and
+    correspond to scalar scaling parameters along the corresponding dimensions.
 
     Args:
-        response_count:
-            The integer number of response dimensions.
+        val:
+            A floating point value, if intended to be set manually. Defaults to
+            1.0.
     """
 
-    def __init__(
-        self,
-        response_count: int = 1,
-        _backend_ones: Callable = mm.ones,
-        _backend_ndarray: Type = mm.ndarray,
-        _backend_ftype: Type = mm.ftype,
-        _backend_farray: Callable = mm.farray,
-        _backend_outer: Callable = mm.outer,
-        **kwargs,
-    ):
-        self.val = _backend_ones(
-            self._check_positive_integer(response_count, "response")
-        )
+    def __init__(self, val: float = 1.0, **kwargs):
+        self.val = self._check_positive_float(val)
         self._trained = False
-
-        self._backend_ndarray = _backend_ndarray
-        self._backend_ftype = _backend_ftype
-        self._backend_farray = _backend_farray
-        self._backend_outer = _backend_outer
 
     def _check_positive_integer(self, count, name) -> int:
         if not isinstance(count, int) or count < 0:
@@ -61,10 +45,19 @@ class ScaleFn:
             )
         return count
 
+    def _check_positive_float(self, val) -> float:
+        if isinstance(val, Sequence) or hasattr(val, "__len__"):
+            raise ValueError(f"Scale parameter must be scalar, not {val}.")
+        if not isinstance(val, mm.ndarray):
+            val = float(val)
+        if val <= 0.0:
+            raise ValueError(f"Scale parameter must be positive, not {val}.")
+        return val
+
     def __str__(self, **kwargs):
         return f"{type(self).__name__}({self.val})"
 
-    def _set(self, val: mm.ndarray) -> None:
+    def _set(self, val: float) -> None:
         """
         Value setter.
 
@@ -72,19 +65,7 @@ class ScaleFn:
             val:
                 The new value of the hyperparameter.
         """
-        if not isinstance(val, self._backend_ndarray):
-            raise ValueError(
-                f"Expected {_fullname(self._backend_ndarray)} for variance "
-                f"scale value update, not {_fullname(val.__class__)}"
-            )
-        if self.val.shape != val.shape:
-            raise ValueError(
-                "Bad attempt to assign variance scale of shape "
-                f"{self.val.shape} a value of shape {val.shape}"
-            )
-        if val.dtype != self._backend_ftype:
-            val = self._backend_farray(val)
-        self.val = val
+        self.val = self._check_positive_float(val)
         self._trained = True
 
     def __call__(self) -> mm.ndarray:
@@ -106,16 +87,6 @@ class ScaleFn:
         """
         return self._trained
 
-    @property
-    def shape(self) -> Tuple[int, ...]:
-        """
-        Report the shape of the scale parameter.
-
-        Returns:
-            The shape of the scale parameter.
-        """
-        return self.val.shape
-
     def scale_fn(self, fn: Callable) -> Callable:
         """
         Modify a function to outer product its output with `scale`.
@@ -129,7 +100,7 @@ class ScaleFn:
         """
 
         def scaled_fn(*args, scale=self(), **kwargs):
-            return self._backend_outer(fn(*args, **kwargs), scale)
+            return scale * fn(*args, **kwargs)
 
         return scaled_fn
 
@@ -294,8 +265,6 @@ class DownSampleScale(ScaleFn):
                 nn_targets_down = nn_targets[:, sampled_indices, :]
                 scales.append(self._fn(pK_down, nn_targets_down))
 
-            return mm.atleast_1d(np.median(scales, axis=0)) / (
-                self._down_count * batch_count
-            )
+            return np.median(scales, axis=0) / (self._down_count * batch_count)
 
         return downsample_analytic_scale_opt_fn

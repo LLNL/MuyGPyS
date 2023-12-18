@@ -71,7 +71,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             ),
             noise=HomoscedasticNoise(cls.params["noise"]()),
         )
-        cls.gp.scale._set(mm.array([5.0]))
+        cls.gp.scale._set(5.0)
 
     @classmethod
     def simulate(cls):

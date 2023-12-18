@@ -143,13 +143,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
-            scale=AnalyticScale(
-                _backend_ones=np.ones,
-                _backend_ndarray=np.ndarray,
-                _backend_ftype=np.ftype,
-                _backend_farray=np.farray,
-                _backend_outer=np.outer,
-            ),
+            scale=AnalyticScale(),
             _backend_mean_fn=muygps_posterior_mean_n,
             _backend_var_fn=muygps_diagonal_variance_n,
         )
@@ -1066,7 +1060,7 @@ class MuyGPSTest(MuyGPSTestCase):
                 self.batch_homoscedastic_covariance_gen,
                 self.batch_nn_targets,
             )
-            self.assertAlmostEqual(serial_scale[0], parallel_scale[0])
+            self.assertAlmostEqual(serial_scale, parallel_scale)
 
 
 class OptimTestCase(MuyGPSTestCase):

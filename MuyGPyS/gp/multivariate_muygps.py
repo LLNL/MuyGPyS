@@ -8,7 +8,6 @@ Multivariate MuyGPs implementation
 """
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _mmuygps_fast_posterior_mean
-from MuyGPyS.gp.hyperparameter import FixedScale
 from MuyGPyS.gp.muygps import MuyGPS
 
 
@@ -71,7 +70,6 @@ class MultivariateMuyGPS:
         *model_args,
     ):
         self.models = [MuyGPS(**args) for args in model_args]
-        self.scale = FixedScale(response_count=len(self.models))
 
     def fixed(self) -> bool:
         """
@@ -208,7 +206,7 @@ class MultivariateMuyGPS:
         for i, model in enumerate(self.models):
             Kin = model.kernel(pairwise_diffs)
             Kcross = model.kernel(crosswise_diffs)
-            ss = self.scale()[i]
+            ss = model.scale()
             diagonal_variance = mm.assign(
                 diagonal_variance,
                 model.posterior_variance(Kin, Kcross).reshape(batch_count) * ss,
@@ -360,7 +358,6 @@ class MultivariateMuyGPS:
                 f"Response count ({response_count}) does not match the number "
                 f"of models ({len(self.models)})."
             )
-        scales = mm.zeros((response_count,))
         for i, model in enumerate(self.models):
             Kin = model.kernel(pairwise_diffs)
             opt_fn = model.scale.get_opt_fn(model)
@@ -369,6 +366,4 @@ class MultivariateMuyGPS:
                 nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
             )
             model.scale._set(new_scale_val)
-            scales = mm.assign(scales, new_scale_val[0], i)
-        self.scale._set(scales)
         return self
