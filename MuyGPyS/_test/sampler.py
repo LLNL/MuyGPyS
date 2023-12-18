@@ -498,7 +498,7 @@ def print_results(targets, *args, **kwargs):
                 muygps.kernel.smoothness(),
                 get_length_scale(muygps),
                 muygps.noise(),
-                muygps.scale()[0],
+                muygps.scale(),
                 np.sqrt(mse_fn(means, targets)),
                 np.mean(variances),
                 np.mean(confidence_intervals),
