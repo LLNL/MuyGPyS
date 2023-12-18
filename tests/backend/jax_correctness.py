@@ -164,14 +164,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
-            scale=AnalyticScale(
-                _backend_fn=analytic_scale_optim_n,
-                _backend_ones=np.ones,
-                _backend_ndarray=np.ndarray,
-                _backend_ftype=np.ftype,
-                _backend_farray=np.farray,
-                _backend_outer=np.outer,
-            ),
+            scale=AnalyticScale(_backend_fn=analytic_scale_optim_n),
             _backend_mean_fn=muygps_posterior_mean_n,
             _backend_var_fn=muygps_diagonal_variance_n,
         )
@@ -191,14 +184,7 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_gen_fn=matern_gen_fn_n,
             ),
             noise=noise,
-            scale=AnalyticScale(
-                _backend_fn=analytic_scale_optim_n,
-                _backend_ones=np.ones,
-                _backend_ndarray=np.ndarray,
-                _backend_ftype=np.ftype,
-                _backend_farray=np.farray,
-                _backend_outer=np.outer,
-            ),
+            scale=AnalyticScale(_backend_fn=analytic_scale_optim_n),
             _backend_mean_fn=muygps_posterior_mean_n,
             _backend_var_fn=muygps_diagonal_variance_n,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_n,
@@ -263,14 +249,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_j
             ),
-            scale=AnalyticScale(
-                _backend_fn=analytic_scale_optim_j,
-                _backend_ones=jnp.ones,
-                _backend_ndarray=jnp.ndarray,
-                _backend_ftype=jnp.ftype,
-                _backend_farray=jnp.farray,
-                _backend_outer=jnp.outer,
-            ),
+            scale=AnalyticScale(_backend_fn=analytic_scale_optim_j),
             _backend_mean_fn=muygps_posterior_mean_j,
             _backend_var_fn=muygps_diagonal_variance_j,
         )
@@ -290,14 +269,7 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_gen_fn=matern_gen_fn_j,
             ),
             noise=noise,
-            scale=AnalyticScale(
-                _backend_fn=analytic_scale_optim_j,
-                _backend_ones=jnp.ones,
-                _backend_ndarray=jnp.ndarray,
-                _backend_ftype=jnp.ftype,
-                _backend_farray=jnp.farray,
-                _backend_outer=jnp.outer,
-            ),
+            scale=AnalyticScale(_backend_fn=analytic_scale_optim_j),
             _backend_mean_fn=muygps_posterior_mean_j,
             _backend_var_fn=muygps_diagonal_variance_j,
             _backend_fast_mean_fn=muygps_fast_posterior_mean_j,

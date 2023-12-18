@@ -165,7 +165,7 @@ class ScaleTest(parameterized.TestCase):
         self._do_untrained(val)
 
     def test_untrained_bad(self):
-        with self.assertRaisesRegex(ValueError, "Nonscalar scale"):
+        with self.assertRaisesRegex(ValueError, "Scale parameter"):
             self._do_untrained([5.0])
 
 
