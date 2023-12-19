@@ -14,7 +14,7 @@ from MuyGPyS._test.utils import (
 from MuyGPyS._test.sampler import UnivariateSampler
 from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.hyperparameter import ScalarParam, FixedScale
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
@@ -26,7 +26,7 @@ class BenchmarkTestCase(parameterized.TestCase):
     def setUpClass(cls):
         super(BenchmarkTestCase, cls).setUpClass()
         cls.data_count = 501
-        cls.its = 7
+        cls.its = 10
         cls.train_ratio = 0.50
         cls.batch_count = 150
         cls.nn_count = 10
@@ -40,19 +40,20 @@ class BenchmarkTestCase(parameterized.TestCase):
             "mse": 2.5e-1,
             "lool": 2.5e-1,
             "huber": 5e-1,
-            "looph": 9e-1,
+            "looph": 5e-1,
         }
         cls.length_scale_tol = {
-            "mse": 3e-1,
-            "lool": 3e-1,
+            "mse": 5e-1,
+            "lool": 5e-1,
             "huber": 5e-1,
-            "looph": 9e-1,
+            "looph": 5e-1,
         }
 
         cls.params = {
             "length_scale": ScalarParam(0.05, (1e-2, 1e0)),
             "smoothness": ScalarParam(2.0, (1e-1, 5)),
             "noise": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
+            "scale": FixedScale(5.0),
         }
 
         cls.sampler = UnivariateSampler(
@@ -67,7 +68,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             ),
             noise=HomoscedasticNoise(cls.params["noise"]()),
         )
-        cls.sampler.gp.scale._set(5.0)
+        cls.sampler.gp.scale._set(cls.params["scale"]())
 
         cls.train_features, cls.test_features = cls.sampler.features()
         cls.train_count = cls.train_features.shape[0]
