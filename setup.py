@@ -8,6 +8,8 @@ from setuptools import setup
 
 TEST_REQUIRES = [
     "absl-py>=0.13.0",
+    "matplotlib>=3.2.1",
+    "pandas==1.5.2",
 ]
 
 DEV_REQUIRES = [
