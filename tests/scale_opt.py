@@ -10,12 +10,10 @@ import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.tensors import _pairwise_differences
 
 from MuyGPyS import config
-from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
 from MuyGPyS._test.gp import get_analytic_scale
 from MuyGPyS._test.optimize import BenchmarkTestCase
-from MuyGPyS._test.utils import _basic_nn_kwarg_options, _sq_rel_err
+from MuyGPyS._test.utils import _sq_rel_err
 from MuyGPyS.gp import MuyGPS
-
 from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.hyperparameter import (
     AnalyticScale,
@@ -24,9 +22,6 @@ from MuyGPyS.gp.hyperparameter import (
 )
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.gp.tensors import pairwise_tensor
-from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.batch import sample_batch
 
 if config.state.backend != "numpy":
     raise ValueError("optimize.py only supports the numpy backend at this time")
