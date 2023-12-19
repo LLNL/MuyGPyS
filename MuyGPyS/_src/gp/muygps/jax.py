@@ -34,7 +34,9 @@ def _muygps_fast_posterior_mean(
     Kcross: jnp.ndarray,
     coeffs_tensor: jnp.ndarray,
 ) -> jnp.ndarray:
-    return jnp.einsum("ij,ijk->ik", Kcross, coeffs_tensor)
+    return jnp.squeeze(
+        jnp.einsum("ij,ijk->ik", Kcross, jnp.atleast_3d(coeffs_tensor))
+    )
 
 
 @jit

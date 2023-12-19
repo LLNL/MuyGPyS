@@ -13,7 +13,10 @@ import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
 from MuyGPyS.gp.hyperparameter import ScaleFn
 from MuyGPyS.gp.noise import NoiseFn
-from MuyGPyS.gp.mean import _reshaper_to_be_removed
+
+
+# NOTE: Should we pull scale out of here and put it into kernel function? It
+# really doesn't belong here.
 
 
 class PosteriorVariance:
@@ -25,8 +28,8 @@ class PosteriorVariance:
     ):
         self._fn = _backend_fn
         self._fn = noise.perturb_fn(self._fn)
-        self._opt_fn = _reshaper_to_be_removed(self._fn)
-        self._fn = _reshaper_to_be_removed(scale.scale_fn(self._fn))
+        self._opt_fn = self._fn
+        self._fn = scale.scale_fn(self._fn)
 
     def __call__(
         self,

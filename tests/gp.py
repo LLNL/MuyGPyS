@@ -287,7 +287,7 @@ class GPTestCase(parameterized.TestCase):
         return (
             Kin,
             Kcross,
-            batch_nn_targets,
+            mm.squeeze(batch_nn_targets),
             train_responses,
             test_nn_indices,
             pairwise_diffs,
@@ -346,7 +346,7 @@ class GPTensorShapesTest(GPTestCase):
             )
             return
         for i in range(Kin.shape[0]):
-            eigvals = mm.linalg.eigvals(Kin[i, :, :])
+            eigvals = mm.linalg.eigvals(Kin[..., :, :])
             # eigvals = mm.array(eigvals, dtype=mm.ftype)
             eigvals = eigvals.real
             _check_ndarray(self.assertEqual, eigvals, mm.ftype)
@@ -473,9 +473,8 @@ class HeteroscedasticNoiseTest(GPTestCase):
 class GPSolveTest(GPTestCase):
     @parameterized.parameters(
         (
-            (1000, 100, f, r, 10, nn_kwargs, kwargs)
+            (1000, 100, f, 10, nn_kwargs, kwargs)
             for f in [100, 1]
-            for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [1]
@@ -497,7 +496,6 @@ class GPSolveTest(GPTestCase):
         train_count,
         test_count,
         feature_count,
-        response_count,
         nn_count,
         nn_kwargs,
         kwargs,
@@ -522,7 +520,7 @@ class GPSolveTest(GPTestCase):
             train_count,
             test_count,
             feature_count,
-            response_count,
+            1,
             nn_count,
             nn_kwargs,
         )
@@ -532,19 +530,22 @@ class GPSolveTest(GPTestCase):
         _check_ndarray(self.assertEqual, responses, mm.ftype)
 
         # validate
-        self.assertEqual(responses.shape, (test_count, response_count))
+        self.assertEqual(responses.shape, (test_count,))
 
         for i in range(test_count):
-            manual_responses = Kcross[i, :] @ mm.linalg.solve(
-                Kin[i, :, :] + muygps.noise() * mm.eye(nn_count),
-                train_responses[test_nn_indices[i], :],
+            manual_responses = mm.squeeze(
+                Kcross[i, :]
+                @ mm.linalg.solve(
+                    Kin[i, :, :] + muygps.noise() * mm.eye(nn_count),
+                    train_responses[test_nn_indices[i]],
+                )
             )
             _check_ndarray(self.assertEqual, manual_responses, mm.ftype)
             _consistent_assert(
                 _precision_assert,
-                self.assertSequenceAlmostEqual,
-                np.array(responses[i, :]),
-                np.array(manual_responses),
+                self.assertAlmostEquals,
+                responses[i],
+                manual_responses,
             )
 
 
@@ -596,21 +597,22 @@ class GPDiagonalVariance(GPTestCase):
         _check_ndarray(self.assertEqual, diagonal_variance, mm.ftype)
 
         # validate
-        self.assertEqual(diagonal_variance.shape, (test_count, 1))
-        diagonal_variance = diagonal_variance.reshape((test_count,))
+        self.assertEqual(diagonal_variance.shape, (test_count,))
         for i in range(test_count):
-            manual_diagonal_variance = mm.array(1.0) - Kcross[
-                i, :
-            ] @ mm.linalg.solve(
-                Kin[i, :, :] + muygps.noise() * mm.eye(nn_count),
-                Kcross[i, :],
+            manual_diagonal_variance = mm.squeeze(
+                mm.array(1.0)
+                - Kcross[i, :]
+                @ mm.linalg.solve(
+                    Kin[i, :, :] + muygps.noise() * mm.eye(nn_count),
+                    Kcross[i, :],
+                )
             )
             self.assertEqual(manual_diagonal_variance.dtype, mm.ftype)
             _precision_assert(
                 _consistent_assert,
                 self.assertAlmostEqual,
-                np.array(diagonal_variance[i]),
-                np.array(manual_diagonal_variance),
+                diagonal_variance[i],
+                manual_diagonal_variance,
             )
             self.assertGreater(diagonal_variance[i], 0.0)
 

@@ -20,7 +20,7 @@ def _make_fast_predict_tensors(
     train_features: torch.ndarray,
     train_targets: torch.ndarray,
 ) -> Tuple[torch.ndarray, torch.ndarray]:
-    num_train, _ = train_features.shape
+    num_train = train_features.shape[0]
     batch_nn_indices_fast = torch.cat(
         (
             torch.unsqueeze(torch.arange(0, num_train), dim=1),
@@ -126,7 +126,7 @@ def _l2(diffs: torch.ndarray) -> torch.ndarray:
 def _fast_nn_update(
     train_nn_indices: torch.ndarray,
 ) -> torch.ndarray:
-    train_count, _ = train_nn_indices.shape
+    train_count = train_nn_indices.shape[0]
     new_nn_indices = torch.cat(
         (
             torch.unsqueeze(torch.arange(0, train_count), dim=1),

@@ -25,7 +25,7 @@ def _make_fast_predict_tensors(
     train_features: jnp.ndarray,
     train_targets: jnp.ndarray,
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
-    num_train, _ = train_features.shape
+    num_train = train_features.shape[0]
     batch_nn_indices_fast = jnp.concatenate(
         (
             jnp.expand_dims(jnp.arange(0, num_train), axis=1),
@@ -140,7 +140,7 @@ def _l2(diffs: jnp.ndarray) -> jnp.ndarray:
 def _fast_nn_update(
     train_nn_indices: jnp.ndarray,
 ) -> jnp.ndarray:
-    train_count, _ = train_nn_indices.shape
+    train_count = train_nn_indices.shape[0]
     new_nn_indices = jnp.concatenate(
         (
             jnp.expand_dims(jnp.arange(0, train_count), axis=1),

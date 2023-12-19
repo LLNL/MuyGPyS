@@ -22,11 +22,10 @@ def _mse_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
 ) -> float:
-    local_batch_count, response_count = predictions.shape
     local_squared_errors = _mse_fn_unnormalized(predictions, targets)
-    global_batch_count = world.allreduce(local_batch_count, op=MPI.SUM)
+    global_demoninator = world.allreduce(np.prod(predictions.shape), op=MPI.SUM)
     global_squared_errors = world.allreduce(local_squared_errors, op=MPI.SUM)
-    return global_squared_errors / (global_batch_count * response_count)
+    return global_squared_errors / global_demoninator
 
 
 def _make_mpi_obj_fn(kwargs_opt_fn, comm):

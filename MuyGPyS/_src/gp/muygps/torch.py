@@ -27,9 +27,11 @@ def _muygps_diagonal_variance(
 
 def _muygps_fast_posterior_mean(
     Kcross: torch.ndarray,
-    coeffs_ndarray: torch.ndarray,
+    coeffs_tensor: torch.ndarray,
 ) -> torch.ndarray:
-    return torch.einsum("ij,ijk->ik", Kcross, coeffs_ndarray)
+    return torch.squeeze(
+        torch.einsum("ij,ijk->ik", Kcross, torch.atleast_3d(coeffs_tensor))
+    )
 
 
 def _mmuygps_fast_posterior_mean(
