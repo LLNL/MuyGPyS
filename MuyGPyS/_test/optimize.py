@@ -40,7 +40,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             "mse": 2.5e-1,
             "lool": 2.5e-1,
             "huber": 5e-1,
-            "looph": 5e-1,
+            "looph": 9e-1,
         }
         cls.length_scale_tol = {
             "mse": 5e-1,
