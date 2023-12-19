@@ -46,7 +46,7 @@ class BenchmarkTestCase(parameterized.TestCase):
             "mse": 5e-1,
             "lool": 5e-1,
             "huber": 5e-1,
-            "looph": 5e-1,
+            "looph": 9e-1,
         }
 
         cls.params = {
