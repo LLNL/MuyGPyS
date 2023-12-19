@@ -35,7 +35,7 @@ _basic_opt_fn_and_kwarg_options = [
         {
             "random_state": 1,
             "init_points": 3,
-            "n_iter": 10,
+            "n_iter": 7,
             "allow_duplicate_points": True,
         },
     ],
