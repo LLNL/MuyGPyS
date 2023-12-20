@@ -842,8 +842,8 @@ class GPScaleTest(GPTestCase):
         _check_ndarray(self.assertEqual, scales, mm.ftype)
         _precision_assert(
             self.assertAlmostEqual,
-            np.array(muygps.scale()),
-            np.mean(np.array(scales)),
+            mm.array(muygps.scale()),
+            mm.mean(mm.array(scales)),
             low_bound=0,
             high_bound=5,
         )

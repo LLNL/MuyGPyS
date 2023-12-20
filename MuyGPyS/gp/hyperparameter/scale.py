@@ -46,7 +46,11 @@ class ScaleFn:
         return count
 
     def _check_positive_float(self, val) -> float:
-        if isinstance(val, Sequence) or hasattr(val, "__len__"):
+        if (
+            isinstance(val, Sequence)
+            or hasattr(val, "__len__")
+            and len(val) != 1
+        ):
             raise ValueError(f"Scale parameter must be scalar, not {val}.")
         if not isinstance(val, mm.ndarray):
             val = float(val)

@@ -348,16 +348,16 @@ class TensorsTestCase(parameterized.TestCase):
             cls.train_count, cls.feature_count
         )
         cls.train_features_j = jnp.array(cls.train_features_n)
-        cls.train_responses_n = _make_gaussian_matrix(
-            cls.train_count, cls.response_count
+        cls.train_responses_n = np.squeeze(
+            _make_gaussian_matrix(cls.train_count, cls.response_count)
         )
         cls.train_responses_j = jnp.array(cls.train_responses_n)
         cls.test_features_n = _make_gaussian_matrix(
             cls.test_count, cls.feature_count
         )
         cls.test_features_j = jnp.array(cls.test_features_n)
-        cls.test_responses_n = _make_gaussian_matrix(
-            cls.test_count, cls.response_count
+        cls.test_responses_n = np.squeeze(
+            _make_gaussian_matrix(cls.test_count, cls.response_count)
         )
         cls.test_responses_j = jnp.array(cls.test_responses_n)
         cls.nbrs_lookup = NN_Wrapper(
@@ -996,11 +996,11 @@ class FastPredictTest(MuyGPSTestCase):
             allclose_inv(
                 self.muygps_gen_n.fast_posterior_mean(
                     self.Kcross_fast_n,
-                    self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
+                    self.fast_regress_coeffs_n[self.closest_neighbor_n],
                 ),
                 self.muygps_gen_j.fast_posterior_mean(
                     self.Kcross_fast_j,
-                    self.fast_regress_coeffs_j[self.closest_neighbor_j, :],
+                    self.fast_regress_coeffs_j[self.closest_neighbor_j],
                 ),
             )
         )
@@ -1226,11 +1226,11 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             allclose_inv(
                 mmuygps_fast_posterior_mean_n(
                     self.Kcross_fast_n,
-                    self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
+                    self.fast_regress_coeffs_n[self.closest_neighbor_n],
                 ),
                 mmuygps_fast_posterior_mean_j(
                     self.Kcross_fast_j,
-                    self.fast_regress_coeffs_j[self.closest_neighbor_j, :],
+                    self.fast_regress_coeffs_j[self.closest_neighbor_j],
                 ),
             )
         )

@@ -312,16 +312,16 @@ class TensorsTestCase(parameterized.TestCase):
             cls.train_count, cls.feature_count
         )
         cls.train_features_t = torch.from_numpy(cls.train_features_n)
-        cls.train_responses_n = _make_gaussian_matrix(
-            cls.train_count, cls.response_count
+        cls.train_responses_n = np.squeeze(
+            _make_gaussian_matrix(cls.train_count, cls.response_count)
         )
         cls.train_responses_t = torch.from_numpy(cls.train_responses_n)
         cls.test_features_n = _make_gaussian_matrix(
             cls.test_count, cls.feature_count
         )
         cls.test_features_t = torch.from_numpy(cls.test_features_n)
-        cls.test_responses_n = _make_gaussian_matrix(
-            cls.test_count, cls.response_count
+        cls.test_responses_n = np.squeeze(
+            _make_gaussian_matrix(cls.test_count, cls.response_count)
         )
         cls.test_responses_t = torch.from_numpy(cls.test_responses_n)
         cls.nbrs_lookup = NN_Wrapper(
@@ -834,11 +834,11 @@ class FastPredictTest(MuyGPSTestCase):
             _allclose(
                 self.muygps_05_n.fast_posterior_mean(
                     self.Kcross_fast_n,
-                    self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
+                    self.fast_regress_coeffs_n[self.closest_neighbor_n],
                 ),
                 self.muygps_05_t.fast_posterior_mean(
                     self.Kcross_fast_t,
-                    self.fast_regress_coeffs_t[self.closest_neighbor_t, :],
+                    self.fast_regress_coeffs_t[self.closest_neighbor_t],
                 ),
             )
         )
@@ -849,13 +849,13 @@ class FastPredictTest(MuyGPSTestCase):
                 self.muygps_heteroscedastic_train_n.fast_posterior_mean(
                     self.Kcross_fast_n,
                     self.fast_regress_coeffs_heteroscedastic_n[
-                        self.closest_neighbor_n, :
+                        self.closest_neighbor_n
                     ],
                 ),
                 self.muygps_heteroscedastic_train_t.fast_posterior_mean(
                     self.Kcross_fast_t,
                     self.fast_regress_coeffs_heteroscedastic_t[
-                        self.closest_neighbor_t, :
+                        self.closest_neighbor_t
                     ],
                 ),
             )
@@ -1059,11 +1059,11 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
             _allclose(
                 mmuygps_fast_posterior_mean_n(
                     self.Kcross_fast_n,
-                    self.fast_regress_coeffs_n[self.closest_neighbor_n, :],
+                    self.fast_regress_coeffs_n[self.closest_neighbor_n],
                 ),
                 mmuygps_fast_posterior_mean_t(
                     self.Kcross_fast_t,
-                    self.fast_regress_coeffs_t[self.closest_neighbor_t, :],
+                    self.fast_regress_coeffs_t[self.closest_neighbor_t],
                 ),
             )
         )

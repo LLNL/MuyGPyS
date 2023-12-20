@@ -17,6 +17,7 @@ from jax.numpy import (
     concatenate,
     copy,
     corrcoef,
+    count_nonzero,
     cov,
     choose,
     divide,

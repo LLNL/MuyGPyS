@@ -53,7 +53,7 @@ def _make_predict_tensors(
         batch_nn_indices,
     )
     pairwise_dists = _pairwise_tensor(train_features, batch_nn_indices)
-    batch_nn_targets = train_targets[batch_nn_indices, :]
+    batch_nn_targets = train_targets[batch_nn_indices]
     return crosswise_dists, pairwise_dists, batch_nn_targets
 
 
@@ -70,7 +70,7 @@ def _make_train_tensors(
         train_features,
         train_targets,
     )
-    batch_targets = train_targets[batch_indices, :]
+    batch_targets = train_targets[batch_indices]
     return crosswise_dists, pairwise_dists, batch_targets, batch_nn_targets
 
 
@@ -78,7 +78,7 @@ def _batch_features_tensor(
     features: torch.ndarray,
     batch_indices: torch.ndarray,
 ) -> torch.ndarray:
-    return features[batch_indices, :]
+    return features[batch_indices]
 
 
 def _crosswise_tensor(

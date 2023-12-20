@@ -251,11 +251,11 @@ class HeatonTest(RegressionAPITest):
             cls.train, cls.test = pkl.load(f)
             cls.train = {
                 "input": torch.ndarray(cls.train["input"]),
-                "output": torch.ndarray(cls.train["output"]),
+                "output": torch.squeeze(torch.ndarray(cls.train["output"])),
             }
             cls.test = {
                 "input": torch.ndarray(cls.test["input"]),
-                "output": torch.ndarray(cls.test["output"]),
+                "output": torch.squeeze(torch.ndarray(cls.test["output"])),
             }
 
     @parameterized.parameters(((nn, bs) for nn in [50] for bs in [500]))
@@ -271,14 +271,14 @@ class HeatonTest(RegressionAPITest):
         test_features = self.test["input"]
 
         nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="hnsw")
-        train_count, num_test_responses = train_responses.shape
+        train_count = train_responses.shape[0]
 
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup, batch_count, train_count
         )
 
-        batch_targets = train_responses[batch_indices, :]
-        batch_nn_targets = train_responses[batch_nn_indices, :]
+        batch_targets = train_responses[batch_indices]
+        batch_nn_targets = train_responses[batch_nn_indices]
 
         muygps_model = MuyGPS(
             Matern(

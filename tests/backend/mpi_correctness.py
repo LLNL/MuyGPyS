@@ -244,14 +244,14 @@ class TensorsTestCase(parameterized.TestCase):
             cls.train_features = _make_gaussian_matrix(
                 cls.train_count, cls.feature_count
             )
-            cls.train_responses = _make_gaussian_matrix(
-                cls.train_count, cls.response_count
+            cls.train_responses = np.squeeze(
+                _make_gaussian_matrix(cls.train_count, cls.response_count)
             )
             cls.test_features = _make_gaussian_matrix(
                 cls.test_count, cls.feature_count
             )
-            cls.test_responses = _make_gaussian_matrix(
-                cls.test_count, cls.response_count
+            cls.test_responses = np.squeeze(
+                _make_gaussian_matrix(cls.test_count, cls.response_count)
             )
             nbrs_lookup = NN_Wrapper(
                 cls.train_features,

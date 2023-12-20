@@ -37,7 +37,7 @@ def _make_fast_predict_tensors(
     pairwise_diffs_fast = _pairwise_tensor(
         train_features, batch_nn_indices_fast
     )
-    batch_nn_targets_fast = train_targets[batch_nn_indices_fast, :]
+    batch_nn_targets_fast = train_targets[batch_nn_indices_fast]
     return pairwise_diffs_fast, batch_nn_targets_fast
 
 
@@ -58,7 +58,7 @@ def _make_predict_tensors(
         batch_nn_indices,
     )
     pairwise_diffs = _pairwise_tensor(train_features, batch_nn_indices)
-    batch_nn_targets = train_targets[batch_nn_indices, :]
+    batch_nn_targets = train_targets[batch_nn_indices]
     return crosswise_diffs, pairwise_diffs, batch_nn_targets
 
 
@@ -76,7 +76,7 @@ def _make_train_tensors(
         train_features,
         train_targets,
     )
-    batch_targets = train_targets[batch_indices, :]
+    batch_targets = train_targets[batch_indices]
     return crosswise_diffs, pairwise_diffs, batch_targets, batch_nn_targets
 
 
@@ -85,7 +85,7 @@ def _batch_features_tensor(
     features: jnp.ndarray,
     batch_indices: jnp.ndarray,
 ) -> jnp.ndarray:
-    return features[batch_indices, :]
+    return features[batch_indices]
 
 
 @jit
