@@ -6,9 +6,25 @@
 import MuyGPyS._src.math.numpy as np
 
 
-def _homoscedastic_perturb(Kin: np.ndarray, noise_variance: float) -> np.ndarray:
-    _, nn_count, _ = Kin.shape
-    return Kin + noise_variance * np.eye(nn_count)
+def _homoscedastic_perturb(
+    Kin: np.ndarray, noise_variance: float
+) -> np.ndarray:
+    if Kin.ndim == 3:
+        _, nn_count, _ = Kin.shape
+        return Kin + noise_variance * np.eye(nn_count)
+    elif Kin.ndim == 5:
+        b, in_count, nn_count, in_count2, nn_count2 = Kin.shape
+        assert nn_count == nn_count2
+        assert in_count == in_count2
+        all_count = in_count * nn_count
+        Kin_flat = Kin.reshape(b, all_count, all_count)
+        Kin_flat = Kin_flat + noise_variance * np.eye(all_count)
+        return Kin.reshape(b, in_count, nn_count, in_count, nn_count)
+    else:
+        raise ValueError(
+            "homoscedastic perturbation is not implemented for tensors of "
+            f"shape {Kin.shape}"
+        )
 
 
 def _heteroscedastic_perturb(
