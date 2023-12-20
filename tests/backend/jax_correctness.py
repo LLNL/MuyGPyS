@@ -424,7 +424,7 @@ class TensorsTestCase(parameterized.TestCase):
         cls.batch_indices_j = jnp.iarray(cls.batch_indices_n)
         cls.batch_nn_indices_j = jnp.iarray(cls.batch_nn_indices_n)
 
-    def _check_ndarray(self, *args, **kwargs):
+    def _check_ndarray(self, *args, shape=None, **kwargs):
         if shape is not None:
             shape = tuple(x for x in shape if x > 1)
         return _check_ndarray(self.assertEqual, *args, **kwargs)
