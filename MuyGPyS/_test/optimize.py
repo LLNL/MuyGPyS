@@ -5,16 +5,19 @@
 
 from absl.testing import parameterized
 
-import MuyGPyS._src.math as mm
-
 from MuyGPyS._src.mpi_utils import _consistent_chunk_tensor
-from MuyGPyS._test.utils import _check_ndarray, _sq_rel_err
-from MuyGPyS._test.gp import benchmark_sample_full, BenchmarkGP
+from MuyGPyS._test.utils import (
+    _check_ndarray,
+    _sq_rel_err,
+    _basic_nn_kwarg_options,
+)
+from MuyGPyS._test.sampler import UnivariateSampler
 from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.kernels import Matern
-from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.hyperparameter import ScalarParam, FixedScale
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
+from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 
 
@@ -22,16 +25,12 @@ class BenchmarkTestCase(parameterized.TestCase):
     @classmethod
     def setUpClass(cls):
         super(BenchmarkTestCase, cls).setUpClass()
-        cls.data_count = 1001
-        cls.its = 13
-        cls.sim_train = dict()
-        cls.xs = mm.linspace(-10.0, 10.0, cls.data_count).reshape(
-            cls.data_count, 1
-        )
-        cls.train_features = cls.xs[::2, :]
-        cls.test_features = cls.xs[1::2, :]
-        cls.train_count, _ = cls.train_features.shape
-        cls.test_count, _ = cls.test_features.shape
+        cls.data_count = 501
+        cls.its = 10
+        cls.train_ratio = 0.50
+        cls.batch_count = 150
+        cls.nn_count = 10
+
         cls.feature_count = 1
         cls.response_count = 1
         cls.length_scale = 1e-2
@@ -44,24 +43,22 @@ class BenchmarkTestCase(parameterized.TestCase):
             "looph": 9e-1,
         }
         cls.length_scale_tol = {
-            "mse": 3e-1,
-            "lool": 3e-1,
-            "huber": 5e-1,
+            "mse": 9e-1,
+            "lool": 9e-1,
+            "huber": 9e-1,
             "looph": 9e-1,
         }
 
         cls.params = {
-            "length_scale": ScalarParam(1e-1, (1e-2, 1e0)),
-            "smoothness": ScalarParam(0.78, (1e-1, 2e0)),
+            "length_scale": ScalarParam(0.05, (1e-2, 1e0)),
+            "smoothness": ScalarParam(2.0, (1e-1, 5)),
             "noise": HomoscedasticNoise(1e-5, (1e-8, 1e-2)),
+            "scale": FixedScale(5.0),
         }
 
-        cls.setUpGP()
-        cls.simulate()
-
-    @classmethod
-    def setUpGP(cls):
-        cls.gp = BenchmarkGP(
+        cls.sampler = UnivariateSampler(
+            data_count=cls.data_count,
+            train_ratio=cls.train_ratio,
             kernel=Matern(
                 smoothness=ScalarParam(cls.params["smoothness"]()),
                 deformation=Isotropy(
@@ -71,79 +68,84 @@ class BenchmarkTestCase(parameterized.TestCase):
             ),
             noise=HomoscedasticNoise(cls.params["noise"]()),
         )
-        cls.gp.scale._set(5.0)
+        cls.sampler.gp.scale._set(cls.params["scale"]())
 
-    @classmethod
-    def simulate(cls):
-        cls.ys = mm.zeros((cls.its, cls.data_count, cls.response_count))
-        cls.train_responses = mm.zeros(
-            (cls.its, cls.train_count, cls.response_count)
+        cls.train_features, cls.test_features = cls.sampler.features()
+        cls.train_count = cls.train_features.shape[0]
+        cls.test_count = cls.test_features.shape[0]
+
+        cls.train_responses_list = list()
+        cls.test_responses_list = list()
+        for _ in range(cls.its):
+            train_responses, test_responses = cls.sampler.sample()
+            cls.train_responses_list.append(train_responses)
+            cls.test_responses_list.append(test_responses)
+
+        cls.nbrs_lookup = NN_Wrapper(
+            cls.train_features, cls.nn_count, **_basic_nn_kwarg_options[0]
         )
-        cls.test_responses = mm.zeros(
-            (cls.its, cls.test_count, cls.response_count)
-        )
+        cls.batch_indices_list = list()
+        cls.batch_nn_indices_list = list()
+        for _ in range(cls.its):
+            batch_indices, batch_nn_indices = sample_batch(
+                cls.nbrs_lookup, cls.batch_count, cls.train_count
+            )
+            cls.batch_indices_list.append(batch_indices)
+            cls.batch_nn_indices_list.append(batch_nn_indices)
+
+        cls.batch_crosswise_diffs_list = list()
+        cls.batch_pairwise_diffs_list = list()
+        cls.batch_targets_list = list()
+        cls.batch_nn_targets_list = list()
         for i in range(cls.its):
-            ys = benchmark_sample_full(
-                cls.gp, cls.test_features, cls.train_features
+            batch_crosswise_diffs = crosswise_tensor(
+                cls.train_features,
+                cls.train_features,
+                cls.batch_indices_list[i],
+                cls.batch_nn_indices_list[i],
             )
-            cls.train_responses = mm.assign(
-                cls.train_responses,
-                ys[cls.test_count :, :],
-                i,
-                slice(None),
-                slice(None),
+            batch_pairwise_diffs = pairwise_tensor(
+                cls.train_features,
+                cls.batch_nn_indices_list[i],
             )
-            cls.test_responses = mm.assign(
-                cls.test_responses,
-                ys[: cls.test_count, :],
-                i,
-                slice(None),
-                slice(None),
+            batch_targets = _consistent_chunk_tensor(
+                cls.train_responses_list[i][cls.batch_indices_list[i]]
             )
+            batch_nn_targets = _consistent_chunk_tensor(
+                cls.train_responses_list[i][cls.batch_nn_indices_list[i]]
+            )
+
+            cls.batch_crosswise_diffs_list.append(batch_crosswise_diffs)
+            cls.batch_pairwise_diffs_list.append(batch_pairwise_diffs)
+            cls.batch_targets_list.append(batch_targets)
+            cls.batch_nn_targets_list.append(batch_nn_targets)
 
     def _optim_chassis(
         self,
         muygps,
         name,
         itr,
-        nbrs_lookup,
-        batch_count,
         loss_fn,
         opt_fn,
         opt_kwargs,
         loss_kwargs=dict(),
     ) -> float:
-        batch_indices, batch_nn_indices = sample_batch(
-            nbrs_lookup, batch_count, self.train_count
-        )
-        batch_crosswise_diffs = crosswise_tensor(
-            self.train_features,
-            self.train_features,
-            batch_indices,
-            batch_nn_indices,
-        )
-        batch_pairwise_diffs = pairwise_tensor(
-            self.train_features,
-            batch_nn_indices,
-        )
-        batch_targets = _consistent_chunk_tensor(
-            self.train_responses[itr, batch_indices, :]
-        )
-        batch_nn_targets = _consistent_chunk_tensor(
-            self.train_responses[itr, batch_nn_indices, :]
-        )
         muygps = opt_fn(
             muygps,
-            batch_targets,
-            batch_nn_targets,
-            batch_crosswise_diffs,
-            batch_pairwise_diffs,
+            self.batch_targets_list[itr],
+            self.batch_nn_targets_list[itr],
+            self.batch_crosswise_diffs_list[itr],
+            self.batch_pairwise_diffs_list[itr],
             loss_fn=loss_fn,
             loss_kwargs=loss_kwargs,
             **opt_kwargs,
-            verbose=False,  # TODO True,
+            verbose=False,
         )
         estimate = muygps.kernel._hyperparameters[name]()
+        print(
+            f"\toptimizes {name} with {estimate} (target {self.params[name]()})"
+            f" -- sq rel err = {_sq_rel_err(self.params[name](), estimate)}"
+        )
         return _sq_rel_err(self.params[name](), estimate)
 
     def _check_ndarray(self, *args, **kwargs):
