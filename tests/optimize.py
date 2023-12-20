@@ -13,7 +13,6 @@ from MuyGPyS._test.optimize import BenchmarkTestCase
 from MuyGPyS._test.utils import (
     # _advanced_opt_fn_and_kwarg_options,
     _basic_opt_fn_and_kwarg_options,
-    _basic_nn_kwarg_options,
 )
 from MuyGPyS.gp import MuyGPS
 
@@ -21,7 +20,6 @@ from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.hyperparameter import AnalyticScale, FixedScale, ScalarParam
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.loss import lool_fn, mse_fn, pseudo_huber_fn, looph_fn
 
 if config.state.backend != "numpy":
@@ -46,18 +44,19 @@ class BenchmarkTest(BenchmarkTestCase):
             ctype=mm.ndarray,
             shape=(self.test_count, self.feature_count),
         )
-        self._check_ndarray(
-            self.train_responses,
-            mm.ftype,
-            ctype=mm.ndarray,
-            shape=(self.its, self.train_count, self.response_count),
-        )
-        self._check_ndarray(
-            self.test_responses,
-            mm.ftype,
-            ctype=mm.ndarray,
-            shape=(self.its, self.test_count, self.response_count),
-        )
+        for i in range(self.its):
+            self._check_ndarray(
+                self.train_responses_list[i],
+                mm.ftype,
+                ctype=mm.ndarray,
+                shape=(self.train_count, self.response_count),
+            )
+            self._check_ndarray(
+                self.test_responses_list[i],
+                mm.ftype,
+                ctype=mm.ndarray,
+                shape=(self.test_count, self.response_count),
+            )
 
 
 class SmoothnessTest(BenchmarkTestCase):
@@ -68,14 +67,9 @@ class SmoothnessTest(BenchmarkTestCase):
     @parameterized.parameters(
         (
             (
-                b,
-                n,
-                nn_kwargs,
                 loss_kwargs_and_scale,
                 opt_fn_and_kwargs,
             )
-            for b in [250]
-            for n in [20]
             for loss_kwargs_and_scale in [
                 ["mse", mse_fn, dict(), FixedScale()],
                 [
@@ -87,17 +81,12 @@ class SmoothnessTest(BenchmarkTestCase):
                 ["lool", lool_fn, dict(), AnalyticScale()],
                 ["looph", looph_fn, {"boundary_scale": 3.0}, AnalyticScale()],
             ]
-            # for nn_kwargs in _basic_nn_kwarg_options
-            # for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for opt_fn_and_kwargs in [_basic_opt_fn_and_kwarg_options[0]]
+            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
+            # for opt_fn_and_kwargs in [_basic_opt_fn_and_kwarg_options[0]]
         )
     )
     def test_smoothness(
         self,
-        batch_count,
-        nn_count,
-        nn_kwargs,
         loss_kwargs_and_scale,
         opt_fn_and_kwargs,
     ):
@@ -109,10 +98,7 @@ class SmoothnessTest(BenchmarkTestCase):
         ) = loss_kwargs_and_scale
         opt_fn, opt_kwargs = opt_fn_and_kwargs
 
-        mrse = 0.0
-
-        # compute nearest neighbor structure
-        nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
+        error_vector = list()
 
         for i in range(self.its):
             # set up MuyGPS object
@@ -130,21 +116,23 @@ class SmoothnessTest(BenchmarkTestCase):
                 scale=scale,
             )
 
-            mrse += self._optim_chassis(
-                muygps,
-                "smoothness",
-                i,
-                nbrs_lookup,
-                batch_count,
-                loss_fn,
-                opt_fn,
-                opt_kwargs,
-                loss_kwargs=loss_kwargs,
+            error_vector.append(
+                self._optim_chassis(
+                    muygps,
+                    "smoothness",
+                    i,
+                    loss_fn,
+                    opt_fn,
+                    opt_kwargs,
+                    loss_kwargs=loss_kwargs,
+                )
             )
-        mrse /= self.its
-        print(f"optimizes smoothness with mean relative squared error {mrse}")
+        median_rse = mm.median(error_vector)
+        print(
+            f"optimizes smoothness with mean relative squared error {median_rse}"
+        )
         # Is this a strong enough guarantee?
-        self.assertLessEqual(mrse, self.smoothness_tol[loss_name])
+        self.assertLessEqual(median_rse, self.smoothness_tol[loss_name])
 
 
 class LengthScaleTest(BenchmarkTestCase):
@@ -155,39 +143,27 @@ class LengthScaleTest(BenchmarkTestCase):
     @parameterized.parameters(
         (
             (
-                b,
-                n,
-                nn_kwargs,
                 loss_and_scale,
                 opt_fn_and_kwargs,
             )
-            for b in [250]
-            for n in [20]
             for loss_and_scale in [
                 ["lool", lool_fn, dict(), AnalyticScale()],
                 ["looph", looph_fn, {"boundary_scale": 3.0}, AnalyticScale()],
             ]
-            # for nn_kwargs in _basic_nn_kwarg_options
             # for opt_fn_and_kwargs in _advanced_opt_fn_and_kwarg_options
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for opt_fn_and_kwargs in [_basic_opt_fn_and_kwarg_options[0]]
+            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
+            # for opt_fn_and_kwargs in [_basic_opt_fn_and_kwarg_options[0]]
         )
     )
     def test_length_scale(
         self,
-        batch_count,
-        nn_count,
-        nn_kwargs,
         loss_and_scale,
         opt_fn_and_kwargs,
     ):
         loss_name, loss_fn, loss_kwargs, scale = loss_and_scale
         opt_fn, opt_kwargs = opt_fn_and_kwargs
 
-        error_vector = mm.zeros((self.its,))
-
-        # compute nearest neighbor structure
-        nbrs_lookup = NN_Wrapper(self.train_features, nn_count, **nn_kwargs)
+        error_vector = list()
 
         for i in range(self.its):
             # set up MuyGPS object
@@ -205,16 +181,16 @@ class LengthScaleTest(BenchmarkTestCase):
                 scale=scale,
             )
 
-            error_vector[i] = self._optim_chassis(
-                muygps,
-                "length_scale",
-                i,
-                nbrs_lookup,
-                batch_count,
-                loss_fn,
-                opt_fn,
-                opt_kwargs,
-                loss_kwargs=loss_kwargs,
+            error_vector.append(
+                self._optim_chassis(
+                    muygps,
+                    "length_scale",
+                    i,
+                    loss_fn,
+                    opt_fn,
+                    opt_kwargs,
+                    loss_kwargs=loss_kwargs,
+                )
             )
         median_error = mm.median(error_vector)
         print(
