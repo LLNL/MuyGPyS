@@ -33,9 +33,8 @@ def _mse_fn(
     predictions: torch.ndarray,
     targets: torch.ndarray,
 ) -> float:
-    batch_count, response_count = predictions.shape
     return _mse_fn_unnormalized(predictions, targets) / (
-        batch_count * response_count
+        predictions.shape.numel()
     )
 
 

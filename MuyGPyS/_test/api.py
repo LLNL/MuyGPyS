@@ -288,7 +288,7 @@ class RegressionAPITest(parameterized.TestCase):
         if isinstance(regressor, MuyGPS):
             self._verify_regressor(regressor, variance, test["output"])
         else:
-            test_count, _ = test["output"].shape
+            test_count = test["output"].shape[0]
             for i, model in enumerate(regressor.models):
                 self._verify_regressor(
                     model,
@@ -305,8 +305,7 @@ class RegressionAPITest(parameterized.TestCase):
             for i, p in enumerate(param_names):
                 print(f"\t{p} : {param_vals[i]}")
         if variance is not None:
-            test_count, response_count = targets.shape
-            self.assertEqual(variance.shape, (test_count, response_count))
+            self.assertEqual(variance.shape, targets.shape)
             if regressor.fixed():
                 self.assertFalse(regressor.scale.trained)
             else:

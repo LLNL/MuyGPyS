@@ -126,8 +126,7 @@ def make_regressor(
         A data structure supporting nearest neighbor queries into
         `train_features`.
     """
-    train_count, _ = train_features.shape
-    _, response_count = train_targets.shape
+    train_count = train_features.shape[0]
     time_start = perf_counter()
 
     nbrs_lookup = NN_Wrapper(
@@ -632,8 +631,7 @@ def regress_any(
     timing : dict
         Timing for the subroutines of this function.
     """
-    test_count, _ = test_features.shape
-    # train_count, _ = train_features.shape
+    test_count = test_features.shape[0]
 
     time_start = perf_counter()
     test_nn_indices, _ = train_nbrs_lookup.get_nns(test_features)

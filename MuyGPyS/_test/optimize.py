@@ -148,5 +148,6 @@ class BenchmarkTestCase(parameterized.TestCase):
         )
         return _sq_rel_err(self.params[name](), estimate)
 
-    def _check_ndarray(self, *args, **kwargs):
-        return _check_ndarray(self.assertEqual, *args, **kwargs)
+    def _check_ndarray(self, *args, shape=None, **kwargs):
+        shape = tuple(x for x in shape if x > 1)
+        return _check_ndarray(self.assertEqual, *args, shape=shape, **kwargs)

@@ -13,6 +13,8 @@ from absl.testing import parameterized
 
 from MuyGPyS import config
 
+import MuyGPyS._src.math.numpy as np
+
 from MuyGPyS._test.api import FastPosteriorMeanAPITest
 from MuyGPyS._test.utils import (
     _balanced_subsample,
@@ -55,6 +57,8 @@ class HeatonFastTest(FastPosteriorMeanAPITest):
         super(HeatonFastTest, cls).setUpClass()
         with open(os.path.join(hardpath, heaton_file), "rb") as f:
             cls.train, cls.test = pkl.load(f)
+            cls.train["output"] = np.squeeze(cls.train["output"])
+            cls.test["output"] = np.squeeze(cls.test["output"])
 
     @parameterized.parameters(
         (

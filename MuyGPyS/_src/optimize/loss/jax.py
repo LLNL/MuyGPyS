@@ -55,9 +55,8 @@ def _mse_fn(
     predictions: jnp.ndarray,
     targets: jnp.ndarray,
 ) -> float:
-    batch_count, response_count = predictions.shape
     return _mse_fn_unnormalized(predictions, targets) / (
-        batch_count * response_count
+        jnp.prod(jnp.array(predictions.shape))
     )
 
 

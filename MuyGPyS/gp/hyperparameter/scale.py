@@ -46,7 +46,11 @@ class ScaleFn:
         return count
 
     def _check_positive_float(self, val) -> float:
-        if isinstance(val, Sequence) or hasattr(val, "__len__"):
+        if (
+            isinstance(val, Sequence)
+            or hasattr(val, "__len__")
+            and len(val) != 1
+        ):
             raise ValueError(f"Scale parameter must be scalar, not {val}.")
         if not isinstance(val, mm.ndarray):
             val = float(val)
@@ -262,7 +266,7 @@ class DownSampleScale(ScaleFn):
 
                 pK_down = pK[:, sampled_indices, :]
                 pK_down = pK_down[:, :, sampled_indices]
-                nn_targets_down = nn_targets[:, sampled_indices, :]
+                nn_targets_down = nn_targets[:, sampled_indices]
                 scales.append(self._fn(pK_down, nn_targets_down))
 
             return np.median(scales, axis=0) / (self._down_count * batch_count)
