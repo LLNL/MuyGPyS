@@ -168,6 +168,8 @@ class HeatonTest(RegressionAPITest):
         super(HeatonTest, cls).setUpClass()
         with open(os.path.join(hardpath, heaton_file), "rb") as f:
             cls.train, cls.test = pkl.load(f)
+            cls.train["output"] = np.squeeze(cls.train["output"])
+            cls.test["output"] = np.squeeze(cls.test["output"])
 
     @parameterized.parameters(
         (

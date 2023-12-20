@@ -262,7 +262,7 @@ class DownSampleScale(ScaleFn):
 
                 pK_down = pK[:, sampled_indices, :]
                 pK_down = pK_down[:, :, sampled_indices]
-                nn_targets_down = nn_targets[:, sampled_indices, :]
+                nn_targets_down = nn_targets[:, sampled_indices]
                 scales.append(self._fn(pK_down, nn_targets_down))
 
             return np.median(scales, axis=0) / (self._down_count * batch_count)

@@ -10,6 +10,7 @@ def _analytic_scale_optim_unnormalized(
     Kin: torch.ndarray,
     nn_targets: torch.ndarray,
 ) -> torch.ndarray:
+    nn_targets = torch.atleast_3d(nn_targets)
     return torch.sum(
         torch.einsum(
             "ijk,ijk->ik", nn_targets, torch.linalg.solve(Kin, nn_targets)

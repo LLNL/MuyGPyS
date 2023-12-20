@@ -10,6 +10,7 @@ def _analytic_scale_optim_unnormalized(
     Kin: np.ndarray,
     nn_targets: np.ndarray,
 ) -> np.ndarray:
+    nn_targets = np.atleast_3d(nn_targets)
     return np.sum(
         np.einsum("ijk,ijk->ik", nn_targets, np.linalg.solve(Kin, nn_targets))
     )
