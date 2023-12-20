@@ -16,16 +16,6 @@ def _analytic_scale_optim_unnormalized(
     )
 
 
-def _old_analytic_scale_optim(
-    Kin: np.ndarray,
-    nn_targets: np.ndarray,
-) -> np.ndarray:
-    batch_count, nn_count = nn_targets.shape[:2]
-    return _analytic_scale_optim_unnormalized(Kin, nn_targets) / (
-        nn_count * batch_count
-    )
-
-
 def _analytic_scale_optim(
     Kin: np.ndarray,
     nn_targets: np.ndarray,
