@@ -30,9 +30,9 @@ def _muygps_posterior_mean(
     batch_shape = Kin.shape[: -2 * len(in_shape)]  # (b_1, ..., b_b)
     extra_shape = batch_nn_targets.shape[len(batch_shape) + len(in_shape) :]
 
-    in_size = jnp.prod(in_shape, dtype=int)
-    out_size = jnp.prod(out_shape, dtype=int)
-    extra_size = jnp.prod(extra_shape, dtype=int)
+    in_size = jnp.prod(jnp.array(in_shape), dtype=int)
+    out_size = jnp.prod(jnp.array(out_shape), dtype=int)
+    extra_size = jnp.prod(jnp.array(extra_shape), dtype=int)
 
     batch_nn_targets_flat = batch_nn_targets.reshape(
         batch_shape + (in_size, extra_size)
@@ -60,8 +60,8 @@ def _muygps_diagonal_variance(
     in_shape = Kin.shape[batch_size + in_dim_count :]
     out_shape = Kcross.shape[batch_size + in_dim_count :]
 
-    in_size = jnp.prod(in_shape, dtype=int)
-    out_size = jnp.prod(out_shape, dtype=int)
+    in_size = jnp.prod(jnp.array(in_shape), dtype=int)
+    out_size = jnp.prod(jnp.array(out_shape), dtype=int)
 
     Kin_flat = Kin.reshape(batch_shape + (in_size, in_size))
     Kcross_flat = Kcross.reshape(batch_shape + (in_size, out_size))

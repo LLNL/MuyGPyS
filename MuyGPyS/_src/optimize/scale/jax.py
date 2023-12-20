@@ -30,8 +30,8 @@ def _analytic_scale_optim(
     batch_shape = Kin.shape[:batch_dim_count]
     in_shape = Kin.shape[batch_dim_count + in_dim_count :]
 
-    batch_size = jnp.prod(batch_shape, dtype=int)
-    in_size = jnp.prod(in_shape, dtype=int)
+    batch_size = jnp.prod(jnp.array(batch_shape), dtype=int)
+    in_size = jnp.prod(jnp.array(in_shape), dtype=int)
 
     Kin_flat = Kin.reshape(batch_shape + (in_size, in_size))
     nn_targets_flat = nn_targets.reshape(batch_shape + (in_size, 1))
