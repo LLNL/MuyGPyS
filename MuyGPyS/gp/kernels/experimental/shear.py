@@ -115,6 +115,10 @@ class ShearKernel(KernelFn):
             or a tensor of shape `(data_count, nn_count * 3, nn_count * 3)`
             whose last two dimensions are kernel matrices.
         """
+        if diffs.shape[-2] != diffs.shape[-3]:
+            # this is probably a crosswise differences tensor
+            # reshape to insert a unitary dimension
+            diffs = diffs[..., None, :]
         return self._fn(diffs, **kwargs)
 
     def get_opt_params(
@@ -147,4 +151,4 @@ class ShearKernel(KernelFn):
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._fn
+        return self.__call__
