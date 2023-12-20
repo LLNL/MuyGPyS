@@ -23,19 +23,37 @@ def _analytic_scale_optim_unnormalized(
 def _analytic_scale_optim(
     Kin: jnp.ndarray,
     nn_targets: jnp.ndarray,
-    batch_dim_count: int = 1,
 ) -> jnp.ndarray:
-    in_dim_count = (Kin.ndim - batch_dim_count) // 2
+    if Kin.ndim == 3:
+        assert nn_targets.ndim == 2
+        return _analytic_scale_optim_univariate(Kin, nn_targets)
+    elif Kin.ndim == 5:
+        assert nn_targets.ndim == 3
+        return _analytic_scale_optim_multivariate(Kin, nn_targets)
+    raise ValueError("should not be possible to get here (jax scale)")
 
-    batch_shape = Kin.shape[:batch_dim_count]
-    in_shape = Kin.shape[batch_dim_count + in_dim_count :]
 
-    batch_size = jnp.prod(jnp.array(batch_shape), dtype=int)
-    in_size = jnp.prod(jnp.array(in_shape), dtype=int)
+@jit
+def _analytic_scale_optim_univariate(
+    Kin: jnp.ndarray,
+    nn_targets: jnp.ndarray,
+) -> jnp.ndarray:
+    batch_count, nn_count = Kin.shape[:2]
+    return _analytic_scale_optim_unnormalized(Kin, nn_targets) / (
+        batch_count * nn_count
+    )
 
-    Kin_flat = Kin.reshape(batch_shape + (in_size, in_size))
-    nn_targets_flat = nn_targets.reshape(batch_shape + (in_size, 1))
 
+@jit
+def _analytic_scale_optim_multivariate(
+    Kin: jnp.ndarray,
+    nn_targets: jnp.ndarray,
+) -> jnp.ndarray:
+    batch_count, nn_count, response_count = Kin.shape[:3]
+    Kin_flat = Kin.reshape(
+        batch_count, nn_count * response_count, nn_count * response_count
+    )
+    nn_targets_flat = nn_targets.reshape(batch_count, nn_count * response_count)
     return _analytic_scale_optim_unnormalized(Kin_flat, nn_targets_flat) / (
-        batch_size * in_size
+        batch_count * nn_count
     )

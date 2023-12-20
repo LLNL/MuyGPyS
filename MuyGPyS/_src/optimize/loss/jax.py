@@ -56,7 +56,7 @@ def _mse_fn(
     targets: jnp.ndarray,
 ) -> float:
     return _mse_fn_unnormalized(predictions, targets) / (
-        jnp.prod(predictions.shape)
+        jnp.prod(jnp.array(predictions.shape))
     )
 
 
