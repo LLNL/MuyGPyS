@@ -17,9 +17,7 @@ world = config.mpi_state.comm_world
 
 
 def _analytic_scale_optim(
-    Kin: np.ndarray,
-    nn_targets: np.ndarray,
-    batch_dim_count: int = 1,
+    Kin: np.ndarray, nn_targets: np.ndarray, batch_dim_count: int = 1, **kwargs
 ) -> np.ndarray:
     in_dim_count = (Kin.ndim - batch_dim_count) // 2
 
@@ -31,8 +29,9 @@ def _analytic_scale_optim(
 
     Kin_flat = Kin.reshape(batch_shape + (in_size, in_size))
     nn_targets_flat = nn_targets.reshape(batch_shape + (in_size, 1))
-
-    local_sum = _analytic_scale_optim_unnormalized(Kin_flat, nn_targets_flat)
+    local_sum = _analytic_scale_optim_unnormalized(
+        Kin_flat, nn_targets_flat, **kwargs
+    )
     global_sum = world.allreduce(local_sum, op=MPI.SUM)
     global_batch_count = world.allreduce(local_batch_size, op=MPI.SUM)
     return global_sum / (in_size * global_batch_count)

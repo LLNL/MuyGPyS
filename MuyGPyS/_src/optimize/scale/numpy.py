@@ -7,8 +7,7 @@ import MuyGPyS._src.math.numpy as np
 
 
 def _analytic_scale_optim_unnormalized(
-    Kin: np.ndarray,
-    nn_targets: np.ndarray,
+    Kin: np.ndarray, nn_targets: np.ndarray, **kwargs
 ) -> np.ndarray:
     nn_targets = np.atleast_3d(nn_targets)
     return np.sum(
@@ -17,9 +16,7 @@ def _analytic_scale_optim_unnormalized(
 
 
 def _analytic_scale_optim(
-    Kin: np.ndarray,
-    nn_targets: np.ndarray,
-    batch_dim_count: int = 1,
+    Kin: np.ndarray, nn_targets: np.ndarray, batch_dim_count: int = 1, **kwargs
 ) -> np.ndarray:
     in_dim_count = (Kin.ndim - batch_dim_count) // 2
 
@@ -32,6 +29,6 @@ def _analytic_scale_optim(
     Kin_flat = Kin.reshape(batch_shape + (in_size, in_size))
     nn_targets_flat = nn_targets.reshape(batch_shape + (in_size, 1))
 
-    return _analytic_scale_optim_unnormalized(Kin_flat, nn_targets_flat) / (
-        batch_size * in_size
-    )
+    return _analytic_scale_optim_unnormalized(
+        Kin_flat, nn_targets_flat, **kwargs
+    ) / (batch_size * in_size)

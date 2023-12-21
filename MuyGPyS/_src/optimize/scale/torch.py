@@ -7,8 +7,7 @@ import MuyGPyS._src.math.torch as torch
 
 
 def _analytic_scale_optim_unnormalized(
-    Kin: torch.ndarray,
-    nn_targets: torch.ndarray,
+    Kin: torch.ndarray, nn_targets: torch.ndarray, **kwargs
 ) -> torch.ndarray:
     nn_targets = torch.atleast_3d(nn_targets)
     return torch.sum(
@@ -22,6 +21,7 @@ def _analytic_scale_optim(
     Kin: torch.ndarray,
     nn_targets: torch.ndarray,
     batch_dim_count: int = 1,
+    **kwargs,
 ) -> torch.ndarray:
     in_dim_count = (Kin.ndim - batch_dim_count) // 2
 
@@ -34,6 +34,6 @@ def _analytic_scale_optim(
     Kin_flat = Kin.reshape(batch_shape + (in_size, in_size))
     nn_targets_flat = nn_targets.reshape(batch_shape + (in_size, 1))
 
-    return _analytic_scale_optim_unnormalized(Kin_flat, nn_targets_flat) / (
-        batch_size * in_size
-    )
+    return _analytic_scale_optim_unnormalized(
+        Kin_flat, nn_targets_flat, **kwargs
+    ) / (batch_size * in_size)

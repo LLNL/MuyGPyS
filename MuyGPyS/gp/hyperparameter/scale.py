@@ -195,7 +195,7 @@ class AnalyticScale(ScaleFn):
         """
 
         def analytic_scale_opt_fn(Kin, nn_targets, *args, **kwargs):
-            return self._fn(muygps.noise.perturb(Kin), nn_targets)
+            return self._fn(muygps.noise.perturb(Kin), nn_targets, **kwargs)
 
         return analytic_scale_opt_fn
 

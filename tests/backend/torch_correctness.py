@@ -137,6 +137,8 @@ class TensorsTestCase(parameterized.TestCase):
                     F2_n, length_scale=ScalarParam(cls.length_scale)
                 ),
                 _backend_fn=rbf_fn_n,
+                _backend_zeros=np.zeros,
+                _backend_squeeze=np.squeeze,
             ),
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
@@ -157,6 +159,8 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_25_fn=matern_25_fn_n,
                 _backend_inf_fn=matern_inf_fn_n,
                 _backend_gen_fn=matern_gen_fn_n,
+                _backend_zeros=np.zeros,
+                _backend_squeeze=np.squeeze,
             ),
             noise=noise,
             scale=AnalyticScale(_backend_fn=analytic_scale_optim_n),
@@ -216,6 +220,8 @@ class TensorsTestCase(parameterized.TestCase):
                     F2_t, length_scale=ScalarParam(cls.length_scale)
                 ),
                 _backend_fn=rbf_fn_t,
+                _backend_zeros=torch.zeros,
+                _backend_squeeze=torch.squeeze,
             ),
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_t
@@ -236,6 +242,8 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_25_fn=matern_25_fn_t,
                 _backend_inf_fn=matern_inf_fn_t,
                 _backend_gen_fn=matern_gen_fn_t,
+                _backend_zeros=torch.zeros,
+                _backend_squeeze=torch.squeeze,
             ),
             noise=noise,
             scale=AnalyticScale(_backend_fn=analytic_scale_optim_t),
