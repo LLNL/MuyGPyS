@@ -113,8 +113,9 @@ class MuyGPS:
         self._mean_fn = PosteriorMean(
             self.noise, _backend_fn=self._backend_mean_fn
         )
+        Kout = self.kernel.Kout()
         self._var_fn = PosteriorVariance(
-            self.noise, self.scale, _backend_fn=self._backend_var_fn
+            Kout, self.noise, self.scale, _backend_fn=self._backend_var_fn
         )
         self._fast_posterior_mean_fn = FastPosteriorMean(
             _backend_fn=self._backend_fast_mean_fn

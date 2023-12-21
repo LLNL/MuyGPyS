@@ -101,12 +101,17 @@ def _muygps_posterior_mean_multivariate(
 def _muygps_diagonal_variance(
     Kin: jnp.ndarray,
     Kcross: jnp.ndarray,
+    Kout: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
     if Kin.ndim == 3:
-        return _muygps_posterior_variance_univariate(Kin, Kcross, **kwargs)
+        return _muygps_posterior_variance_univariate(
+            Kin, Kcross, Kout, **kwargs
+        )
     elif Kin.ndim == 5:
-        return _muygps_posterior_variance_multivariate(Kin, Kcross, **kwargs)
+        return _muygps_posterior_variance_multivariate(
+            Kin, Kcross, Kout, **kwargs
+        )
     raise ValueError("should not be possible to get here (jax variance)")
 
 
@@ -114,6 +119,7 @@ def _muygps_diagonal_variance(
 def _muygps_posterior_variance_univariate(
     Kin: jnp.ndarray,
     Kcross: jnp.ndarray,
+    Kout: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
     batch_count = Kin.shape[0]
@@ -121,13 +127,14 @@ def _muygps_posterior_variance_univariate(
     F_flat = jnp.linalg.solve(Kin, Kcross_flat)
     Kpost = F_flat.swapaxes(-2, -1) @ Kcross_flat
 
-    return 1 - Kpost.reshape(batch_count)
+    return Kout - Kpost.reshape(batch_count)
 
 
 @jit
 def _muygps_posterior_variance_multivariate(
     Kin: jnp.ndarray,
     Kcross: jnp.ndarray,
+    Kout: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
     batch_count, nn_count, response_count = Kin.shape[:3]
@@ -141,9 +148,7 @@ def _muygps_posterior_variance_multivariate(
     F_flat = jnp.linalg.solve(Kin_flat, Kcross_flat)
     Kpost = F_flat.swapaxes(-2, -1) @ Kcross_flat
 
-    return jnp.eye(out_count, out_count) - Kpost.reshape(
-        batch_count, out_count, out_count
-    )
+    return Kout - Kpost.reshape(batch_count, out_count, out_count)
 
 
 @jit

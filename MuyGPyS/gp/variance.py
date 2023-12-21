@@ -22,12 +22,21 @@ from MuyGPyS.gp.noise import NoiseFn
 class PosteriorVariance:
     def __init__(
         self,
+        Kout: mm.ndarray,
         noise: NoiseFn,
         scale: ScaleFn,
         _backend_fn: Callable = _muygps_diagonal_variance,
     ):
         self._fn = _backend_fn
         self._fn = noise.perturb_fn(self._fn)
+
+        def fix_Kout_fn(fn: Callable) -> Callable:
+            def fixed_Kout_fn(Kin, Kcross, *args, **kwargs):
+                return fn(Kin, Kcross, Kout, *args, **kwargs)
+
+            return fixed_Kout_fn
+
+        self._fn = fix_Kout_fn(self._fn)
         self._opt_fn = self._fn
         self._fn = scale.scale_fn(self._fn)
 

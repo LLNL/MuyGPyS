@@ -23,7 +23,10 @@ def _cross_entropy_fn(
 
 @jit
 def _log_loss(
-    y_true: jnp.ndarray, y_pred: jnp.ndarray, eps: float = 1e-15
+    y_true: jnp.ndarray,
+    y_pred: jnp.ndarray,
+    eps: float = 1e-15,
+    **kwargs,
 ) -> jnp.ndarray:
     """
     Lifted whole-cloth from [0].
@@ -44,17 +47,13 @@ def _log_loss(
 
 @jit
 def _mse_fn_unnormalized(
-    predictions: jnp.ndarray,
-    targets: jnp.ndarray,
+    predictions: jnp.ndarray, targets: jnp.ndarray, **kwargs
 ) -> jnp.ndarray:
     return jnp.sum((predictions - targets) ** 2)
 
 
 @jit
-def _mse_fn(
-    predictions: jnp.ndarray,
-    targets: jnp.ndarray,
-) -> float:
+def _mse_fn(predictions: jnp.ndarray, targets: jnp.ndarray, **kwargs) -> float:
     return _mse_fn_unnormalized(predictions, targets) / (
         jnp.prod(jnp.array(predictions.shape))
     )
@@ -66,22 +65,38 @@ def _lool_fn(
     targets: jnp.ndarray,
     variances: jnp.ndarray,
     scale: jnp.ndarray,
+    **kwargs,
 ) -> jnp.ndarray:
-    return _lool_fn_unscaled(predictions, targets, scale * variances)
+    return _lool_fn_unscaled(predictions, targets, scale * variances, **kwargs)
 
 
 @jit
 def _lool_fn_unscaled(
-    predictions: jnp.ndarray, targets: jnp.ndarray, variances: jnp.ndarray
+    predictions: jnp.ndarray,
+    targets: jnp.ndarray,
+    variances: jnp.ndarray,
+    **kwargs,
 ) -> float:
-    return jnp.sum(
-        jnp.divide((predictions - targets) ** 2, variances) + jnp.log(variances)
-    )
+    if variances.ndim == 3:
+        residual = jnp.atleast_3d(predictions - targets)
+        quad_form = jnp.squeeze(
+            residual.swapaxes(-2, -1) @ jnp.linalg.solve(variances, residual)
+        )
+        logdet = jnp.linalg.slogdet(variances)
+        return jnp.sum(quad_form + logdet)
+    else:
+        return jnp.sum(
+            jnp.divide((predictions - targets) ** 2, variances)
+            + jnp.log(variances)
+        )
 
 
 @jit
 def _pseudo_huber_fn(
-    predictions: jnp.ndarray, targets: jnp.ndarray, boundary_scale: float = 1.5
+    predictions: jnp.ndarray,
+    targets: jnp.ndarray,
+    boundary_scale: float = 1.5,
+    **kwargs,
 ) -> float:
     return boundary_scale**2 * jnp.sum(
         jnp.sqrt(1 + jnp.divide(targets - predictions, boundary_scale) ** 2) - 1
@@ -94,22 +109,27 @@ def _looph_fn_unscaled(
     targets: jnp.ndarray,
     variances: jnp.ndarray,
     boundary_scale: float = 3.0,
+    **kwargs,
 ) -> float:
     boundary_scale_sq = boundary_scale**2
-    return jnp.sum(
-        2
-        * boundary_scale_sq
-        * (
-            jnp.sqrt(
-                1
-                + jnp.divide(
-                    (targets - predictions) ** 2, boundary_scale_sq * variances
+    if variances.ndim == 1:
+        return jnp.sum(
+            2
+            * boundary_scale_sq
+            * (
+                jnp.sqrt(
+                    1
+                    + jnp.divide(
+                        (targets - predictions) ** 2,
+                        boundary_scale_sq * variances,
+                    )
                 )
+                - 1
             )
-            - 1
+            + jnp.log(variances)
         )
-        + jnp.log(variances)
-    )
+    else:
+        raise ValueError("looph does not yet support multivariate inference")
 
 
 @jit
@@ -119,6 +139,7 @@ def _looph_fn(
     variances: jnp.ndarray,
     scale: float,
     boundary_scale: float = 3.0,
+    **kwargs,
 ) -> float:
     return _looph_fn_unscaled(
         predictions, targets, scale * variances, boundary_scale=boundary_scale

@@ -160,6 +160,9 @@ class TensorsTestCase(parameterized.TestCase):
                     F2_n, length_scale=ScalarParam(cls.length_scale)
                 ),
                 _backend_fn=rbf_fn_n,
+                _backend_ones=np.ones,
+                _backend_zeros=np.zeros,
+                _backend_squeeze=np.squeeze,
             ),
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
@@ -182,6 +185,9 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_25_fn=matern_25_fn_n,
                 _backend_inf_fn=matern_inf_fn_n,
                 _backend_gen_fn=matern_gen_fn_n,
+                _backend_ones=np.ones,
+                _backend_zeros=np.zeros,
+                _backend_squeeze=np.squeeze,
             ),
             noise=noise,
             scale=AnalyticScale(_backend_fn=analytic_scale_optim_n),
@@ -245,6 +251,9 @@ class TensorsTestCase(parameterized.TestCase):
                     F2_j, length_scale=ScalarParam(cls.length_scale)
                 ),
                 _backend_fn=rbf_fn_j,
+                _backend_ones=jnp.ones,
+                _backend_zeros=jnp.zeros,
+                _backend_squeeze=jnp.squeeze,
             ),
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_j
@@ -267,6 +276,9 @@ class TensorsTestCase(parameterized.TestCase):
                 _backend_25_fn=matern_25_fn_j,
                 _backend_inf_fn=matern_inf_fn_j,
                 _backend_gen_fn=matern_gen_fn_j,
+                _backend_ones=jnp.ones,
+                _backend_zeros=jnp.zeros,
+                _backend_squeeze=jnp.squeeze,
             ),
             noise=noise,
             scale=AnalyticScale(_backend_fn=analytic_scale_optim_j),

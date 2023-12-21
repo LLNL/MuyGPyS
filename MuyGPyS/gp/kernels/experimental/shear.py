@@ -75,6 +75,8 @@ class ShearKernel(KernelFn):
         self,
         deformation: Isotropy = Isotropy(F2, length_scale=ScalarParam(1.0)),
         _backend_fn: Callable = _shear_fn,
+        _backend_zeros: Callable = mm.zeros,
+        _backend_squeeze: Callable = mm.squeeze,
     ):
         super().__init__(deformation=deformation)
         if not isinstance(self.deformation, Isotropy):
@@ -82,6 +84,8 @@ class ShearKernel(KernelFn):
                 "ShearKernel only supports isotropic deformations, not "
                 f"{type(deformation)}"
             )
+        self._backend_zeros = _backend_zeros
+        self._backend_squeeze = _backend_squeeze
         self._kernel_fn = _backend_fn
         self._make()
 
@@ -120,6 +124,9 @@ class ShearKernel(KernelFn):
             # reshape to insert a unitary dimension
             diffs = diffs[..., None, :]
         return self._fn(diffs, **kwargs)
+
+    def Kout(self, **kwargs) -> mm.ndarray:
+        return self.__call__(self._backend_zeros((1, 1, 2)))
 
     def get_opt_params(
         self,

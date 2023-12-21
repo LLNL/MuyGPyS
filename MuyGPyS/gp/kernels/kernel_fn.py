@@ -95,6 +95,9 @@ class KernelFn:
             "get_opt_fn is not implemented for base KernelFn"
         )
 
+    def Kout(self) -> mm.ndarray:
+        raise NotImplementedError("Kout is not implemented for base KernelFn")
+
     def get_opt_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:

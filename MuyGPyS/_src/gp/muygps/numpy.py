@@ -46,6 +46,7 @@ def _muygps_posterior_mean(
 def _muygps_diagonal_variance(
     Kin: np.ndarray,
     Kcross: np.ndarray,
+    Kout: np.ndarray,
     batch_size: int = 1,
     **kwargs,
 ) -> np.ndarray:
@@ -65,7 +66,7 @@ def _muygps_diagonal_variance(
 
     Kpost = F_flat.swapaxes(-2, -1) @ Kcross_flat
 
-    return 1 - Kpost.reshape(batch_shape + out_shape + out_shape)
+    return Kout - Kpost.reshape(batch_shape + out_shape + out_shape)
 
 
 def _muygps_fast_posterior_mean(
