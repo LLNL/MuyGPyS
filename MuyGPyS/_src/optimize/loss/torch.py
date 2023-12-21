@@ -51,18 +51,18 @@ def _lool_fn_unscaled(
     variances: torch.ndarray,
     **kwargs
 ) -> float:
-    if variances.ndim == 1:
-        return torch.sum(
-            torch.divide((predictions - targets) ** 2, variances)
-            + torch.log(variances)
-        )
-    else:
+    if variances.ndim == 3:
         residual = torch.atleast_3d(predictions - targets)
         quad_form = torch.squeeze(
             residual.swapaxes(-2, -1) @ torch.linalg.solve(variances, residual)
         )
         logdet = torch.linalg.slogdet(variances)
         return torch.sum(quad_form + logdet)
+    else:
+        return torch.sum(
+            torch.divide((predictions - targets) ** 2, variances)
+            + torch.log(variances)
+        )
 
 
 def _pseudo_huber_fn(

@@ -123,12 +123,14 @@ class Matern(KernelFn):
         deformation: DeformationFn = Isotropy(
             l2, length_scale=ScalarParam(1.0)
         ),
+        _backend_ones: Callable = mm.ones,
         _backend_zeros: Callable = mm.zeros,
         _backend_squeeze: Callable = mm.squeeze,
         **_backend_fns
     ):
         super().__init__(deformation=deformation)
         self.smoothness = smoothness
+        self._backend_ones = _backend_ones
         self._backend_zeros = _backend_zeros
         self._backend_squeeze = _backend_squeeze
         self._backend_fns = _backend_fns
@@ -164,9 +166,10 @@ class Matern(KernelFn):
         return self._fn(diffs, **kwargs)
 
     def Kout(self, **kwargs) -> mm.ndarray:
-        return self._backend_squeeze(
-            self._predef_fn(self._backend_zeros((1, 1)))
-        )
+        # return self._backend_squeeze(
+        #     self._predef_fn(self._backend_zeros((1, 1)))
+        # )
+        return self._backend_squeeze(self._backend_ones((1, 1)))
 
     def get_opt_params(
         self,

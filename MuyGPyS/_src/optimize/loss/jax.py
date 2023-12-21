@@ -77,18 +77,18 @@ def _lool_fn_unscaled(
     variances: jnp.ndarray,
     **kwargs,
 ) -> float:
-    if variances.ndim == 1:
-        return jnp.sum(
-            jnp.divide((predictions - targets) ** 2, variances)
-            + jnp.log(variances)
-        )
-    else:
+    if variances.ndim == 3:
         residual = jnp.atleast_3d(predictions - targets)
         quad_form = jnp.squeeze(
             residual.swapaxes(-2, -1) @ jnp.linalg.solve(variances, residual)
         )
         logdet = jnp.linalg.slogdet(variances)
         return jnp.sum(quad_form + logdet)
+    else:
+        return jnp.sum(
+            jnp.divide((predictions - targets) ** 2, variances)
+            + jnp.log(variances)
+        )
 
 
 @jit
