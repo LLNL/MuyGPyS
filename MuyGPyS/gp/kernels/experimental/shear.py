@@ -98,7 +98,7 @@ class ShearKernel(KernelFn):
 
         self._fn = embedded_fn
 
-    def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
+    def __call__(self, diffs: mm.ndarray, adjust=True, **kwargs) -> mm.ndarray:
         """
         Compute shear kernel(s) from a difference tensor.
 
@@ -115,7 +115,7 @@ class ShearKernel(KernelFn):
             or a tensor of shape `(data_count, nn_count * 3, nn_count * 3)`
             whose last two dimensions are kernel matrices.
         """
-        if diffs.shape[-2] != diffs.shape[-3]:
+        if adjust and diffs.shape[-2] != diffs.shape[-3]:
             # this is probably a crosswise differences tensor
             # reshape to insert a unitary dimension
             diffs = diffs[..., None, :]
