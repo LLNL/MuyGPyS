@@ -17,28 +17,26 @@ def _find_matching_ndim(nn_targets: np.ndarray, Kin: np.ndarray):
 def _muygps_posterior_mean(
     Kin: np.ndarray,
     Kcross: np.ndarray,
-    batch_nn_targets: np.ndarray,
+    nn_targets: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    batch_in_ndim = _find_matching_ndim(batch_nn_targets, Kin)
+    batch_in_ndim = _find_matching_ndim(nn_targets, Kin)
     in_shape = Kin.shape[batch_in_ndim:]  # (i_1, ..., i_n)
     out_shape = Kcross.shape[batch_in_ndim:]  # (j_1, ..., j_m)
     batch_shape = Kin.shape[: -2 * len(in_shape)]  # (b_1, ..., b_b)
-    extra_shape = batch_nn_targets.shape[len(batch_shape) + len(in_shape) :]
+    extra_shape = nn_targets.shape[len(batch_shape) + len(in_shape) :]
 
     in_size = np.prod(in_shape, dtype=int)
     out_size = np.prod(out_shape, dtype=int)
     extra_size = np.prod(extra_shape, dtype=int)
 
-    batch_nn_targets_flat = batch_nn_targets.reshape(
-        batch_shape + (in_size, extra_size)
-    )
+    nn_targets_flat = nn_targets.reshape(batch_shape + (in_size, extra_size))
     Kin_flat = Kin.reshape(batch_shape + (in_size, in_size))
     Kcross_flat = Kcross.reshape(batch_shape + (in_size, out_size))
 
     F_flat = np.linalg.solve(Kin_flat, Kcross_flat)
 
-    ret = F_flat.swapaxes(-2, -1) @ batch_nn_targets_flat
+    ret = F_flat.swapaxes(-2, -1) @ nn_targets_flat
     ret = ret.reshape(batch_shape + out_shape + extra_shape)
     return ret
 
