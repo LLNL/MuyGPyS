@@ -19,7 +19,7 @@ def _homoscedastic_perturb(
         all_count = in_count * nn_count
         Kin_flat = Kin.reshape(b, all_count, all_count)
         Kin_flat = Kin_flat + noise_variance * torch.eye(all_count)
-        return Kin.reshape(b, in_count, nn_count, in_count, nn_count)
+        return Kin_flat.reshape(b, in_count, nn_count, in_count, nn_count)
     else:
         raise ValueError(
             "homoscedastic perturbation is not implemented for tensors of "

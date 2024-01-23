@@ -25,21 +25,21 @@ def _find_matching_ndim(nn_targets: jnp.ndarray, Kin: jnp.ndarray):
 def _muygps_posterior_mean(
     Kin: jnp.ndarray,
     Kcross: jnp.ndarray,
-    batch_nn_targets: jnp.ndarray,
+    nn_targets: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
     if Kin.ndim == 3:
-        if batch_nn_targets.ndim == 2:
+        if nn_targets.ndim == 2:
             return _muygps_posterior_mean_univariate(
-                Kin, Kcross, batch_nn_targets, **kwargs
+                Kin, Kcross, nn_targets, **kwargs
             )
-        elif batch_nn_targets.ndim == 3:
+        elif nn_targets.ndim == 3:
             return _muygps_posterior_mean_diagonal_multivariate(
-                Kin, Kcross, batch_nn_targets, **kwargs
+                Kin, Kcross, nn_targets, **kwargs
             )
     else:
         return _muygps_posterior_mean_multivariate(
-            Kin, Kcross, batch_nn_targets, **kwargs
+            Kin, Kcross, nn_targets, **kwargs
         )
     raise ValueError("should not be possible to get here (jax mean)")
 
@@ -48,12 +48,12 @@ def _muygps_posterior_mean(
 def _muygps_posterior_mean_univariate(
     Kin: jnp.ndarray,
     Kcross: jnp.ndarray,
-    batch_nn_targets: jnp.ndarray,
+    nn_targets: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
     batch_count = Kin.shape[0]
     F_flat = jnp.linalg.solve(Kin, Kcross[:, :, None])
-    ret = F_flat.swapaxes(-2, -1) @ batch_nn_targets[:, :, None]
+    ret = F_flat.swapaxes(-2, -1) @ nn_targets[:, :, None]
     ret = ret.reshape(batch_count)
     return ret
 
@@ -62,13 +62,13 @@ def _muygps_posterior_mean_univariate(
 def _muygps_posterior_mean_diagonal_multivariate(
     Kin: jnp.ndarray,
     Kcross: jnp.ndarray,
-    batch_nn_targets: jnp.ndarray,
+    nn_targets: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
     batch_count = Kin.shape[0]
-    response_count = batch_nn_targets.shape[-1]
+    response_count = nn_targets.shape[-1]
     F_flat = jnp.linalg.solve(Kin, Kcross[:, :, None])
-    ret = F_flat.swapaxes(-2, -1) @ batch_nn_targets
+    ret = F_flat.swapaxes(-2, -1) @ nn_targets
     ret = ret.reshape(batch_count, response_count)
     return ret
 
@@ -77,7 +77,7 @@ def _muygps_posterior_mean_diagonal_multivariate(
 def _muygps_posterior_mean_multivariate(
     Kin: jnp.ndarray,
     Kcross: jnp.ndarray,
-    batch_nn_targets: jnp.ndarray,
+    nn_targets: jnp.ndarray,
     **kwargs,
 ) -> jnp.ndarray:
     batch_count, nn_count, response_count = Kin.shape[:3]
@@ -88,11 +88,9 @@ def _muygps_posterior_mean_multivariate(
     Kcross_flat = Kcross.reshape(
         batch_count, nn_count * response_count, out_count
     )
-    batch_nn_targets_flat = batch_nn_targets.reshape(
-        batch_count, nn_count * response_count
-    )
+    nn_targets_flat = nn_targets.reshape(batch_count, nn_count * response_count)
     F_flat = jnp.linalg.solve(Kin_flat, Kcross_flat)
-    ret = F_flat.swapaxes(-2, -1) @ batch_nn_targets_flat
+    ret = F_flat.swapaxes(-2, -1) @ nn_targets_flat
     ret = ret.reshape(batch_count, out_count)
     return ret
 
