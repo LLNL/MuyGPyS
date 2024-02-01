@@ -38,7 +38,6 @@ from MuyGPyS._src.optimize.chassis.numpy import (
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import Anisotropy
-from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.objective import make_loo_crossval_fn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
@@ -234,7 +233,7 @@ def optimize_from_tensors_mini_batch(
             batch_pairwise_diffs,
             batch_targets,
             batch_nn_targets,
-        ) = make_train_tensors(
+        ) = muygps.make_train_tensors(
             batch_indices,
             batch_nn_indices,
             train_features,

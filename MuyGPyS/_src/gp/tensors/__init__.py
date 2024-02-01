@@ -6,9 +6,7 @@
 from MuyGPyS._src.util import _collect_implementation
 
 (
-    _make_predict_tensors,
     _make_fast_predict_tensors,
-    _make_train_tensors,
     _batch_features_tensor,
     _crosswise_differences,
     _crosswise_tensor,
@@ -20,9 +18,7 @@ from MuyGPyS._src.util import _collect_implementation
     _l2,
 ) = _collect_implementation(
     "MuyGPyS._src.gp.tensors",
-    "_make_predict_tensors",
     "_make_fast_predict_tensors",
-    "_make_train_tensors",
     "_batch_features_tensor",
     "_crosswise_differences",
     "_crosswise_tensor",

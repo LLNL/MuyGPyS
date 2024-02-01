@@ -6,8 +6,11 @@
 """
 Multivariate MuyGPs implementation
 """
+from typing import Optional, Tuple
+
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _mmuygps_fast_posterior_mean
+from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS.gp.muygps import MuyGPS
 
 
@@ -367,3 +370,126 @@ class MultivariateMuyGPS:
             )
             model.scale._set(new_scale_val)
         return self
+
+    @mpi_chunk(return_count=3)
+    def make_predict_tensors(
+        self,
+        batch_indices: mm.ndarray,
+        batch_nn_indices: mm.ndarray,
+        test_features: Optional[mm.ndarray],
+        train_features: mm.ndarray,
+        train_targets: mm.ndarray,
+        **kwargs,
+    ) -> Tuple[mm.ndarray, mm.ndarray, mm.ndarray]:
+        """
+        Create the metric and target tensors for prediction using the model's
+        deformation.
+
+        @NOTE[mwp] uses the first model's deformation, and expects all model
+        deformations to agree in tensor shapes.
+
+        Creates the `crosswise_tensor`, `pairwise_tensor` and `batch_nn_targets`
+        tensors required by :func:`~MuyGPyS.gp.MuyGPS.posterior_mean` and
+        :func:`~MuyGPyS.gp.MuyGPS.posterior_variance`.
+
+        Args:
+            batch_indices:
+                A vector of integers of shape `(batch_count,)` identifying the
+                training batch of observations to be approximated.
+            batch_nn_indices:
+                A matrix of integers of shape `(batch_count, nn_count)` listing
+                the nearest neighbor indices for all observations in the batch.
+            test_features:
+                The full floating point testing data matrix of shape
+                `(test_count, feature_count)`.
+            train_features:
+                The full floating point training data matrix of shape
+                `(train_count, ...)`.
+            train_targets:
+                A matrix of shape `(train_count, ...)` whose rows are
+                vector-valued responses for each training element.
+
+        Returns
+        -------
+        crosswise_tensor:
+            A tensor of shape `(batch_count, nn_count, ...)` whose second and
+            subsequent dimensions list the metric comparison between each batch
+            element element and its nearest neighbors.
+        pairwise_diffs:
+            A tensor of shape `(batch_count, nn_count, nn_count, ...)`
+            containing the `(nn_count, nn_count, ...)`-shaped pairwise nearest
+            neighbor metrics tensors corresponding to each of the batch
+            elements.
+        batch_nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, ...)` containing
+            the expected response for each nearest neighbor of each batch
+            element.
+        """
+        return self.models[0].make_predict_tensors(
+            batch_indices,
+            batch_nn_indices,
+            test_features,
+            train_features,
+            train_targets,
+            disable_mpi=True,
+        )
+
+    @mpi_chunk(return_count=4)
+    def make_train_tensors(
+        self,
+        batch_indices: mm.ndarray,
+        batch_nn_indices: mm.ndarray,
+        train_features: mm.ndarray,
+        train_targets: mm.ndarray,
+        **kwargs,
+    ) -> Tuple[mm.ndarray, mm.ndarray, mm.ndarray, mm.ndarray]:
+        """
+        Create the metric and target tensors needed for training.
+
+        @NOTE[mwp] uses the first model's deformation, and expects all model
+        deformations to agree in tensor shapes.
+
+        Similar to :func:`~MuyGPyS.gp.muygps.MuyGPS.make_predict_tensors` but
+        returns the additional `batch_targets` matrix, which is only defined for
+        a batch of training data.
+
+        Args:
+            batch_indices:
+                A vector of integers of shape `(batch_count,)` identifying the
+                training batch of observations to be approximated.
+            batch_nn_indices:
+                A matrix of integers of shape `(batch_count, nn_count)` listing the
+                nearest neighbor indices for all observations in the batch.
+            train_features:
+                The full floating point training data matrix of shape
+                `(train_count, ...)`.
+            train_targets:
+                A matrix of shape `(train_count, ...)` whose rows are
+                vector-valued responses for each training element.
+
+        Returns
+        -------
+        crosswise_tensor:
+            A tensor of shape `(batch_count, nn_count, ...)` whose second and
+            subsequent dimensions list the metric comparison between each batch
+            element element and its nearest neighbors.
+        pairwise_diffs:
+            A tensor of shape `(batch_count, nn_count, nn_count, ...)`
+            containing the `(nn_count, nn_count, ...)`-shaped pairwise nearest
+            neighbor metrics tensors corresponding to each of the batch
+            elements.
+        batch_targets:
+            Matrix of floats of shape `(batch_count, ...)` whose rows
+            give the expected response for each batch element.
+        batch_nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, ...)` containing
+            the expected response for each nearest neighbor of each batch
+            element.
+        """
+        return self.models[0].make_train_tensors(
+            batch_indices,
+            batch_nn_indices,
+            train_features,
+            train_targets,
+            disable_mpi=True,
+        )

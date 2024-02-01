@@ -9,10 +9,6 @@ MuyGPs PyTorch implementation
 import MuyGPyS._src.math.torch as torch
 from MuyGPyS import config
 from MuyGPyS._src.math.torch import nn
-from MuyGPyS.gp.tensors import (
-    pairwise_tensor,
-    crosswise_tensor,
-)
 
 from MuyGPyS.gp.multivariate_muygps import MultivariateMuyGPS as MMuyGPS
 
@@ -104,6 +100,9 @@ class MultivariateMuyGPs_layer(nn.Module):
     ):
         super().__init__()
         self.multivariate_muygps_model = multivariate_muygps_model
+        self.deformation = self.multivariate_muygps_model.models[
+            0
+        ].kernel.deformation
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
         self.batch_targets = batch_targets
@@ -122,14 +121,16 @@ class MultivariateMuyGPs_layer(nn.Module):
             A torch.ndarray of shape `(batch_count, response_count)`
             consisting of the diagonal elements of the posterior variance.
         """
-        crosswise_diffs = crosswise_tensor(
+        crosswise_diffs = self.deformation.crosswise_tensor(
             x,
             x,
             self.batch_indices,
             self.batch_nn_indices,
         )
 
-        pairwise_diffs = pairwise_tensor(x, self.batch_nn_indices)
+        pairwise_diffs = self.deformation.pairwise_tensor(
+            x, self.batch_nn_indices
+        )
 
         batch_count, nn_count, response_count = self.batch_nn_targets.shape
 
@@ -140,7 +141,9 @@ class MultivariateMuyGPs_layer(nn.Module):
             Kcross[:, :, i] = model.kernel(crosswise_diffs)
             Kin[:, :, :, i] = model.kernel(pairwise_diffs)
 
-        variances = self.multivariate_muygps_model.posterior_variance(Kin, Kcross)
+        variances = self.multivariate_muygps_model.posterior_variance(
+            Kin, Kcross
+        )
 
         predictions = self.multivariate_muygps_model.posterior_mean(
             Kin, Kcross, self.batch_nn_targets

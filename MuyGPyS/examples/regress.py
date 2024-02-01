@@ -22,7 +22,6 @@ from typing import Dict, List, Tuple, Union
 
 from MuyGPyS.examples.from_indices import regress_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.batch import sample_batch
@@ -154,7 +153,7 @@ def make_regressor(
             pairwise_diffs,
             batch_targets,
             batch_nn_targets,
-        ) = make_train_tensors(
+        ) = muygps.make_train_tensors(
             batch_indices,
             batch_nn_indices,
             train_features,
@@ -333,7 +332,7 @@ def make_multivariate_regressor(
             pairwise_diffs,
             batch_targets,
             batch_nn_targets,
-        ) = make_train_tensors(
+        ) = mmuygps.make_train_tensors(
             batch_indices,
             batch_nn_indices,
             train_features,
@@ -361,7 +360,10 @@ def make_multivariate_regressor(
 
         mmuygps = mmuygps.optimize_scale(pairwise_diffs, batch_nn_targets)
         if verbose is True:
-            print(f"Optimized scale values " f"{mmuygps.scale()}")
+            print(
+                "Optimized scale values "
+                f"{[model.scale() for model in mmuygps.models]}"
+            )
         time_sopt = perf_counter()
 
         if verbose is True:

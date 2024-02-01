@@ -34,7 +34,6 @@ from MuyGPyS.gp.deformation import Isotropy, Anisotropy, l2
 from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, FixedScale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize.loss import mse_fn
@@ -192,7 +191,9 @@ class ScaleTest(parameterized.TestCase):
         indices = mm.arange(data_count)
         nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
         nn_targets = _consistent_chunk_tensor(data["output"][nn_indices, :])
-        pairwise_diffs = pairwise_tensor(data["input"], nn_indices)
+        pairwise_diffs = mmuygps.models[0].kernel.deformation.pairwise_tensor(
+            data["input"], nn_indices
+        )
 
         # fit scales
         mmuygps = mmuygps.optimize_scale(pairwise_diffs, nn_targets)
@@ -304,13 +305,13 @@ class OptimTest(parameterized.TestCase):
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup, batch_count, train_count
         )
-        crosswise_diffs = crosswise_tensor(
+        crosswise_diffs = args[0]["kernel"].deformation.crosswise_tensor(
             mm.array(sim_train["input"]),
             mm.array(sim_train["input"]),
             batch_indices,
             batch_nn_indices,
         )
-        pairwise_diffs = pairwise_tensor(
+        pairwise_diffs = args[0]["kernel"].deformation.pairwise_tensor(
             mm.array(sim_train["input"]), batch_nn_indices
         )
 

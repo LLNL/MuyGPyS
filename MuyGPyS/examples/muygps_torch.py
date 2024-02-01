@@ -20,10 +20,6 @@ from torch.optim.lr_scheduler import ExponentialLR
 import torch
 import numpy as np
 from MuyGPyS import config
-from MuyGPyS.gp.tensors import (
-    pairwise_tensor,
-    crosswise_tensor,
-)
 from MuyGPyS.optimize.loss import lool_fn_unscaled as lool_fn
 from MuyGPyS.neighbors import NN_Wrapper
 
@@ -107,14 +103,16 @@ def predict_single_model(
 
     test_nn_targets = train_responses[nn_indices_test]
 
-    crosswise_diffs = crosswise_tensor(
+    crosswise_diffs = model.deformation.crosswise_tensor(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
         nn_indices_test,
     )
 
-    pairwise_diffs = pairwise_tensor(train_features_embedded, nn_indices_test)
+    pairwise_diffs = model.deformation.pairwise_tensor(
+        train_features_embedded, nn_indices_test
+    )
 
     Kcross = model.GP_layer.muygps_model.kernel(crosswise_diffs)
     Kin = model.GP_layer.muygps_model.kernel(pairwise_diffs)
@@ -188,14 +186,16 @@ def predict_multiple_model(
 
     test_nn_targets = train_responses[nn_indices_test]
 
-    crosswise_diffs = crosswise_tensor(
+    crosswise_diffs = model.deformation.crosswise_tensor(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
         nn_indices_test,
     )
 
-    pairwise_diffs = pairwise_tensor(train_features_embedded, nn_indices_test)
+    pairwise_diffs = model.deformation.pairwise_tensor(
+        train_features_embedded, nn_indices_test
+    )
 
     (
         _,

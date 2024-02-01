@@ -42,45 +42,6 @@ def _make_fast_predict_tensors(
 
 
 @jit
-def _make_predict_tensors(
-    batch_indices: jnp.ndarray,
-    batch_nn_indices: jnp.ndarray,
-    test_features: jnp.ndarray,
-    train_features: jnp.ndarray,
-    train_targets: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    if test_features is None:
-        test_features = train_features
-    crosswise_diffs = _crosswise_tensor(
-        test_features,
-        train_features,
-        batch_indices,
-        batch_nn_indices,
-    )
-    pairwise_diffs = _pairwise_tensor(train_features, batch_nn_indices)
-    batch_nn_targets = train_targets[batch_nn_indices]
-    return crosswise_diffs, pairwise_diffs, batch_nn_targets
-
-
-@jit
-def _make_train_tensors(
-    batch_indices: jnp.ndarray,
-    batch_nn_indices: jnp.ndarray,
-    train_features: jnp.ndarray,
-    train_targets: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    crosswise_diffs, pairwise_diffs, batch_nn_targets = _make_predict_tensors(
-        batch_indices,
-        batch_nn_indices,
-        train_features,
-        train_features,
-        train_targets,
-    )
-    batch_targets = train_targets[batch_indices]
-    return crosswise_diffs, pairwise_diffs, batch_targets, batch_nn_targets
-
-
-@jit
 def _batch_features_tensor(
     features: jnp.ndarray,
     batch_indices: jnp.ndarray,

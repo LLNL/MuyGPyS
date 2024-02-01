@@ -14,11 +14,7 @@ from MuyGPyS._src.gp.tensors.numpy import (
     _crosswise_tensor as _crosswise_tensor_n,
     _pairwise_tensor as _pairwise_tensor_n,
     _batch_features_tensor as _batch_features_tensor_n,
-    _make_train_tensors as _make_train_tensors_n,
-    _make_predict_tensors as _make_predict_tensors_n,
     _make_heteroscedastic_tensor as _make_heteroscedatic_tensor_n,
-    _F2,
-    _l2,
 )
 
 
@@ -40,40 +36,6 @@ def _make_fast_predict_tensors(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     raise NotImplementedError(
         'Function "make_fast_predict_tensors" does not support mpi!'
-    )
-
-
-def _make_predict_tensors(
-    batch_indices: np.ndarray,
-    batch_nn_indices: np.ndarray,
-    test_features: np.ndarray,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    return _chunk_function_tensor(
-        _make_predict_tensors_n,
-        batch_indices,
-        batch_nn_indices,
-        test_features,
-        train_features,
-        train_targets,
-        return_count=3,
-    )
-
-
-def _make_train_tensors(
-    batch_indices: np.ndarray,
-    batch_nn_indices: np.ndarray,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    return _chunk_function_tensor(
-        _make_train_tensors_n,
-        batch_indices,
-        batch_nn_indices,
-        train_features,
-        train_targets,
-        return_count=4,
     )
 
 

@@ -11,14 +11,8 @@ from MuyGPyS import config
 from MuyGPyS._src.gp.tensors.numpy import (
     _F2 as F2_n,
     _l2 as l2_n,
-    _make_train_tensors as make_train_tensors_n,
-    _make_predict_tensors as make_predict_tensors_n,
-)
-from MuyGPyS._src.gp.tensors.mpi import (
-    # _F2 as F2_m,
-    # _l2 as l2_m,
-    _make_train_tensors as make_train_tensors_m,
-    _make_predict_tensors as make_predict_tensors_m,
+    _crosswise_tensor as crosswise_tensor_n,
+    _pairwise_tensor as pairwise_tensor_n,
 )
 from MuyGPyS._src.gp.kernels.numpy import (
     _rbf_fn as rbf_fn_n,
@@ -29,14 +23,6 @@ from MuyGPyS._src.gp.kernels.numpy import (
     _matern_gen_fn as matern_gen_fn_n,
 )
 
-# from MuyGPyS._src.gp.kernels.mpi import (
-#     _rbf_fn as rbf_fn_m,
-#     _matern_05_fn as matern_05_fn_m,
-#     _matern_15_fn as matern_15_fn_m,
-#     _matern_25_fn as matern_25_fn_m,
-#     _matern_inf_fn as matern_inf_fn_m,
-#     _matern_gen_fn as matern_gen_fn_m,
-# )
 from MuyGPyS._src.mpi_utils import _chunk_tensor
 from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_diagonal_variance as muygps_diagonal_variance_n,
@@ -153,7 +139,10 @@ class TensorsTestCase(parameterized.TestCase):
         return cls._make_muygps(
             smoothness,
             deformation=Isotropy(
-                l2_n, length_scale=ScalarParam(cls.length_scale)
+                l2_n,
+                length_scale=ScalarParam(cls.length_scale),
+                _crosswise_fn=crosswise_tensor_n,
+                _pairwise_fn=pairwise_tensor_n,
             ),
             **kwargs,
         )
@@ -164,6 +153,8 @@ class TensorsTestCase(parameterized.TestCase):
             smoothness,
             Anisotropy(
                 l2_n,
+                _crosswise_fn=crosswise_tensor_n,
+                _pairwise_fn=pairwise_tensor_n,
                 length_scale0=ScalarParam(cls.length_scale),
                 length_scale1=ScalarParam(cls.length_scale),
             ),
@@ -194,7 +185,12 @@ class TensorsTestCase(parameterized.TestCase):
     @classmethod
     def _make_isotropic_muygps_rbf(cls):
         return cls._make_muygps_rbf(
-            Isotropy(F2_n, length_scale=ScalarParam(cls.length_scale))
+            Isotropy(
+                F2_n,
+                length_scale=ScalarParam(cls.length_scale),
+                _crosswise_fn=crosswise_tensor_n,
+                _pairwise_fn=pairwise_tensor_n,
+            )
         )
 
     @classmethod
@@ -202,6 +198,8 @@ class TensorsTestCase(parameterized.TestCase):
         return cls._make_muygps_rbf(
             Anisotropy(
                 F2_n,
+                _crosswise_fn=crosswise_tensor_n,
+                _pairwise_fn=pairwise_tensor_n,
                 length_scale0=ScalarParam(cls.length_scale),
                 length_scale1=ScalarParam(cls.length_scale),
             )
@@ -267,11 +265,12 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.batch_pairwise_diffs,
                 cls.batch_targets,
                 cls.batch_nn_targets,
-            ) = make_train_tensors_n(
+            ) = cls.muygps_gen.make_train_tensors(
                 batch_indices,
                 batch_nn_indices,
                 cls.train_features,
                 cls.train_responses,
+                disable_mpi=True,
             )
 
             test_nn_indices, _ = nbrs_lookup.get_nns(cls.test_features)
@@ -280,12 +279,13 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.test_crosswise_diffs,
                 cls.test_pairwise_diffs,
                 cls.test_nn_targets,
-            ) = make_predict_tensors_n(
+            ) = cls.muygps_gen.make_predict_tensors(
                 np.arange(cls.test_count),
                 test_nn_indices,
                 cls.test_features,
                 cls.train_features,
                 cls.train_responses,
+                disable_mpi=True,
             )
 
         else:
@@ -311,7 +311,7 @@ class TensorsTestCase(parameterized.TestCase):
             cls.batch_pairwise_diffs_chunk,
             cls.batch_targets_chunk,
             cls.batch_nn_targets_chunk,
-        ) = make_train_tensors_m(
+        ) = cls.muygps_gen.make_train_tensors(  # MPI version
             batch_indices,
             batch_nn_indices,
             cls.train_features,
@@ -321,7 +321,7 @@ class TensorsTestCase(parameterized.TestCase):
             cls.test_crosswise_diffs_chunk,
             cls.test_pairwise_diffs_chunk,
             cls.test_nn_targets_chunk,
-        ) = make_predict_tensors_m(
+        ) = cls.muygps_gen.make_predict_tensors(  # MPI version
             np.arange(cls.test_count),
             test_nn_indices,
             cls.test_features,

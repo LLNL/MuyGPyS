@@ -12,7 +12,6 @@ from MuyGPyS import config
 from MuyGPyS._src.gp.tensors.numpy import (
     _pairwise_tensor as pairwise_tensor_n,
     _crosswise_tensor as crosswise_tensor_n,
-    _make_train_tensors as make_train_tensors_n,
     _make_fast_predict_tensors as make_fast_predict_tensors_n,
     _fast_nn_update as fast_nn_update_n,
     _F2 as F2_n,
@@ -21,7 +20,6 @@ from MuyGPyS._src.gp.tensors.numpy import (
 from MuyGPyS._src.gp.tensors.torch import (
     _pairwise_tensor as pairwise_tensor_t,
     _crosswise_tensor as crosswise_tensor_t,
-    _make_train_tensors as make_train_tensors_t,
     _make_fast_predict_tensors as make_fast_predict_tensors_t,
     _fast_nn_update as fast_nn_update_t,
     _F2 as F2_t,
@@ -134,7 +132,10 @@ class TensorsTestCase(parameterized.TestCase):
         return MuyGPS(
             kernel=RBF(
                 deformation=Isotropy(
-                    F2_n, length_scale=ScalarParam(cls.length_scale)
+                    F2_n,
+                    length_scale=ScalarParam(cls.length_scale),
+                    _crosswise_fn=crosswise_tensor_n,
+                    _pairwise_fn=pairwise_tensor_n,
                 ),
                 _backend_fn=rbf_fn_n,
                 _backend_ones=np.ones,
@@ -187,7 +188,10 @@ class TensorsTestCase(parameterized.TestCase):
         return cls._make_homoscedastic_muygps_n(
             smoothness,
             deformation=Isotropy(
-                l2_n, length_scale=ScalarParam(cls.length_scale)
+                l2_n,
+                length_scale=ScalarParam(cls.length_scale),
+                _crosswise_fn=crosswise_tensor_n,
+                _pairwise_fn=pairwise_tensor_n,
             ),
         )
 
@@ -197,6 +201,8 @@ class TensorsTestCase(parameterized.TestCase):
             smoothness,
             Anisotropy(
                 l2_n,
+                _crosswise_fn=crosswise_tensor_n,
+                _pairwise_fn=pairwise_tensor_n,
                 length_scale0=ScalarParam(cls.length_scale),
                 length_scale1=ScalarParam(cls.length_scale),
             ),
@@ -210,7 +216,10 @@ class TensorsTestCase(parameterized.TestCase):
                 noise, _backend_fn=heteroscedastic_perturb_n
             ),
             deformation=Isotropy(
-                l2_n, length_scale=ScalarParam(cls.length_scale)
+                l2_n,
+                length_scale=ScalarParam(cls.length_scale),
+                _crosswise_fn=crosswise_tensor_n,
+                _pairwise_fn=pairwise_tensor_n,
             ),
         )
 
@@ -219,7 +228,10 @@ class TensorsTestCase(parameterized.TestCase):
         return MuyGPS(
             kernel=RBF(
                 deformation=Isotropy(
-                    F2_t, length_scale=ScalarParam(cls.length_scale)
+                    F2_t,
+                    length_scale=ScalarParam(cls.length_scale),
+                    _crosswise_fn=crosswise_tensor_t,
+                    _pairwise_fn=pairwise_tensor_t,
                 ),
                 _backend_fn=rbf_fn_t,
                 _backend_ones=torch.ones,
@@ -271,7 +283,12 @@ class TensorsTestCase(parameterized.TestCase):
     def _make_isotropic_muygps_t(cls, smoothness):
         return cls._make_homoscedastic_muygps_t(
             smoothness,
-            Isotropy(l2_t, length_scale=ScalarParam(cls.length_scale)),
+            Isotropy(
+                l2_t,
+                length_scale=ScalarParam(cls.length_scale),
+                _crosswise_fn=crosswise_tensor_t,
+                _pairwise_fn=pairwise_tensor_t,
+            ),
         )
 
     @classmethod
@@ -280,6 +297,8 @@ class TensorsTestCase(parameterized.TestCase):
             smoothness,
             Anisotropy(
                 l2_t,
+                _crosswise_fn=crosswise_tensor_t,
+                _pairwise_fn=pairwise_tensor_t,
                 length_scale0=ScalarParam(cls.length_scale),
                 length_scale1=ScalarParam(cls.length_scale),
             ),
@@ -293,7 +312,10 @@ class TensorsTestCase(parameterized.TestCase):
                 noise, _backend_fn=heteroscedastic_perturb_t
             ),
             deformation=Isotropy(
-                l2_t, length_scale=ScalarParam(cls.length_scale)
+                l2_t,
+                length_scale=ScalarParam(cls.length_scale),
+                _crosswise_fn=crosswise_tensor_t,
+                _pairwise_fn=pairwise_tensor_t,
             ),
         )
 
@@ -393,10 +415,10 @@ class TensorsTest(TensorsTestCase):
     def test_pairwise_tensor(self):
         self.assertTrue(
             np.allclose(
-                pairwise_tensor_n(
+                self.muygps_05_n.kernel.deformation.pairwise_tensor(
                     self.train_features_n, self.batch_nn_indices_n
                 ),
-                pairwise_tensor_t(
+                self.muygps_05_t.kernel.deformation.pairwise_tensor(
                     self.train_features_t, self.batch_nn_indices_t
                 ),
             )
@@ -405,13 +427,13 @@ class TensorsTest(TensorsTestCase):
     def test_crosswise_tensor(self):
         self.assertTrue(
             np.allclose(
-                crosswise_tensor_n(
+                self.muygps_05_n.kernel.deformation.crosswise_tensor(
                     self.train_features_n,
                     self.train_features_n,
                     self.batch_indices_n,
                     self.batch_nn_indices_n,
                 ),
-                crosswise_tensor_t(
+                self.muygps_05_t.kernel.deformation.crosswise_tensor(
                     self.train_features_t,
                     self.train_features_t,
                     self.batch_indices_t,
@@ -426,7 +448,7 @@ class TensorsTest(TensorsTestCase):
             pairwise_diffs_n,
             batch_targets_n,
             batch_nn_targets_n,
-        ) = make_train_tensors_n(
+        ) = self.muygps_05_n.make_train_tensors(
             self.batch_indices_n,
             self.batch_nn_indices_n,
             self.train_features_n,
@@ -437,7 +459,7 @@ class TensorsTest(TensorsTestCase):
             pairwise_diffs_t,
             batch_targets_t,
             batch_nn_targets_t,
-        ) = make_train_tensors_t(
+        ) = self.muygps_05_t.make_train_tensors(
             self.batch_indices_t,
             self.batch_nn_indices_t,
             self.train_features_t,
@@ -458,7 +480,7 @@ class KernelTestCase(TensorsTestCase):
             cls.pairwise_diffs_n,
             cls.batch_targets_n,
             cls.batch_nn_targets_n,
-        ) = make_train_tensors_n(
+        ) = cls.muygps_05_n.make_train_tensors(
             cls.batch_indices_n,
             cls.batch_nn_indices_n,
             cls.train_features_n,
@@ -469,7 +491,7 @@ class KernelTestCase(TensorsTestCase):
             cls.pairwise_diffs_t,
             cls.batch_targets_t,
             cls.batch_nn_targets_t,
-        ) = make_train_tensors_t(
+        ) = cls.muygps_05_t.make_train_tensors(
             cls.batch_indices_t,
             cls.batch_nn_indices_t,
             cls.train_features_t,
@@ -756,11 +778,13 @@ class FastPredictTest(MuyGPSTestCase):
         cls.closest_set_new_n = cls.new_nn_indices_n[
             cls.closest_neighbor_n
         ].astype(int)
-        cls.crosswise_diffs_fast_n = crosswise_tensor_n(
-            cls.test_features_n,
-            cls.train_features_n,
-            np.arange(0, cls.test_count),
-            cls.closest_set_new_n,
+        cls.crosswise_diffs_fast_n = (
+            cls.muygps_05_n.kernel.deformation.crosswise_tensor(
+                cls.test_features_n,
+                cls.train_features_n,
+                np.arange(0, cls.test_count),
+                cls.closest_set_new_n,
+            )
         )
 
         cls.Kcross_fast_n = cls.muygps_05_n.kernel(cls.crosswise_diffs_fast_n)
@@ -996,11 +1020,13 @@ class FastMultivariatePredictTest(MuyGPSTestCase):
         cls.closest_set_new_n = cls.new_nn_indices_n[
             cls.closest_neighbor_n
         ].astype(int)
-        cls.crosswise_diffs_fast_n = crosswise_tensor_n(
-            cls.test_features_n,
-            cls.train_features_n,
-            np.arange(0, cls.test_count),
-            cls.closest_set_new_n,
+        cls.crosswise_diffs_fast_n = (
+            cls.muygps_05_n.kernel.deformation.crosswise_tensor(
+                cls.test_features_n,
+                cls.train_features_n,
+                np.arange(0, cls.test_count),
+                cls.closest_set_new_n,
+            )
         )
         Kcross_fast_n = np.zeros(
             (cls.test_count, cls.nn_count, cls.response_count)

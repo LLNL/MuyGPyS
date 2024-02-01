@@ -16,7 +16,6 @@ from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.hyperparameter import ScalarParam, FixedScale
 from MuyGPyS.gp.noise import HomoscedasticNoise
-from MuyGPyS.gp.tensors import pairwise_tensor, crosswise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 
@@ -97,14 +96,15 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.batch_pairwise_diffs_list = list()
         cls.batch_targets_list = list()
         cls.batch_nn_targets_list = list()
+        isotropy = Isotropy(l2, length_scale=ScalarParam(1.0))
         for i in range(cls.its):
-            batch_crosswise_diffs = crosswise_tensor(
+            batch_crosswise_diffs = isotropy.crosswise_tensor(
                 cls.train_features,
                 cls.train_features,
                 cls.batch_indices_list[i],
                 cls.batch_nn_indices_list[i],
             )
-            batch_pairwise_diffs = pairwise_tensor(
+            batch_pairwise_diffs = isotropy.pairwise_tensor(
                 cls.train_features,
                 cls.batch_nn_indices_list[i],
             )

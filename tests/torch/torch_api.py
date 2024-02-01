@@ -86,6 +86,7 @@ class SVDKMuyGPs_Star_Galaxy(nn.Module):
             self.batch_targets,
             self.batch_nn_targets,
         )
+        self.deformation = self.GP_layer.deformation
 
     def forward(self, x):
         predictions = self.embedding(x)
@@ -236,6 +237,7 @@ class SVDKMuyGPs_Heaton(nn.Module):
             self.batch_targets,
             self.batch_nn_targets,
         )
+        self.deformation = self.GP_layer.deformation
 
     def forward(self, x):
         predictions = self.embedding(x)

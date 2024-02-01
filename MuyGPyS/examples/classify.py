@@ -24,7 +24,6 @@ from typing import Dict, List, Tuple, Union
 
 from MuyGPyS.examples.from_indices import posterior_mean_from_indices
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
-from MuyGPyS.gp.tensors import make_train_tensors
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.batch import get_balanced_batch
@@ -150,7 +149,7 @@ def make_classifier(
             pairwise_diffs,
             batch_targets,
             batch_nn_targets,
-        ) = make_train_tensors(
+        ) = muygps.make_train_tensors(
             batch_indices,
             batch_nn_indices,
             train_features,
@@ -315,7 +314,7 @@ def make_multivariate_classifier(
             pairwise_diffs,
             batch_targets,
             batch_nn_targets,
-        ) = make_train_tensors(
+        ) = mmuygps.make_train_tensors(
             batch_indices,
             batch_nn_indices,
             train_features,

@@ -11,10 +11,6 @@ from MuyGPyS._src.math.torch import nn
 from MuyGPyS.gp.deformation import Isotropy
 from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.gp.tensors import (
-    pairwise_tensor,
-    crosswise_tensor,
-)
 
 
 if config.state.backend != "torch":
@@ -117,6 +113,7 @@ class MuyGPs_layer(nn.Module):
                 "length scales"
             )
         self.muygps_model = muygps_model
+        self.deformation = self.muygps_model.kernel.deformation
         self.length_scale = muygps_model.kernel.deformation.length_scale._val
         self.batch_indices = batch_indices
         self.batch_nn_indices = batch_nn_indices
@@ -138,14 +135,16 @@ class MuyGPs_layer(nn.Module):
         """
         self.muygps_model._make()
 
-        crosswise_diffs = crosswise_tensor(
+        crosswise_diffs = self.deformation.crosswise_tensor(
             x,
             x,
             self.batch_indices,
             self.batch_nn_indices,
         )
 
-        pairwise_diffs = pairwise_tensor(x, self.batch_nn_indices)
+        pairwise_diffs = self.deformation.pairwise_tensor(
+            x, self.batch_nn_indices
+        )
 
         Kcross = self.muygps_model.kernel(crosswise_diffs)
         Kin = self.muygps_model.kernel(pairwise_diffs)

@@ -7,6 +7,8 @@
 from typing import Callable, Dict, List, Optional, Tuple
 
 import MuyGPyS._src.math as mm
+from MuyGPyS._src.gp.tensors import _crosswise_tensor, _pairwise_tensor
+from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
 from MuyGPyS.gp.hyperparameter import ScalarParam
@@ -40,6 +42,8 @@ class Isotropy(DeformationFn):
         self,
         metric: Callable,
         length_scale: ScalarParam,
+        _crosswise_fn: Callable = _crosswise_tensor,
+        _pairwise_fn: Callable = _pairwise_tensor,
     ):
         if not isinstance(length_scale, ScalarParam):
             raise ValueError(
@@ -48,6 +52,8 @@ class Isotropy(DeformationFn):
             )
         self.length_scale = length_scale
         self._dist_fn = metric
+        self._crosswise_distances = _crosswise_fn
+        self._pairwise_distances = _pairwise_fn
 
     def __call__(
         self, diffs: mm.ndarray, length_scale: Optional[float] = None, **kwargs
@@ -129,3 +135,75 @@ class Isotropy(DeformationFn):
             return fn(self(diffs, length_scale=length_scale), *args, **kwargs)
 
         return embedded_fn
+
+    @mpi_chunk(return_count=1)
+    def pairwise_tensor(
+        self,
+        data: mm.ndarray,
+        nn_indices: mm.ndarray,
+        **kwargs,
+    ) -> mm.ndarray:
+        """
+        Compute a pairwise distance tensor among sets of nearest neighbors.
+
+        Takes a full dataset of records of interest `data` and produces the
+        pairwise distances between the elements indicated by each row of
+        `nn_indices`.
+
+        Args:
+            data:
+                The data matrix of shape `(batch_count, feature_count)`
+                containing batch elements.
+            nn_indices:
+                An integral matrix of shape (batch_count, nn_count) listing the
+                nearest neighbor indices for the batch of data points.
+
+        Returns:
+            A tensor of shape `(batch_count, nn_count, nn_count)` containing the
+            `(nn_count, nn_count)`-shaped pairwise nearest neighbor distance
+            tensors corresponding to each of the batch elements.
+        """
+        return self._pairwise_distances(data, nn_indices)
+
+    @mpi_chunk(return_count=1)
+    def crosswise_tensor(
+        self,
+        data: mm.ndarray,
+        nn_data: mm.ndarray,
+        data_indices: mm.ndarray,
+        nn_indices: mm.ndarray,
+        **kwargs,
+    ) -> mm.ndarray:
+        """
+        Compute a crosswise distance tensor between data and their nearest
+        neighbors.
+
+        Takes full datasets of records of interest `data` and neighbor
+        candidates `nn_data` and produces a scalar distance between each
+        element of `data` indicated by `data_indices` and each of the nearest
+        neighbors in `nn_data` as indicated by the corresponding rows of
+        `nn_indices`. `data` and `nn_data` can refer to the same dataset.
+
+        Args:
+            data:
+                The data matrix of shape `(data_count, feature_count)`
+                containing batch elements.
+            nn_data:
+                The data matrix of shape `(candidate_count, feature_count)`
+                containing the universe of candidate neighbors for the batch
+                elements. Might be the same as `data`.
+            indices:
+                An integral vector of shape `(batch_count,)` containing the
+                indices of the batch.
+            nn_indices:
+                An integral matrix of shape (batch_count, nn_count) listing the
+                nearest neighbor indices for the batch of data points.
+
+        Returns:
+            A tensor of shape `(batch_count, nn_count)` whose second dimension
+            indicates distance vectors between each batch element and its
+            nearest neighbors.
+        """
+        return self._crosswise_distances(
+            data, nn_data, data_indices, nn_indices
+        )
