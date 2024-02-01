@@ -15,6 +15,8 @@ from MuyGPyS._src.gp.tensors.numpy import (
     _pairwise_tensor as _pairwise_tensor_n,
     _batch_features_tensor as _batch_features_tensor_n,
     _make_heteroscedastic_tensor as _make_heteroscedatic_tensor_n,
+    _F2,
+    _l2,
 )
 
 
