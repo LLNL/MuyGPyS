@@ -81,6 +81,8 @@ class NN_Wrapper:
         NOTE[bwp] Will need to replace `train` with a data stream in the future.
         """
         self.train = train
+        if self.train.ndim == 1:
+            self.train = self.train[:, None]
         self.train_count, self.feature_count = self.train.shape
         self.nn_count = nn_count
         self.nn_method = nn_method.lower()
@@ -234,6 +236,8 @@ class NN_Wrapper:
             lists the distance to the sample element of the corresponding
             element in `nn_indices`.
         """
+        if samples.ndim == 1:
+            samples = samples[:, None]
         if self.nn_method == "exact":
             nn_dists, nn_indices = self.nbrs.kneighbors(
                 samples,

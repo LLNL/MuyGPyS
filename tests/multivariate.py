@@ -197,20 +197,19 @@ class ScaleTest(parameterized.TestCase):
         # fit scales
         mmuygps = mmuygps.optimize_scale(pairwise_diffs, nn_targets)
 
-        K = mm.zeros((data_count, nn_count, nn_count))
+        Kin = mm.zeros((data_count, nn_count, nn_count))
         nn_targets = _consistent_unchunk_tensor(nn_targets)
         for i, model in enumerate(mmuygps.models):
-            K = _consistent_unchunk_tensor(model.kernel(pairwise_diffs))
+            Kin = _consistent_unchunk_tensor(model.kernel(pairwise_diffs))
             scales = _get_scale_series(
-                K,
+                Kin,
                 nn_targets[:, :, i].reshape(data_count, nn_count, 1),
                 model.noise(),
             )
             _check_ndarray(self.assertEqual, scales, mm.ftype)
-            _check_ndarray(self.assertEqual, model.scale(), mm.ftype)
             self.assertEqual(scales.shape, (data_count,))
             self.assertAlmostEqual(
-                np.array(model.scale()[0]),
+                np.array(model.scale()),
                 np.mean(np.array(scales)),
                 5,
             )
@@ -546,7 +545,8 @@ class RegressTest(parameterized.TestCase):
         )
         nbrs_lookup = NN_Wrapper(train["input"], nn_count, **nn_kwargs)
 
-        self.assertFalse(mmuygps.scale.trained)
+        for model in mmuygps.models:
+            self.assertFalse(model.scale.trained)
 
         predictions, diagonal_variance, _ = regress_any(
             mmuygps,
@@ -815,7 +815,7 @@ class MakeRegressorTest(parameterized.TestCase):
             if isinstance(muygps.scale, AnalyticScale):
                 print(f"\toptimized scale to find value " f"{muygps.scale()}")
             else:
-                self.assertEqual(mm.array([1.0]), muygps.scale())
+                self.assertEqual(1.0, muygps.scale())
 
 
 if __name__ == "__main__":

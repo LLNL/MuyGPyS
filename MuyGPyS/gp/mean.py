@@ -26,12 +26,12 @@ class PosteriorMean:
 
     def __call__(
         self,
-        K: mm.ndarray,
+        Kin: mm.ndarray,
         Kcross: mm.ndarray,
         batch_nn_targets: mm.ndarray,
         **kwargs,
     ) -> mm.ndarray:
-        return self._fn(K, Kcross, batch_nn_targets, **kwargs)
+        return self._fn(Kin, Kcross, batch_nn_targets, **kwargs)
 
     def get_opt_fn(self) -> Callable:
         return self._fn

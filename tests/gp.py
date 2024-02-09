@@ -277,17 +277,17 @@ class GPTestCase(parameterized.TestCase):
         _check_ndarray(self.assertEqual, batch_nn_targets, mm.ftype)
 
         # make kernels
-        K = _consistent_unchunk_tensor(muygps.kernel(pairwise_diffs))
+        Kin = _consistent_unchunk_tensor(muygps.kernel(pairwise_diffs))
         Kcross = _consistent_unchunk_tensor(muygps.kernel(crosswise_diffs))
-        _check_ndarray(self.assertEqual, K, mm.ftype)
+        _check_ndarray(self.assertEqual, Kin, mm.ftype)
         _check_ndarray(self.assertEqual, Kcross, mm.ftype)
         # do validation
-        self.assertEqual(K.shape, (test_count, nn_count, nn_count))
+        self.assertEqual(Kin.shape, (test_count, nn_count, nn_count))
         self.assertEqual(Kcross.shape, (test_count, nn_count))
         return (
-            K,
+            Kin,
             Kcross,
-            batch_nn_targets,
+            mm.squeeze(batch_nn_targets),
             train_responses,
             test_nn_indices,
             pairwise_diffs,
@@ -325,7 +325,7 @@ class GPTensorShapesTest(GPTestCase):
     ):
         muygps = MuyGPS(**kwargs)
 
-        K, Kcross, _, _, _, _ = self._prepare_tensors(
+        Kin, Kcross, _, _, _, _ = self._prepare_tensors(
             muygps,
             train_count,
             test_count,
@@ -334,8 +334,8 @@ class GPTensorShapesTest(GPTestCase):
             nn_count,
             nn_kwargs,
         )
-        self.assertTrue(mm.all(K >= 0.0))
-        self.assertTrue(mm.all(K <= 1.0))
+        self.assertTrue(mm.all(Kin >= 0.0))
+        self.assertTrue(mm.all(Kin <= 1.0))
         self.assertTrue(mm.all(Kcross >= 0.0))
         self.assertTrue(mm.all(Kcross <= 1.0))
         # # Check that kernels are positive semidefinite
@@ -345,8 +345,8 @@ class GPTensorShapesTest(GPTestCase):
                 "skipping tests"
             )
             return
-        for i in range(K.shape[0]):
-            eigvals = mm.linalg.eigvals(K[i, :, :])
+        for i in range(Kin.shape[0]):
+            eigvals = mm.linalg.eigvals(Kin[..., :, :])
             # eigvals = mm.array(eigvals, dtype=mm.ftype)
             eigvals = eigvals.real
             _check_ndarray(self.assertEqual, eigvals, mm.ftype)
@@ -394,7 +394,7 @@ class HomoscedasticNoiseTest(GPTestCase):
     ):
         muygps = MuyGPS(**kwargs)
 
-        K, Kcross, _, _, _, _ = self._prepare_tensors(
+        Kin, Kcross, _, _, _, _ = self._prepare_tensors(
             muygps,
             train_count,
             test_count,
@@ -404,12 +404,12 @@ class HomoscedasticNoiseTest(GPTestCase):
             nn_kwargs,
         )
 
-        perturbed_K = _homoscedastic_perturb(K, muygps.noise())
-        _check_ndarray(self.assertEqual, perturbed_K, mm.ftype)
+        perturbed_Kin = _homoscedastic_perturb(Kin, muygps.noise())
+        _check_ndarray(self.assertEqual, perturbed_Kin, mm.ftype)
 
-        manual_K = K + muygps.noise() * mm.eye(nn_count)
-        self.assertTrue(mm.allclose(perturbed_K, manual_K))
-        return perturbed_K, Kcross
+        manual_Kin = Kin + muygps.noise() * mm.eye(nn_count)
+        self.assertTrue(mm.allclose(perturbed_Kin, manual_Kin))
+        return perturbed_Kin, Kcross
 
 
 class HeteroscedasticNoiseTest(GPTestCase):
@@ -452,7 +452,7 @@ class HeteroscedasticNoiseTest(GPTestCase):
         )
         muygps = MuyGPS(kernel, noise=HeteroscedasticNoise(noise_matrix))
 
-        K, Kcross, _, _, _, _ = self._prepare_tensors(
+        Kin, Kcross, _, _, _, _ = self._prepare_tensors(
             muygps,
             train_count,
             test_count,
@@ -462,20 +462,19 @@ class HeteroscedasticNoiseTest(GPTestCase):
             nn_kwargs,
         )
 
-        perturbed_K = _heteroscedastic_perturb(K, muygps.noise())
-        _check_ndarray(self.assertEqual, perturbed_K, mm.ftype)
+        perturbed_Kin = _heteroscedastic_perturb(Kin, muygps.noise())
+        _check_ndarray(self.assertEqual, perturbed_Kin, mm.ftype)
 
-        manual_K = K + noise_tensor
-        self.assertTrue(mm.allclose(perturbed_K, manual_K))
-        return perturbed_K, Kcross
+        manual_Kin = Kin + noise_tensor
+        self.assertTrue(mm.allclose(perturbed_Kin, manual_Kin))
+        return perturbed_Kin, Kcross
 
 
 class GPSolveTest(GPTestCase):
     @parameterized.parameters(
         (
-            (1000, 100, f, r, 10, nn_kwargs, kwargs)
+            (1000, 100, f, 10, nn_kwargs, kwargs)
             for f in [100, 1]
-            for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [1]
@@ -497,7 +496,6 @@ class GPSolveTest(GPTestCase):
         train_count,
         test_count,
         feature_count,
-        response_count,
         nn_count,
         nn_kwargs,
         kwargs,
@@ -511,7 +509,7 @@ class GPSolveTest(GPTestCase):
         muygps = MuyGPS(**kwargs)
 
         (
-            K,
+            Kin,
             Kcross,
             batch_nn_targets,
             train_responses,
@@ -522,29 +520,32 @@ class GPSolveTest(GPTestCase):
             train_count,
             test_count,
             feature_count,
-            response_count,
+            1,
             nn_count,
             nn_kwargs,
         )
         responses = _consistent_unchunk_tensor(
-            muygps.posterior_mean(K, Kcross, batch_nn_targets)
+            muygps.posterior_mean(Kin, Kcross, batch_nn_targets)
         )
         _check_ndarray(self.assertEqual, responses, mm.ftype)
 
         # validate
-        self.assertEqual(responses.shape, (test_count, response_count))
+        self.assertEqual(responses.shape, (test_count,))
 
         for i in range(test_count):
-            manual_responses = Kcross[i, :] @ mm.linalg.solve(
-                K[i, :, :] + muygps.noise() * mm.eye(nn_count),
-                train_responses[test_nn_indices[i], :],
+            manual_responses = mm.squeeze(
+                Kcross[i, :]
+                @ mm.linalg.solve(
+                    Kin[i, :, :] + muygps.noise() * mm.eye(nn_count),
+                    train_responses[test_nn_indices[i]],
+                )
             )
             _check_ndarray(self.assertEqual, manual_responses, mm.ftype)
             _consistent_assert(
                 _precision_assert,
-                self.assertSequenceAlmostEqual,
-                np.array(responses[i, :]),
-                np.array(manual_responses),
+                self.assertAlmostEquals,
+                responses[i],
+                manual_responses,
             )
 
 
@@ -581,7 +582,7 @@ class GPDiagonalVariance(GPTestCase):
     ):
         muygps = MuyGPS(**kwargs)
 
-        K, Kcross, _, _, _, _ = self._prepare_tensors(
+        Kin, Kcross, _, _, _, _ = self._prepare_tensors(
             muygps,
             train_count,
             test_count,
@@ -591,26 +592,27 @@ class GPDiagonalVariance(GPTestCase):
             nn_kwargs,
         )
         diagonal_variance = _consistent_unchunk_tensor(
-            muygps.posterior_variance(K, Kcross)
+            muygps.posterior_variance(Kin, Kcross)
         )
         _check_ndarray(self.assertEqual, diagonal_variance, mm.ftype)
 
         # validate
-        self.assertEqual(diagonal_variance.shape, (test_count, 1))
-        diagonal_variance = diagonal_variance.reshape((test_count,))
+        self.assertEqual(diagonal_variance.shape, (test_count,))
         for i in range(test_count):
-            manual_diagonal_variance = mm.array(1.0) - Kcross[
-                i, :
-            ] @ mm.linalg.solve(
-                K[i, :, :] + muygps.noise() * mm.eye(nn_count),
-                Kcross[i, :],
+            manual_diagonal_variance = mm.squeeze(
+                mm.array(1.0)
+                - Kcross[i, :]
+                @ mm.linalg.solve(
+                    Kin[i, :, :] + muygps.noise() * mm.eye(nn_count),
+                    Kcross[i, :],
+                )
             )
             self.assertEqual(manual_diagonal_variance.dtype, mm.ftype)
             _precision_assert(
                 _consistent_assert,
                 self.assertAlmostEqual,
-                np.array(diagonal_variance[i]),
-                np.array(manual_diagonal_variance),
+                diagonal_variance[i],
+                manual_diagonal_variance,
             )
             self.assertGreater(diagonal_variance[i], 0.0)
 
@@ -779,9 +781,8 @@ class MakeRegressorTest(parameterized.TestCase):
 class GPScaleTest(GPTestCase):
     @parameterized.parameters(
         (
-            (1000, f, r, 10, nn_kwargs, k_kwargs)
+            (1000, f, 10, nn_kwargs, k_kwargs)
             for f in [50, 1]
-            for r in [5, 1]
             for nn_kwargs in _basic_nn_kwarg_options
             # for f in [1]
             # for r in [10]
@@ -802,17 +803,16 @@ class GPScaleTest(GPTestCase):
         self,
         data_count,
         feature_count,
-        response_count,
         nn_count,
         nn_kwargs,
         k_kwargs,
     ):
-        muygps = MuyGPS(
-            scale=AnalyticScale(response_count=response_count), **k_kwargs
-        )
+        muygps = MuyGPS(scale=AnalyticScale(), **k_kwargs)
+
+        print("TODO - add MultiScale test")
 
         # prepare data
-        data = _make_gaussian_dict(data_count, feature_count, response_count)
+        data = _make_gaussian_dict(data_count, feature_count, 1)
 
         # neighbors and differences
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
@@ -825,46 +825,28 @@ class GPScaleTest(GPTestCase):
             data["output"],
         )
 
-        K = muygps.kernel(pairwise_diffs)
+        Kin = muygps.kernel(pairwise_diffs)
         muygps = muygps.optimize_scale(pairwise_diffs, nn_targets)
 
-        K = _consistent_unchunk_tensor(K)
+        Kin = _consistent_unchunk_tensor(Kin)
         nn_targets = _consistent_unchunk_tensor(nn_targets)
-        _check_ndarray(self.assertEqual, K, mm.ftype)
+        _check_ndarray(self.assertEqual, Kin, mm.ftype)
         _check_ndarray(self.assertEqual, nn_targets, mm.ftype)
 
-        if response_count > 1:
-            self.assertEqual(len(muygps.scale()), response_count)
-            for i in range(response_count):
-                scales = _get_scale_series(
-                    K,
-                    nn_targets[:, :, i].reshape(data_count, nn_count, 1),
-                    muygps.noise(),
-                )
-                _check_ndarray(self.assertEqual, scales, mm.ftype)
-                self.assertEqual(scales.shape, (data_count,))
-                _precision_assert(
-                    self.assertAlmostEqual,
-                    np.array(muygps.scale()[i]),
-                    np.mean(np.array(scales)),
-                    low_bound=0,
-                    high_bound=5,
-                )
-        else:
-            scales = _get_scale_series(
-                K,
-                nn_targets[:, :, 0].reshape(data_count, nn_count, 1),
-                muygps.noise(),
-            )
-            self.assertEqual(scales.shape, (data_count,))
-            _check_ndarray(self.assertEqual, scales, mm.ftype)
-            _precision_assert(
-                self.assertAlmostEqual,
-                np.array(muygps.scale()[0]),
-                np.mean(np.array(scales)),
-                low_bound=0,
-                high_bound=5,
-            )
+        scales = _get_scale_series(
+            Kin,
+            nn_targets[:, :, 0].reshape(data_count, nn_count, 1),
+            muygps.noise(),
+        )
+        self.assertEqual(scales.shape, (data_count,))
+        _check_ndarray(self.assertEqual, scales, mm.ftype)
+        _precision_assert(
+            self.assertAlmostEqual,
+            mm.array(muygps.scale()),
+            mm.mean(mm.array(scales)),
+            low_bound=0,
+            high_bound=5,
+        )
 
 
 if __name__ == "__main__":

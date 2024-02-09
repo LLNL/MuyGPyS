@@ -385,7 +385,7 @@ def classify_two_class_uq(
     nn_labels = train_labels[test_nn_indices, :]
 
     means = np.zeros((nn_labels.shape[0], 2))
-    variances = np.zeros((nn_labels.shape[0], 1))
+    variances = np.zeros((nn_labels.shape[0]))
     nonconstant_mask = np.max(nn_labels[:, :, 0], axis=-1) != np.min(
         nn_labels[:, :, 0], axis=-1
     )
@@ -398,12 +398,12 @@ def classify_two_class_uq(
 
     if np.sum(nonconstant_mask) > 0:
         (
-            means[nonconstant_mask, :],
-            variances[nonconstant_mask, :],
+            means[nonconstant_mask],
+            variances[nonconstant_mask],
         ) = regress_from_indices(
             surrogate,
             np.where(nonconstant_mask)[0],
-            test_nn_indices[nonconstant_mask, :],
+            test_nn_indices[nonconstant_mask],
             test_features,
             train_features,
             train_labels,

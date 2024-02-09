@@ -109,12 +109,12 @@ def fast_posterior_mean_from_indices(
         Kcross = muygps.kernel(crosswise_diffs)
         return muygps.fast_posterior_mean(
             Kcross,
-            coeffs_tensor[closest_index, :, :],
+            coeffs_tensor[closest_index],
         )
     else:
         return muygps.fast_posterior_mean(
             crosswise_diffs,
-            coeffs_tensor[closest_index, :, :],
+            coeffs_tensor[closest_index],
         )
 
 

@@ -74,7 +74,11 @@ def benchmark_sample_full(
     Returns:
         A sample from the GP prior for a train/test split.
     """
-    return benchmark_sample(gp, np.vstack((test, train)))
+    if test.ndim == train.ndim == 1:
+        thing = np.hstack((test, train))
+    else:
+        thing = np.vstack((test, train))
+    return benchmark_sample(gp, thing)
 
 
 def benchmark_prepare_cholK(
@@ -94,9 +98,9 @@ def benchmark_prepare_cholK(
     Returns:
         The Cholesky decomposition of a dense covariance matrix.
     """
+    data_count = data.shape[0]
     pairwise_diffs = _pairwise_differences(data)
-    data_count, _ = data.shape
-    Kfull = gp.scale()[0] * (
+    Kfull = gp.scale() * (
         gp.kernel(pairwise_diffs) + gp.noise() * np.eye(data_count)
     )
     return np.linalg.cholesky(Kfull)
@@ -117,7 +121,7 @@ def benchmark_sample(
             `(train_count, feature_count)`.
     """
     cholK = benchmark_prepare_cholK(gp, data)
-    return benchmark_sample_from_cholK(cholK)
+    return np.squeeze(benchmark_sample_from_cholK(cholK))
 
 
 def benchmark_sample_from_cholK(cholK: np.ndarray) -> np.ndarray:
@@ -127,6 +131,6 @@ def benchmark_sample_from_cholK(cholK: np.ndarray) -> np.ndarray:
     ).reshape(data_count, 1)
 
 
-def get_analytic_scale(K, y):
-    assert y.shape[0] == K.shape[0]
-    return (1 / y.shape[0]) * y.T @ np.linalg.solve(K, y)
+def get_analytic_scale(Kin, y):
+    assert y.shape[0] == Kin.shape[0]
+    return (1 / y.shape[0]) * np.squeeze(y.T @ np.linalg.solve(Kin, y))

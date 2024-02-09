@@ -25,7 +25,7 @@ def _make_fast_predict_tensors(
     train_features: jnp.ndarray,
     train_targets: jnp.ndarray,
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
-    num_train, _ = train_features.shape
+    num_train = train_features.shape[0]
     batch_nn_indices_fast = jnp.concatenate(
         (
             jnp.expand_dims(jnp.arange(0, num_train), axis=1),
@@ -37,7 +37,7 @@ def _make_fast_predict_tensors(
     pairwise_diffs_fast = _pairwise_tensor(
         train_features, batch_nn_indices_fast
     )
-    batch_nn_targets_fast = train_targets[batch_nn_indices_fast, :]
+    batch_nn_targets_fast = train_targets[batch_nn_indices_fast]
     return pairwise_diffs_fast, batch_nn_targets_fast
 
 
@@ -58,7 +58,7 @@ def _make_predict_tensors(
         batch_nn_indices,
     )
     pairwise_diffs = _pairwise_tensor(train_features, batch_nn_indices)
-    batch_nn_targets = train_targets[batch_nn_indices, :]
+    batch_nn_targets = train_targets[batch_nn_indices]
     return crosswise_diffs, pairwise_diffs, batch_nn_targets
 
 
@@ -76,7 +76,7 @@ def _make_train_tensors(
         train_features,
         train_targets,
     )
-    batch_targets = train_targets[batch_indices, :]
+    batch_targets = train_targets[batch_indices]
     return crosswise_diffs, pairwise_diffs, batch_targets, batch_nn_targets
 
 
@@ -85,7 +85,7 @@ def _batch_features_tensor(
     features: jnp.ndarray,
     batch_indices: jnp.ndarray,
 ) -> jnp.ndarray:
-    return features[batch_indices, :]
+    return features[batch_indices]
 
 
 @jit
@@ -140,7 +140,7 @@ def _l2(diffs: jnp.ndarray) -> jnp.ndarray:
 def _fast_nn_update(
     train_nn_indices: jnp.ndarray,
 ) -> jnp.ndarray:
-    train_count, _ = train_nn_indices.shape
+    train_count = train_nn_indices.shape[0]
     new_nn_indices = jnp.concatenate(
         (
             jnp.expand_dims(jnp.arange(0, train_count), axis=1),

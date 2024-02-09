@@ -33,7 +33,7 @@ matrix. See the following example, which assumes that you have already
 constructed the differenece tensors and kernel as shown above.
 
 Example:
-    >>> K = kern(pairwise_diffs)
+    >>> Kin = kern(pairwise_diffs)
     >>> Kcross = kern(crosswise_diffs)
 """
 
@@ -100,10 +100,10 @@ class Matern(KernelFn):
     .. math::
          k(x_i, x_j) =  \\frac{1}{\\Gamma(\\nu)2^{\\nu-1}}\\Bigg(
          \\frac{\\sqrt{2\\nu}}{l} d_\\ell(x_i , x_j )
-         \\Bigg)^\\nu K_\\nu\\Bigg(
+         \\Bigg)^\\nu Kin_\\nu\\Bigg(
          \\frac{\\sqrt{2\\nu}}{l} d(x_i , x_j )\\Bigg),
 
-    where :math:`K_{\\nu}(\\cdot)` is a modified Bessel function and
+    where :math:`Kin_{\\nu}(\\cdot)` is a modified Bessel function and
     :math:`\\Gamma(\\cdot)` is the gamma function.
     Typically, :math:`d(\\cdot,\\cdot)` is the Euclidean distance or
     :math:`\\ell_2` norm of the difference of the operands.
@@ -123,10 +123,16 @@ class Matern(KernelFn):
         deformation: DeformationFn = Isotropy(
             l2, length_scale=ScalarParam(1.0)
         ),
+        _backend_ones: Callable = mm.ones,
+        _backend_zeros: Callable = mm.zeros,
+        _backend_squeeze: Callable = mm.squeeze,
         **_backend_fns
     ):
         super().__init__(deformation=deformation)
         self.smoothness = smoothness
+        self._backend_ones = _backend_ones
+        self._backend_zeros = _backend_zeros
+        self._backend_squeeze = _backend_squeeze
         self._backend_fns = _backend_fns
         self._make()
 
@@ -134,8 +140,10 @@ class Matern(KernelFn):
         super()._make_base()
         self._hyperparameters["smoothness"] = self.smoothness
         self._kernel_fn = _set_matern_fn(self.smoothness, **self._backend_fns)
-        self._fn = self.smoothness.apply_fn(self._kernel_fn, "smoothness")
-        self._fn = self.deformation.embed_fn(self._fn)
+        self._predef_fn = self.smoothness.apply_fn(
+            self._kernel_fn, "smoothness"
+        )
+        self._fn = self.deformation.embed_fn(self._predef_fn)
 
     def __call__(self, diffs, **kwargs):
         """
@@ -156,6 +164,12 @@ class Matern(KernelFn):
             dimensions are kernel matrices.
         """
         return self._fn(diffs, **kwargs)
+
+    def Kout(self, **kwargs) -> mm.ndarray:
+        # return self._backend_squeeze(
+        #     self._predef_fn(self._backend_zeros((1, 1)))
+        # )
+        return self._backend_squeeze(self._backend_ones((1, 1)))
 
     def get_opt_params(
         self,

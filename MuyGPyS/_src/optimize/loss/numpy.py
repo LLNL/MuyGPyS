@@ -10,9 +10,7 @@ import MuyGPyS._src.math.numpy as np
 
 
 def _cross_entropy_fn(
-    predictions: np.ndarray,
-    targets: np.ndarray,
-    **kwargs,
+    predictions: np.ndarray, targets: np.ndarray, **kwargs
 ) -> float:
     one_hot_targets = np.where(targets > 0.0, 1.0, 0.0)
     softmax_predictions = softmax(predictions, axis=1)
@@ -22,41 +20,52 @@ def _cross_entropy_fn(
 
 
 def _mse_fn_unnormalized(
-    predictions: np.ndarray,
-    targets: np.ndarray,
+    predictions: np.ndarray, targets: np.ndarray, **kwargs
 ) -> float:
     return np.sum((predictions - targets) ** 2)
 
 
-def _mse_fn(
-    predictions: np.ndarray,
-    targets: np.ndarray,
-) -> float:
-    batch_count, response_count = predictions.shape
-    return _mse_fn_unnormalized(predictions, targets) / (
-        batch_count * response_count
+def _mse_fn(predictions: np.ndarray, targets: np.ndarray, **kwargs) -> float:
+    return _mse_fn_unnormalized(predictions, targets, **kwargs) / (
+        np.prod(predictions.shape)
     )
 
 
 def _lool_fn_unscaled(
-    predictions: np.ndarray, targets: np.ndarray, variances: np.ndarray
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    variances: np.ndarray,
+    **kwargs,
 ) -> float:
-    return np.sum(
-        np.divide((predictions - targets) ** 2, variances) + np.log(variances)
-    )
+    if variances.ndim == 1:
+        return np.sum(
+            np.divide((predictions - targets) ** 2, variances)
+            + np.log(variances)
+        )
+    else:
+        residual = np.atleast_3d(predictions - targets)
+        quad_form = np.squeeze(
+            residual.swapaxes(-2, -1) @ np.linalg.solve(variances, residual)
+        )
+        logdet = np.linalg.slogdet(variances)
+        return np.sum(quad_form + logdet)
 
 
 def _lool_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
-    scale: np.ndarray,
+    scale: float,
+    **kwargs,
 ) -> float:
-    return _lool_fn_unscaled(predictions, targets, np.outer(variances, scale))
+    return _lool_fn_unscaled(predictions, targets, scale * variances, **kwargs)
 
 
 def _pseudo_huber_fn(
-    predictions: np.ndarray, targets: np.ndarray, boundary_scale: float = 1.5
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    boundary_scale: float = 1.5,
+    **kwargs,
 ) -> float:
     return boundary_scale**2 * np.sum(
         np.sqrt(1 + np.divide(targets - predictions, boundary_scale) ** 2) - 1
@@ -68,34 +77,41 @@ def _looph_fn_unscaled(
     targets: np.ndarray,
     variances: np.ndarray,
     boundary_scale: float = 3.0,
+    **kwargs,
 ) -> float:
     boundary_scale_sq = boundary_scale**2
-    return np.sum(
-        2
-        * boundary_scale_sq
-        * (
-            np.sqrt(
-                1
-                + np.divide(
-                    (targets - predictions) ** 2, boundary_scale_sq * variances
+    if variances.ndim == 1:
+        return np.sum(
+            2
+            * boundary_scale_sq
+            * (
+                np.sqrt(
+                    1
+                    + np.divide(
+                        (targets - predictions) ** 2,
+                        boundary_scale_sq * variances,
+                    )
                 )
+                - 1
             )
-            - 1
+            + np.log(variances)
         )
-        + np.log(variances)
-    )
+    else:
+        raise ValueError("looph does not yet support multivariate inference")
 
 
 def _looph_fn(
     predictions: np.ndarray,
     targets: np.ndarray,
     variances: np.ndarray,
-    scale: np.ndarray,
+    scale: float,
     boundary_scale: float = 3.0,
+    **kwargs,
 ) -> float:
     return _looph_fn_unscaled(
         predictions,
         targets,
-        np.outer(variances, scale),
+        scale * variances,
         boundary_scale=boundary_scale,
+        **kwargs,
     )

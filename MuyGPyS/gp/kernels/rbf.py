@@ -33,7 +33,7 @@ constructed the difference `numpy.nparrays` and the kernel `kernel_fn` as shown
 above.
 
 Example:
-    >>> K = kernel_fn(pairwise_diffs)
+    >>> Kin = kernel_fn(pairwise_diffs)
     >>> Kcross = kernel_fn(crosswise_diffs)
 """
 
@@ -58,7 +58,7 @@ class RBF(KernelFn):
     The kernel is defined by
 
     .. math::
-        K(x_i, x_j) = \\exp\\left(- d_\\ell(x_i, x_j)\\right).
+        Kin(x_i, x_j) = \\exp\\left(- d_\\ell(x_i, x_j)\\right).
 
     Typically, :math:`d(\\cdot,\\cdot)` is the squared Euclidean distance
     or second frequency moment of the difference of the operands.
@@ -75,8 +75,14 @@ class RBF(KernelFn):
             F2, length_scale=ScalarParam(1.0)
         ),
         _backend_fn: Callable = _rbf_fn,
+        _backend_ones: Callable = mm.ones,
+        _backend_zeros: Callable = mm.zeros,
+        _backend_squeeze: Callable = mm.squeeze,
     ):
         super().__init__(deformation=deformation)
+        self._backend_ones = _backend_ones
+        self._backend_zeros = _backend_zeros
+        self._backend_squeeze = _backend_squeeze
         self._kernel_fn = _backend_fn
         self._make()
 
@@ -102,6 +108,12 @@ class RBF(KernelFn):
             dimensions are kernel matrices.
         """
         return self._fn(diffs, **kwargs)
+
+    def Kout(self, **kwargs) -> mm.ndarray:
+        # return self._backend_squeeze(
+        #     self._kernel_fn(self._backend_zeros((1, 1)))
+        # )
+        return self._backend_squeeze(self._backend_ones((1, 1)))
 
     def get_opt_fn(self) -> Callable:
         """

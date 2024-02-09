@@ -8,7 +8,6 @@ Multivariate MuyGPs implementation
 """
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _mmuygps_fast_posterior_mean
-from MuyGPyS.gp.hyperparameter import FixedScale
 from MuyGPyS.gp.muygps import MuyGPS
 
 
@@ -56,9 +55,9 @@ class MultivariateMuyGPS:
 
     Example:
         >>> for model in MuyGPyS.models:
-        >>>     K = model.kernel(pairwise_diffs)
+        >>>     Kin = model.kernel(pairwise_diffs)
         >>>     Kcross = model.kernel(crosswise_diffs)
-        >>>     # do something with K and Kcross...
+        >>>     # do something with Kin and Kcross...
 
     Args
         model_args:
@@ -71,7 +70,6 @@ class MultivariateMuyGPS:
         *model_args,
     ):
         self.models = [MuyGPS(**args) for args in model_args]
-        self.scale = FixedScale(response_count=len(self.models))
 
     def fixed(self) -> bool:
         """
@@ -107,15 +105,15 @@ class MultivariateMuyGPS:
         a generalization of Equation (3.4) of [muyskens2021muygps]_. For each
         response dimension :math:`j`, given observation set :math:`X` with
         responses :math:`Y`, noise prior set :math:`\\varepsilon^{(j)}`, and
-        kernel function :math:`K_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the
+        kernel function :math:`Kin_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the
         following for each prediction element :math:`\\mathbf{z}_i` with nearest
         neighbors index set :math:`N_i`:
 
         .. math::
             \\widehat{Y} (\\mathbf{z}_i \\mid X_{N_i})_j =
-                \\sigma^2_j K_{\\theta^{(j)}} (\\mathbf{z}_i, X_{N_i})
+                \\sigma^2_j Kin_{\\theta^{(j)}} (\\mathbf{z}_i, X_{N_i})
                 \\left (
-                    K_{\\theta^{(j)}} (X_{N_i}, X_{N_i})
+                    Kin_{\\theta^{(j)}} (X_{N_i}, X_{N_i})
                     + \\varepsilon^{(j)}_{N_i}
                 \\right )^{-1}
                 Y(X_{N_i})_{:,j}.
@@ -143,12 +141,12 @@ class MultivariateMuyGPS:
         batch_count, nn_count, response_count = batch_nn_targets.shape
         responses = mm.zeros((batch_count, response_count))
         for i, model in enumerate(self.models):
-            K = model.kernel(pairwise_diffs)
+            Kin = model.kernel(pairwise_diffs)
             Kcross = model.kernel(crosswise_diffs)
             responses = mm.assign(
                 responses,
                 model.posterior_mean(
-                    K,
+                    Kin,
                     Kcross,
                     batch_nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
                 ).reshape(batch_count),
@@ -169,7 +167,7 @@ class MultivariateMuyGPS:
         to the diagonal elements of a covariance matrix. For each response
         dimension, given observation set :math:`X` with responses :math:`Y`,
         noise prior set :math:`\\varepsilon^{(j)}`, and kernel function
-        :math:`K_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the following for
+        :math:`Kin_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the following for
         each prediction element :math:`\\mathbf{z}_i` with nearest neighbors
         index set :math:`N_i`:
 
@@ -178,12 +176,12 @@ class MultivariateMuyGPS:
                 \\widehat{Y} (\\mathbf{z}_i \\mid X_{N_i})
             \\right)_j =
                 \\sigma_j^2 \\left (
-                    K_{\\theta^{(j)}} (\\mathbf{z}_i, \\mathbf{z}_i) -
-                    K_{\\theta^{(j)}} (\\mathbf{z}_i, X_{N_i})
+                    Kin_{\\theta^{(j)}} (\\mathbf{z}_i, \\mathbf{z}_i) -
+                    Kin_{\\theta^{(j)}} (\\mathbf{z}_i, X_{N_i})
                     \\left (
-                        K_{\\theta^{(j)}} (X_{N_i}, X_{N_i}
+                        Kin_{\\theta^{(j)}} (X_{N_i}, X_{N_i}
                     \\right ) + \\varepsilon^{(j)}_{N_i})^{-1}
-                    K_{\\theta^{(j)}} (X_{N_i}, \\mathbf{z}_i)
+                    Kin_{\\theta^{(j)}} (X_{N_i}, \\mathbf{z}_i)
                 \\right ).
 
         Args:
@@ -206,12 +204,12 @@ class MultivariateMuyGPS:
         response_count = len(self.models)
         diagonal_variance = mm.zeros((batch_count, response_count))
         for i, model in enumerate(self.models):
-            K = model.kernel(pairwise_diffs)
+            Kin = model.kernel(pairwise_diffs)
             Kcross = model.kernel(crosswise_diffs)
-            ss = self.scale()[i]
+            ss = model.scale()
             diagonal_variance = mm.assign(
                 diagonal_variance,
-                model.posterior_variance(K, Kcross).reshape(batch_count) * ss,
+                model.posterior_variance(Kin, Kcross).reshape(batch_count) * ss,
                 slice(None),
                 i,
             )
@@ -228,7 +226,7 @@ class MultivariateMuyGPS:
 
         Fro each response dimension :math:`j`, given observation set :math:`X`
         with responses :math:`Y`, noise prior set :math:`\\varepsilon^{(j)}`, and
-        kernel function :math:`K_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the
+        kernel function :math:`Kin_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the
         following for each observation element :math:`\\mathbf{x}_i` with
         nearest neighbors index set :math:`N^*_i`, containing `i` and the
         indices of the `nn_count - 1` nearest neighbors of
@@ -237,7 +235,7 @@ class MultivariateMuyGPS:
         .. math::
             C^{(j)}_i =
                 \\left (
-                    K_{\\theta^{(j)}}(X_{N_i}, X_{N_i})
+                    Kin_{\\theta^{(j)}}(X_{N_i}, X_{N_i})
                     + \\varepsilon^{(j)}_{N_i}
                 \\right )^{-1}
                 Y(X_{N_i})_{:, j}.
@@ -263,11 +261,11 @@ class MultivariateMuyGPS:
         coeffs_tensor = mm.zeros((train_count, nn_count, response_count))
 
         for i, model in enumerate(self.models):
-            K = model.kernel(pairwise_diffs_fast)
+            Kin = model.kernel(pairwise_diffs_fast)
             mm.assign(
                 coeffs_tensor,
                 model.fast_coefficients(
-                    model.noise.perturb(K),
+                    model.noise.perturb(Kin),
                     train_nn_targets_fast[:, :, i],
                 ),
                 slice(None),
@@ -293,7 +291,7 @@ class MultivariateMuyGPS:
         :func:`~MuyGPyS.gp.muygps.MultivariateMuyGPS.fast_coefficients` and
         Equation (8) of [dunton2022fast]_, observation set :math:`X`, noise
         prior set :math:`\\varepsilon^{(j)}`, and kernel function
-        :math:`K_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the following for each
+        :math:`Kin_{\\theta^{(j)}}(\\cdot, \\cdot)`, computes the following for each
         test point :math:`\\mathbf{z}` and index set :math:`N^*_i` containing
         the union of the index :math:`i` of the nearest neighbor
         :math:`\\mathbf{x}_i` of :math:`\\mathbf{z}` and the `nn_count - 1`
@@ -301,7 +299,7 @@ class MultivariateMuyGPS:
 
         .. math::
             \\widehat{Y} \\left ( \\mathbf{z} \\mid X \\right )_j =
-                \\sigma^2 K_{\\theta^{(j)}}(\\mathbf{z}, X_{N^*_i}) C^{(j)}_i.
+                \\sigma^2 Kin_{\\theta^{(j)}}(\\mathbf{z}, X_{N^*_i}) C^{(j)}_i.
 
         Args:
             crosswise_diffs:
@@ -360,15 +358,12 @@ class MultivariateMuyGPS:
                 f"Response count ({response_count}) does not match the number "
                 f"of models ({len(self.models)})."
             )
-        scales = mm.zeros((response_count,))
         for i, model in enumerate(self.models):
-            K = model.kernel(pairwise_diffs)
+            Kin = model.kernel(pairwise_diffs)
             opt_fn = model.scale.get_opt_fn(model)
             new_scale_val = opt_fn(
-                K,
+                Kin,
                 nn_targets[:, :, i].reshape(batch_count, nn_count, 1),
             )
             model.scale._set(new_scale_val)
-            scales = mm.assign(scales, new_scale_val[0], i)
-        self.scale._set(scales)
         return self

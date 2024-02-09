@@ -103,16 +103,14 @@ def _g2g2_fn(
 
 
 # compute the full covariance matrix
-def _shear_fn(diffs, length_scale=1.0):
-    shape = torch.array(diffs.shape[:-1], dtype=int)
-    n = torch.clone(shape[-2])
-    n2 = 2 * n
-    m = torch.clone(shape[-1])
-    m2 = 2 * m
-    shape[-1] *= 3
-    shape[-2] *= 3
-    print(n, m, shape)
-    full_m = torch.zeros(tuple(shape))
+def _shear_fn(diffs, length_scale=1, **kwargs):
+    assert diffs.ndim >= 3
+    shape = diffs.shape[:-1]
+    n = shape[-2]
+    m = shape[-1]
+    prefix = shape[:-2]
+    new_shape = prefix + (3, n, 3, m)
+    full_m = torch.zeros(new_shape)
 
     # compute intermediate difference tensors once here
     prod_diffs = torch.prod(diffs, axis=-1)
@@ -126,40 +124,40 @@ def _shear_fn(diffs, length_scale=1.0):
     diff_xy_quad_diffs = quad_diffs[..., 0] - quad_diffs[..., 1]
     exp_inv_scaled_sum_sq_diffs = torch.exp(-sum_sq_diffs / (2 * length_scale))
 
-    full_m[..., :n, :m] = _kk_fn(
+    full_m[..., 0, :, 0, :] = _kk_fn(
         exp_inv_scaled_sum_sq_diffs,
         sum_sq_diffs,
         prod_sq_diffs,
         sum_quad_diffs,
         length_scale,
-    )
-    full_m[..., :n, m:m2] = full_m[..., n:n2, :m] = _kg1_fn(
+    )  # (0, 0)
+    full_m[..., 0, :, 1, :] = full_m[..., 1, :, 0, :] = _kg1_fn(
         exp_inv_scaled_sum_sq_diffs,
         diff_xy_quad_diffs,
         diff_yx_sq_diffs,
         length_scale,
-    )
-    full_m[..., :n, m2:] = full_m[..., n2:, :m] = _kg2_fn(
+    )  # (0, 1), (1, 0)
+    full_m[..., 0, :, 2, :] = full_m[..., 2, :, 0, :] = _kg2_fn(
         exp_inv_scaled_sum_sq_diffs, sum_sq_diffs, prod_diffs, length_scale
-    )
-    full_m[..., n:n2, m:m2] = _g1g1_fn(
+    )  # (0, 2), (2, 0)
+    full_m[..., 1, :, 1, :] = _g1g1_fn(
         exp_inv_scaled_sum_sq_diffs,
         sum_sq_diffs,
         sum_quad_diffs,
         prod_sq_diffs,
         length_scale,
-    )
-    full_m[..., n:n2, m2:] = full_m[..., n2:, m:m2] = _g1g2_fn(
+    )  # (1, 1)
+    full_m[..., 1, :, 2, :] = full_m[..., 2, :, 1, :] = _g1g2_fn(
         exp_inv_scaled_sum_sq_diffs,
         diff_xy_sq_diffs,
         prod_diffs,
         length_scale,
-    )
-    full_m[..., n2:, m2:] = _g2g2_fn(
+    )  # (1, 2), (2, 1)
+    full_m[..., 2, :, 2, :] = _g2g2_fn(
         exp_inv_scaled_sum_sq_diffs,
         sum_sq_diffs,
         prod_sq_diffs,
         length_scale,
-    )
+    )  # (2, 2)
 
     return full_m

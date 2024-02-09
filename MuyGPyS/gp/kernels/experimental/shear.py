@@ -32,7 +32,7 @@ constructed the difference `numpy.nparrays` and the kernel `kernel_fn` as shown
 above.
 
 Example:
-    >>> K = shear_fn(pairwise_diffs)
+    >>> Kin = shear_fn(pairwise_diffs)
     >>> Kcross = shear_fn(crosswise_diffs)
 
 Note that the :class:`~MuyGPyS.gp.kernels.experimental.shear.ShearKernel`
@@ -63,7 +63,7 @@ class ShearKernel(KernelFn):
     The kernel is defined by
 
     .. math::
-        K(x_i, x_j) = \\dots
+        Kin(x_i, x_j) = \\dots
 
     Args:
         deformation:
@@ -75,6 +75,8 @@ class ShearKernel(KernelFn):
         self,
         deformation: Isotropy = Isotropy(F2, length_scale=ScalarParam(1.0)),
         _backend_fn: Callable = _shear_fn,
+        _backend_zeros: Callable = mm.zeros,
+        _backend_squeeze: Callable = mm.squeeze,
     ):
         super().__init__(deformation=deformation)
         if not isinstance(self.deformation, Isotropy):
@@ -82,6 +84,8 @@ class ShearKernel(KernelFn):
                 "ShearKernel only supports isotropic deformations, not "
                 f"{type(deformation)}"
             )
+        self._backend_zeros = _backend_zeros
+        self._backend_squeeze = _backend_squeeze
         self._kernel_fn = _backend_fn
         self._make()
 
@@ -98,7 +102,7 @@ class ShearKernel(KernelFn):
 
         self._fn = embedded_fn
 
-    def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
+    def __call__(self, diffs: mm.ndarray, adjust=True, **kwargs) -> mm.ndarray:
         """
         Compute shear kernel(s) from a difference tensor.
 
@@ -115,7 +119,14 @@ class ShearKernel(KernelFn):
             or a tensor of shape `(data_count, nn_count * 3, nn_count * 3)`
             whose last two dimensions are kernel matrices.
         """
+        if adjust and diffs.shape[-2] != diffs.shape[-3]:
+            # this is probably a crosswise differences tensor
+            # reshape to insert a unitary dimension
+            diffs = diffs[..., None, :]
         return self._fn(diffs, **kwargs)
+
+    def Kout(self, **kwargs) -> mm.ndarray:
+        return self.__call__(self._backend_zeros((1, 1, 2)))
 
     def get_opt_params(
         self,
@@ -147,4 +158,4 @@ class ShearKernel(KernelFn):
             set. The function expects keyword arguments corresponding to current
             hyperparameter values for unfixed parameters.
         """
-        return self._fn
+        return self.__call__

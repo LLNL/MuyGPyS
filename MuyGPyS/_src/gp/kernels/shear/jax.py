@@ -112,15 +112,14 @@ def _g2g2_fn(
 
 # compute the full covariance matrix
 @jit
-def _shear_fn(diffs, length_scale=1.0):
-    shape = np.array(diffs.shape[:-1], dtype=int)
+def _shear_fn(diffs, length_scale=1.0, **kwargs):
+    assert diffs.ndim >= 3
+    shape = diffs.shape[:-1]
     n = shape[-2]
-    n2 = 2 * n
     m = shape[-1]
-    m2 = 2 * m
-    shape[-1] *= 3
-    shape[-2] *= 3
-    full_m = jnp.zeros(shape)
+    prefix = shape[:-2]
+    new_shape = prefix + (3, n, 3, m)
+    full_m = jnp.zeros(new_shape)
 
     # compute intermediate difference tensors once here
     prod_diffs = jnp.prod(diffs, axis=-1)
@@ -134,7 +133,7 @@ def _shear_fn(diffs, length_scale=1.0):
     diff_xy_quad_diffs = quad_diffs[..., 0] - quad_diffs[..., 1]
     exp_inv_scaled_sum_sq_diffs = jnp.exp(-sum_sq_diffs / (2 * length_scale))
 
-    full_m = full_m.at[..., :n, :m].set(
+    full_m = full_m.at[..., 0, :, 0, :].set(
         _kk_fn(
             exp_inv_scaled_sum_sq_diffs,
             sum_sq_diffs,
@@ -142,26 +141,26 @@ def _shear_fn(diffs, length_scale=1.0):
             sum_quad_diffs,
             length_scale,
         )
-    )
-    full_m = full_m.at[..., :n, m:m2].set(
+    )  # (0, 0)
+    full_m = full_m.at[..., 0, :, 1, :].set(
         _kg1_fn(
             exp_inv_scaled_sum_sq_diffs,
             diff_xy_quad_diffs,
             diff_yx_sq_diffs,
             length_scale,
         )
-    )
-    full_m = full_m.at[..., n:n2, :m].set(full_m[..., :n, m:m2])
-    full_m = full_m.at[..., :n, m2:].set(
+    )  # (0, 1), (1, 0)
+    full_m = full_m.at[..., 1, :, 0, :].set(full_m[..., 0, :, 1, :])
+    full_m = full_m.at[..., 0, :, 2, :].set(
         _kg2_fn(
             exp_inv_scaled_sum_sq_diffs,
             sum_sq_diffs,
             prod_diffs,
             length_scale,
         )
-    )
-    full_m = full_m.at[..., n2:, :m].set(full_m[..., :n, m2:])
-    full_m = full_m.at[..., n:n2, m:m2].set(
+    )  # (0, 2), (2, 0)
+    full_m = full_m.at[..., 2, :, 0, :].set(full_m[..., 0, :, 2, :])
+    full_m = full_m.at[..., 1, :, 1, :].set(
         _g1g1_fn(
             exp_inv_scaled_sum_sq_diffs,
             sum_sq_diffs,
@@ -169,23 +168,23 @@ def _shear_fn(diffs, length_scale=1.0):
             prod_sq_diffs,
             length_scale,
         )
-    )
-    full_m = full_m.at[..., n:n2, m2:].set(
+    )  # (1, 1)
+    full_m = full_m.at[..., 1, :, 2, :].set(
         _g1g2_fn(
             exp_inv_scaled_sum_sq_diffs,
             diff_xy_sq_diffs,
             prod_diffs,
             length_scale,
         )
-    )
-    full_m = full_m.at[..., n2:, m:m2].set(full_m[..., n:n2, m2:])
-    full_m = full_m.at[..., n2:, m2:].set(
+    )  # (1, 2), (2, 1)
+    full_m = full_m.at[..., 2, :, 1, :].set(full_m[..., 1, :, 2, :])
+    full_m = full_m.at[..., 2, :, 2, :].set(
         _g2g2_fn(
             exp_inv_scaled_sum_sq_diffs,
             sum_sq_diffs,
             prod_sq_diffs,
             length_scale,
         )
-    )
+    )  # (2, 2)
 
     return full_m

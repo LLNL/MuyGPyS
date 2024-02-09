@@ -7,8 +7,7 @@ import MuyGPyS._src.math.torch as torch
 
 
 def _cross_entropy_fn(
-    predictions: torch.ndarray,
-    targets: torch.ndarray,
+    predictions: torch.ndarray, targets: torch.ndarray, **kwargs
 ) -> torch.ndarray:
     one_hot_targets = torch.where(targets > 0.0, 1.0, 0.0)
     softmax_predictions = predictions.softmax(dim=1)
@@ -23,19 +22,16 @@ def _cross_entropy_fn(
 
 
 def _mse_fn_unnormalized(
-    predictions: torch.ndarray,
-    targets: torch.ndarray,
+    predictions: torch.ndarray, targets: torch.ndarray, **kwargs
 ) -> float:
     return torch.sum((predictions - targets) ** 2)
 
 
 def _mse_fn(
-    predictions: torch.ndarray,
-    targets: torch.ndarray,
+    predictions: torch.ndarray, targets: torch.ndarray, **kwargs
 ) -> float:
-    batch_count, response_count = predictions.shape
-    return _mse_fn_unnormalized(predictions, targets) / (
-        batch_count * response_count
+    return _mse_fn_unnormalized(predictions, targets, **kwargs) / (
+        predictions.shape.numel()
     )
 
 
@@ -43,26 +39,37 @@ def _lool_fn(
     predictions: torch.ndarray,
     targets: torch.ndarray,
     variances: torch.ndarray,
-    scale: torch.ndarray,
+    scale: float,
+    **kwargs
 ) -> float:
-    return _lool_fn_unscaled(
-        predictions, targets, torch.unsqueeze(variances * scale, dim=1)
-    )
+    return _lool_fn_unscaled(predictions, targets, scale * variances, **kwargs)
 
 
 def _lool_fn_unscaled(
-    predictions: torch.ndarray, targets: torch.ndarray, variances: torch.ndarray
+    predictions: torch.ndarray,
+    targets: torch.ndarray,
+    variances: torch.ndarray,
+    **kwargs
 ) -> float:
-    return torch.sum(
-        torch.divide((predictions - targets) ** 2, variances)
-        + torch.log(variances)
-    )
+    if variances.ndim == 3:
+        residual = torch.atleast_3d(predictions - targets)
+        quad_form = torch.squeeze(
+            residual.swapaxes(-2, -1) @ torch.linalg.solve(variances, residual)
+        )
+        logdet = torch.linalg.slogdet(variances)
+        return torch.sum(quad_form + logdet)
+    else:
+        return torch.sum(
+            torch.divide((predictions - targets) ** 2, variances)
+            + torch.log(variances)
+        )
 
 
 def _pseudo_huber_fn(
     predictions: torch.ndarray,
     targets: torch.ndarray,
     boundary_scale: float = 1.5,
+    **kwargs
 ) -> float:
     return boundary_scale**2 * torch.sum(
         torch.sqrt(1 + torch.divide(targets - predictions, boundary_scale) ** 2)
@@ -75,6 +82,7 @@ def _looph_fn_unscaled(
     targets: torch.ndarray,
     variances: torch.ndarray,
     boundary_scale: float = 3.0,
+    **kwargs
 ) -> float:
     boundary_scale_sq = boundary_scale**2
     return torch.sum(
@@ -97,12 +105,14 @@ def _looph_fn(
     predictions: torch.ndarray,
     targets: torch.ndarray,
     variances: torch.ndarray,
-    scale: torch.ndarray,
+    scale: float,
     boundary_scale: float = 3.0,
+    **kwargs
 ) -> float:
     return _looph_fn_unscaled(
         predictions,
         targets,
-        torch.outer(variances, scale),
+        scale * variances,
         boundary_scale=boundary_scale,
+        **kwargs,
     )

@@ -105,7 +105,7 @@ def predict_single_model(
     train_features_embedded = torch.from_numpy(train_features_embedded)
     test_features_embedded = torch.from_numpy(test_features_embedded)
 
-    test_nn_targets = train_responses[nn_indices_test, :]
+    test_nn_targets = train_responses[nn_indices_test]
 
     crosswise_diffs = crosswise_tensor(
         test_features_embedded,
@@ -117,13 +117,13 @@ def predict_single_model(
     pairwise_diffs = pairwise_tensor(train_features_embedded, nn_indices_test)
 
     Kcross = model.GP_layer.muygps_model.kernel(crosswise_diffs)
-    K = model.GP_layer.muygps_model.kernel(pairwise_diffs)
+    Kin = model.GP_layer.muygps_model.kernel(pairwise_diffs)
 
     predictions = model.GP_layer.muygps_model.posterior_mean(
-        K, Kcross, test_nn_targets
+        Kin, Kcross, test_nn_targets
     )
 
-    variances = model.GP_layer.muygps_model.posterior_variance(K, Kcross)
+    variances = model.GP_layer.muygps_model.posterior_variance(Kin, Kcross)
 
     return predictions, variances
 
@@ -186,7 +186,7 @@ def predict_multiple_model(
     train_features_embedded = torch.from_numpy(train_features_embedded)
     test_features_embedded = torch.from_numpy(test_features_embedded)
 
-    test_nn_targets = train_responses[nn_indices_test, :]
+    test_nn_targets = train_responses[nn_indices_test]
 
     crosswise_diffs = crosswise_tensor(
         test_features_embedded,
@@ -204,20 +204,20 @@ def predict_multiple_model(
     ) = model.batch_nn_targets.shape
 
     Kcross = torch.zeros(test_count, nn_count, response_count)
-    K = torch.zeros(test_count, nn_count, nn_count, response_count)
+    Kin = torch.zeros(test_count, nn_count, nn_count, response_count)
 
     for i, muygps_model in enumerate(
         model.GP_layer.multivariate_muygps_model.models
     ):
         Kcross[:, :, i] = muygps_model.kernel(crosswise_diffs)
-        K[:, :, :, i] = muygps_model.kernel(pairwise_diffs)
+        Kin[:, :, :, i] = muygps_model.kernel(pairwise_diffs)
 
     predictions = model.GP_layer.multivariate_muygps_model.posterior_mean(
-        K, Kcross, test_nn_targets
+        Kin, Kcross, test_nn_targets
     )
 
     variances = model.GP_layer.multivariate_muygps_model.posterior_variance(
-        K, Kcross
+        Kin, Kcross
     )
 
     return predictions, variances
@@ -416,8 +416,8 @@ def train_deep_kernel_muygps(
     )
     scheduler = ExponentialLR(optimizer, gamma=scheduler_decay)
     nn_count = nbrs_lookup.nn_count
-    batch_features = train_features[batch_indices, :]
-    batch_responses = train_responses[batch_indices, :]
+    batch_features = train_features[batch_indices]
+    batch_responses = train_responses[batch_indices]
 
     loss_function = loss_function.lower()
 
@@ -465,7 +465,7 @@ def train_deep_kernel_muygps(
                 model.embedding(batch_features).detach().numpy(),
                 nn_count=nn_count,
             )
-            batch_nn_targets = train_responses[batch_nn_indices, :]
+            batch_nn_targets = train_responses[batch_nn_indices]
 
             model.batch_nn_indices = batch_nn_indices
             model.batch_nn_targets = batch_nn_targets
@@ -480,7 +480,7 @@ def train_deep_kernel_muygps(
         model.embedding(batch_features).detach().numpy(),
         nn_count=nn_count,
     )
-    batch_nn_targets = train_responses[batch_nn_indices, :]
+    batch_nn_targets = train_responses[batch_nn_indices]
     model.batch_nn_indices = batch_nn_indices
     model.batch_nn_targets = batch_nn_targets
     return nbrs_lookup, model
@@ -551,7 +551,7 @@ def update_nearest_neighbors(
     """
     if model.embedding is None:
         raise NotImplementedError("MuyGPs PyTorch model requires embedding.")
-    batch_features = train_features[batch_indices, :]
+    batch_features = train_features[batch_indices]
     nbrs_lookup = NN_Wrapper(
         model.embedding(train_features).detach().numpy(),
         nn_count,
@@ -561,7 +561,7 @@ def update_nearest_neighbors(
         model.embedding(batch_features).detach().numpy(),
         nn_count=nn_count,
     )
-    batch_nn_targets = train_responses[batch_nn_indices, :]
+    batch_nn_targets = train_responses[batch_nn_indices]
     model.batch_nn_indices = batch_nn_indices
     model.batch_nn_targets = batch_nn_targets
     return nbrs_lookup, model

@@ -56,19 +56,19 @@ class HomoscedasticNoise(ScalarParam, NoiseFn):
         self._perturb_fn = _backend_fn
 
     def perturb(
-        self, K: mm.ndarray, noise: Optional[float] = None, **kwargs
+        self, Kin: mm.ndarray, noise: Optional[float] = None, **kwargs
     ) -> mm.ndarray:
         """
         Perturb a kernel tensor with homoscedastic noise.
 
         Applies a homoscedastic noise model to a kernel tensor, whose last two
         dimensions are assumed to be the same length. For each such square
-        submatrix :math:`K`, computes the form :math:`K + \\tau^2 * I`,
+        submatrix :math:`Kin`, computes the form :math:`Kin + \\tau^2 * I`,
         where :math:`\\tau^2` is the shared noise prior variance and
         :math:`I` is the conforming identity matrix.
 
         Args:
-            K:
+            Kin:
                 A tensor of shape `(batch_count, nn_count, nn_count)` containing
                 the `(nn_count, nn_count)`-shaped kernel matrices corresponding
                 to each of the batch elements.
@@ -80,11 +80,11 @@ class HomoscedasticNoise(ScalarParam, NoiseFn):
         Returns:
             A tensor of shape `(batch_count, nn_count, nn_count)` where the
             final two dimensions consist of the perturbed matrices of the input
-            :math:`K`.
+            :math:`Kin`.
         """
         if noise is None:
             noise = self._val
-        return self._perturb_fn(K, noise)
+        return self._perturb_fn(Kin, noise)
 
     def perturb_fn(self, fn: Callable) -> Callable:
         """
@@ -108,7 +108,7 @@ class HomoscedasticNoise(ScalarParam, NoiseFn):
             argument that is only used for optimization.
         """
 
-        def perturbed_fn(K, *args, noise=None, **kwargs):
-            return fn(self.perturb(K, noise=noise), *args, **kwargs)
+        def perturbed_fn(Kin, *args, noise=None, **kwargs):
+            return fn(self.perturb(Kin, noise=noise), *args, **kwargs)
 
         return perturbed_fn

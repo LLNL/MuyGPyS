@@ -42,10 +42,6 @@ from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_diagonal_variance as muygps_diagonal_variance_n,
     _muygps_posterior_mean as muygps_posterior_mean_n,
 )
-from MuyGPyS._src.gp.muygps.mpi import (
-    _muygps_diagonal_variance as muygps_diagonal_variance_m,
-    _muygps_posterior_mean as muygps_posterior_mean_m,
-)
 from MuyGPyS._src.gp.noise.numpy import (
     _homoscedastic_perturb as homoscedastic_perturb_n,
 )
@@ -147,13 +143,7 @@ class TensorsTestCase(parameterized.TestCase):
             noise=HomoscedasticNoise(
                 cls.noise, _backend_fn=homoscedastic_perturb_n
             ),
-            scale=AnalyticScale(
-                _backend_ones=np.ones,
-                _backend_ndarray=np.ndarray,
-                _backend_ftype=np.ftype,
-                _backend_farray=np.farray,
-                _backend_outer=np.outer,
-            ),
+            scale=AnalyticScale(),
             _backend_mean_fn=muygps_posterior_mean_n,
             _backend_var_fn=muygps_diagonal_variance_n,
         )
@@ -254,14 +244,14 @@ class TensorsTestCase(parameterized.TestCase):
             cls.train_features = _make_gaussian_matrix(
                 cls.train_count, cls.feature_count
             )
-            cls.train_responses = _make_gaussian_matrix(
-                cls.train_count, cls.response_count
+            cls.train_responses = np.squeeze(
+                _make_gaussian_matrix(cls.train_count, cls.response_count)
             )
             cls.test_features = _make_gaussian_matrix(
                 cls.test_count, cls.feature_count
             )
-            cls.test_responses = _make_gaussian_matrix(
-                cls.test_count, cls.response_count
+            cls.test_responses = np.squeeze(
+                _make_gaussian_matrix(cls.test_count, cls.response_count)
             )
             nbrs_lookup = NN_Wrapper(
                 cls.train_features,
@@ -1012,12 +1002,12 @@ class MuyGPSTestCase(KernelTestCase):
             cls.batch_homoscedastic_covariance_gen = homoscedastic_perturb_n(
                 cls.batch_covariance_gen, cls.muygps_gen.noise()
             )
-            cls.batch_prediction = muygps_posterior_mean_n(
+            cls.batch_prediction = cls.muygps_gen.posterior_mean(
                 cls.batch_homoscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
                 cls.batch_nn_targets,
             )
-            cls.batch_variance = muygps_diagonal_variance_n(
+            cls.batch_variance = cls.muygps_gen.posterior_variance(
                 cls.batch_homoscedastic_covariance_gen,
                 cls.batch_crosscov_gen,
             )
@@ -1029,12 +1019,12 @@ class MuyGPSTestCase(KernelTestCase):
         cls.batch_homoscedastic_covariance_gen_chunk = homoscedastic_perturb_m(
             cls.batch_covariance_gen_chunk, cls.muygps_gen.noise()
         )
-        cls.batch_prediction_chunk = muygps_posterior_mean_m(
+        cls.batch_prediction_chunk = cls.muygps_gen.posterior_mean(
             cls.batch_homoscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
             cls.batch_nn_targets_chunk,
         )
-        cls.batch_variance_chunk = muygps_diagonal_variance_m(
+        cls.batch_variance_chunk = cls.muygps_gen.posterior_variance(
             cls.batch_homoscedastic_covariance_gen_chunk,
             cls.batch_crosscov_gen_chunk,
         )
@@ -1070,7 +1060,7 @@ class MuyGPSTest(MuyGPSTestCase):
                 self.batch_homoscedastic_covariance_gen,
                 self.batch_nn_targets,
             )
-            self.assertAlmostEqual(serial_scale[0], parallel_scale[0])
+            self.assertAlmostEqual(serial_scale, parallel_scale)
 
 
 class OptimTestCase(MuyGPSTestCase):

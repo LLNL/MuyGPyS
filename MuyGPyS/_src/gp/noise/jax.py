@@ -10,18 +10,32 @@ import MuyGPyS._src.math.jax as jnp
 
 @jit
 def _homoscedastic_perturb(
-    K: jnp.ndarray, noise_variance: float
+    Kin: jnp.ndarray, noise_variance: float
 ) -> jnp.ndarray:
-    _, nn_count, _ = K.shape
-    return K + noise_variance * jnp.eye(nn_count)
+    if Kin.ndim == 3:
+        _, nn_count, _ = Kin.shape
+        return Kin + noise_variance * jnp.eye(nn_count)
+    elif Kin.ndim == 5:
+        b, in_count, nn_count, in_count2, nn_count2 = Kin.shape
+        assert nn_count == nn_count2
+        assert in_count == in_count2
+        all_count = in_count * nn_count
+        Kin_flat = Kin.reshape(b, all_count, all_count)
+        Kin_flat = Kin_flat + noise_variance * jnp.eye(all_count)
+        return Kin_flat.reshape(b, in_count, nn_count, in_count, nn_count)
+    else:
+        raise ValueError(
+            "homoscedastic perturbation is not implemented for tensors of "
+            f"shape {Kin.shape}"
+        )
 
 
 @jit
 def _heteroscedastic_perturb(
-    K: jnp.ndarray, noise_variances: jnp.ndarray
+    Kin: jnp.ndarray, noise_variances: jnp.ndarray
 ) -> jnp.ndarray:
-    batch_count, nn_count, _ = K.shape
-    ret = K.copy()
+    batch_count, nn_count, _ = Kin.shape
+    ret = Kin.copy()
     indices = (
         jnp.repeat(jnp.arange(batch_count), nn_count),
         jnp.tile(jnp.arange(nn_count), batch_count),

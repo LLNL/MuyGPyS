@@ -49,11 +49,12 @@ class UnivariateSampler(SamplerBase):
     ):
         super().__init__(data_count, train_ratio=train_ratio, seed=seed)
         self.data_count = data_count
-        self.x = np.linspace(0, 1, data_count).reshape(data_count, 1)
-        self.test_features = self.x[self._test_mask, :]
-        self.train_features = self.x[self._train_mask, :]
-        self.test_count, _ = self.test_features.shape
-        self.train_count, _ = self.train_features.shape
+        self.x = np.linspace(0, 1, data_count)
+        self.test_features = self.x[self._test_mask]
+        self.train_features = self.x[self._train_mask]
+        (self.test_count,) = self.test_features.shape
+        (self.train_count,) = self.train_features.shape
+        self.train_shape = self.train_features.shape
         self.measurement_noise = measurement_noise
         self.gp = BenchmarkGP(kernel=kernel, noise=noise)
         self.train_interval = self.get_interval(
@@ -70,9 +71,9 @@ class UnivariateSampler(SamplerBase):
 
     def sample(self):
         y = benchmark_sample(self.gp, self.x)
-        self.test_responses = y[self._test_mask, :]
-        self.train_responses = y[self._train_mask, :] + np.random.normal(
-            0, self.measurement_noise(), size=(self.train_count, 1)
+        self.test_responses = y[self._test_mask]
+        self.train_responses = y[self._train_mask] + np.random.normal(
+            0, self.measurement_noise(), size=self.train_shape
         )
         return self.train_responses, self.test_responses
 
@@ -174,9 +175,9 @@ class UnivariateSampler(SamplerBase):
             label=f"{name} predictions",
         )
         ax.fill_between(
-            self.test_features[:, 0],
-            (predictions[:, 0] - confidence_intervals),
-            (predictions[:, 0] + confidence_intervals),
+            self.test_features,
+            (predictions - confidence_intervals),
+            (predictions + confidence_intervals),
             facecolor=color,
             alpha=0.25,
             label=f"{name} 95% Confidence Interval",
@@ -224,9 +225,9 @@ class UnivariateSampler(SamplerBase):
             label=f"{name} predictions",
         )
         ax.fill_between(
-            self.test_features[self.test_interval][:, 0],
-            (predictions[:, 0] - confidence_intervals)[self.test_interval],
-            (predictions[:, 0] + confidence_intervals)[self.test_interval],
+            self.test_features[self.test_interval],
+            (predictions - confidence_intervals)[self.test_interval],
+            (predictions + confidence_intervals)[self.test_interval],
             facecolor=color,
             alpha=0.25,
             label=f"{name} 95% Confidence Interval",
@@ -270,9 +271,9 @@ class UnivariateSampler2D(SamplerBase):
 
     def sample(self):
         self.ys = benchmark_sample(self.gp, self.xs)
-        self.test_responses = self.ys[self._test_mask, :]
-        self.train_responses = self.ys[self._train_mask, :] + np.random.normal(
-            0, self.measurement_noise(), size=(self.train_count, 1)
+        self.test_responses = self.ys[self._test_mask]
+        self.train_responses = self.ys[self._train_mask] + np.random.normal(
+            0, self.measurement_noise(), size=(self.train_count,)
         )
         return self.train_responses, self.test_responses
 
@@ -303,15 +304,15 @@ class UnivariateSampler2D(SamplerBase):
     def _make_im(self, array, mode="test", range=False, add_inf=True):
         im = np.zeros(self.data_count)
         if mode == "test":
-            im[self._test_mask, None] = array
+            im[self._test_mask] = array
             if add_inf is True:
                 im[self._train_mask] = -np.inf
         elif mode == "train":
-            im[self._train_mask, None] = array
+            im[self._train_mask] = array
             if add_inf is True:
                 im[self._test_mask] = -np.inf
         else:
-            im[:, None] = array
+            im = array
         if range is False:
             return im.reshape(self.points_per_dim, self.points_per_dim)
         else:
@@ -498,7 +499,7 @@ def print_results(targets, *args, **kwargs):
                 muygps.kernel.smoothness(),
                 get_length_scale(muygps),
                 muygps.noise(),
-                muygps.scale()[0],
+                muygps.scale(),
                 np.sqrt(mse_fn(means, targets)),
                 np.mean(variances),
                 np.mean(confidence_intervals),

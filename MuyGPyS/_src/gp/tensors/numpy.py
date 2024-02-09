@@ -20,7 +20,7 @@ def _make_fast_predict_tensors(
     train_features: np.ndarray,
     train_targets: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    num_train, _ = train_features.shape
+    num_train = train_features.shape[0]
     batch_nn_indices_fast = np.concatenate(
         (
             np.expand_dims(np.arange(0, num_train), axis=1),
@@ -50,7 +50,7 @@ def _make_predict_tensors(
         test_features, train_features, batch_indices, batch_nn_indices
     )
     pairwise_diffs = _pairwise_tensor(train_features, batch_nn_indices)
-    batch_nn_targets = train_targets[batch_nn_indices, :]
+    batch_nn_targets = train_targets[batch_nn_indices]
     return crosswise_diffs, pairwise_diffs, batch_nn_targets
 
 
@@ -67,7 +67,7 @@ def _make_train_tensors(
         train_features,
         train_targets,
     )
-    batch_targets = train_targets[batch_indices, :]
+    batch_targets = train_targets[batch_indices]
     return crosswise_diffs, pairwise_diffs, batch_targets, batch_nn_targets
 
 
@@ -75,7 +75,7 @@ def _batch_features_tensor(
     features: np.ndarray,
     batch_indices: np.ndarray,
 ) -> np.ndarray:
-    return features[batch_indices, :]
+    return features[batch_indices]
 
 
 def _crosswise_tensor(
@@ -86,7 +86,10 @@ def _crosswise_tensor(
 ) -> np.ndarray:
     locations = data[data_indices]
     points = nn_data[nn_indices]
-    return _crosswise_differences(locations, points)
+    if data.ndim == 1:
+        return locations[..., :, None, None] - points[..., None]
+    else:
+        return locations[..., :, None, :] - points
 
 
 def _pairwise_tensor(
@@ -94,7 +97,10 @@ def _pairwise_tensor(
     nn_indices: np.ndarray,
 ) -> np.ndarray:
     points = data[nn_indices]
-    return _pairwise_differences(points)
+    if data.ndim == 1:
+        return points[..., :, None, None] - points[..., None, :, None]
+    else:
+        return points[..., None, :] - points[..., None, :, :]
 
 
 def _crosswise_differences(
@@ -104,10 +110,12 @@ def _crosswise_differences(
 
 
 def _pairwise_differences(points: np.ndarray) -> np.ndarray:
-    if len(points.shape) == 3:
-        return points[:, :, None, :] - points[:, None, :, :]
-    elif len(points.shape) == 2:
+    if points.ndim == 1:
+        return np.subtract.outer(points, points)[:, :, None]
+    elif points.ndim == 2:
         return points[:, None, :] - points[None, :, :]
+    elif points.ndim == 3:
+        return points[:, :, None, :] - points[:, None, :, :]
     else:
         raise ValueError(f"points shape {points.shape} is not supported.")
 
@@ -123,7 +131,7 @@ def _l2(diffs: np.ndarray) -> np.ndarray:
 def _fast_nn_update(
     train_nn_indices: np.ndarray,
 ) -> np.ndarray:
-    train_count, _ = train_nn_indices.shape
+    train_count = train_nn_indices.shape[0]
     new_nn_indices = np.concatenate(
         (
             np.expand_dims(np.arange(0, train_count), axis=1),

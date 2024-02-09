@@ -44,8 +44,6 @@ class MiniBatchBenchmarkTestCase(BenchmarkTestCase):
         muygps,
         name,
         itr,
-        nn_count,
-        batch_count,
         loss_fn,
         obj_method,
         opt_kwargs,
@@ -60,9 +58,9 @@ class MiniBatchBenchmarkTestCase(BenchmarkTestCase):
         ) = optimize_from_tensors_mini_batch(
             muygps,
             self.train_features,
-            self.train_responses[itr, :, :],
-            nn_count,
-            batch_count,
+            self.train_responses_list[itr],
+            self.nn_count,
+            self.batch_count,
             self.train_count,
             num_epochs=1,  # Optimizing over one epoch (for now)
             keep_state=False,
@@ -89,14 +87,10 @@ class SmoothnessTest(MiniBatchBenchmarkTestCase):
     @parameterized.parameters(
         (
             (
-                b,
-                n,
                 loss_kwargs_and_scale,
                 om,
                 opt_method_and_kwargs,
             )
-            for b in [250]
-            for n in [20]
             for loss_kwargs_and_scale in [
                 ["lool", lool_fn, dict(), AnalyticScale()],
                 ["mse", mse_fn, dict(), FixedScale()],
@@ -124,8 +118,6 @@ class SmoothnessTest(MiniBatchBenchmarkTestCase):
     )
     def test_smoothness_mini_batch(
         self,
-        batch_count,
-        nn_count,
         loss_kwargs_and_scale,
         obj_method,
         opt_method_and_kwargs,
@@ -160,8 +152,6 @@ class SmoothnessTest(MiniBatchBenchmarkTestCase):
                 muygps,
                 "smoothness",
                 i,
-                nn_count,
-                batch_count,
                 loss_fn,
                 obj_method,
                 opt_kwargs,
@@ -181,14 +171,10 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
     @parameterized.parameters(
         (
             (
-                b,
-                n,
                 loss_kwargs_and_scale,
                 om,
                 opt_method_and_kwargs,
             )
-            for b in [250]
-            for n in [20]
             for loss_kwargs_and_scale in [
                 ["lool", lool_fn, dict(), AnalyticScale()],
             ]
@@ -208,8 +194,6 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
     )
     def test_length_scale_mini_batch(
         self,
-        batch_count,
-        nn_count,
         loss_kwargs_and_scale,
         obj_method,
         opt_method_and_kwargs,
@@ -244,8 +228,6 @@ class LengthScaleTest(MiniBatchBenchmarkTestCase):
                 muygps,
                 "length_scale",
                 i,
-                nn_count,
-                batch_count,
                 loss_fn,
                 obj_method,
                 opt_kwargs,
