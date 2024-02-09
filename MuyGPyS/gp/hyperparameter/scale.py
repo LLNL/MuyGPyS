@@ -56,9 +56,7 @@ class ScaleFn:
 
     def _check_positive_integer(self, count, name) -> int:
         if not isinstance(count, int) or count < 0:
-            raise ValueError(
-                f"{name} count must be a positive integer, not {count}"
-            )
+            raise ValueError(f"{name} count must be a positive integer, not {count}")
         return count
 
     def __str__(self, **kwargs):
@@ -181,12 +179,12 @@ class AnalyticScale(ScaleFn):
         response_count:
             The integer number of response dimensions.
         iteration_count:
-            The number of iterations to run during optimization
+            The number of iterations to run during optimization.
     """
 
     def __init__(
         self,
-        iteration_count: int = 10,
+        iteration_count: int = 1,
         _backend_fn: Callable = _analytic_scale_optim,
         **kwargs,
     ):
@@ -261,9 +259,7 @@ class DownSampleScale(ScaleFn):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self._down_count = self._check_positive_integer(
-            down_count, "down sample"
-        )
+        self._down_count = self._check_positive_integer(down_count, "down sample")
         self._iteration_count = self._check_positive_integer(
             iteration_count, "down sample iteration"
         )
