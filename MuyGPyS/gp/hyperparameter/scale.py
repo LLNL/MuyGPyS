@@ -226,6 +226,8 @@ class AnalyticScale(ScaleFn):
         """
 
         def analytic_scale_opt_fn(K, nn_targets, *args, **kwargs):
+            if self.val.shape != (1,):
+                return self._fn(muygps.noise.perturb(K), nn_targets)
             scale = self.val
             for _ in range(self.iteration_count):
                 scale = self._fn(scale * muygps.noise.perturb(K), nn_targets)
