@@ -197,12 +197,12 @@ class AnalyticScale(ScaleFn):
         """
 
         def analytic_scale_opt_fn(Kin, nn_targets, *args, **kwargs):
-            if np.array(self.val).shape != (1,):
+            scale = np.array(self.val)
+            if scale.size != 1:
                 return self._fn(muygps.noise.perturb(Kin), nn_targets, **kwargs)
-            scale = self.val
             for _ in range(self.iteration_count):
                 scale = self._fn(
-                    scale * muygps.noise.perturb(Kin), nn_targets, **kwargs
+                    muygps.noise.perturb(scale * Kin), nn_targets, **kwargs
                 )
             return scale
 
