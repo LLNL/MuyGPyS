@@ -40,11 +40,17 @@ class ScaleFn:
 
     def _check_positive_integer(self, count, name) -> int:
         if not isinstance(count, int) or count < 0:
-            raise ValueError(f"{name} count must be a positive integer, not {count}")
+            raise ValueError(
+                f"{name} count must be a positive integer, not {count}"
+            )
         return count
 
     def _check_positive_float(self, val) -> float:
-        if isinstance(val, Sequence) or hasattr(val, "__len__") and len(val) != 1:
+        if (
+            isinstance(val, Sequence)
+            or hasattr(val, "__len__")
+            and len(val) != 1
+        ):
             raise ValueError(f"Scale parameter must be scalar, not {val}.")
         if not isinstance(val, mm.ndarray):
             val = float(val)
@@ -191,8 +197,8 @@ class AnalyticScale(ScaleFn):
         Returns:
             A function with signature
             `(Kin, nn_targets, *args, **kwargs) -> mm.ndarray` that perturbs the
-            `(batch_count, nn_count, nn_count)` tensor `Kin` with `muygps`'s noise
-            model before solving it against the
+            `(batch_count, nn_count, nn_count)` tensor `Kin` with `muygps`'s
+            noise model before solving it against the
             `(batch_count, nn_count, response_count)` tensor `nn_targets`.
         """
 
@@ -204,7 +210,9 @@ class AnalyticScale(ScaleFn):
             for _ in range(1, self.iteration_count):
                 scale = 0.5 * (
                     scale
-                    + self._fn(scale * muygps.noise.perturb(Kin), nn_targets, **kwargs)
+                    + self._fn(
+                        scale * muygps.noise.perturb(Kin), nn_targets, **kwargs
+                    )
                 )
             return scale
 
@@ -236,7 +244,9 @@ class DownSampleScale(ScaleFn):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self._down_count = self._check_positive_integer(down_count, "down sample")
+        self._down_count = self._check_positive_integer(
+            down_count, "down sample"
+        )
         self._iteration_count = self._check_positive_integer(
             iteration_count, "down sample iteration"
         )
@@ -251,8 +261,8 @@ class DownSampleScale(ScaleFn):
         Returns:
             A function with signature
             `(Kin, nn_targets, *args, **kwargs) -> mm.ndarray` that perturbs the
-            `(batch_count, nn_count, nn_count)` tensor `Kin` with `muygps`'s noise
-            model before solving it against the
+            `(batch_count, nn_count, nn_count)` tensor `Kin` with `muygps`'s
+            noise model before solving it against the
             `(batch_count, nn_count, response_count)` tensor `nn_targets`.
         """
 

@@ -35,9 +35,9 @@ class ScaleTest(BenchmarkTestCase):
     def test_scale(self):
         mrse = 0.0
         pairwise_diffs = _pairwise_differences(self.train_features)
-        Kin = self.sampler.gp.kernel(pairwise_diffs) + self.sampler.gp.noise() * mm.eye(
-            self.train_count
-        )
+        Kin = self.sampler.gp.kernel(
+            pairwise_diffs
+        ) + self.sampler.gp.noise() * mm.eye(self.train_count)
 
         for i in range(self.its):
             ss = get_analytic_scale(Kin, self.train_responses_list[i])
@@ -79,7 +79,7 @@ class AnalyticOptimTest(BenchmarkTestCase):
         print(f"optimizes with mean relative squared error {mrse}")
         self.assertLessEqual(mrse, self.scale_tol)
 
-    def test_iterative_scale_optim_(self):
+    def test_iterative_scale_optim(self):
         mrse = 0.0
 
         for i in range(self.its):
