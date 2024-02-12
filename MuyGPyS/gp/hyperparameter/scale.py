@@ -155,10 +155,18 @@ class AnalyticScale(ScaleFn):
     Args:
         response_count:
             The integer number of response dimensions.
+        iteration_count:
+            The number of iterations to run during optimization.
     """
 
-    def __init__(self, _backend_fn: Callable = _analytic_scale_optim, **kwargs):
+    def __init__(
+        self,
+        iteration_count: int = 1,
+        _backend_fn: Callable = _analytic_scale_optim,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
+        self.iteration_count = iteration_count
         self._fn = _backend_fn
 
     def get_opt_fn(self, muygps) -> Callable:
@@ -189,13 +197,24 @@ class AnalyticScale(ScaleFn):
         Returns:
             A function with signature
             `(Kin, nn_targets, *args, **kwargs) -> mm.ndarray` that perturbs the
-            `(batch_count, nn_count, nn_count)` tensor `Kin` with `muygps`'s noise
-            model before solving it against the
+            `(batch_count, nn_count, nn_count)` tensor `Kin` with `muygps`'s
+            noise model before solving it against the
             `(batch_count, nn_count, response_count)` tensor `nn_targets`.
         """
 
         def analytic_scale_opt_fn(Kin, nn_targets, *args, **kwargs):
-            return self._fn(muygps.noise.perturb(Kin), nn_targets, **kwargs)
+            scale = self._fn(muygps.noise.perturb(Kin), nn_targets, **kwargs)
+            if np.array(self.val).size != 1:
+                # iterative process only works for scalar responses
+                return scale
+            for _ in range(1, self.iteration_count):
+                scale = 0.5 * (
+                    scale
+                    + self._fn(
+                        scale * muygps.noise.perturb(Kin), nn_targets, **kwargs
+                    )
+                )
+            return scale
 
         return analytic_scale_opt_fn
 
@@ -242,8 +261,8 @@ class DownSampleScale(ScaleFn):
         Returns:
             A function with signature
             `(Kin, nn_targets, *args, **kwargs) -> mm.ndarray` that perturbs the
-            `(batch_count, nn_count, nn_count)` tensor `Kin` with `muygps`'s noise
-            model before solving it against the
+            `(batch_count, nn_count, nn_count)` tensor `Kin` with `muygps`'s
+            noise model before solving it against the
             `(batch_count, nn_count, response_count)` tensor `nn_targets`.
         """
 
