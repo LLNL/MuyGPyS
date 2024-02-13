@@ -92,21 +92,24 @@ class BenchmarkTestCase(parameterized.TestCase):
             cls.batch_indices_list.append(batch_indices)
             cls.batch_nn_indices_list.append(batch_nn_indices)
 
-        cls.batch_crosswise_diffs_list = list()
-        cls.batch_pairwise_diffs_list = list()
+        cls.batch_crosswise_dists_list = list()
+        cls.batch_pairwise_dists_list = list()
         cls.batch_targets_list = list()
         cls.batch_nn_targets_list = list()
-        isotropy = Isotropy(l2, length_scale=ScalarParam(1.0))
         for i in range(cls.its):
-            batch_crosswise_diffs = isotropy.crosswise_tensor(
-                cls.train_features,
-                cls.train_features,
-                cls.batch_indices_list[i],
-                cls.batch_nn_indices_list[i],
+            batch_crosswise_dists = (
+                cls.sampler.gp.kernel.deformation.crosswise_tensor(
+                    cls.train_features,
+                    cls.train_features,
+                    cls.batch_indices_list[i],
+                    cls.batch_nn_indices_list[i],
+                )
             )
-            batch_pairwise_diffs = isotropy.pairwise_tensor(
-                cls.train_features,
-                cls.batch_nn_indices_list[i],
+            batch_pairwise_dists = (
+                cls.sampler.gp.kernel.deformation.pairwise_tensor(
+                    cls.train_features,
+                    cls.batch_nn_indices_list[i],
+                )
             )
             batch_targets = _consistent_chunk_tensor(
                 cls.train_responses_list[i][cls.batch_indices_list[i]]
@@ -115,8 +118,8 @@ class BenchmarkTestCase(parameterized.TestCase):
                 cls.train_responses_list[i][cls.batch_nn_indices_list[i]]
             )
 
-            cls.batch_crosswise_diffs_list.append(batch_crosswise_diffs)
-            cls.batch_pairwise_diffs_list.append(batch_pairwise_diffs)
+            cls.batch_crosswise_dists_list.append(batch_crosswise_dists)
+            cls.batch_pairwise_dists_list.append(batch_pairwise_dists)
             cls.batch_targets_list.append(batch_targets)
             cls.batch_nn_targets_list.append(batch_nn_targets)
 
@@ -134,8 +137,8 @@ class BenchmarkTestCase(parameterized.TestCase):
             muygps,
             self.batch_targets_list[itr],
             self.batch_nn_targets_list[itr],
-            self.batch_crosswise_diffs_list[itr],
-            self.batch_pairwise_diffs_list[itr],
+            self.batch_crosswise_dists_list[itr],
+            self.batch_pairwise_dists_list[itr],
             loss_fn=loss_fn,
             loss_kwargs=loss_kwargs,
             **opt_kwargs,
