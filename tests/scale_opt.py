@@ -97,7 +97,7 @@ class AnalyticOptimTest(BenchmarkTestCase):
             )
 
             muygps = muygps.optimize_scale(
-                self.batch_pairwise_diffs_list[i], self.batch_nn_targets_list[i]
+                self.batch_pairwise_dists_list[i], self.batch_nn_targets_list[i]
             )
             estimate = muygps.scale()
 
