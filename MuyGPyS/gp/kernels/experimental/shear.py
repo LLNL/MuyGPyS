@@ -45,7 +45,7 @@ import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.kernels.shear import _shear_fn
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation import (
-    Isotropy,
+    DifferenceIsotropy,
     F2,
 )
 from MuyGPyS.gp.kernels import KernelFn
@@ -73,16 +73,18 @@ class ShearKernel(KernelFn):
 
     def __init__(
         self,
-        deformation: Isotropy = Isotropy(F2, length_scale=ScalarParam(1.0)),
+        deformation: DifferenceIsotropy = DifferenceIsotropy(
+            F2, length_scale=ScalarParam(1.0)
+        ),
         _backend_fn: Callable = _shear_fn,
         _backend_zeros: Callable = mm.zeros,
         _backend_squeeze: Callable = mm.squeeze,
     ):
         super().__init__(deformation=deformation)
-        if not isinstance(self.deformation, Isotropy):
+        if not isinstance(self.deformation, DifferenceIsotropy):
             raise ValueError(
-                "ShearKernel only supports isotropic deformations, not "
-                f"{type(deformation)}"
+                "ShearKernel only supports the specialized difference "
+                f"isotropicdeformations, not {type(deformation)}"
             )
         self._backend_zeros = _backend_zeros
         self._backend_squeeze = _backend_squeeze
