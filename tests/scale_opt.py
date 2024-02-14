@@ -80,6 +80,32 @@ class AnalyticOptimTest(BenchmarkTestCase):
         print(f"optimizes with mean relative squared error {mrse}")
         self.assertLessEqual(mrse, self.scale_tol)
 
+    def test_iterative_scale_optim(self):
+        mrse = 0.0
+
+        for i in range(self.its):
+            muygps = MuyGPS(
+                kernel=Matern(
+                    smoothness=ScalarParam(self.params["smoothness"]()),
+                    deformation=Isotropy(
+                        metric=l2,
+                        length_scale=ScalarParam(self.params["length_scale"]()),
+                    ),
+                ),
+                noise=HomoscedasticNoise(self.params["noise"]()),
+                scale=AnalyticScale(iteration_count=10),
+            )
+
+            muygps = muygps.optimize_scale(
+                self.batch_pairwise_diffs_list[i], self.batch_nn_targets_list[i]
+            )
+            estimate = muygps.scale()
+
+            mrse += _sq_rel_err(self.params["scale"](), estimate)
+        mrse /= self.its
+        print(f"optimizes with mean relative squared error {mrse}")
+        self.assertLessEqual(mrse, self.scale_tol)
+
 
 class DownSampleOptimTest(BenchmarkTestCase):
     @classmethod
