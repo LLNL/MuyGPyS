@@ -103,19 +103,19 @@ def predict_single_model(
 
     test_nn_targets = train_responses[nn_indices_test]
 
-    crosswise_diffs = model.deformation.crosswise_tensor(
+    crosswise_dists = model.deformation.crosswise_tensor(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
         nn_indices_test,
     )
 
-    pairwise_diffs = model.deformation.pairwise_tensor(
+    pairwise_dists = model.deformation.pairwise_tensor(
         train_features_embedded, nn_indices_test
     )
 
-    Kcross = model.GP_layer.muygps_model.kernel(crosswise_diffs)
-    Kin = model.GP_layer.muygps_model.kernel(pairwise_diffs)
+    Kcross = model.GP_layer.muygps_model.kernel(crosswise_dists)
+    Kin = model.GP_layer.muygps_model.kernel(pairwise_dists)
 
     predictions = model.GP_layer.muygps_model.posterior_mean(
         Kin, Kcross, test_nn_targets
@@ -186,38 +186,23 @@ def predict_multiple_model(
 
     test_nn_targets = train_responses[nn_indices_test]
 
-    crosswise_diffs = model.deformation.crosswise_tensor(
+    crosswise_dists = model.deformation.crosswise_tensor(
         test_features_embedded,
         train_features_embedded,
         torch.arange(test_count),
         nn_indices_test,
     )
 
-    pairwise_diffs = model.deformation.pairwise_tensor(
+    pairwise_dists = model.deformation.pairwise_tensor(
         train_features_embedded, nn_indices_test
     )
 
-    (
-        _,
-        nn_count,
-        response_count,
-    ) = model.batch_nn_targets.shape
-
-    Kcross = torch.zeros(test_count, nn_count, response_count)
-    Kin = torch.zeros(test_count, nn_count, nn_count, response_count)
-
-    for i, muygps_model in enumerate(
-        model.GP_layer.multivariate_muygps_model.models
-    ):
-        Kcross[:, :, i] = muygps_model.kernel(crosswise_diffs)
-        Kin[:, :, :, i] = muygps_model.kernel(pairwise_diffs)
-
     predictions = model.GP_layer.multivariate_muygps_model.posterior_mean(
-        Kin, Kcross, test_nn_targets
+        pairwise_dists, crosswise_dists, test_nn_targets
     )
 
     variances = model.GP_layer.multivariate_muygps_model.posterior_variance(
-        Kin, Kcross
+        pairwise_dists, crosswise_dists
     )
 
     return predictions, variances

@@ -132,21 +132,12 @@ class MultivariateMuyGPs_layer(nn.Module):
             x, self.batch_nn_indices
         )
 
-        batch_count, nn_count, response_count = self.batch_nn_targets.shape
-
-        Kcross = torch.zeros(batch_count, nn_count, response_count)
-        Kin = torch.zeros(batch_count, nn_count, nn_count, response_count)
-
-        for i, model in enumerate(self.multivariate_muygps_model.models):
-            Kcross[:, :, i] = model.kernel(crosswise_tensor)
-            Kin[:, :, :, i] = model.kernel(pairwise_tensor)
-
         variances = self.multivariate_muygps_model.posterior_variance(
-            Kin, Kcross
+            pairwise_tensor, crosswise_tensor
         )
 
         predictions = self.multivariate_muygps_model.posterior_mean(
-            Kin, Kcross, self.batch_nn_targets
+            pairwise_tensor, crosswise_tensor, self.batch_nn_targets
         )
 
         return predictions, variances
