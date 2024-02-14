@@ -37,40 +37,6 @@ def _make_fast_predict_tensors(
     return pairwise_diffs_fast, batch_nn_targets_fast
 
 
-def _make_predict_tensors(
-    batch_indices: np.ndarray,
-    batch_nn_indices: np.ndarray,
-    test_features: np.ndarray,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if test_features is None:
-        test_features = train_features
-    crosswise_diffs = _crosswise_tensor(
-        test_features, train_features, batch_indices, batch_nn_indices
-    )
-    pairwise_diffs = _pairwise_tensor(train_features, batch_nn_indices)
-    batch_nn_targets = train_targets[batch_nn_indices]
-    return crosswise_diffs, pairwise_diffs, batch_nn_targets
-
-
-def _make_train_tensors(
-    batch_indices: np.ndarray,
-    batch_nn_indices: np.ndarray,
-    train_features: np.ndarray,
-    train_targets: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    crosswise_diffs, pairwise_diffs, batch_nn_targets = _make_predict_tensors(
-        batch_indices,
-        batch_nn_indices,
-        train_features,
-        train_features,
-        train_targets,
-    )
-    batch_targets = train_targets[batch_indices]
-    return crosswise_diffs, pairwise_diffs, batch_targets, batch_nn_targets
-
-
 def _batch_features_tensor(
     features: np.ndarray,
     batch_indices: np.ndarray,

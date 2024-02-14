@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: MIT
 
 import MuyGPyS._src.math.numpy as np
-from MuyGPyS._src.gp.tensors import _pairwise_differences
 from MuyGPyS.gp.hyperparameter import FixedScale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn
@@ -99,9 +98,11 @@ def benchmark_prepare_cholK(
         The Cholesky decomposition of a dense covariance matrix.
     """
     data_count = data.shape[0]
-    pairwise_diffs = _pairwise_differences(data)
+    pairwise_dists = gp.kernel.deformation.pairwise_tensor(
+        data, np.arange(data_count)
+    )
     Kfull = gp.scale() * (
-        gp.kernel(pairwise_diffs) + gp.noise() * np.eye(data_count)
+        gp.kernel(pairwise_dists) + gp.noise() * np.eye(data_count)
     )
     return np.linalg.cholesky(Kfull)
 

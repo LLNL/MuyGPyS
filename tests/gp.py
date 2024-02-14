@@ -40,10 +40,6 @@ from MuyGPyS.gp.deformation import (
 from MuyGPyS.gp.hyperparameter import AnalyticScale, FixedScale, ScalarParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
-from MuyGPyS.gp.tensors import (
-    make_train_tensors,
-    make_predict_tensors,
-)
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.loss import mse_fn
 
@@ -265,7 +261,7 @@ class GPTestCase(parameterized.TestCase):
             crosswise_diffs,
             pairwise_diffs,
             batch_nn_targets,
-        ) = make_predict_tensors(
+        ) = muygps.make_predict_tensors(
             indices,
             test_nn_indices,
             test_features,
@@ -818,7 +814,7 @@ class GPScaleTest(GPTestCase):
         nbrs_lookup = NN_Wrapper(data["input"], nn_count, **nn_kwargs)
         indices = mm.arange(data_count)
         nn_indices, _ = nbrs_lookup.get_batch_nns(indices)
-        (_, pairwise_diffs, _, nn_targets) = make_train_tensors(
+        (_, pairwise_diffs, _, nn_targets) = muygps.make_train_tensors(
             indices,
             nn_indices,
             data["input"],

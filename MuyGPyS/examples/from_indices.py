@@ -11,11 +11,6 @@ import numpy as np
 
 from typing import Tuple, Union
 
-from MuyGPyS.gp.tensors import (
-    crosswise_tensor,
-    make_predict_tensors,
-    make_train_tensors,
-)
 from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
@@ -30,9 +25,11 @@ def tensors_from_indices(
     targets: np.ndarray,
     **kwargs,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    crosswise_tensor, pairwise_tensor, batch_nn_targets = make_predict_tensors(
-        indices, nn_indices, test, train, targets
-    )
+    (
+        crosswise_tensor,
+        pairwise_tensor,
+        batch_nn_targets,
+    ) = muygps.make_predict_tensors(indices, nn_indices, test, train, targets)
     if isinstance(muygps, MuyGPS):
         pairwise_tensor = muygps.kernel(pairwise_tensor)
         crosswise_tensor = muygps.kernel(crosswise_tensor)
@@ -99,7 +96,12 @@ def fast_posterior_mean_from_indices(
     closest_index: np.ndarray,
     coeffs_tensor: np.ndarray,
 ) -> np.ndarray:
-    crosswise_diffs = crosswise_tensor(
+    tensor_fn = (
+        muygps.kernel.deformation.crosswise_tensor
+        if isinstance(muygps, MuyGPS)
+        else muygps.models[0].kernel.deformation.crosswise_tensor
+    )
+    crosswise_diffs = tensor_fn(
         test_features,
         train_features,
         indices,
@@ -200,7 +202,7 @@ def optimize_from_indices(
         pairwise_diffs,
         batch_targets,
         batch_nn_targets,
-    ) = make_train_tensors(
+    ) = muygps.make_train_tensors(
         batch_indices,
         batch_nn_indices,
         train_features,

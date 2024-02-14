@@ -28,7 +28,6 @@ from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.examples.from_indices import fast_posterior_mean_from_indices
 from MuyGPyS.examples.regress import _decide_and_make_regressor
 from MuyGPyS.gp.tensors import fast_nn_update
-from MuyGPyS.gp.tensors import pairwise_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
@@ -74,7 +73,9 @@ def make_fast_regressor(
     nn_indices = fast_nn_update(nn_indices)
 
     train_nn_targets = train_targets[nn_indices]
-    Kin = muygps.kernel(pairwise_tensor(train_features, nn_indices))
+    Kin = muygps.kernel(
+        muygps.kernel.deformation.pairwise_tensor(train_features, nn_indices)
+    )
 
     precomputed_coefficients_matrix = muygps.fast_coefficients(
         Kin, train_nn_targets
@@ -121,7 +122,9 @@ def make_fast_multivariate_regressor(
     )
 
     nn_indices = fast_nn_update(nn_indices)
-    pairwise_diffs_fast = pairwise_tensor(train_features, nn_indices)
+    pairwise_diffs_fast = mmuygps.models[0].kernel.deformation.pairwise_tensor(
+        train_features, nn_indices
+    )
     train_nn_targets = train_targets[nn_indices]
     precomputed_coefficients_matrix = mmuygps.fast_coefficients(
         pairwise_diffs_fast, train_nn_targets

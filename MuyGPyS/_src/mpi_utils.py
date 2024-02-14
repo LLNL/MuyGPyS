@@ -5,6 +5,7 @@
 
 import warnings
 from typing import Callable
+from functools import wraps
 
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
@@ -93,6 +94,25 @@ def _chunk_function_tensor(func: Callable, *args, return_count=1):
     else:
         tensors = None
     return _chunk_tensor(tensors, return_count=return_count)
+
+
+def mpi_chunk(return_count):
+    def decorator_mpi_chunk(func):
+        if config.state.backend != "mpi":
+            return func
+
+        @wraps(func)
+        def chunked_wrapper(*args, disable_mpi=False):
+            if disable_mpi is True:
+                return func(*args)
+            else:
+                return _chunk_function_tensor(
+                    func, *args, return_count=return_count
+                )
+
+        return chunked_wrapper
+
+    return decorator_mpi_chunk
 
 
 def _consistent_unchunk_tensor(tensor: np.ndarray) -> np.ndarray:

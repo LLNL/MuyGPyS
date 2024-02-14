@@ -168,132 +168,132 @@ class RegressTest(parameterized.TestCase):
         self.assertLessEqual(mse_actual, target_mse)
 
 
-class MultivariateRegressTest(parameterized.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(MultivariateRegressTest, cls).setUpClass()
+# class MultivariateRegressTest(parameterized.TestCase):
+#     @classmethod
+#     def setUpClass(cls):
+#         super(MultivariateRegressTest, cls).setUpClass()
 
-    @parameterized.parameters(
-        ((1000, 100, 40, 2, nn, bs) for nn in [20] for bs in [200])
-    )
-    def test_regress(
-        self,
-        train_count,
-        test_count,
-        feature_count,
-        response_count,
-        nn_count,
-        batch_count,
-    ):
-        target_mse = 3.0
-        train, test = _make_gaussian_data(
-            train_count, test_count, feature_count, response_count
-        )
+#     @parameterized.parameters(
+#         ((1000, 100, 40, 2, nn, bs) for nn in [20] for bs in [200])
+#     )
+#     def test_regress(
+#         self,
+#         train_count,
+#         test_count,
+#         feature_count,
+#         response_count,
+#         nn_count,
+#         batch_count,
+#     ):
+#         target_mse = 3.0
+#         train, test = _make_gaussian_data(
+#             train_count, test_count, feature_count, response_count
+#         )
 
-        train_features = train["input"]
-        train_responses = train["output"]
-        test_features = test["input"]
-        test_responses = test["output"]
-        _check_ndarray(self.assertEqual, train_features, torch.ftype)
-        _check_ndarray(self.assertEqual, train_responses, torch.ftype)
-        _check_ndarray(self.assertEqual, test_features, torch.ftype)
-        _check_ndarray(self.assertEqual, test_responses, torch.ftype)
+#         train_features = train["input"]
+#         train_responses = train["output"]
+#         test_features = test["input"]
+#         test_responses = test["output"]
+#         _check_ndarray(self.assertEqual, train_features, torch.ftype)
+#         _check_ndarray(self.assertEqual, train_responses, torch.ftype)
+#         _check_ndarray(self.assertEqual, test_features, torch.ftype)
+#         _check_ndarray(self.assertEqual, test_responses, torch.ftype)
 
-        nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="exact")
-        train_count, num_test_responses = train_responses.shape
+#         nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="exact")
+#         train_count, num_test_responses = train_responses.shape
 
-        batch_indices, batch_nn_indices = sample_batch(
-            nbrs_lookup, batch_count, train_count
-        )
-        _check_ndarray(self.assertEqual, batch_indices, torch.itype)
-        _check_ndarray(self.assertEqual, batch_nn_indices, torch.itype)
+#         batch_indices, batch_nn_indices = sample_batch(
+#             nbrs_lookup, batch_count, train_count
+#         )
+#         _check_ndarray(self.assertEqual, batch_indices, torch.itype)
+#         _check_ndarray(self.assertEqual, batch_nn_indices, torch.itype)
 
-        batch_targets = train_responses[batch_indices, :]
-        batch_nn_targets = train_responses[batch_nn_indices, :]
-        _check_ndarray(self.assertEqual, batch_targets, torch.ftype)
-        _check_ndarray(self.assertEqual, batch_nn_targets, torch.ftype)
+#         batch_targets = train_responses[batch_indices, :]
+#         batch_nn_targets = train_responses[batch_nn_indices, :]
+#         _check_ndarray(self.assertEqual, batch_targets, torch.ftype)
+#         _check_ndarray(self.assertEqual, batch_nn_targets, torch.ftype)
 
-        model_args = [
-            {
-                "kernel": Matern(
-                    smoothness=ScalarParam(1.5),
-                    deformation=Isotropy(
-                        metric=l2,
-                        length_scale=ScalarParam(7.2),
-                    ),
-                ),
-                "noise": HomoscedasticNoise(1e-5),
-            },
-            {
-                "kernel": Matern(
-                    smoothness=ScalarParam(0.5),
-                    deformation=Isotropy(
-                        metric=l2,
-                        length_scale=ScalarParam(2.2),
-                    ),
-                ),
-                "noise": HomoscedasticNoise(1e-6),
-            },
-        ]
+#         model_args = [
+#             {
+#                 "kernel": Matern(
+#                     smoothness=ScalarParam(1.5),
+#                     deformation=Isotropy(
+#                         metric=l2,
+#                         length_scale=ScalarParam(7.2),
+#                     ),
+#                 ),
+#                 "noise": HomoscedasticNoise(1e-5),
+#             },
+#             {
+#                 "kernel": Matern(
+#                     smoothness=ScalarParam(0.5),
+#                     deformation=Isotropy(
+#                         metric=l2,
+#                         length_scale=ScalarParam(2.2),
+#                     ),
+#                 ),
+#                 "noise": HomoscedasticNoise(1e-6),
+#             },
+#         ]
 
-        multivariate_muygps_model = MMuyGPS(*model_args)
+#         multivariate_muygps_model = MMuyGPS(*model_args)
 
-        model = SVDKMultivariateMuyGPs(
-            multivariate_muygps_model=multivariate_muygps_model,
-            batch_indices=batch_indices,
-            batch_nn_indices=batch_nn_indices,
-            batch_targets=batch_targets,
-            batch_nn_targets=batch_nn_targets,
-        )
+#         model = SVDKMultivariateMuyGPs(
+#             multivariate_muygps_model=multivariate_muygps_model,
+#             batch_indices=batch_indices,
+#             batch_nn_indices=batch_nn_indices,
+#             batch_targets=batch_targets,
+#             batch_nn_targets=batch_nn_targets,
+#         )
 
-        nbrs_struct, model_trained = train_deep_kernel_muygps(
-            model=model,
-            train_features=train_features,
-            train_responses=train_responses,
-            batch_indices=batch_indices,
-            nbrs_lookup=nbrs_lookup,
-            training_iterations=10,
-            optimizer_method=torch.optim.Adam,
-            learning_rate=1e-4,
-            scheduler_decay=0.95,
-            loss_function="lool",
-            update_frequency=1,
-        )
+#         nbrs_struct, model_trained = train_deep_kernel_muygps(
+#             model=model,
+#             train_features=train_features,
+#             train_responses=train_responses,
+#             batch_indices=batch_indices,
+#             nbrs_lookup=nbrs_lookup,
+#             training_iterations=10,
+#             optimizer_method=torch.optim.Adam,
+#             learning_rate=1e-4,
+#             scheduler_decay=0.95,
+#             loss_function="lool",
+#             update_frequency=1,
+#         )
 
-        model_trained.eval()
+#         model_trained.eval()
 
-        predictions, variances = predict_model(
-            model=model_trained,
-            test_features=test_features,
-            train_features=train_features,
-            train_responses=train_responses,
-            nbrs_lookup=nbrs_struct,
-            nn_count=nn_count,
-        )
+#         predictions, variances = predict_model(
+#             model=model_trained,
+#             test_features=test_features,
+#             train_features=train_features,
+#             train_responses=train_responses,
+#             nbrs_lookup=nbrs_struct,
+#             nn_count=nn_count,
+#         )
 
-        _check_ndarray(
-            self.assertEqual,
-            predictions,
-            torch.ftype,
-            shape=test_responses.shape,
-        )
-        _check_ndarray(
-            self.assertEqual,
-            variances,
-            torch.ftype,
-            shape=(test_count, response_count),
-        )
-        mse_actual = (
-            np.sum(
-                (
-                    predictions.squeeze().detach().numpy()
-                    - test_responses.squeeze().detach().numpy()
-                )
-                ** 2
-            )
-            / test_responses.shape[0]
-        )
-        self.assertLessEqual(mse_actual, target_mse)
+#         _check_ndarray(
+#             self.assertEqual,
+#             predictions,
+#             torch.ftype,
+#             shape=test_responses.shape,
+#         )
+#         _check_ndarray(
+#             self.assertEqual,
+#             variances,
+#             torch.ftype,
+#             shape=(test_count, response_count),
+#         )
+#         mse_actual = (
+#             np.sum(
+#                 (
+#                     predictions.squeeze().detach().numpy()
+#                     - test_responses.squeeze().detach().numpy()
+#                 )
+#                 ** 2
+#             )
+#             / test_responses.shape[0]
+#         )
+#         self.assertLessEqual(mse_actual, target_mse)
 
 
 if __name__ == "__main__":

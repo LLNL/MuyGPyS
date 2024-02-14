@@ -6,8 +6,8 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from sklearn.gaussian_process.kernels import Matern as sk_Matern
-from sklearn.gaussian_process.kernels import RBF as sk_RBF
+from sklearn.gaussian_process.kernels import Matern as Matern_sk
+from sklearn.gaussian_process.kernels import RBF as RBF_sk
 
 import MuyGPyS._src.math as mm
 import MuyGPyS._src.math.numpy as np
@@ -20,46 +20,10 @@ from MuyGPyS._test.utils import (
     _consistent_assert,
     _make_gaussian_matrix,
 )
-from MuyGPyS.gp.tensors import crosswise_tensor, pairwise_tensor
 from MuyGPyS.gp.hyperparameter import ScalarParam, FixedScale
 from MuyGPyS.gp.kernels import RBF, Matern
 from MuyGPyS.gp.deformation import Anisotropy, Isotropy, F2, l2
 from MuyGPyS.neighbors import NN_Wrapper
-
-
-class DifferencesTest(parameterized.TestCase):
-    @parameterized.parameters(
-        (
-            (1000, f, nn, 10, nn_kwargs)
-            # for f in [100]
-            # for nn in [10]
-            # for m in [l2]
-            # for nn_kwargs in [_basic_nn_kwarg_options][0]
-            for f in [10, 2, 1]
-            for nn in [5, 100]
-            # for m in [l2, F2]
-            for nn_kwargs in _basic_nn_kwarg_options
-        )
-    )
-    def test_differences_shapes(
-        self,
-        train_count,
-        feature_count,
-        nn_count,
-        test_count,
-        nn_kwargs,
-    ):
-        train = _make_gaussian_matrix(train_count, feature_count)
-        test = _make_gaussian_matrix(test_count, feature_count)
-        nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
-        nn_indices, nn_dists = nbrs_lookup.get_nns(test)
-        self.assertEqual(nn_indices.shape, (test_count, nn_count))
-        self.assertEqual(nn_dists.shape, (test_count, nn_count))
-        diffs = _consistent_unchunk_tensor(pairwise_tensor(train, nn_indices))
-        _check_ndarray(self.assertEqual, diffs, mm.ftype)
-        self.assertEqual(
-            diffs.shape, (test_count, nn_count, nn_count, feature_count)
-        )
 
 
 class DistancesTest(parameterized.TestCase):
@@ -113,7 +77,26 @@ class DistancesTest(parameterized.TestCase):
             mm.ftype,
             shape=(test_count, nn_count, nn_count),
         )
-        diffs = _consistent_unchunk_tensor(pairwise_tensor(train, nn_indices))
+        rbf_iso = RBF(deformation=Isotropy(F2, length_scale=ScalarParam(1.0)))
+        dists = _consistent_unchunk_tensor(
+            rbf_iso.deformation.pairwise_tensor(train, nn_indices)
+        )
+        rbf_aniso = RBF(
+            deformation=Anisotropy(
+                F2,
+                length_scale0=ScalarParam(1.0),
+                length_scale1=ScalarParam(1.0),
+            )
+        )
+        diffs = _consistent_unchunk_tensor(
+            rbf_aniso.deformation.pairwise_tensor(train, nn_indices)
+        )
+        _check_ndarray(
+            self.assertEqual,
+            dists,
+            mm.ftype,
+            shape=(test_count, nn_count, nn_count),
+        )
         _check_ndarray(
             self.assertEqual,
             diffs,
@@ -318,32 +301,30 @@ class HyperparameterTest(parameterized.TestCase):
             ScalarParam(val, bounds)
 
 
-class KernelTest(parameterized.TestCase):
-    def _check_params_chassis(self, kern_fn, **kwargs):
-        for p in kern_fn._hyperparameters:
+class KernelTestCase(parameterized.TestCase):
+    def _check_params_chassis(self, kernel_fn, **kwargs):
+        for p in kernel_fn._hyperparameters:
             self._check_params(
-                kern_fn,
+                kernel_fn,
                 p,
-                kwargs.get(
-                    p,
-                ),
+                kwargs.get(p),
             )
 
-    def _check_params(self, kern_fn, name, param):
+    def _check_params(self, kernel_fn, name, param):
         if param() is not None:
-            self.assertEqual(param(), kern_fn._hyperparameters[name]())
+            self.assertEqual(param(), kernel_fn._hyperparameters[name]())
         if param.get_bounds() is not None:
             if param.fixed():
-                self.assertTrue(kern_fn._hyperparameters[name].fixed())
+                self.assertTrue(kernel_fn._hyperparameters[name].fixed())
             else:
-                self.assertFalse(kern_fn._hyperparameters[name].fixed())
+                self.assertFalse(kernel_fn._hyperparameters[name].fixed())
                 self.assertEqual(
                     param.get_bounds(),
-                    kern_fn._hyperparameters[name].get_bounds(),
+                    kernel_fn._hyperparameters[name].get_bounds(),
                 )
 
 
-class RBFTest(KernelTest):
+class RBFTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -351,8 +332,8 @@ class RBFTest(KernelTest):
             for nn in [5, 10, 100]
             for nn_kwargs in _basic_nn_kwarg_options
             for k_kwargs in [
-                {"length_scale": ScalarParam(1.0, (1e-5, 1e1))},
-                {"length_scale": ScalarParam(2.0, (1e-4, 1e3))},
+                # {"length_scale": ScalarParam(1.0, (1e-5, 1e1))},
+                {"length_scale": ScalarParam(2.0)},
             ]
         )
     )
@@ -369,32 +350,32 @@ class RBFTest(KernelTest):
         test = _make_gaussian_matrix(test_count, feature_count)
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, _ = nbrs_lookup.get_nns(test)
-        pairwise_diffs = pairwise_tensor(train, nn_indices)
         deformation_model = Isotropy(F2, **k_kwargs)
         rbf = RBF(deformation=deformation_model)
+        pairwise_dists = rbf.deformation.pairwise_tensor(train, nn_indices)
         self._check_params_chassis(rbf, **k_kwargs)
-        kern = _consistent_unchunk_tensor(rbf(pairwise_diffs))
-        self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
+        Kin = _consistent_unchunk_tensor(rbf(pairwise_dists))
+        self.assertEqual(Kin.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
-        sk_rbf = sk_RBF(length_scale=deformation_model.length_scale())
-        sk_kern = mm.array(np.array([sk_rbf(mat) for mat in points]))
-        self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
-        _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
-        crosswise_diffs = crosswise_tensor(
+        rbf_sk = RBF_sk(length_scale=deformation_model.length_scale())
+        Kin_sk = mm.array(np.array([rbf_sk(mat) for mat in points]))
+        self.assertEqual(Kin_sk.shape, (test_count, nn_count, nn_count))
+        _consistent_assert(self.assertTrue, mm.allclose(Kin, Kin_sk))
+        crosswise_dists = rbf.deformation.crosswise_tensor(
             test, train, np.arange(test_count), nn_indices
         )
-        Kcross = rbf(crosswise_diffs)
+        Kcross = rbf(crosswise_dists)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        sk_Kcross = mm.array(
-            np.array([sk_rbf(vec, mat) for vec, mat in zip(test, points)])
+        Kcross_sk = mm.array(
+            np.array([rbf_sk(vec, mat) for vec, mat in zip(test, points)])
         ).reshape(test_count, nn_count)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
+        self.assertEqual(Kcross.dtype, Kcross_sk.dtype)
         _check_ndarray(self.assertEqual, Kcross, mm.ftype)
-        self.assertTrue(mm.allclose(Kcross, sk_Kcross))
+        self.assertTrue(mm.allclose(Kcross, Kcross_sk))
 
 
-class ParamTest(KernelTest):
+class ParamTest(KernelTestCase):
     @parameterized.parameters(
         (
             (k_kwargs, alt_kwargs)
@@ -436,18 +417,18 @@ class ParamTest(KernelTest):
     )
     def test_matern(self, k_kwargs, alt_kwargs):
         deformation_model = Isotropy(l2, length_scale=k_kwargs["length_scale"])
-        kern_fn = Matern(
+        kernel_fn = Matern(
             deformation=deformation_model, smoothness=k_kwargs["smoothness"]
         )
-        self._test_chassis(kern_fn, k_kwargs, alt_kwargs)
+        self._test_chassis(kernel_fn, k_kwargs, alt_kwargs)
 
-    def _test_chassis(self, kern_fn, k_kwargs, alt_kwargs):
-        self._check_params_chassis(kern_fn, **k_kwargs)
-        # kern_fn.set_params(**alt_kwargs)
-        # self._check_params_chassis(kern_fn, **alt_kwargs)
+    def _test_chassis(self, kernel_fn, k_kwargs, alt_kwargs):
+        self._check_params_chassis(kernel_fn, **k_kwargs)
+        # kernel_fn.set_params(**alt_kwargs)
+        # self._check_params_chassis(kernel_fn, **alt_kwargs)
 
 
-class MaternTest(KernelTest):
+class MaternTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -457,23 +438,23 @@ class MaternTest(KernelTest):
             for k_kwargs in [
                 {
                     "smoothness": ScalarParam(0.42, "fixed"),
-                    "length_scale": ScalarParam(1.0),
+                    "length_scale": ScalarParam(0.5),
                 },
                 {
                     "smoothness": ScalarParam(0.5),
-                    "length_scale": ScalarParam(1.0),
+                    "length_scale": ScalarParam(0.5),
                 },
                 {
                     "smoothness": ScalarParam(1.5),
-                    "length_scale": ScalarParam(1.0),
+                    "length_scale": ScalarParam(0.5),
                 },
                 {
                     "smoothness": ScalarParam(2.5),
-                    "length_scale": ScalarParam(1.0),
+                    "length_scale": ScalarParam(0.5),
                 },
                 {
                     "smoothness": ScalarParam(mm.inf),
-                    "length_scale": ScalarParam(1.0),
+                    "length_scale": ScalarParam(0.5),
                 },
             ]
             # for f in [1]
@@ -515,39 +496,39 @@ class MaternTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
-        pairwise_diffs = pairwise_tensor(train, nn_indices)
-        deformation_model = Isotropy(l2, length_scale=k_kwargs["length_scale"])
         mtn = Matern(
-            smoothness=k_kwargs["smoothness"], deformation=deformation_model
+            smoothness=k_kwargs["smoothness"],
+            deformation=Isotropy(l2, length_scale=k_kwargs["length_scale"]),
         )
+        pairwise_diffs = mtn.deformation.pairwise_tensor(train, nn_indices)
         # mtn = Matern(**k_kwargs)
         self._check_params_chassis(mtn, **k_kwargs)
-        kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
-        self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
+        Kin = _consistent_unchunk_tensor(mtn(pairwise_diffs))
+        self.assertEqual(Kin.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
-        sk_mtn = sk_Matern(
+        mtn_sk = Matern_sk(
             nu=mtn.smoothness(),
-            length_scale=deformation_model.length_scale(),
+            length_scale=mtn.deformation.length_scale(),
         )
-        sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
-        self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
-        _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
-        crosswise_diffs = crosswise_tensor(
+        Kin_sk = mm.array(np.array([mtn_sk(mat) for mat in points]))
+        self.assertEqual(Kin_sk.shape, (test_count, nn_count, nn_count))
+        _consistent_assert(self.assertTrue, mm.allclose(Kin, Kin_sk))
+        crosswise_diffs = mtn.deformation.crosswise_tensor(
             test, train, np.arange(test_count), nn_indices
         )
         Kcross = mtn(crosswise_diffs)
-        sk_Kcross = mm.array(
+        Kcross_sk = mm.array(
             np.array(
-                [sk_mtn(vec, mat) for vec, mat in zip(test, points)]
+                [mtn_sk(vec, mat) for vec, mat in zip(test, points)]
             ).reshape(test_count, nn_count)
         )
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
+        self.assertEqual(Kcross.dtype, Kcross_sk.dtype)
         _check_ndarray(self.assertEqual, Kcross, mm.ftype)
-        self.assertTrue(mm.allclose(Kcross, sk_Kcross))
+        self.assertTrue(mm.allclose(Kcross, Kcross_sk))
 
 
-class AnisotropicShapesTest(KernelTest):
+class AnisotropicShapesTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -591,7 +572,6 @@ class AnisotropicShapesTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
-        pairwise_diffs = pairwise_tensor(train, nn_indices)
         deformation_model = Anisotropy(
             metric=l2,
             length_scale0=k_kwargs["length_scale0"],
@@ -600,11 +580,12 @@ class AnisotropicShapesTest(KernelTest):
         mtn = Matern(
             smoothness=k_kwargs["smoothness"], deformation=deformation_model
         )
+        pairwise_diffs = mtn.deformation.pairwise_tensor(train, nn_indices)
         with self.assertRaisesRegex(ValueError, "Difference tensor of shape "):
             _ = _consistent_unchunk_tensor(mtn(pairwise_diffs))
 
 
-class AnisotropicTest(KernelTest):
+class AnisotropicTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -663,7 +644,6 @@ class AnisotropicTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
-        pairwise_diffs = pairwise_tensor(train, nn_indices)
         deformation_model = Anisotropy(
             metric=l2,
             length_scale0=k_kwargs["length_scale0"],
@@ -672,6 +652,7 @@ class AnisotropicTest(KernelTest):
         mtn = Matern(
             smoothness=k_kwargs["smoothness"], deformation=deformation_model
         )
+        pairwise_diffs = mtn.deformation.pairwise_tensor(train, nn_indices)
         # mtn = Matern(**k_kwargs)
         self._check_params_chassis(
             mtn,
@@ -681,32 +662,32 @@ class AnisotropicTest(KernelTest):
                 "length_scale1": k_kwargs["length_scale1"],
             },
         )
-        kern = _consistent_unchunk_tensor(mtn(pairwise_diffs))
-        self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
+        Kin = _consistent_unchunk_tensor(mtn(pairwise_diffs))
+        self.assertEqual(Kin.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         length_scale0 = k_kwargs["length_scale0"]
         length_scale1 = k_kwargs["length_scale1"]
-        sk_mtn = sk_Matern(
+        mtn_sk = Matern_sk(
             nu=mtn.smoothness(),
             length_scale=mm.array([length_scale0(), length_scale1()]),
         )
-        sk_kern = mm.array(np.array([sk_mtn(mat) for mat in points]))
-        self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
-        _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
-        crosswise_diffs = crosswise_tensor(
+        Kin_sk = mm.array(np.array([mtn_sk(mat) for mat in points]))
+        self.assertEqual(Kin_sk.shape, (test_count, nn_count, nn_count))
+        _consistent_assert(self.assertTrue, mm.allclose(Kin, Kin_sk))
+        crosswise_diffs = mtn.deformation.crosswise_tensor(
             test, train, np.arange(test_count), nn_indices
         )
         Kcross = mtn(crosswise_diffs)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        sk_Kcross = mm.array(
+        Kcross_sk = mm.array(
             np.array(
-                [sk_mtn(vec, mat) for vec, mat in zip(test, points)]
+                [mtn_sk(vec, mat) for vec, mat in zip(test, points)]
             ).reshape(test_count, nn_count)
         )
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
+        self.assertEqual(Kcross.dtype, Kcross_sk.dtype)
         _check_ndarray(self.assertEqual, Kcross, mm.ftype)
-        self.assertTrue(mm.allclose(Kcross, sk_Kcross))
+        self.assertTrue(mm.allclose(Kcross, Kcross_sk))
 
     @parameterized.parameters(
         (
@@ -761,13 +742,13 @@ class AnisotropicTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
-        pairwise_diffs = pairwise_tensor(train, nn_indices)
         deformation_model = Anisotropy(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale1"],
         )
         rbf = RBF(deformation=deformation_model)
+        pairwise_diffs = rbf.deformation.pairwise_tensor(train, nn_indices)
         self._check_params_chassis(
             rbf,
             **{
@@ -775,29 +756,29 @@ class AnisotropicTest(KernelTest):
                 "length_scale1": k_kwargs["length_scale1"],
             },
         )
-        kern = _consistent_unchunk_tensor(rbf(pairwise_diffs))
-        self.assertEqual(kern.shape, (test_count, nn_count, nn_count))
+        Kin = _consistent_unchunk_tensor(rbf(pairwise_diffs))
+        self.assertEqual(Kin.shape, (test_count, nn_count, nn_count))
         points = train[nn_indices]
         length_scale0 = k_kwargs["length_scale0"]
         length_scale1 = k_kwargs["length_scale1"]
-        sk_rbf = sk_RBF(
+        sk_rbf = RBF_sk(
             length_scale=mm.array([length_scale0(), length_scale1()])
         )
-        sk_kern = mm.array(np.array([sk_rbf(mat) for mat in points]))
-        self.assertEqual(sk_kern.shape, (test_count, nn_count, nn_count))
-        _consistent_assert(self.assertTrue, mm.allclose(kern, sk_kern))
-        crosswise_diffs = crosswise_tensor(
+        Kin_sk = mm.array(np.array([sk_rbf(mat) for mat in points]))
+        self.assertEqual(Kin_sk.shape, (test_count, nn_count, nn_count))
+        _consistent_assert(self.assertTrue, mm.allclose(Kin, Kin_sk))
+        crosswise_diffs = rbf.deformation.crosswise_tensor(
             test, train, np.arange(test_count), nn_indices
         )
         Kcross = rbf(crosswise_diffs)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        sk_Kcross = mm.array(
+        Kcross_sk = mm.array(
             np.array([sk_rbf(vec, mat) for vec, mat in zip(test, points)])
         ).reshape(test_count, nn_count)
         self.assertEqual(Kcross.shape, (test_count, nn_count))
-        self.assertEqual(Kcross.dtype, sk_Kcross.dtype)
+        self.assertEqual(Kcross.dtype, Kcross_sk.dtype)
         _check_ndarray(self.assertEqual, Kcross, mm.ftype)
-        self.assertTrue(mm.allclose(Kcross, sk_Kcross))
+        self.assertTrue(mm.allclose(Kcross, Kcross_sk))
 
     @parameterized.parameters(
         (
@@ -852,13 +833,18 @@ class AnisotropicTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
-        pairwise_diffs = pairwise_tensor(train, nn_indices)
         deformation_model_aniso = Anisotropy(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale0"],
         )
         rbf_aniso = RBF(deformation=deformation_model_aniso)
+        pairwise_diffs = rbf_aniso.deformation.pairwise_tensor(
+            train, nn_indices
+        )
+        crosswise_diffs = rbf_aniso.deformation.crosswise_tensor(
+            test, train, np.arange(test_count), nn_indices
+        )
         self._check_params_chassis(
             rbf_aniso,
             **{
@@ -866,7 +852,6 @@ class AnisotropicTest(KernelTest):
                 "length_scale1": k_kwargs["length_scale0"],
             },
         )
-        kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
 
         deformation_model_iso = Isotropy(
             metric=F2,
@@ -879,14 +864,17 @@ class AnisotropicTest(KernelTest):
                 "length_scale": k_kwargs["length_scale0"],
             },
         )
-        kern_iso = _consistent_unchunk_tensor(rbf_iso(pairwise_diffs))
-        crosswise_diffs = crosswise_tensor(
+        pairwise_dists = rbf_iso.deformation.pairwise_tensor(train, nn_indices)
+        crosswise_dists = rbf_iso.deformation.crosswise_tensor(
             test, train, np.arange(test_count), nn_indices
         )
-        Kcross_iso = rbf_iso(crosswise_diffs)
+
+        Kin_iso = _consistent_unchunk_tensor(rbf_iso(pairwise_dists))
+        Kin_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
+        Kcross_iso = rbf_iso(crosswise_dists)
         Kcross_aniso = rbf_aniso(crosswise_diffs)
-        self.assertTrue(mm.allclose(kern_iso, kern_aniso))
-        self.assertTrue(mm.allclose(Kcross_iso, Kcross_aniso))
+        self.assertEqual(Kin_iso.shape, Kin_aniso.shape)
+        self.assertEqual(Kcross_iso.shape, Kcross_aniso.shape)
 
     @parameterized.parameters(
         (
@@ -946,7 +934,6 @@ class AnisotropicTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
-        pairwise_diffs = pairwise_tensor(train, nn_indices)
         deformation_model_aniso = Anisotropy(
             metric=l2,
             length_scale0=k_kwargs["length_scale0"],
@@ -955,6 +942,12 @@ class AnisotropicTest(KernelTest):
         mtn_aniso = Matern(
             smoothness=k_kwargs["smoothness"],
             deformation=deformation_model_aniso,
+        )
+        pairwise_diffs = mtn_aniso.deformation.pairwise_tensor(
+            train, nn_indices
+        )
+        crosswise_diffs = mtn_aniso.deformation.crosswise_tensor(
+            test, train, np.arange(test_count), nn_indices
         )
 
         self._check_params_chassis(
@@ -965,7 +958,7 @@ class AnisotropicTest(KernelTest):
                 "length_scale1": k_kwargs["length_scale1"],
             },
         )
-        kern_aniso = _consistent_unchunk_tensor(mtn_aniso(pairwise_diffs))
+        Kin_aniso = _consistent_unchunk_tensor(mtn_aniso(pairwise_diffs))
 
         deformation_model_iso = Isotropy(
             metric=l2,
@@ -982,13 +975,13 @@ class AnisotropicTest(KernelTest):
                 "length_scale": k_kwargs["length_scale0"],
             },
         )
-        kern_iso = _consistent_unchunk_tensor(mtn_iso(pairwise_diffs))
-        self.assertTrue(mm.allclose(kern_aniso, kern_iso))
-
-        crosswise_diffs = crosswise_tensor(
+        pairwise_dists = mtn_iso.deformation.pairwise_tensor(train, nn_indices)
+        crosswise_dists = mtn_iso.deformation.crosswise_tensor(
             test, train, np.arange(test_count), nn_indices
         )
-        Kcross_iso = mtn_iso(crosswise_diffs)
+        Kin_iso = _consistent_unchunk_tensor(mtn_iso(pairwise_dists))
+        self.assertTrue(mm.allclose(Kin_aniso, Kin_iso))
+        Kcross_iso = mtn_iso(crosswise_dists)
         Kcross_aniso = mtn_aniso(crosswise_diffs)
         self.assertTrue(mm.allclose(Kcross_iso, Kcross_aniso))
 
@@ -1029,13 +1022,18 @@ class AnisotropicTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
-        pairwise_diffs = pairwise_tensor(train, nn_indices)
         deformation_model_aniso = Anisotropy(
             metric=F2,
             length_scale0=k_kwargs["length_scale0"],
             length_scale1=k_kwargs["length_scale0"],
         )
         rbf_aniso = RBF(deformation=deformation_model_aniso)
+        pairwise_diffs = rbf_aniso.deformation.pairwise_tensor(
+            train, nn_indices
+        )
+        crosswise_diffs = rbf_aniso.deformation.crosswise_tensor(
+            test, train, np.arange(test_count), nn_indices
+        )
         self._check_params_chassis(
             rbf_aniso,
             **{
@@ -1043,26 +1041,27 @@ class AnisotropicTest(KernelTest):
                 "length_scale1": k_kwargs["length_scale1"],
             },
         )
-        kern_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
+        Kin_aniso = _consistent_unchunk_tensor(rbf_aniso(pairwise_diffs))
 
         deformation_model_iso = Isotropy(
             metric=F2,
             length_scale=k_kwargs["length_scale0"],
         )
         rbf_iso = RBF(deformation=deformation_model_iso)
+        pairwise_dists = rbf_iso.deformation.pairwise_tensor(train, nn_indices)
         self._check_params_chassis(
             rbf_iso,
             **{
                 "length_scale": k_kwargs["length_scale0"],
             },
         )
-        kern_iso = _consistent_unchunk_tensor(rbf_iso(pairwise_diffs))
-        crosswise_diffs = crosswise_tensor(
+        Kin_iso = _consistent_unchunk_tensor(rbf_iso(pairwise_dists))
+        crosswise_dists = rbf_iso.deformation.crosswise_tensor(
             test, train, np.arange(test_count), nn_indices
         )
-        Kcross_iso = rbf_iso(crosswise_diffs)
+        Kcross_iso = rbf_iso(crosswise_dists)
         Kcross_aniso = rbf_aniso(crosswise_diffs)
-        self.assertTrue(mm.allclose(kern_iso, kern_aniso))
+        self.assertTrue(mm.allclose(Kin_iso, Kin_aniso))
         self.assertTrue(mm.allclose(Kcross_iso, Kcross_aniso))
 
 

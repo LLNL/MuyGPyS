@@ -6,9 +6,10 @@
 from typing import List, Tuple, Callable, Dict
 
 import MuyGPyS._src.math as mm
+from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS._src.util import auto_str
-
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
+from MuyGPyS.gp.deformation.metric import MetricFn
 from MuyGPyS.gp.hyperparameter import ScalarParam
 
 
@@ -27,11 +28,7 @@ class Anisotropy(DeformationFn):
 
     Args:
         metric:
-            A callable metric function that takes a tensor of shape
-            `(..., feature_count)` whose last dimension lists the elementwise
-            differences between a pair of feature vectors and returns a tensor
-            of shape `(...)`, having collapsed the last dimension into a
-            scalar difference.
+            A MetricFn object defining the behavior of the feature metric space.
         length_scales:
             Keyword arguments `length_scale#`, mapping to scalar
             hyperparameters.
@@ -39,10 +36,10 @@ class Anisotropy(DeformationFn):
 
     def __init__(
         self,
-        metric: Callable,
+        metric: MetricFn,
         **length_scales,
     ):
-        self._dist_fn = metric
+        self.metric = metric
         for i, key in enumerate(length_scales.keys()):
             if key != "length_scale" + str(i):
                 raise ValueError(
@@ -62,7 +59,7 @@ class Anisotropy(DeformationFn):
             )
         self.length_scale = length_scales
 
-    def __call__(self, diffs: mm.ndarray, **length_scales) -> mm.ndarray:
+    def __call__(self, dists: mm.ndarray, **length_scales) -> mm.ndarray:
         """
         Apply anisotropic deformation to an elementwise difference tensor.
 
@@ -71,9 +68,10 @@ class Anisotropy(DeformationFn):
         :class:`MuyGPyS.gp.kernels.KernelFn` in its constructor.
 
         Args:
-            diffs:
+            dists:
                 A tensor of pairwise differences of shape
-                `(..., feature_count)`.
+                `(..., feature_count)` representing the difference in feature
+                dimensions between sets of observables.
             batch_features:
                 A `(batch_count, feature_count)` matrix of features to be used
                 with a hierarchical hyperparameter. `None` otherwise.
@@ -87,9 +85,9 @@ class Anisotropy(DeformationFn):
             pairwise distance matrices.
         """
         length_scale_array = self._length_scale_array(
-            diffs.shape, **length_scales
+            dists.shape, **length_scales
         )
-        return self._dist_fn(diffs / length_scale_array)
+        return self.metric(dists / length_scale_array)
 
     def _length_scale_array(
         self, shape: mm.ndarray, **length_scales
@@ -101,9 +99,11 @@ class Anisotropy(DeformationFn):
             )
         return mm.array(
             [
-                length_scales[key]
-                if key in length_scales.keys()
-                else self.length_scale[key]()
+                (
+                    length_scales[key]
+                    if key in length_scales.keys()
+                    else self.length_scale[key]()
+                )
                 for key in self.length_scale
             ]
         )
@@ -175,3 +175,76 @@ class Anisotropy(DeformationFn):
             return fn(self(diffs, **length_scales), *args, **kwargs)
 
         return embedded_fn
+
+    @mpi_chunk(return_count=1)
+    def pairwise_tensor(
+        self,
+        data: mm.ndarray,
+        nn_indices: mm.ndarray,
+        **kwargs,
+    ) -> mm.ndarray:
+        """
+        Compute a pairwise difference tensor among sets of nearest neighbors.
+
+        Takes a full dataset of records of interest `data` and produces the
+        pairwise differences for each feature dimension between the elements
+        indicated by each row of `nn_indices`.
+
+        Args:
+            data:
+                The data matrix of shape `(batch_count, feature_count)`
+                containing batch elements.
+            nn_indices:
+                An integral matrix of shape (batch_count, nn_count) listing the
+                nearest neighbor indices for the batch of data points.
+
+        Returns:
+            A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
+            containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
+            nearest neighbor difference tensors corresponding to each of the
+            batch elements.
+        """
+        return self.metric.pairwise_differences(data, nn_indices)
+
+    @mpi_chunk(return_count=1)
+    def crosswise_tensor(
+        self,
+        data: mm.ndarray,
+        nn_data: mm.ndarray,
+        data_indices: mm.ndarray,
+        nn_indices: mm.ndarray,
+        **kwargs,
+    ) -> mm.ndarray:
+        """
+        Compute a crosswise difference tensor between data and their nearest
+        neighbors.
+
+        Takes full datasets of records of interest `data` and neighbor
+        candidates `nn_data` and produces a difference vector between each
+        element of `data` indicated by `data_indices` and each of the nearest
+        neighbors in `nn_data` as indicated by the corresponding rows of
+        `nn_indices`. `data` and `nn_data` can refer to the same dataset.
+
+        Args:
+            data:
+                The data matrix of shape `(data_count, feature_count)`
+                containing batch elements.
+            nn_data:
+                The data matrix of shape `(candidate_count, feature_count)`
+                containing the universe of candidate neighbors for the batch
+                elements. Might be the same as `data`.
+            indices:
+                An integral vector of shape `(batch_count,)` containing the
+                indices of the batch.
+            nn_indices:
+                An integral matrix of shape (batch_count, nn_count) listing the
+                nearest neighbor indices for the batch of data points.
+
+        Returns:
+            A tensor of shape `(batch_count, nn_count, feature_count)` whose
+            last two dimensions indicate difference vectors between the feature
+            dimensions of each batch element and those of its nearest neighbors.
+        """
+        return self.metric.crosswise_differences(
+            data, nn_data, data_indices, nn_indices
+        )

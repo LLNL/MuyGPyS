@@ -37,43 +37,6 @@ def _make_fast_predict_tensors(
     return pairwise_dists_fast, batch_nn_targets_fast
 
 
-def _make_predict_tensors(
-    batch_indices: torch.ndarray,
-    batch_nn_indices: torch.ndarray,
-    test_features: torch.ndarray,
-    train_features: torch.ndarray,
-    train_targets: torch.ndarray,
-) -> Tuple[torch.ndarray, torch.ndarray, torch.ndarray]:
-    if test_features is None:
-        test_features = train_features
-    crosswise_dists = _crosswise_tensor(
-        test_features,
-        train_features,
-        batch_indices,
-        batch_nn_indices,
-    )
-    pairwise_dists = _pairwise_tensor(train_features, batch_nn_indices)
-    batch_nn_targets = train_targets[batch_nn_indices]
-    return crosswise_dists, pairwise_dists, batch_nn_targets
-
-
-def _make_train_tensors(
-    batch_indices: torch.ndarray,
-    batch_nn_indices: torch.ndarray,
-    train_features: torch.ndarray,
-    train_targets: torch.ndarray,
-) -> Tuple[torch.ndarray, torch.ndarray, torch.ndarray, torch.ndarray]:
-    crosswise_dists, pairwise_dists, batch_nn_targets = _make_predict_tensors(
-        batch_indices,
-        batch_nn_indices,
-        train_features,
-        train_features,
-        train_targets,
-    )
-    batch_targets = train_targets[batch_indices]
-    return crosswise_dists, pairwise_dists, batch_targets, batch_nn_targets
-
-
 def _batch_features_tensor(
     features: torch.ndarray,
     batch_indices: torch.ndarray,

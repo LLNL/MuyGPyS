@@ -7,10 +7,11 @@
 MuyGPs implementation
 """
 
-from typing import Callable, List, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.util import auto_str
+from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS.gp.fast_precompute import (
     _muygps_fast_posterior_mean_precompute,
     FastPrecomputeCoefficients,
@@ -398,6 +399,141 @@ class MuyGPS:
         self.scale._set(opt_fn(Kin, nn_targets))
         self._make()
         return self
+
+    @mpi_chunk(return_count=3)
+    def make_predict_tensors(
+        self,
+        batch_indices: mm.ndarray,
+        batch_nn_indices: mm.ndarray,
+        test_features: Optional[mm.ndarray],
+        train_features: mm.ndarray,
+        train_targets: mm.ndarray,
+        **kwargs,
+    ) -> Tuple[mm.ndarray, mm.ndarray, mm.ndarray]:
+        """
+        Create the metric and target tensors for prediction using the model's
+        deformation.
+
+        Creates the `crosswise_tensor`, `pairwise_tensor` and `batch_nn_targets`
+        tensors required by :func:`~MuyGPyS.gp.MuyGPS.posterior_mean` and
+        :func:`~MuyGPyS.gp.MuyGPS.posterior_variance`.
+
+        Args:
+            batch_indices:
+                A vector of integers of shape `(batch_count,)` identifying the
+                training batch of observations to be approximated.
+            batch_nn_indices:
+                A matrix of integers of shape `(batch_count, nn_count)` listing
+                the nearest neighbor indices for all observations in the batch.
+            test_features:
+                The full floating point testing data matrix of shape
+                `(test_count, feature_count)`.
+            train_features:
+                The full floating point training data matrix of shape
+                `(train_count, ...)`.
+            train_targets:
+                A matrix of shape `(train_count, ...)` whose rows are
+                vector-valued responses for each training element.
+
+        Returns
+        -------
+        crosswise_tensor:
+            A tensor of shape `(batch_count, nn_count, ...)` whose second and
+            subsequent dimensions list the metric comparison between each batch
+            element element and its nearest neighbors.
+        pairwise_diffs:
+            A tensor of shape `(batch_count, nn_count, nn_count, ...)`
+            containing the `(nn_count, nn_count, ...)`-shaped pairwise nearest
+            neighbor metrics tensors corresponding to each of the batch
+            elements.
+        batch_nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, ...)` containing
+            the expected response for each nearest neighbor of each batch
+            element.
+        """
+        if test_features is None:
+            test_features = train_features
+        crosswise_tensor = self.kernel.deformation.crosswise_tensor(
+            test_features,
+            train_features,
+            batch_indices,
+            batch_nn_indices,
+            disable_mpi=True,
+        )
+        pairwise_tensor = self.kernel.deformation.pairwise_tensor(
+            train_features, batch_nn_indices, disable_mpi=True
+        )
+        batch_nn_targets = train_targets[batch_nn_indices]
+        return crosswise_tensor, pairwise_tensor, batch_nn_targets
+
+    @mpi_chunk(return_count=4)
+    def make_train_tensors(
+        self,
+        batch_indices: mm.ndarray,
+        batch_nn_indices: mm.ndarray,
+        train_features: mm.ndarray,
+        train_targets: mm.ndarray,
+        **kwargs,
+    ) -> Tuple[mm.ndarray, mm.ndarray, mm.ndarray, mm.ndarray]:
+        """
+        Create the metric and target tensors needed for training.
+
+        Similar to :func:`~MuyGPyS.gp.muygps.MuyGPS.make_predict_tensors` but
+        returns the additional `batch_targets` matrix, which is only defined for
+        a batch of training data.
+
+        Args:
+            batch_indices:
+                A vector of integers of shape `(batch_count,)` identifying the
+                training batch of observations to be approximated.
+            batch_nn_indices:
+                A matrix of integers of shape `(batch_count, nn_count)` listing the
+                nearest neighbor indices for all observations in the batch.
+            train_features:
+                The full floating point training data matrix of shape
+                `(train_count, ...)`.
+            train_targets:
+                A matrix of shape `(train_count, ...)` whose rows are
+                vector-valued responses for each training element.
+
+        Returns
+        -------
+        crosswise_tensor:
+            A tensor of shape `(batch_count, nn_count, ...)` whose second and
+            subsequent dimensions list the metric comparison between each batch
+            element element and its nearest neighbors.
+        pairwise_diffs:
+            A tensor of shape `(batch_count, nn_count, nn_count, ...)`
+            containing the `(nn_count, nn_count, ...)`-shaped pairwise nearest
+            neighbor metrics tensors corresponding to each of the batch
+            elements.
+        batch_targets:
+            Matrix of floats of shape `(batch_count, ...)` whose rows
+            give the expected response for each batch element.
+        batch_nn_targets:
+            Tensor of floats of shape `(batch_count, nn_count, ...)` containing
+            the expected response for each nearest neighbor of each batch
+            element.
+        """
+        crosswise_tensor = self.kernel.deformation.crosswise_tensor(
+            train_features,
+            train_features,
+            batch_indices,
+            batch_nn_indices,
+            disable_mpi=True,
+        )
+        pairwise_tensor = self.kernel.deformation.pairwise_tensor(
+            train_features, batch_nn_indices, disable_mpi=True
+        )
+        batch_nn_targets = train_targets[batch_nn_indices]
+
+        batch_targets = train_targets[batch_indices]
+        return (
+            crosswise_tensor,
+            pairwise_tensor,
+            batch_targets,
+            batch_nn_targets,
+        )
 
     def __eq__(self, rhs) -> bool:
         if isinstance(rhs, self.__class__):
