@@ -7,7 +7,6 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _pairwise_differences
 
 from MuyGPyS import config
 from MuyGPyS._test.gp import get_analytic_scale

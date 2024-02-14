@@ -6,7 +6,6 @@
 """
 MuyGPs PyTorch implementation
 """
-import MuyGPyS._src.math.torch as torch
 from MuyGPyS import config
 from MuyGPyS._src.math.torch import nn
 
