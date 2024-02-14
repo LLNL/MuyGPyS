@@ -121,14 +121,14 @@ class MultivariateMuyGPs_layer(nn.Module):
             A torch.ndarray of shape `(batch_count, response_count)`
             consisting of the diagonal elements of the posterior variance.
         """
-        crosswise_diffs = self.deformation.crosswise_tensor(
+        crosswise_tensor = self.deformation.crosswise_tensor(
             x,
             x,
             self.batch_indices,
             self.batch_nn_indices,
         )
 
-        pairwise_diffs = self.deformation.pairwise_tensor(
+        pairwise_tensor = self.deformation.pairwise_tensor(
             x, self.batch_nn_indices
         )
 
@@ -138,8 +138,8 @@ class MultivariateMuyGPs_layer(nn.Module):
         Kin = torch.zeros(batch_count, nn_count, nn_count, response_count)
 
         for i, model in enumerate(self.multivariate_muygps_model.models):
-            Kcross[:, :, i] = model.kernel(crosswise_diffs)
-            Kin[:, :, :, i] = model.kernel(pairwise_diffs)
+            Kcross[:, :, i] = model.kernel(crosswise_tensor)
+            Kin[:, :, :, i] = model.kernel(pairwise_tensor)
 
         variances = self.multivariate_muygps_model.posterior_variance(
             Kin, Kcross

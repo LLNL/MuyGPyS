@@ -7,10 +7,10 @@
 from typing import Callable, Dict, List, Optional, Tuple
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _crosswise_tensor, _pairwise_tensor
 from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
+from MuyGPyS.gp.deformation.metric import MetricFn
 from MuyGPyS.gp.hyperparameter import ScalarParam
 
 
@@ -29,21 +29,15 @@ class Isotropy(DeformationFn):
 
     Args:
         metric:
-            A callable metric function that takes a tensor of shape
-            `(..., feature_count)` whose last dimension lists the elementwise
-            differences between a pair of feature vectors and returns a tensor
-            of shape `(...)`, having collapsed the last dimension into a
-            scalar difference.
+            A MetricFn object defining the behavior of the feature metric space.
         length_scale:
             Some scalar nonnegative hyperparameter object.
     """
 
     def __init__(
         self,
-        metric: Callable,
+        metric: MetricFn,
         length_scale: ScalarParam,
-        _crosswise_fn: Callable = _crosswise_tensor,
-        _pairwise_fn: Callable = _pairwise_tensor,
     ):
         if not isinstance(length_scale, ScalarParam):
             raise ValueError(
@@ -51,12 +45,10 @@ class Isotropy(DeformationFn):
                 f"{type(length_scale)}"
             )
         self.length_scale = length_scale
-        self._dist_fn = metric
-        self._crosswise_distances = _crosswise_fn
-        self._pairwise_distances = _pairwise_fn
+        self.metric = metric
 
     def __call__(
-        self, diffs: mm.ndarray, length_scale: Optional[float] = None, **kwargs
+        self, dists: mm.ndarray, length_scale: Optional[float] = None, **kwargs
     ) -> mm.ndarray:
         """
         Apply isotropic deformation to an elementwise difference tensor.
@@ -66,20 +58,19 @@ class Isotropy(DeformationFn):
         :class:`MuyGPyS.gp.kernels.KernelFn` in its constructor.
 
         Args:
-            diffs:
-                A tensor of pairwise differences of shape
-                `(..., feature_count)`.
+            dists:
+                A tensor of distances between sets of observables.
             length_scale:
                 A floating point length scale.
         Returns:
-            A crosswise distance matrix of shape `(data_count, nn_count)` or a
+            A scaled distance matrix of the same shape as shape `(data_count, nn_count)` or a
             pairwise distance tensor of shape
             `(data_count, nn_count, nn_count)` whose last two dimensions are
             pairwise distance matrices.
         """
         if length_scale is None:
             length_scale = self.length_scale()
-        return self._dist_fn(diffs / length_scale)
+        return self.metric.apply_length_scale(dists, length_scale)
 
     def get_opt_params(
         self,
@@ -131,8 +122,8 @@ class Isotropy(DeformationFn):
             function drivable by keyword optimization.
         """
 
-        def embedded_fn(diffs, *args, length_scale=None, **kwargs):
-            return fn(self(diffs, length_scale=length_scale), *args, **kwargs)
+        def embedded_fn(dists, *args, length_scale=None, **kwargs):
+            return fn(self(dists, length_scale=length_scale), *args, **kwargs)
 
         return embedded_fn
 
@@ -163,7 +154,7 @@ class Isotropy(DeformationFn):
             `(nn_count, nn_count)`-shaped pairwise nearest neighbor distance
             tensors corresponding to each of the batch elements.
         """
-        return self._pairwise_distances(data, nn_indices)
+        return self.metric.pairwise_distances(data, nn_indices)
 
     @mpi_chunk(return_count=1)
     def crosswise_tensor(
@@ -204,6 +195,6 @@ class Isotropy(DeformationFn):
             indicates distance vectors between each batch element and its
             nearest neighbors.
         """
-        return self._crosswise_distances(
+        return self.metric.crosswise_distances(
             data, nn_data, data_indices, nn_indices
         )

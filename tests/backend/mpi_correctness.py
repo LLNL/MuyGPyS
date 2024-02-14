@@ -9,8 +9,8 @@ from absl.testing import parameterized
 import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
 from MuyGPyS._src.gp.tensors.numpy import (
-    _F2 as F2_n,
-    _l2 as l2_n,
+    _F2 as _F2_n,
+    _l2 as _l2_n,
     _crosswise_tensor as crosswise_tensor_n,
     _pairwise_tensor as pairwise_tensor_n,
 )
@@ -69,7 +69,7 @@ from MuyGPyS._test.utils import (
     _make_uniform_matrix,
 )
 from MuyGPyS.gp import MuyGPS
-from MuyGPyS.gp.deformation import Anisotropy, Isotropy
+from MuyGPyS.gp.deformation import Anisotropy, Isotropy, MetricFn
 from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
@@ -107,6 +107,19 @@ lool_fn_m = LossFn(lool_fn_m, make_var_predict_and_loss_fn)
 pseudo_huber_fn_m = LossFn(pseudo_huber_fn_m, make_raw_predict_and_loss_fn)
 looph_fn_m = LossFn(looph_fn_m, make_var_predict_and_loss_fn)
 
+l2_n = MetricFn(
+    differences_metric_fn=_l2_n,
+    crosswise_differences_fn=crosswise_tensor_n,
+    pairwise_diffferences_fn=pairwise_tensor_n,
+    apply_length_scale_fn=lambda x, y: x / y,
+)
+F2_n = MetricFn(
+    differences_metric_fn=_F2_n,
+    crosswise_differences_fn=crosswise_tensor_n,
+    pairwise_diffferences_fn=pairwise_tensor_n,
+    apply_length_scale_fn=lambda x, y: x / y**2,
+)
+
 
 world = config.mpi_state.comm_world
 rank = world.Get_rank()
@@ -141,8 +154,6 @@ class TensorsTestCase(parameterized.TestCase):
             deformation=Isotropy(
                 l2_n,
                 length_scale=ScalarParam(cls.length_scale),
-                _crosswise_fn=crosswise_tensor_n,
-                _pairwise_fn=pairwise_tensor_n,
             ),
             **kwargs,
         )
@@ -153,8 +164,6 @@ class TensorsTestCase(parameterized.TestCase):
             smoothness,
             Anisotropy(
                 l2_n,
-                _crosswise_fn=crosswise_tensor_n,
-                _pairwise_fn=pairwise_tensor_n,
                 length_scale0=ScalarParam(cls.length_scale),
                 length_scale1=ScalarParam(cls.length_scale),
             ),
@@ -188,8 +197,6 @@ class TensorsTestCase(parameterized.TestCase):
             Isotropy(
                 F2_n,
                 length_scale=ScalarParam(cls.length_scale),
-                _crosswise_fn=crosswise_tensor_n,
-                _pairwise_fn=pairwise_tensor_n,
             )
         )
 
@@ -198,8 +205,6 @@ class TensorsTestCase(parameterized.TestCase):
         return cls._make_muygps_rbf(
             Anisotropy(
                 F2_n,
-                _crosswise_fn=crosswise_tensor_n,
-                _pairwise_fn=pairwise_tensor_n,
                 length_scale0=ScalarParam(cls.length_scale),
                 length_scale1=ScalarParam(cls.length_scale),
             )
@@ -227,7 +232,7 @@ class TensorsTestCase(parameterized.TestCase):
         cls.muygps_inf = cls._make_isotropic_muygps(np.inf)
         cls.muygps_rbf = cls._make_isotropic_muygps_rbf()
 
-        cls.muygps_anisotropic_gen = cls._make_isotropic_muygps(
+        cls.muygps_anisotropic_gen = cls._make_anisotropic_muygps(
             cls.smoothness, smoothness_bounds=cls.smoothness_bounds
         )
         cls.muygps_anisotropic_05 = cls._make_anisotropic_muygps(0.5)
@@ -261,8 +266,8 @@ class TensorsTestCase(parameterized.TestCase):
             )
 
             (
-                cls.batch_crosswise_diffs,
-                cls.batch_pairwise_diffs,
+                cls.batch_crosswise_dists,
+                cls.batch_pairwise_dists,
                 cls.batch_targets,
                 cls.batch_nn_targets,
             ) = cls.muygps_gen.make_train_tensors(
@@ -272,12 +277,21 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.train_responses,
                 disable_mpi=True,
             )
+            cls.batch_crosswise_diffs, cls.batch_pairwise_diffs, _, _ = (
+                cls.muygps_anisotropic_gen.make_train_tensors(
+                    batch_indices,
+                    batch_nn_indices,
+                    cls.train_features,
+                    cls.train_responses,
+                    disable_mpi=True,
+                )
+            )
 
             test_nn_indices, _ = nbrs_lookup.get_nns(cls.test_features)
 
             (
-                cls.test_crosswise_diffs,
-                cls.test_pairwise_diffs,
+                cls.test_crosswise_dists,
+                cls.test_pairwise_dists,
                 cls.test_nn_targets,
             ) = cls.muygps_gen.make_predict_tensors(
                 np.arange(cls.test_count),
@@ -286,6 +300,16 @@ class TensorsTestCase(parameterized.TestCase):
                 cls.train_features,
                 cls.train_responses,
                 disable_mpi=True,
+            )
+            cls.test_crosswise_diffs, cls.test_pairwise_diffs, _ = (
+                cls.muygps_anisotropic_gen.make_predict_tensors(
+                    np.arange(cls.test_count),
+                    test_nn_indices,
+                    cls.test_features,
+                    cls.train_features,
+                    cls.train_responses,
+                    disable_mpi=True,
+                )
             )
 
         else:
@@ -297,18 +321,22 @@ class TensorsTestCase(parameterized.TestCase):
             batch_nn_indices = None
             test_nn_indices = None
 
+            cls.batch_crosswise_dists = None
+            cls.batch_pairwise_dists = None
             cls.batch_crosswise_diffs = None
             cls.batch_pairwise_diffs = None
             cls.batch_targets = None
             cls.batch_nn_targets = None
 
+            cls.test_crosswise_dists = None
+            cls.test_pairwise_dists = None
             cls.test_crosswise_diffs = None
             cls.test_pairwise_diffs = None
             cls.test_nn_targets = None
 
         (
-            cls.batch_crosswise_diffs_chunk,
-            cls.batch_pairwise_diffs_chunk,
+            cls.batch_crosswise_dists_chunk,
+            cls.batch_pairwise_dists_chunk,
             cls.batch_targets_chunk,
             cls.batch_nn_targets_chunk,
         ) = cls.muygps_gen.make_train_tensors(  # MPI version
@@ -318,8 +346,19 @@ class TensorsTestCase(parameterized.TestCase):
             cls.train_responses,
         )
         (
-            cls.test_crosswise_diffs_chunk,
-            cls.test_pairwise_diffs_chunk,
+            cls.batch_crosswise_diffs_chunk,
+            cls.batch_pairwise_diffs_chunk,
+            _,
+            _,
+        ) = cls.muygps_anisotropic_gen.make_train_tensors(  # MPI version
+            batch_indices,
+            batch_nn_indices,
+            cls.train_features,
+            cls.train_responses,
+        )
+        (
+            cls.test_crosswise_dists_chunk,
+            cls.test_pairwise_dists_chunk,
             cls.test_nn_targets_chunk,
         ) = cls.muygps_gen.make_predict_tensors(  # MPI version
             np.arange(cls.test_count),
@@ -327,6 +366,15 @@ class TensorsTestCase(parameterized.TestCase):
             cls.test_features,
             cls.train_features,
             cls.train_responses,
+        )
+        cls.test_crosswise_diffs_chunk, cls.test_pairwise_diffs_chunk, _ = (
+            cls.muygps_anisotropic_gen.make_predict_tensors(  # MPI version
+                np.arange(cls.test_count),
+                test_nn_indices,
+                cls.test_features,
+                cls.train_features,
+                cls.train_responses,
+            )
         )
         cls.test_responses_chunk = _chunk_tensor(cls.test_responses)
 
@@ -346,6 +394,16 @@ class TensorsTest(TensorsTestCase):
     def setUpClass(cls):
         super(TensorsTest, cls).setUpClass()
 
+    def test_batch_pairwise_dists(self):
+        self._compare_tensors(
+            self.batch_pairwise_dists, self.batch_pairwise_dists_chunk
+        )
+
+    def test_test_pairwise_dists(self):
+        self._compare_tensors(
+            self.test_pairwise_dists, self.test_pairwise_dists_chunk
+        )
+
     def test_batch_pairwise_diffs(self):
         self._compare_tensors(
             self.batch_pairwise_diffs, self.batch_pairwise_diffs_chunk
@@ -354,6 +412,16 @@ class TensorsTest(TensorsTestCase):
     def test_test_pairwise_diffs(self):
         self._compare_tensors(
             self.test_pairwise_diffs, self.test_pairwise_diffs_chunk
+        )
+
+    def test_batch_crosswise_dists(self):
+        self._compare_tensors(
+            self.batch_crosswise_dists, self.batch_crosswise_dists_chunk
+        )
+
+    def test_test_crosswise_dists(self):
+        self._compare_tensors(
+            self.test_crosswise_dists, self.test_crosswise_dists_chunk
         )
 
     def test_batch_crosswise_diffs(self):
@@ -384,76 +452,76 @@ class KernelTestCase(TensorsTestCase):
         super(KernelTestCase, cls).setUpClass()
         if rank == 0:
             cls.batch_covariance_rbf = cls.muygps_rbf.kernel(
-                cls.batch_pairwise_diffs
+                cls.batch_pairwise_dists
             )
             cls.batch_covariance_05 = cls.muygps_05.kernel(
-                cls.batch_pairwise_diffs
+                cls.batch_pairwise_dists
             )
             cls.batch_covariance_15 = cls.muygps_15.kernel(
-                cls.batch_pairwise_diffs
+                cls.batch_pairwise_dists
             )
             cls.batch_covariance_25 = cls.muygps_25.kernel(
-                cls.batch_pairwise_diffs
+                cls.batch_pairwise_dists
             )
             cls.batch_covariance_inf = cls.muygps_inf.kernel(
-                cls.batch_pairwise_diffs
+                cls.batch_pairwise_dists
             )
             cls.batch_covariance_gen = cls.muygps_gen.kernel(
-                cls.batch_pairwise_diffs
+                cls.batch_pairwise_dists
             )
             cls.batch_crosscov_rbf = cls.muygps_rbf.kernel(
-                cls.batch_crosswise_diffs
+                cls.batch_crosswise_dists
             )
             cls.batch_crosscov_05 = cls.muygps_05.kernel(
-                cls.batch_crosswise_diffs
+                cls.batch_crosswise_dists
             )
             cls.batch_crosscov_15 = cls.muygps_15.kernel(
-                cls.batch_crosswise_diffs
+                cls.batch_crosswise_dists
             )
             cls.batch_crosscov_25 = cls.muygps_25.kernel(
-                cls.batch_crosswise_diffs
+                cls.batch_crosswise_dists
             )
             cls.batch_crosscov_inf = cls.muygps_inf.kernel(
-                cls.batch_crosswise_diffs
+                cls.batch_crosswise_dists
             )
             cls.batch_crosscov_gen = cls.muygps_gen.kernel(
-                cls.batch_crosswise_diffs
+                cls.batch_crosswise_dists
             )
             cls.test_covariance_rbf = cls.muygps_rbf.kernel(
-                cls.test_pairwise_diffs
+                cls.test_pairwise_dists
             )
             cls.test_covariance_05 = cls.muygps_05.kernel(
-                cls.test_pairwise_diffs
+                cls.test_pairwise_dists
             )
             cls.test_covariance_15 = cls.muygps_15.kernel(
-                cls.test_pairwise_diffs
+                cls.test_pairwise_dists
             )
             cls.test_covariance_25 = cls.muygps_25.kernel(
-                cls.test_pairwise_diffs
+                cls.test_pairwise_dists
             )
             cls.test_covariance_inf = cls.muygps_inf.kernel(
-                cls.test_pairwise_diffs
+                cls.test_pairwise_dists
             )
             cls.test_covariance_gen = cls.muygps_gen.kernel(
-                cls.test_pairwise_diffs
+                cls.test_pairwise_dists
             )
             cls.test_crosscov_rbf = cls.muygps_rbf.kernel(
-                cls.test_crosswise_diffs
+                cls.test_crosswise_dists
             )
             cls.test_crosscov_05 = cls.muygps_05.kernel(
-                cls.test_crosswise_diffs
+                cls.test_crosswise_dists
             )
             cls.test_crosscov_15 = cls.muygps_15.kernel(
-                cls.test_crosswise_diffs
+                cls.test_crosswise_dists
             )
             cls.test_crosscov_25 = cls.muygps_25.kernel(
-                cls.test_crosswise_diffs
+                cls.test_crosswise_dists
             )
             cls.test_crosscov_inf = cls.muygps_inf.kernel(
-                cls.test_crosswise_diffs
+                cls.test_crosswise_dists
             )
             cls.test_crosscov_gen = cls.muygps_gen.kernel(
-                cls.test_crosswise_diffs
+                cls.test_crosswise_dists
             )
             cls.batch_covariance_anisotropic_rbf = (
                 cls.muygps_anisotropic_rbf.kernel(cls.batch_pairwise_diffs)
@@ -578,76 +646,76 @@ class KernelTestCase(TensorsTestCase):
             cls.test_crosscov_anisotropic_gen = None
 
         cls.batch_covariance_rbf_chunk = cls.muygps_rbf.kernel(
-            cls.batch_pairwise_diffs_chunk
+            cls.batch_pairwise_dists_chunk
         )
         cls.batch_covariance_05_chunk = cls.muygps_05.kernel(
-            cls.batch_pairwise_diffs_chunk
+            cls.batch_pairwise_dists_chunk
         )
         cls.batch_covariance_15_chunk = cls.muygps_15.kernel(
-            cls.batch_pairwise_diffs_chunk
+            cls.batch_pairwise_dists_chunk
         )
         cls.batch_covariance_25_chunk = cls.muygps_25.kernel(
-            cls.batch_pairwise_diffs_chunk
+            cls.batch_pairwise_dists_chunk
         )
         cls.batch_covariance_inf_chunk = cls.muygps_inf.kernel(
-            cls.batch_pairwise_diffs_chunk
+            cls.batch_pairwise_dists_chunk
         )
         cls.batch_covariance_gen_chunk = cls.muygps_gen.kernel(
-            cls.batch_pairwise_diffs_chunk
+            cls.batch_pairwise_dists_chunk
         )
         cls.batch_crosscov_rbf_chunk = cls.muygps_rbf.kernel(
-            cls.batch_crosswise_diffs_chunk
+            cls.batch_crosswise_dists_chunk
         )
         cls.batch_crosscov_05_chunk = cls.muygps_05.kernel(
-            cls.batch_crosswise_diffs_chunk
+            cls.batch_crosswise_dists_chunk
         )
         cls.batch_crosscov_15_chunk = cls.muygps_15.kernel(
-            cls.batch_crosswise_diffs_chunk
+            cls.batch_crosswise_dists_chunk
         )
         cls.batch_crosscov_25_chunk = cls.muygps_25.kernel(
-            cls.batch_crosswise_diffs_chunk
+            cls.batch_crosswise_dists_chunk
         )
         cls.batch_crosscov_inf_chunk = cls.muygps_inf.kernel(
-            cls.batch_crosswise_diffs_chunk
+            cls.batch_crosswise_dists_chunk
         )
         cls.batch_crosscov_gen_chunk = cls.muygps_gen.kernel(
-            cls.batch_crosswise_diffs_chunk
+            cls.batch_crosswise_dists_chunk
         )
         cls.test_covariance_rbf_chunk = cls.muygps_rbf.kernel(
-            cls.test_pairwise_diffs_chunk
+            cls.test_pairwise_dists_chunk
         )
         cls.test_covariance_05_chunk = cls.muygps_05.kernel(
-            cls.test_pairwise_diffs_chunk
+            cls.test_pairwise_dists_chunk
         )
         cls.test_covariance_15_chunk = cls.muygps_15.kernel(
-            cls.test_pairwise_diffs_chunk
+            cls.test_pairwise_dists_chunk
         )
         cls.test_covariance_25_chunk = cls.muygps_25.kernel(
-            cls.test_pairwise_diffs_chunk
+            cls.test_pairwise_dists_chunk
         )
         cls.test_covariance_inf_chunk = cls.muygps_inf.kernel(
-            cls.test_pairwise_diffs_chunk
+            cls.test_pairwise_dists_chunk
         )
         cls.test_covariance_gen_chunk = cls.muygps_gen.kernel(
-            cls.test_pairwise_diffs_chunk
+            cls.test_pairwise_dists_chunk
         )
         cls.test_crosscov_rbf_chunk = cls.muygps_rbf.kernel(
-            cls.test_crosswise_diffs_chunk
+            cls.test_crosswise_dists_chunk
         )
         cls.test_crosscov_05_chunk = cls.muygps_05.kernel(
-            cls.test_crosswise_diffs_chunk
+            cls.test_crosswise_dists_chunk
         )
         cls.test_crosscov_15_chunk = cls.muygps_15.kernel(
-            cls.test_crosswise_diffs_chunk
+            cls.test_crosswise_dists_chunk
         )
         cls.test_crosscov_25_chunk = cls.muygps_25.kernel(
-            cls.test_crosswise_diffs_chunk
+            cls.test_crosswise_dists_chunk
         )
         cls.test_crosscov_inf_chunk = cls.muygps_inf.kernel(
-            cls.test_crosswise_diffs_chunk
+            cls.test_crosswise_dists_chunk
         )
         cls.test_crosscov_gen_chunk = cls.muygps_gen.kernel(
-            cls.test_crosswise_diffs_chunk
+            cls.test_crosswise_dists_chunk
         )
 
         cls.batch_covariance_anisotropic_rbf_chunk = (
@@ -1092,8 +1160,8 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps_gen.get_opt_mean_fn(),
             self.muygps_gen.get_opt_var_fn(),
             self._get_scale_fn_n(),
-            self.batch_pairwise_diffs,
-            self.batch_crosswise_diffs,
+            self.batch_pairwise_dists,
+            self.batch_crosswise_dists,
             self.batch_nn_targets,
             self.batch_targets,
         )
@@ -1119,8 +1187,8 @@ class OptimTestCase(MuyGPSTestCase):
             self.muygps_gen.get_opt_mean_fn(),
             self.muygps_gen.get_opt_var_fn(),
             self._get_scale_fn_m(),
-            self.batch_pairwise_diffs_chunk,
-            self.batch_crosswise_diffs_chunk,
+            self.batch_pairwise_dists_chunk,
+            self.batch_crosswise_dists_chunk,
             self.batch_nn_targets_chunk,
             self.batch_targets_chunk,
         )
@@ -1243,13 +1311,13 @@ class ObjectiveTest(OptimTestCase):
     def test_kernel_fn(self):
         if rank == 0:
             kernel = self.muygps_gen.kernel.get_opt_fn()(
-                self.batch_pairwise_diffs, **self.x0_map
+                self.batch_pairwise_dists, **self.x0_map
             )
         else:
             kernel = None
 
         kernel_chunk = self.muygps_gen.kernel.get_opt_fn()(
-            self.batch_pairwise_diffs_chunk, **self.x0_map
+            self.batch_pairwise_dists_chunk, **self.x0_map
         )
 
         self._compare_tensors(kernel, kernel_chunk)

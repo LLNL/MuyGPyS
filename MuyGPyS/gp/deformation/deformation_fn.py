@@ -7,6 +7,7 @@
 from typing import Callable, Dict, List, Tuple
 
 import MuyGPyS._src.math as mm
+from MuyGPyS.gp.deformation.metric import MetricFn
 
 
 class DeformationFn:
@@ -20,13 +21,12 @@ class DeformationFn:
 
     def __init__(
         self,
-        metric: Callable,
+        metric: MetricFn,
         length_scale,
     ):
-        self.length_scale = length_scale
-        self._dist_fn = metric
+        raise NotImplementedError("Cannot initialize DeformationFn base class!")
 
-    def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
+    def __call__(self, dists: mm.ndarray, **kwargs) -> mm.ndarray:
         raise NotImplementedError("Cannot call DeformationFn base class!")
 
     def get_opt_params(

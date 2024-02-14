@@ -301,15 +301,13 @@ class HyperparameterTest(parameterized.TestCase):
             ScalarParam(val, bounds)
 
 
-class KernelTest(parameterized.TestCase):
+class KernelTestCase(parameterized.TestCase):
     def _check_params_chassis(self, kernel_fn, **kwargs):
         for p in kernel_fn._hyperparameters:
             self._check_params(
                 kernel_fn,
                 p,
-                kwargs.get(
-                    p,
-                ),
+                kwargs.get(p),
             )
 
     def _check_params(self, kernel_fn, name, param):
@@ -326,7 +324,7 @@ class KernelTest(parameterized.TestCase):
                 )
 
 
-class RBFTest(KernelTest):
+class RBFTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -377,7 +375,7 @@ class RBFTest(KernelTest):
         self.assertTrue(mm.allclose(Kcross, Kcross_sk))
 
 
-class ParamTest(KernelTest):
+class ParamTest(KernelTestCase):
     @parameterized.parameters(
         (
             (k_kwargs, alt_kwargs)
@@ -430,7 +428,7 @@ class ParamTest(KernelTest):
         # self._check_params_chassis(kernel_fn, **alt_kwargs)
 
 
-class MaternTest(KernelTest):
+class MaternTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -440,23 +438,23 @@ class MaternTest(KernelTest):
             for k_kwargs in [
                 {
                     "smoothness": ScalarParam(0.42, "fixed"),
-                    "length_scale": ScalarParam(1.0),
+                    "length_scale": ScalarParam(0.5),
                 },
                 {
                     "smoothness": ScalarParam(0.5),
-                    "length_scale": ScalarParam(1.0),
+                    "length_scale": ScalarParam(0.5),
                 },
                 {
                     "smoothness": ScalarParam(1.5),
-                    "length_scale": ScalarParam(1.0),
+                    "length_scale": ScalarParam(0.5),
                 },
                 {
                     "smoothness": ScalarParam(2.5),
-                    "length_scale": ScalarParam(1.0),
+                    "length_scale": ScalarParam(0.5),
                 },
                 {
                     "smoothness": ScalarParam(mm.inf),
-                    "length_scale": ScalarParam(1.0),
+                    "length_scale": ScalarParam(0.5),
                 },
             ]
             # for f in [1]
@@ -498,9 +496,9 @@ class MaternTest(KernelTest):
         nbrs_lookup = NN_Wrapper(train, nn_count, **nn_kwargs)
         nn_indices, nn_dists = nbrs_lookup.get_nns(test)
         nn_dists = mm.sqrt(nn_dists)
-        deformation_model = Isotropy(l2, length_scale=k_kwargs["length_scale"])
         mtn = Matern(
-            smoothness=k_kwargs["smoothness"], deformation=deformation_model
+            smoothness=k_kwargs["smoothness"],
+            deformation=Isotropy(l2, length_scale=k_kwargs["length_scale"]),
         )
         pairwise_diffs = mtn.deformation.pairwise_tensor(train, nn_indices)
         # mtn = Matern(**k_kwargs)
@@ -510,7 +508,7 @@ class MaternTest(KernelTest):
         points = train[nn_indices]
         mtn_sk = Matern_sk(
             nu=mtn.smoothness(),
-            length_scale=deformation_model.length_scale(),
+            length_scale=mtn.deformation.length_scale(),
         )
         Kin_sk = mm.array(np.array([mtn_sk(mat) for mat in points]))
         self.assertEqual(Kin_sk.shape, (test_count, nn_count, nn_count))
@@ -530,7 +528,7 @@ class MaternTest(KernelTest):
         self.assertTrue(mm.allclose(Kcross, Kcross_sk))
 
 
-class AnisotropicShapesTest(KernelTest):
+class AnisotropicShapesTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -587,7 +585,7 @@ class AnisotropicShapesTest(KernelTest):
             _ = _consistent_unchunk_tensor(mtn(pairwise_diffs))
 
 
-class AnisotropicTest(KernelTest):
+class AnisotropicTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)

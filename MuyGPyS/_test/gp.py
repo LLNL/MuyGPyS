@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: MIT
 
 import MuyGPyS._src.math.numpy as np
-from MuyGPyS._src.gp.tensors import _pairwise_differences
 from MuyGPyS.gp.hyperparameter import FixedScale
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise, NoiseFn

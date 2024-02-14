@@ -135,19 +135,19 @@ class MuyGPs_layer(nn.Module):
         """
         self.muygps_model._make()
 
-        crosswise_diffs = self.deformation.crosswise_tensor(
+        crosswise_tensor = self.deformation.crosswise_tensor(
             x,
             x,
             self.batch_indices,
             self.batch_nn_indices,
         )
 
-        pairwise_diffs = self.deformation.pairwise_tensor(
+        pairwise_tensor = self.deformation.pairwise_tensor(
             x, self.batch_nn_indices
         )
 
-        Kcross = self.muygps_model.kernel(crosswise_diffs)
-        Kin = self.muygps_model.kernel(pairwise_diffs)
+        Kcross = self.muygps_model.kernel(crosswise_tensor)
+        Kin = self.muygps_model.kernel(pairwise_tensor)
 
         predictions = self.muygps_model.posterior_mean(
             Kin, Kcross, self.batch_nn_targets

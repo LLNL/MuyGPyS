@@ -153,6 +153,7 @@ class LengthScaleTest(BenchmarkTestCase):
             # for opt_fn_and_kwargs in _advanced_opt_fn_and_kwarg_options
             for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
             # for opt_fn_and_kwargs in [_basic_opt_fn_and_kwarg_options[0]]
+            # for opt_fn_and_kwargs in [_basic_opt_fn_and_kwarg_options[1]]
         )
     )
     def test_length_scale(

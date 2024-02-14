@@ -6,10 +6,10 @@
 from typing import List, Tuple, Callable, Dict
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _crosswise_tensor, _pairwise_tensor
 from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
+from MuyGPyS.gp.deformation.metric import MetricFn
 from MuyGPyS.gp.hyperparameter import ScalarParam
 
 
@@ -28,11 +28,7 @@ class Anisotropy(DeformationFn):
 
     Args:
         metric:
-            A callable metric function that takes a tensor of shape
-            `(..., feature_count)` whose last dimension lists the elementwise
-            differences between a pair of feature vectors and returns a tensor
-            of shape `(...)`, having collapsed the last dimension into a
-            scalar difference.
+            A MetricFn object defining the behavior of the feature metric space.
         length_scales:
             Keyword arguments `length_scale#`, mapping to scalar
             hyperparameters.
@@ -40,14 +36,10 @@ class Anisotropy(DeformationFn):
 
     def __init__(
         self,
-        metric: Callable,
-        _crosswise_fn: Callable = _crosswise_tensor,
-        _pairwise_fn: Callable = _pairwise_tensor,
+        metric: MetricFn,
         **length_scales,
     ):
-        self._dist_fn = metric
-        self._crosswise_differences = _crosswise_fn
-        self._pairwise_differences = _pairwise_fn
+        self.metric = metric
         for i, key in enumerate(length_scales.keys()):
             if key != "length_scale" + str(i):
                 raise ValueError(
@@ -67,7 +59,7 @@ class Anisotropy(DeformationFn):
             )
         self.length_scale = length_scales
 
-    def __call__(self, diffs: mm.ndarray, **length_scales) -> mm.ndarray:
+    def __call__(self, dists: mm.ndarray, **length_scales) -> mm.ndarray:
         """
         Apply anisotropic deformation to an elementwise difference tensor.
 
@@ -76,9 +68,10 @@ class Anisotropy(DeformationFn):
         :class:`MuyGPyS.gp.kernels.KernelFn` in its constructor.
 
         Args:
-            diffs:
+            dists:
                 A tensor of pairwise differences of shape
-                `(..., feature_count)`.
+                `(..., feature_count)` representing the difference in feature
+                dimensions between sets of observables.
             batch_features:
                 A `(batch_count, feature_count)` matrix of features to be used
                 with a hierarchical hyperparameter. `None` otherwise.
@@ -92,9 +85,9 @@ class Anisotropy(DeformationFn):
             pairwise distance matrices.
         """
         length_scale_array = self._length_scale_array(
-            diffs.shape, **length_scales
+            dists.shape, **length_scales
         )
-        return self._dist_fn(diffs / length_scale_array)
+        return self.metric(dists / length_scale_array)
 
     def _length_scale_array(
         self, shape: mm.ndarray, **length_scales
@@ -106,9 +99,11 @@ class Anisotropy(DeformationFn):
             )
         return mm.array(
             [
-                length_scales[key]
-                if key in length_scales.keys()
-                else self.length_scale[key]()
+                (
+                    length_scales[key]
+                    if key in length_scales.keys()
+                    else self.length_scale[key]()
+                )
                 for key in self.length_scale
             ]
         )
@@ -209,7 +204,7 @@ class Anisotropy(DeformationFn):
             nearest neighbor difference tensors corresponding to each of the
             batch elements.
         """
-        return self._pairwise_differences(data, nn_indices)
+        return self.metric.pairwise_differences(data, nn_indices)
 
     @mpi_chunk(return_count=1)
     def crosswise_tensor(
@@ -250,6 +245,6 @@ class Anisotropy(DeformationFn):
             last two dimensions indicate difference vectors between the feature
             dimensions of each batch element and those of its nearest neighbors.
         """
-        return self._crosswise_differences(
+        return self.metric.crosswise_differences(
             data, nn_data, data_indices, nn_indices
         )

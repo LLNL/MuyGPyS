@@ -203,7 +203,7 @@ class MultivariateMuyGPS:
             A vector of shape `(batch_count, response_count)` consisting of the
             diagonal elements of the posterior variance for each model.
         """
-        batch_count, _, _ = crosswise_diffs.shape
+        batch_count = crosswise_diffs.shape[0]
         response_count = len(self.models)
         diagonal_variance = mm.zeros((batch_count, response_count))
         for i, model in enumerate(self.models):

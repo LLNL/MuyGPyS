@@ -132,6 +132,8 @@ class ScaleTest(parameterized.TestCase):
                         "noise": HomoscedasticNoise(1e-6),
                         "scale": AnalyticScale(),
                     },
+                ],
+                [
                     {
                         "kernel": Matern(
                             smoothness=ScalarParam(1.5),
@@ -395,6 +397,8 @@ class ClassifyTest(parameterized.TestCase):
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
+                ),
+                (
                     {
                         "kernel": Matern(
                             smoothness=ScalarParam(0.63),
@@ -492,6 +496,8 @@ class RegressTest(parameterized.TestCase):
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
+                ),
+                (
                     {
                         "kernel": Matern(
                             smoothness=ScalarParam(1.5),
@@ -603,6 +609,8 @@ class MakeClassifierTest(parameterized.TestCase):
                         ),
                         "noise": HomoscedasticNoise(1e-5),
                     },
+                ),
+                (
                     {
                         "kernel": Matern(
                             smoothness=ScalarParam("sample", (1e-1, 1e0)),
@@ -727,6 +735,8 @@ class MakeRegressorTest(parameterized.TestCase):
                         "noise": HomoscedasticNoise(1e-5),
                         "scale": AnalyticScale(),
                     },
+                ),
+                (
                     {
                         "kernel": Matern(
                             smoothness=ScalarParam("sample", (1e-1, 1e0)),
