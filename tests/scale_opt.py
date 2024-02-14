@@ -34,9 +34,11 @@ class ScaleTest(BenchmarkTestCase):
 
     def test_scale(self):
         mrse = 0.0
-        pairwise_diffs = _pairwise_differences(self.train_features)
+        pairwise_tensor = self.sampler.gp.kernel.deformation.pairwise_tensor(
+            self.train_features, mm.arange(self.train_count)
+        )
         Kin = self.sampler.gp.kernel(
-            pairwise_diffs
+            pairwise_tensor
         ) + self.sampler.gp.noise() * mm.eye(self.train_count)
 
         for i in range(self.its):
@@ -70,7 +72,7 @@ class AnalyticOptimTest(BenchmarkTestCase):
             )
 
             muygps = muygps.optimize_scale(
-                self.batch_pairwise_diffs_list[i], self.batch_nn_targets_list[i]
+                self.batch_pairwise_dists_list[i], self.batch_nn_targets_list[i]
             )
             estimate = muygps.scale()
 
@@ -105,7 +107,7 @@ class DownSampleOptimTest(BenchmarkTestCase):
             )
 
             muygps = muygps.optimize_scale(
-                self.batch_pairwise_diffs_list[i], self.batch_nn_targets_list[i]
+                self.batch_pairwise_dists_list[i], self.batch_nn_targets_list[i]
             )
             estimate = muygps.scale()
 
