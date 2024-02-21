@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: MIT
 
 import numpy as np
-import os
-import importlib
-import sys
+import sympy
+from sympy import diff
+from numpy import exp
 
 from absl.testing import parameterized
 
@@ -17,15 +17,181 @@ from MuyGPyS.gp.kernels.experimental import ShearKernel
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
-# introduce a variable for path/to/shear_kernel
-shear_kernel_dir = "../../../../projects/shear_kernel/"
-if not os.path.isdir(shear_kernel_dir):
-    shear_kernel_dir = "../../shear_kernel/"
-spec_analytic = importlib.util.spec_from_file_location("analytic_kernel", shear_kernel_dir + "analytic_kernel.py")
-bar = importlib.util.module_from_spec(spec_analytic)
-sys.modules["analytic_kernel"] = bar
-spec_analytic.loader.exec_module(bar)
-from analytic_kernel import shear_kernel
+a, b, x1, x2, y1, y2, r2 = sympy.symbols("a b x1 x2 y1 y2 r2")
+kernel = a * sympy.exp(-1 / (2 * b) * ((x1 - x2) ** 2 + (y1 - y2) ** 2))
+# kappa-kappa term
+kk = sympy.simplify(
+    (diff(diff(diff(diff(kernel, x1), x1), x2), x2))
+    + (diff(diff(diff(diff(kernel, x1), x1), y2), y2))
+    + (diff(diff(diff(diff(kernel, y1), y1), x2), x2))
+    + (diff(diff(diff(diff(kernel, y1), y1), y2), y2))
+)
+
+# kappa-g1 term
+kg1 = sympy.simplify(
+    (diff(diff(diff(diff(kernel, x1), x1), x2), x2))
+    + (diff(diff(diff(diff(kernel, y1), y1), x2), x2))
+    - (diff(diff(diff(diff(kernel, x1), x1), y2), y2))
+    - (diff(diff(diff(diff(kernel, y1), y1), y2), y2))
+)
+
+# kappa-g2 term
+kg2 = sympy.simplify(
+    (diff(diff(diff(diff(kernel, x1), x1), x2), y2))
+    + (diff(diff(diff(diff(kernel, y1), y1), x2), y2))
+    + (diff(diff(diff(diff(kernel, x1), x1), y2), x2))
+    + (diff(diff(diff(diff(kernel, y1), y1), y2), x2))
+)
+
+# g1-g1 term
+g1g1 = sympy.simplify(
+    (diff(diff(diff(diff(kernel, x1), x1), x2), x2))
+    - (diff(diff(diff(diff(kernel, x1), x1), y2), y2))
+    - (diff(diff(diff(diff(kernel, y1), y1), x2), x2))
+    + (diff(diff(diff(diff(kernel, y1), y1), y2), y2))
+)
+
+# g1-g2 term
+g1g2 = sympy.simplify(
+    (diff(diff(diff(diff(kernel, x1), x1), x2), y2))
+    + (diff(diff(diff(diff(kernel, x1), x1), y2), x2))
+    - (diff(diff(diff(diff(kernel, y1), y1), x2), y2))
+    - (diff(diff(diff(diff(kernel, y1), y1), y2), x2))
+)
+
+# g2-g2 term
+g2g2 = sympy.simplify(
+    (diff(diff(diff(diff(kernel, x1), y1), x2), y2))
+    + (diff(diff(diff(diff(kernel, x1), y1), y2), x2))
+    + (diff(diff(diff(diff(kernel, y1), x1), x2), y2))
+    + (diff(diff(diff(diff(kernel, y1), x1), y2), x2))
+)
+
+
+def kernelf(x1, y1, x2, y2, a=1, b=1):
+    return a * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+
+
+# The following functions are cut and pasted from printing the expressions above
+def kk_f(x1, y1, x2, y2, a=1, b=1):
+    return (
+        1
+        / 4
+        * (
+            a
+            * (
+                8 * b**2
+                - 8 * b * ((x1 - x2) ** 2 + (y1 - y2) ** 2)
+                + (x1 - x2) ** 4
+                + 2 * (x1 - x2) ** 2 * (y1 - y2) ** 2
+                + (y1 - y2) ** 4
+            )
+            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            / b**4
+        )
+    )
+
+
+def kg1_f(x1, y1, x2, y2, a=1, b=1):
+    return (
+        1
+        / 4
+        * (
+            a
+            * (
+                6 * b * (-((x1 - x2) ** 2) + (y1 - y2) ** 2)
+                + (x1 - x2) ** 4
+                - (y1 - y2) ** 4
+            )
+            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            / b**4
+        )
+    )
+
+
+def kg2_f(x1, y1, x2, y2, a=1, b=1):
+    return (
+        1
+        / 4
+        * (
+            2
+            * a
+            * (x1 - x2)
+            * (y1 - y2)
+            * (-6 * b + (x1 - x2) ** 2 + (y1 - y2) ** 2)
+            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            / b**4
+        )
+    )
+
+
+def g1g1_f(x1, y1, x2, y2, a=1, b=1):
+    return (
+        1
+        / 4
+        * (
+            a
+            * (
+                4 * b**2
+                - 4 * b * ((x1 - x2) ** 2 + (y1 - y2) ** 2)
+                + (x1 - x2) ** 4
+                - 2 * (x1 - x2) ** 2 * (y1 - y2) ** 2
+                + (y1 - y2) ** 4
+            )
+            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            / b**4
+        )
+    )
+
+
+def g1g2_f(x1, y1, x2, y2, a=1, b=1):
+    return (
+        1
+        / 4
+        * (
+            2
+            * a
+            * (x1 - x2)
+            * (y1 - y2)
+            * ((x1 - x2) ** 2 - (y1 - y2) ** 2)
+            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            / b**4
+        )
+    )
+
+
+def g2g2_f(x1, y1, x2, y2, a=1, b=1):
+    return (
+        1
+        / 4
+        * (
+            4
+            * a
+            * (
+                b**2
+                - b * ((x1 - x2) ** 2 + (y1 - y2) ** 2)
+                + (x1 - x2) ** 2 * (y1 - y2) ** 2
+            )
+            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            / b**4
+        )
+    )
+
+
+# compute the full covariance matrix
+def shear_kernel(x1, y1, x2, y2, a=1, b=1):
+    full_m = np.zeros((3, 3))
+    full_m[0, 0] = kk_f(x1, y1, x2, y2, a, b)
+    full_m[0, 1] = kg1_f(x1, y1, x2, y2, a, b)
+    full_m[0, 2] = kg2_f(x1, y1, x2, y2, a, b)
+    full_m[1, 1] = g1g1_f(x1, y1, x2, y2, a, b)
+    full_m[1, 2] = g1g2_f(x1, y1, x2, y2, a, b)
+    full_m[2, 2] = g2g2_f(x1, y1, x2, y2, a, b)
+    full_m[1, 0] = full_m[0, 1]
+    full_m[2, 0] = full_m[0, 2]
+    full_m[2, 1] = full_m[1, 2]
+
+    return full_m
 
 
 def original_shear(X1, X2=None, length_scale=1.0):
