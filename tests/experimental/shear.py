@@ -404,8 +404,6 @@ class ShearKernelTest(BenchmarkTestCase):
             n_iter=20,
         )
 
-        print(self.length_scale, shear_mse_optimized.kernel.deformation.length_scale())
-
         self.assertTrue(mm.allclose(self.length_scale, shear_mse_optimized.kernel.deformation.length_scale(), atol=0.015))
 
 

@@ -2,11 +2,8 @@
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
-
 import numpy as np
-import sympy
-from sympy import diff
-from numpy import exp
+import MuyGPyS._src.math as mm
 
 from absl.testing import parameterized
 
@@ -17,62 +14,6 @@ from MuyGPyS.gp.kernels.experimental import ShearKernel
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
-a, b, x1, x2, y1, y2, r2 = sympy.symbols("a b x1 x2 y1 y2 r2")
-kernel = a * sympy.exp(-1 / (2 * b) * ((x1 - x2) ** 2 + (y1 - y2) ** 2))
-# kappa-kappa term
-kk = sympy.simplify(
-    (diff(diff(diff(diff(kernel, x1), x1), x2), x2))
-    + (diff(diff(diff(diff(kernel, x1), x1), y2), y2))
-    + (diff(diff(diff(diff(kernel, y1), y1), x2), x2))
-    + (diff(diff(diff(diff(kernel, y1), y1), y2), y2))
-)
-
-# kappa-g1 term
-kg1 = sympy.simplify(
-    (diff(diff(diff(diff(kernel, x1), x1), x2), x2))
-    + (diff(diff(diff(diff(kernel, y1), y1), x2), x2))
-    - (diff(diff(diff(diff(kernel, x1), x1), y2), y2))
-    - (diff(diff(diff(diff(kernel, y1), y1), y2), y2))
-)
-
-# kappa-g2 term
-kg2 = sympy.simplify(
-    (diff(diff(diff(diff(kernel, x1), x1), x2), y2))
-    + (diff(diff(diff(diff(kernel, y1), y1), x2), y2))
-    + (diff(diff(diff(diff(kernel, x1), x1), y2), x2))
-    + (diff(diff(diff(diff(kernel, y1), y1), y2), x2))
-)
-
-# g1-g1 term
-g1g1 = sympy.simplify(
-    (diff(diff(diff(diff(kernel, x1), x1), x2), x2))
-    - (diff(diff(diff(diff(kernel, x1), x1), y2), y2))
-    - (diff(diff(diff(diff(kernel, y1), y1), x2), x2))
-    + (diff(diff(diff(diff(kernel, y1), y1), y2), y2))
-)
-
-# g1-g2 term
-g1g2 = sympy.simplify(
-    (diff(diff(diff(diff(kernel, x1), x1), x2), y2))
-    + (diff(diff(diff(diff(kernel, x1), x1), y2), x2))
-    - (diff(diff(diff(diff(kernel, y1), y1), x2), y2))
-    - (diff(diff(diff(diff(kernel, y1), y1), y2), x2))
-)
-
-# g2-g2 term
-g2g2 = sympy.simplify(
-    (diff(diff(diff(diff(kernel, x1), y1), x2), y2))
-    + (diff(diff(diff(diff(kernel, x1), y1), y2), x2))
-    + (diff(diff(diff(diff(kernel, y1), x1), x2), y2))
-    + (diff(diff(diff(diff(kernel, y1), x1), y2), x2))
-)
-
-
-def kernelf(x1, y1, x2, y2, a=1, b=1):
-    return a * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
-
-
-# The following functions are cut and pasted from printing the expressions above
 def kk_f(x1, y1, x2, y2, a=1, b=1):
     return (
         1
@@ -86,7 +27,7 @@ def kk_f(x1, y1, x2, y2, a=1, b=1):
                 + 2 * (x1 - x2) ** 2 * (y1 - y2) ** 2
                 + (y1 - y2) ** 4
             )
-            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            * mm.exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
             / b**4
         )
     )
@@ -103,7 +44,7 @@ def kg1_f(x1, y1, x2, y2, a=1, b=1):
                 + (x1 - x2) ** 4
                 - (y1 - y2) ** 4
             )
-            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            * mm.exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
             / b**4
         )
     )
@@ -119,7 +60,7 @@ def kg2_f(x1, y1, x2, y2, a=1, b=1):
             * (x1 - x2)
             * (y1 - y2)
             * (-6 * b + (x1 - x2) ** 2 + (y1 - y2) ** 2)
-            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            * mm.exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
             / b**4
         )
     )
@@ -138,7 +79,7 @@ def g1g1_f(x1, y1, x2, y2, a=1, b=1):
                 - 2 * (x1 - x2) ** 2 * (y1 - y2) ** 2
                 + (y1 - y2) ** 4
             )
-            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            * mm.exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
             / b**4
         )
     )
@@ -154,7 +95,7 @@ def g1g2_f(x1, y1, x2, y2, a=1, b=1):
             * (x1 - x2)
             * (y1 - y2)
             * ((x1 - x2) ** 2 - (y1 - y2) ** 2)
-            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            * mm.exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
             / b**4
         )
     )
@@ -172,7 +113,7 @@ def g2g2_f(x1, y1, x2, y2, a=1, b=1):
                 - b * ((x1 - x2) ** 2 + (y1 - y2) ** 2)
                 + (x1 - x2) ** 2 * (y1 - y2) ** 2
             )
-            * exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
+            * mm.exp(-((x1 - x2) ** 2 + (y1 - y2) ** 2) / (2 * b))
             / b**4
         )
     )
