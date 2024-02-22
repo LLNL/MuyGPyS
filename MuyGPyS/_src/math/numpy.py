@@ -19,6 +19,7 @@ from numpy import (
     count_nonzero,
     choose,
     divide,
+    dot,
     einsum,
     equal,
     exp,
