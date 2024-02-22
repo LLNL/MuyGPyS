@@ -2,7 +2,7 @@
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
-import numpy as np
+import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math as mm
 
 from absl.testing import parameterized
@@ -160,7 +160,7 @@ def targets_from_GP(features, n, ls):
     )
     diffs = Kernel.deformation.pairwise_tensor(features, np.arange(features.shape[0]))
     Kin = 1.0 * Kernel(diffs, adjust=False)
-    Kin_flat = Kin.reshape(3 * n**2, 3 * n**2) + 1e-10 * np.identity(3 * n**2)
+    Kin_flat = Kin.reshape(3 * n**2, 3 * n**2) + 1e-10 * np.eye(3 * n**2)
     e = np.random.normal(0, 1, 3 * n**2)
     L = np.linalg.cholesky(Kin_flat)
     targets = np.dot(L, e).reshape(3, n**2).swapaxes(0, 1)
