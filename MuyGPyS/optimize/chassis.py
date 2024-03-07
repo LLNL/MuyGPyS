@@ -8,7 +8,7 @@ Convenience functions for optimizing :class:`~MuyGPyS.gp.muygps.MuyGPS` objects
 """
 
 
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.chassis import (
@@ -95,12 +95,74 @@ class OptimizeFn:
             A new MuyGPs model whose specified hyperparameters have been
             optimized.
         """
+        obj_fn = self.make_obj_fn(
+            muygps,
+            batch_targets,
+            batch_nn_targets,
+            crosswise_diffs,
+            pairwise_diffs,
+            batch_features=batch_features,
+            loss_fn=loss_fn,
+            loss_kwargs=loss_kwargs,
+        )
+        return self._fn(muygps, obj_fn, verbose=verbose, **kwargs)
+
+    def make_obj_fn(
+        self,
+        muygps: MuyGPS,
+        batch_targets: mm.ndarray,
+        batch_nn_targets: mm.ndarray,
+        crosswise_diffs: mm.ndarray,
+        pairwise_diffs: mm.ndarray,
+        batch_features: Optional[mm.ndarray] = None,
+        loss_fn: LossFn = lool_fn,
+        loss_kwargs: Dict = dict(),
+        **kwargs,
+    ) -> Callable:
+        """
+        Returns the objective function specified by the training batch and
+        model choices.
+
+        Args:
+            muygps:
+                The model to be optimized.
+            batch_targets:
+                Matrix of floats of shape `(batch_count, response_count)` whose
+                rows give the expected response for each batch element.
+            batch_nn_targets:
+                Tensor of floats of shape
+                `(batch_count, nn_count, response_count)` containing the
+                expected response for each nearest neighbor of each batch
+                element.
+            crosswise_diffs:
+                A tensor of shape `(batch_count, nn_count, feature_count)` whose
+                last two dimensions list the difference between each feature of
+                each batch element element and its nearest neighbors.
+            pairwise_diffs:
+                A tensor of shape
+                `(batch_count, nn_count, nn_count, feature_count)` containing
+                the `(nn_count, nn_count, feature_count)`-shaped pairwise
+                nearest neighbor difference tensors corresponding to each of the
+                batch elements.
+            loss_fn:
+                The loss functor used to evaluate model performance.
+            loss_kwargs:
+                A dictionary of additional keyword arguments to apply to the
+                :class:`~MuyGPyS.optimize.loss.LossFn`. Loss function specific.
+            kwargs:
+                Additional keyword arguments to be passed to the wrapper
+                optimizer.
+
+        Returns:
+            A Callable function that evaluates the objective function for a
+            given value of the free parameters.
+        """
         kernel_fn = muygps.kernel.get_opt_fn()
         mean_fn = muygps.get_opt_mean_fn()
         var_fn = muygps.get_opt_var_fn()
         scale_fn = muygps.scale.get_opt_fn(muygps)
 
-        obj_fn = self._make_obj_fn(
+        return self._make_obj_fn(
             loss_fn,
             kernel_fn,
             mean_fn,
@@ -113,7 +175,6 @@ class OptimizeFn:
             batch_features=batch_features,
             loss_kwargs=loss_kwargs,
         )
-        return self._fn(muygps, obj_fn, verbose=verbose, **kwargs)
 
 
 Bayes_optimize = OptimizeFn(_bayes_opt_optimize, make_loo_crossval_fn)
