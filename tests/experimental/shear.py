@@ -12,8 +12,12 @@ import MuyGPyS._src.math as mm
 from MuyGPyS.gp.kernels.experimental import ShearKernel
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.utils import _check_ndarray
-from MuyGPyS._test.shear import BenchmarkTestCase
-from MuyGPyS._test.shear import original_shear, conventional_mean, conventional_variance
+from MuyGPyS._test.shear import (
+    BenchmarkTestCase,
+    conventional_mean,
+    conventional_shear,
+    conventional_variance,
+)
 
 from MuyGPyS.optimize.batch import sample_batch
 from MuyGPyS.optimize import Bayes_optimize
@@ -26,11 +30,17 @@ class ShearKernelTest(BenchmarkTestCase):
 
         data_count = self.features.shape[0]
 
-        diffs = self.dist_fn.pairwise_tensor(self.features, np.arange(data_count))
+        diffs = self.dist_fn.pairwise_tensor(
+            self.features, np.arange(data_count)
+        )
 
-        analytic_kernel = original_shear(self.features, length_scale=self.length_scale)
+        analytic_kernel = conventional_shear(
+            self.features, length_scale=self.length_scale
+        )
 
-        library_kernel = ShearKernel(deformation=self.dist_fn)(diffs).reshape(3 * data_count, 3 * data_count)
+        library_kernel = ShearKernel(deformation=self.dist_fn)(diffs).reshape(
+            3 * data_count, 3 * data_count
+        )
 
         _check_ndarray(
             self.assertEqual,
@@ -53,9 +63,13 @@ class ShearKernelTest(BenchmarkTestCase):
             X1, X2, np.arange(n1), np.arange(n2)
         )
 
-        library_Kcross = ShearKernel(deformation=self.dist_fn)(crosswise_diffs, adjust=False)
+        library_Kcross = ShearKernel(deformation=self.dist_fn)(
+            crosswise_diffs, adjust=False
+        )
 
-        analytic_Kcross = original_shear(X1, X2, length_scale=self.length_scale)
+        analytic_Kcross = conventional_shear(
+            X1, X2, length_scale=self.length_scale
+        )
 
         library_Kcross_flat = library_Kcross.reshape(n1 * 3, n2 * 3)
 
@@ -90,36 +104,50 @@ class ShearKernelTest(BenchmarkTestCase):
         train_features = self.features[train_mask, :]
         test_features = self.features[test_mask, :]
 
-        train_targets_flat = train_targets.swapaxes(0, 1).reshape(3 * train_count)
+        train_targets_flat = train_targets.swapaxes(0, 1).reshape(
+            3 * train_count
+        )
 
-        Kin_analytic = original_shear(train_features, train_features, length_scale=self.length_scale)
-        Kcross_analytic = original_shear(test_features, train_features, length_scale=self.length_scale)
+        Kin_analytic = conventional_shear(
+            train_features, train_features, length_scale=self.length_scale
+        )
+        Kcross_analytic = conventional_shear(
+            test_features, train_features, length_scale=self.length_scale
+        )
 
         pairwise_diffs = self.library_shear.kernel.deformation.pairwise_tensor(
             train_features, np.arange(train_count)
         )
-        crosswise_diffs = self.library_shear.kernel.deformation.crosswise_tensor(
-            test_features, train_features, np.arange(test_count), np.arange(train_count)
+        crosswise_diffs = (
+            self.library_shear.kernel.deformation.crosswise_tensor(
+                test_features,
+                train_features,
+                np.arange(test_count),
+                np.arange(train_count),
+            )
         )
         library_Kin = self.library_shear.kernel(pairwise_diffs, adjust=False)
-        library_Kcross = self.library_shear.kernel(crosswise_diffs, adjust=False)
+        library_Kcross = self.library_shear.kernel(
+            crosswise_diffs, adjust=False
+        )
         library_Kin_flat = library_Kin.reshape(3 * train_count, 3 * train_count)
-        library_Kcross_flat = library_Kcross.reshape(3 * test_count, 3 * train_count)
+        library_Kcross_flat = library_Kcross.reshape(
+            3 * test_count, 3 * train_count
+        )
 
         posterior_mean_analytic = conventional_mean(
-            Kin_analytic,
-            Kcross_analytic,
-            train_targets_flat,
-            self.noise_prior
+            Kin_analytic, Kcross_analytic, train_targets_flat, self.noise_prior
         )
         posterior_mean_flat = conventional_mean(
             library_Kin_flat,
             library_Kcross_flat,
             train_targets_flat,
-            self.noise_prior
+            self.noise_prior,
         )
 
-        self.assertTrue(mm.allclose(posterior_mean_analytic, posterior_mean_flat))
+        self.assertTrue(
+            mm.allclose(posterior_mean_analytic, posterior_mean_flat)
+        )
 
     def test_library_mean(self):
         train_ratio = 0.2
@@ -143,7 +171,12 @@ class ShearKernelTest(BenchmarkTestCase):
 
         indices = np.arange(test_count)
 
-        nbrs_lookup = NN_Wrapper(train_features, self.nn_count, nn_method='exact', algorithm='ball_tree')
+        nbrs_lookup = NN_Wrapper(
+            train_features,
+            self.nn_count,
+            nn_method="exact",
+            algorithm="ball_tree",
+        )
         nn_indices, _ = nbrs_lookup.get_nns(test_features)
 
         (
@@ -163,18 +196,22 @@ class ShearKernelTest(BenchmarkTestCase):
         Kcross = self.library_shear.kernel(crosswise_diffs)
         Kin = self.library_shear.kernel(pairwise_diffs)
 
-        library_posterior_mean = self.library_shear.posterior_mean(Kin, Kcross, nn_targets)
+        library_posterior_mean = self.library_shear.posterior_mean(
+            Kin, Kcross, nn_targets
+        )
 
         Kin_flat = Kin.reshape(test_count, 3 * self.nn_count, 3 * self.nn_count)
         Kcross_flat = Kcross.reshape(test_count, 3 * self.nn_count, 3)
         nn_targets_flat = nn_targets.reshape(test_count, 3 * self.nn_count)
 
-        kappa_mean_flat = np.squeeze(conventional_mean(
-            Kin_flat[0],
-            Kcross_flat[0].swapaxes(-2, -1),
-            nn_targets_flat[0],
-            self.noise_prior
-        ))
+        kappa_mean_flat = np.squeeze(
+            conventional_mean(
+                Kin_flat[0],
+                Kcross_flat[0].swapaxes(-2, -1),
+                nn_targets_flat[0],
+                self.noise_prior,
+            )
+        )
 
         self.assertTrue(mm.allclose(library_posterior_mean[0], kappa_mean_flat))
 
@@ -213,42 +250,50 @@ class ShearKernelTest(BenchmarkTestCase):
             test_features, np.arange(test_count)
         )
 
-        library_Kin_test = self.library_shear.kernel(pairwise_diffs_test, adjust=False)
+        library_Kin_test = self.library_shear.kernel(
+            pairwise_diffs_test, adjust=False
+        )
         library_Kin = self.library_shear.kernel(pairwise_diffs, adjust=False)
-        library_Kcross = self.library_shear.kernel(crosswise_diffs, adjust=False)
+        library_Kcross = self.library_shear.kernel(
+            crosswise_diffs, adjust=False
+        )
 
         library_Kin_flat = library_Kin.reshape(3 * train_count, 3 * train_count)
-        library_Kcross_flat = library_Kcross.reshape(3 * test_count, 3 * train_count)
-        library_Kin_test_flat = library_Kin_test.reshape(3 * test_count, 3 * test_count)
+        library_Kcross_flat = library_Kcross.reshape(
+            3 * test_count, 3 * train_count
+        )
+        library_Kin_test_flat = library_Kin_test.reshape(
+            3 * test_count, 3 * test_count
+        )
 
-        Kin_an = original_shear(
+        Kin_an = conventional_shear(
             train_features,
             length_scale=self.length_scale,
         )
-        Kcross_an = original_shear(
+        Kcross_an = conventional_shear(
             test_features,
             train_features,
             length_scale=self.length_scale,
         )
-        Kin_test_an = original_shear(
-            test_features,
-            length_scale=self.length_scale
+        Kin_test_an = conventional_shear(
+            test_features, length_scale=self.length_scale
         )
 
         conventional_var_analytic_flat = conventional_variance(
-            Kin_an,
-            Kcross_an,
-            Kin_test_an,
-            self.noise_prior
+            Kin_an, Kcross_an, Kin_test_an, self.noise_prior
         )
         library_conventional_var_flat = conventional_variance(
             library_Kin_flat,
             library_Kcross_flat,
             library_Kin_test_flat,
-            self.noise_prior
+            self.noise_prior,
         )
 
-        self.assertTrue(mm.allclose(library_conventional_var_flat, conventional_var_analytic_flat))
+        self.assertTrue(
+            mm.allclose(
+                library_conventional_var_flat, conventional_var_analytic_flat
+            )
+        )
 
     """
     def test_libary_variance(self):
@@ -275,11 +320,11 @@ class ShearKernelTest(BenchmarkTestCase):
         train_features = self.features[train_mask, :]
         test_features = self.features[test_mask, :]
 
-        Kin_an = original_shear(
+        Kin_an = conventional_shear(
             train_features,
             length_scale=self.length_scale,
         )
-        Kcross_an = original_shear(
+        Kcross_an = conventional_shear(
             test_features,
             train_features,
             length_scale=self.length_scale,
@@ -287,7 +332,7 @@ class ShearKernelTest(BenchmarkTestCase):
         # Construct the tensors K(X*,X*) and K(X,X*),
         # although not sure that that the explicit K(X,X*)
         # is necessary
-        Kin_test_an = original_shear(
+        Kin_test_an = conventional_shear(
             test_features,
             length_scale=self.length_scale
             )
@@ -370,22 +415,28 @@ class ShearKernelTest(BenchmarkTestCase):
         train_features_count = train_features.shape[0]
 
         nn_count = 50
-        nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method='exact', algorithm='ball_tree')
+        nbrs_lookup = NN_Wrapper(
+            train_features, nn_count, nn_method="exact", algorithm="ball_tree"
+        )
 
         batch_count = 500
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup, batch_count, train_features_count
         )
 
-        batch_crosswise_diffs = self.optimize_model.kernel.deformation.crosswise_tensor(
-            train_features,
-            train_features,
-            batch_indices,
-            batch_nn_indices,
+        batch_crosswise_diffs = (
+            self.optimize_model.kernel.deformation.crosswise_tensor(
+                train_features,
+                train_features,
+                batch_indices,
+                batch_nn_indices,
+            )
         )
 
-        batch_pairwise_diffs = self.optimize_model.kernel.deformation.pairwise_tensor(
-            train_features, batch_nn_indices
+        batch_pairwise_diffs = (
+            self.optimize_model.kernel.deformation.pairwise_tensor(
+                train_features, batch_nn_indices
+            )
         )
 
         batch_targets = train_targets[batch_indices]
@@ -404,7 +455,13 @@ class ShearKernelTest(BenchmarkTestCase):
             n_iter=20,
         )
 
-        self.assertTrue(mm.allclose(self.length_scale, shear_mse_optimized.kernel.deformation.length_scale(), atol=0.015))
+        self.assertTrue(
+            mm.allclose(
+                self.length_scale,
+                shear_mse_optimized.kernel.deformation.length_scale(),
+                atol=0.015,
+            )
+        )
 
 
 if __name__ == "__main__":
