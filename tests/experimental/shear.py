@@ -59,11 +59,12 @@ class ShearKernelTest(BenchmarkTestCase):
         n1, _ = X1.shape
         n2, _ = X2.shape
 
-        crosswise_diffs = self.dist_fn.crosswise_tensor(
-            X1, X2, np.arange(n1), np.arange(n2)
+        crosswise_diffs = (
+            self.library_shear.kernel.deformation.crosswise_tensor(
+                X1, X2, np.arange(n1), np.arange(n2)
+            )
         )
-
-        library_Kcross = ShearKernel(deformation=self.dist_fn)(
+        library_Kcross = self.library_shear.kernel(
             crosswise_diffs, adjust=False
         )
 
