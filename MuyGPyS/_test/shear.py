@@ -10,7 +10,7 @@ from absl.testing import parameterized
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import DifferenceIsotropy, F2
 from MuyGPyS.gp.hyperparameter import ScalarParam, Parameter, FixedScale
-from MuyGPyS.gp.kernels.experimental import ShearKernel
+from MuyGPyS.gp.kernels.experimental import ShearKernel, ShearKernel2in3out
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
@@ -229,20 +229,21 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.targets = targets_from_GP(
             cls.features, cls.n, cls.length_scale, cls.noise_prior
         )
-        cls.library_shear = MuyGPS(
+        cls.model33 = MuyGPS(
             kernel=ShearKernel(
                 deformation=DifferenceIsotropy(
                     F2,
-                    length_scale=Parameter(cls.length_scale),
+                    length_scale=Parameter(0.04, [0.02, 0.07]),
                 ),
             ),
             noise=HomoscedasticNoise(cls.noise_prior),
+            scale=FixedScale(),
         )
-        cls.optimize_model = MuyGPS(
-            kernel=ShearKernel(
+        cls.model23 = MuyGPS(
+            kernel=ShearKernel2in3out(
                 deformation=DifferenceIsotropy(
                     F2,
-                    length_scale=Parameter(0.04, [0.01, 0.07]),
+                    length_scale=Parameter(0.04, [0.02, 0.07]),
                 ),
             ),
             noise=HomoscedasticNoise(cls.noise_prior),
