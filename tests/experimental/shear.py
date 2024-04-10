@@ -354,7 +354,9 @@ class LibraryTestCase(DataTestCase):
 
         self.assertTrue(mm.allclose(posterior_variance[0], variance_flat))
 
-    def _opt_chassis(self, opt_model, batch_targets, batch_nn_targets):
+    def _opt_chassis(
+        self, opt_model, batch_targets, batch_nn_targets, **kwargs
+    ):
         shear_mse_optimized = Bayes_optimize(
             opt_model,
             batch_targets,
@@ -365,6 +367,7 @@ class LibraryTestCase(DataTestCase):
             verbose=False,
             init_points=5,
             n_iter=20,
+            **kwargs,
         )
 
         ls = shear_mse_optimized.kernel.deformation.length_scale()
@@ -391,8 +394,14 @@ class LibraryTest(LibraryTestCase):
         )
 
     def test_opt23(self):
+        batch_targets = self.batch_targets[:, 1:]
         batch_nn_targets = self.batch_nn_targets[:, 1:, :]
-        self._opt_chassis(self.model23, self.batch_targets, batch_nn_targets)
+        self._opt_chassis(
+            self.model23,
+            batch_targets,
+            batch_nn_targets,
+            target_mask=(1, 2),
+        )
 
 
 if __name__ == "__main__":

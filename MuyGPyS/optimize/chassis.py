@@ -53,6 +53,7 @@ class OptimizeFn:
         batch_features: Optional[mm.ndarray] = None,
         loss_fn: LossFn = lool_fn,
         loss_kwargs: Dict = dict(),
+        target_mask: Optional[mm.ndarray] = None,
         verbose: bool = False,
         **kwargs,
     ):
@@ -85,6 +86,9 @@ class OptimizeFn:
             loss_kwargs:
                 A dictionary of additional keyword arguments to apply to the
                 :class:`~MuyGPyS.optimize.loss.LossFn`. Loss function specific.
+            target_mask:
+                An array of indices, listing the output dimensions of the
+                prediction to be used for optimization.
             verbose:
                 If True, print debug messages.
             kwargs:
@@ -102,6 +106,7 @@ class OptimizeFn:
             crosswise_diffs,
             pairwise_diffs,
             batch_features=batch_features,
+            target_mask=target_mask,
             loss_fn=loss_fn,
             loss_kwargs=loss_kwargs,
         )
@@ -115,6 +120,7 @@ class OptimizeFn:
         crosswise_diffs: mm.ndarray,
         pairwise_diffs: mm.ndarray,
         batch_features: Optional[mm.ndarray] = None,
+        target_mask: Optional[mm.ndarray] = None,
         loss_fn: LossFn = lool_fn,
         loss_kwargs: Dict = dict(),
         **kwargs,
@@ -146,6 +152,9 @@ class OptimizeFn:
                 batch elements.
             loss_fn:
                 The loss functor used to evaluate model performance.
+            target_mask:
+                An array of indices, listing the output dimensions of the
+                prediction to be used for optimization.
             loss_kwargs:
                 A dictionary of additional keyword arguments to apply to the
                 :class:`~MuyGPyS.optimize.loss.LossFn`. Loss function specific.
@@ -173,6 +182,7 @@ class OptimizeFn:
             batch_nn_targets,
             batch_targets,
             batch_features=batch_features,
+            target_mask=target_mask,
             loss_kwargs=loss_kwargs,
         )
 

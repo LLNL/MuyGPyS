@@ -28,6 +28,7 @@ def make_loo_crossval_fn(
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
     batch_features: Optional[mm.ndarray] = None,
+    target_mask: Optional[mm.ndarray] = None,
     loss_kwargs: Dict = dict(),
 ) -> Callable:
     """
@@ -71,6 +72,9 @@ def make_loo_crossval_fn(
         batch_features:
             Matrix of floats of shape `(batch_count, feature_count)` whose rows
             give the features for each batch element.
+        target_mask:
+            An array of indices, listing the output dimensions of the prediction
+            to be used for optimization.
         loss_kwargs:
             A dict listing any additional kwargs to pass to the loss function.
 
@@ -85,6 +89,7 @@ def make_loo_crossval_fn(
         scale_fn,
         batch_nn_targets,
         batch_targets,
+        target_mask=target_mask,
         **loss_kwargs,
     )
 
