@@ -10,7 +10,7 @@ MuyGPyS includes predefined loss functions and convenience functions for
 indicating them to optimization.
 """
 
-from typing import Callable
+from typing import Callable, Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.optimize.loss import (
@@ -30,6 +30,7 @@ def make_raw_predict_and_loss_fn(
     scale_fn: Callable,
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
+    target_mask: Optional[mm.ndarray] = None,
     **loss_kwargs,
 ) -> Callable:
     """
@@ -84,6 +85,8 @@ def make_raw_predict_and_loss_fn(
             batch_nn_targets,
             **kwargs,
         )
+        if target_mask is not None:
+            predictions = predictions[:, target_mask]
 
         return -loss_fn(predictions, batch_targets, **loss_kwargs)
 
@@ -97,6 +100,7 @@ def make_var_predict_and_loss_fn(
     scale_fn: Callable,
     batch_nn_targets: mm.ndarray,
     batch_targets: mm.ndarray,
+    target_mask: Optional[mm.ndarray] = None,
     **loss_kwargs,
 ) -> Callable:
     """
@@ -134,6 +138,9 @@ def make_var_predict_and_loss_fn(
         batch_targets:
             A matrix of shape `(batch_count, response_count)` containing the
             expected response of each batch element.
+        target_mask:
+            An array of indices, listing the output dimensions of the prediction
+            to be used for optimization.
         loss_kwargs:
             Additionall keyword arguments used by the loss function.
 
@@ -150,9 +157,14 @@ def make_var_predict_and_loss_fn(
             batch_nn_targets,
             **kwargs,
         )
+
         scale = scale_fn(Kin, batch_nn_targets, **kwargs)
 
         variances = var_fn(Kin, Kcross, **kwargs)
+
+        if target_mask is not None:
+            predictions = predictions[:, target_mask]
+            variances = variances[:, target_mask, target_mask]
 
         return -loss_fn(
             predictions, batch_targets, variances, scale, **loss_kwargs
