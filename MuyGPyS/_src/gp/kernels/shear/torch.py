@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: MIT
 
 
-import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math.torch as torch
 
 
@@ -103,7 +102,7 @@ def _g2g2_fn(
 
 
 # compute the full covariance matrix
-def _shear_fn(diffs, length_scale=1, **kwargs):
+def _shear_33_fn(diffs, length_scale=1, **kwargs):
     assert diffs.ndim >= 3
     shape = diffs.shape[:-1]
     n = shape[-2]
@@ -161,3 +160,15 @@ def _shear_fn(diffs, length_scale=1, **kwargs):
     )  # (2, 2)
 
     return full_m
+
+
+def _shear_Kin23_fn(diffs, length_scale=1.0, **kwargs):
+    raise NotImplementedError(
+        "2in3out shear is not currently supported by the MuyGPs torch backend."
+    )
+
+
+def _shear_Kcross23_fn(diffs, length_scale=1.0, **kwargs):
+    raise NotImplementedError(
+        "2in3out shear is not currently supported by the MuyGPs torch backend."
+    )

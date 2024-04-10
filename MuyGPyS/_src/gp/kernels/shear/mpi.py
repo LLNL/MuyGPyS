@@ -3,4 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS._src.gp.kernels.shear import _shear_fn
+from MuyGPyS._src.gp.kernels.shear.numpy import (
+    _shear_33_fn,
+    _shear_Kcross23_fn,
+    _shear_Kin23_fn,
+)

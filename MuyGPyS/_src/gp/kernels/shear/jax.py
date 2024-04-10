@@ -112,7 +112,7 @@ def _g2g2_fn(
 
 # compute the full covariance matrix
 @jit
-def _shear_fn(diffs, length_scale=1.0, **kwargs):
+def _shear_33_fn(diffs, length_scale=1.0, **kwargs):
     assert diffs.ndim >= 3
     shape = diffs.shape[:-1]
     n = shape[-2]
@@ -188,3 +188,15 @@ def _shear_fn(diffs, length_scale=1.0, **kwargs):
     )  # (2, 2)
 
     return full_m
+
+
+def _shear_Kin23_fn(diffs, length_scale=1.0, **kwargs):
+    raise NotImplementedError(
+        "2in3out shear is not currently supported by the MuyGPs JAX backend."
+    )
+
+
+def _shear_Kcross23_fn(diffs, length_scale=1.0, **kwargs):
+    raise NotImplementedError(
+        "2in3out shear is not currently supported by the MuyGPs JAX backend."
+    )

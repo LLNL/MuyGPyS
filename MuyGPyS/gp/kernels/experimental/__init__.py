@@ -4,3 +4,4 @@
 # SPDX-License-Identifier: MIT
 
 from .shear import ShearKernel
+from .shear import ShearKernel2in3out
