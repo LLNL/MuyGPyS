@@ -9,7 +9,6 @@ from absl.testing import absltest
 
 import MuyGPyS._src.math as mm
 
-from MuyGPyS.gp.kernels.experimental import ShearKernel
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS._test.utils import _check_ndarray
 from MuyGPyS._test.shear import (
