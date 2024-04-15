@@ -339,12 +339,15 @@ $ srun -N 1 --tasks-per-node 4 -p pdebug python tests/kernels.py
 
 MuyGPyS has been used the in the following papers (newest first):
 
-1. [Scalable Gaussian Process Hyperparameter Optimization via Coverage Regularization](http://export.arxiv.org/abs/2209.11280)
-2. [Light Curve Completion and Forecasting Using Fast and Scalable Gaussian Processes (MuyGPs)](https://arxiv.org/abs/2208.14592)
-3. [Fast Gaussian Process Posterior Mean Prediction via Local Cross Validation and Precomputation](https://arxiv.org/abs/2205.10879v1)
-4. [Gaussian Process Classification fo Galaxy Blend Identification in LSST](https://arxiv.org/abs/2107.09246)
-5. [Star-Galaxy Image Separation with Computationally Efficient Gaussian Process Classification](https://arxiv.org/abs/2105.01106)
-6. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
+1. [Closely-Spaced Object Classification Using MuyGPyS](https://arxiv.org/abs/2311.10904)
+2. [Light Curve Forecasting and Anomaly Detection Using Scalable, Anisotropic, and Heteroscedastic Gaussian Process Models](https://amostech.com/TechnicalPapers/2023/Poster/Goumiri.pdf)
+3. [Scalable Gaussian Process Hyperparameter Optimization via Coverage Regularization](http://export.arxiv.org/abs/2209.11280)
+4. [Light Curve Completion and Forecasting Using Fast and Scalable Gaussian Processes (MuyGPs)](https://arxiv.org/abs/2208.14592)
+5. [Fast Gaussian Process Posterior Mean Prediction via Local Cross Validation and Precomputation](https://arxiv.org/abs/2205.10879v1)
+6. [Gaussian Process Classification of Galaxy Blend Identification in LSST](https://arxiv.org/abs/2107.09246)
+7. [MuyGPs: Scalable Gaussian Process Hyperparameter Estimation Using Local Cross-validation](https://arxiv.org/abs/2104.14581)
+8. [Star-Galaxy Image Separation with Computationally Efficient Gaussian Process Classification](https://arxiv.org/abs/2105.01106)
+9. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
 
 ## Citation
 
