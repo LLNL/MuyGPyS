@@ -332,7 +332,6 @@ $ srun -N 1 --tasks-per-node 4 -p pdebug python tests/kernels.py
 
 * Benjamin W. Priest (priest2 at llnl dot gov)
 * Amanda L. Muyskens (muyskens1 at llnl dot gov)
-* Alec M. Dunton (dunton1 at llnl dot gov)
 * Imène Goumiri (goumiri1 at llnl dot gov)
 
 ## Papers
