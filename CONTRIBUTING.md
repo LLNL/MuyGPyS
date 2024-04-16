@@ -53,7 +53,8 @@ $ git remote add upstream git@github.com:LLNL/MuyGPyS.git
 ```
 This will allow you to incorporate changes to the `main` and `develop` 
 branches as they evolve.
-For example, to your fork's develop branch perform the following commands:
+For example, perform the following commands to update your fork's develop
+branch:
 ```
 $ git fetch upstream
 $ git checkout develop
@@ -243,6 +244,9 @@ For example, `mm.ndarray` can refer to `numpy.ndarray`, `jax.numpy.ndarray`, or
 `torch.Tensor`, depending on the state of `MUYGPYS_BACKEND` at import time.
 `MuyGPyS._src.math` is used heavily throughout the code, and usage should be
 clear from examples.
+If it is absolutely necessary to import a specific backend, e.g., `numpy`, then
+please import the wrapped version with `import MuyGPyS._src.math.numpy as np`.
+This is usually only necessary for testing.
 
 Not all backend operations are currently supported.
 Add additionally functions to `MuyGPyS/_src/math/numpy.py`,
@@ -258,26 +262,28 @@ MuyGPyS methods and variables should all be `snake_case`, i.e. one or more
 lowercase words separated by underscores.
 Mathy variable names like `x` and `y` should be avoided in favor of descriptive 
 names such as `train_features`.
-The few exceptions to this rule are canonical kernel hyperparameters such as
-`nu` and `sigma_sq`.
+This includes kernel hyperparameters.
+For example the Matèrn smoothness parameter is known as `nu` in many libraries,
+but we call it `smoothness`.
 
 Here are some example function and variable names
 ```
 def my_cool_function() -> int
     magic_number = 14
     return magic_number
+
 def my_other_cool_function(fun_array: np.array) -> np.array
     return 2.5 * fun_array
 ```
 
 MuyGPyS classes should be `PascalCase`, one or more words that start with 
 uppercase letters with no separator.
-Classes are to be avoided where possible, as MuyGPyS is a "soft" functional 
-package. 
 What classes do exist are predominantly functors (classes organized around a
 `__call__()` method) or near-functors (classes organized around two or more
 related named functions, such as `MuyGPS` and its methods `MuyGPS.regress()`
 and `MuyGPS.regress_from_indices()`).
+Non-functor and non-near-functor classes are to be avoided where possible, as
+MuyGPyS is a "soft" functional package.
 Class members (variables and functions) that are intended for internal use 
 should be prepended with an underscore.
 Think carefully as to whether what you are trying to do really requires the 
@@ -339,7 +345,7 @@ Additional components might include:
 For clarity, functions and functors operating on such objects should record in 
 their docstrings the expected shape of their arguments, if they are known.
 Most vectors, matrices, and tensors throughout the codebase have dimensions
-definded in terms of the scalar quantities `train_count`, `test_count`, 
+defined in terms of the scalar quantities `train_count`, `test_count`,
 `batch_count`, or `nn_count`.
 
 *Important Detail* The formatting required for functions with multiple return
