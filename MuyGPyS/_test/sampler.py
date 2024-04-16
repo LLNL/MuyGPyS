@@ -3,8 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import numpy as np
 import pandas as pd
 
@@ -284,33 +284,106 @@ class UnivariateSampler2D(SamplerBase):
         vmax = np.nanmax(self.ys)
 
         self._label_ax(axes[0], "Sampled Surface")
-        im0 = axes[0].imshow(
-            self._make_im(self.ys, mode="all"), vmin=vmin, vmax=vmax
-        )
+        im0 = axes[0].imshow(self._make_im(self.ys), vmin=vmin, vmax=vmax)
 
         self._label_ax(axes[1], "Training Points")
         axes[1].imshow(
-            self._make_im(self.train_responses, mode="train"),
+            self._make_im(self.train_responses, mask=self._train_mask),
             vmin=vmin,
             vmax=vmax,
         )
 
         self._label_ax(axes[2], "Testing Points")
-        axes[2].imshow(self._make_im(self.test_responses), vmin=vmin, vmax=vmax)
+        axes[2].imshow(
+            self._make_im(self.test_responses, mask=self._test_mask),
+            vmin=vmin,
+            vmax=vmax,
+        )
         fig.colorbar(im0, ax=axes.ravel().tolist())
 
         plt.show()
 
-    def _make_im(self, array, mode="test", range=False, add_inf=True):
+    def plot_kriging_weights(self, idx, nbrs_lookup):
+        fig, axes = plt.subplots(1, 3, figsize=(19, 4))
+
+        singleton = [i for i, n in enumerate(self._test_mask) if n == True][idx]
+        x_coord = singleton % self.points_per_dim
+        y_coord = int(singleton / self.points_per_dim)
+        global_idx = y_coord * self.points_per_dim + x_coord
+
+        complement = np.zeros((self.data_count - 1, 2))
+        complement[:global_idx] = self.xs[:global_idx]
+        complement[global_idx:] = self.xs[(global_idx + 1) :]
+
+        # nn_indices, nbrs_lookup
+
+        tmp = self._kriging_weights(
+            idx, complement, np.arange(self.data_count - 1)
+        )
+        kriging_weights_all = np.zeros(self.data_count)
+        kriging_weights_all[:global_idx] = tmp[:global_idx]
+        kriging_weights_all[global_idx] = -np.inf
+        kriging_weights_all[(global_idx + 1) :] = tmp[global_idx:]
+
+        kriging_weights_train = self._kriging_weights(
+            idx, self.train_features, np.arange(self.train_count)
+        )
+        nn_indices, _ = nbrs_lookup.get_nns(self.test_features[idx][None, :])
+        kriging_weights_nbrs = self._kriging_weights(
+            idx, self.train_features, np.squeeze(nn_indices)
+        )
+        nns = np.array(
+            [i for i, n in enumerate(self._train_mask) if n == True]
+        )[nn_indices]
+        nn_mask = np.zeros(self.data_count, dtype=bool)
+        nn_mask[np.squeeze(nns)] = True
+
+        vmin = 1e-8
+        vmax = np.nanmax(kriging_weights_all)
+
+        vnorm = colors.LogNorm(vmin=vmin, vmax=vmax)
+
+        self._label_ax(axes[0], "Kriging Weights (all)")
+        im0 = axes[0].imshow(self._make_im(kriging_weights_all), norm=vnorm)
+        axes[0].plot(x_coord, y_coord, "r+")
+
+        self._label_ax(axes[1], "Kriging Weights (train)")
+        axes[1].imshow(
+            self._make_im(kriging_weights_train, mask=self._train_mask),
+            norm=vnorm,
+        )
+        axes[1].plot(x_coord, y_coord, "r+")
+
+        self._label_ax(axes[2], "Kriging Weights (nearest)")
+        axes[2].imshow(
+            self._make_im(kriging_weights_nbrs, mask=nn_mask),
+            norm=vnorm,
+        )
+        axes[2].plot(x_coord, y_coord, "r+")
+        fig.colorbar(im0, ax=axes.ravel().tolist())
+
+        plt.show()
+
+    def _kriging_weights(self, idx, support, nn_indices):
+        crosswise_fn = self.gp.kernel.deformation.crosswise_tensor
+        pairwise_fn = self.gp.kernel.deformation.pairwise_tensor
+        crosswise_dists = crosswise_fn(
+            self.test_features,
+            support,
+            [idx],
+            nn_indices,
+        )
+        pairwise_dists = pairwise_fn(support, nn_indices)
+        Kcross = self.gp.kernel(crosswise_dists)
+        Kin = self.gp.kernel(pairwise_dists)
+        return np.abs(np.squeeze(np.linalg.solve(Kin, Kcross.T)))
+
+    def _make_im(self, array, mask=None, range=False, add_inf=True):
         im = np.zeros(self.data_count)
-        if mode == "test":
-            im[self._test_mask] = array
+        if mask is not None:
+            im[mask] = array
             if add_inf is True:
-                im[self._train_mask] = -np.inf
-        elif mode == "train":
-            im[self._train_mask] = array
-            if add_inf is True:
-                im[self._test_mask] = -np.inf
+                im[np.invert(mask)] = -np.inf
         else:
             im = array
         if range is False:
@@ -330,11 +403,15 @@ class UnivariateSampler2D(SamplerBase):
             1, pred_count + 1, figsize=(4 * (pred_count + 1), 4)
         )
 
-        test_im, vmin, vmax = self._make_im(self.test_responses, range=True)
+        test_im, vmin, vmax = self._make_im(
+            self.test_responses, mask=self._test_mask, range=True
+        )
         pred_ims = list()
         names = list()
         for name, predictions in args:
-            pred_im, pvmin, pvmax = self._make_im(predictions, range=True)
+            pred_im, pvmin, pvmax = self._make_im(
+                predictions, mask=self._test_mask, range=True
+            )
             pred_ims.append(pred_im)
             names.append(name)
             vmin = np.min([vmin, pvmin])
@@ -364,11 +441,14 @@ class UnivariateSampler2D(SamplerBase):
 
     def _get_images(self, predictions, confidence_intervals):
         resl_im, resl_min, resl_max = self._make_im(
-            self.test_responses - predictions, range=True
+            self.test_responses - predictions, mask=self._test_mask, range=True
         )
-        conf_im, _, conf_mag = self._make_im(confidence_intervals, range=True)
+        conf_im, _, conf_mag = self._make_im(
+            confidence_intervals, mask=self._test_mask, range=True
+        )
         covr_im, covr_min, covr_max = self._make_im(
             np.abs(self.test_responses - predictions) - confidence_intervals,
+            mask=self._test_mask,
             range=True,
         )
 
