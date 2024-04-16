@@ -306,7 +306,7 @@ class UnivariateSampler2D(SamplerBase):
     def plot_kriging_weights(self, idx, nbrs_lookup):
         fig, axes = plt.subplots(1, 3, figsize=(19, 4))
 
-        singleton = [i for i, n in enumerate(self._test_mask) if n == True][idx]
+        singleton = [i for i, n in enumerate(self._test_mask) if n][idx]
         x_coord = singleton % self.points_per_dim
         y_coord = int(singleton / self.points_per_dim)
         global_idx = y_coord * self.points_per_dim + x_coord
@@ -332,9 +332,9 @@ class UnivariateSampler2D(SamplerBase):
         kriging_weights_nbrs = self._kriging_weights(
             idx, self.train_features, np.squeeze(nn_indices)
         )
-        nns = np.array(
-            [i for i, n in enumerate(self._train_mask) if n == True]
-        )[nn_indices]
+        nns = np.array([i for i, n in enumerate(self._train_mask) if n])[
+            nn_indices
+        ]
         nn_mask = np.zeros(self.data_count, dtype=bool)
         nn_mask[np.squeeze(nns)] = True
 
