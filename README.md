@@ -2,36 +2,50 @@
 [![Documentation Status](https://readthedocs.org/projects/muygpys/badge/?version=stable)](https://muygpys.readthedocs.io/en/stable/?badge=stable)
 # Fast implementation of the MuyGPs scalable Gaussian process algorithm
 
+MuyGPs is a scalable approximate Gaussian process (GP) model that achieves fast
+prediction and model optimization while retaining high-accuracy predictions and
+uncertainty quantification.
+The MuyGPyS implementation allows the user to easily create GP models that can
+quickly train and predict on million-scale problems on a laptop or scale to
+billions of observations on distributed memory systems using the same front-end
+code.
 
-MuyGPs is a scalable approximate Gaussian process (GP) model that affords fast
-prediction and hyperparameter optimization while retaining high-quality
-predictions and uncertainty quantifiction.
-MuyGPs achieves best-in-class speed and scalability by limiting inference to the information contained in k nearest neighborhoods for prediction locations for 
-both hyperparameter optimization and tuning.
-This feature affords leave-one-out cross-validation optimizating a regularized
-loss function to optimize hyperparameters, as opposed to the more expensive
-likelihood evaluations required by similar sparse methods. 
+## What is MuyGPyS?
 
+MuyGPyS is a general-purpose Gaussian process library, similar to
+[GPy](https://github.com/SheffieldML/GPy),
+[GPyTorch](https://github.com/cornellius-gp/gpytorch), or
+[GPflow](https://github.com/GPflow/GPflow).
 
-## Tutorials and Examples 
+MuyGPyS differs from the other options in that it constructs approximate GP
+models using nearest neighbors sparsification, conditioning predictions only on
+the most relevant training data to drastically improve training time and
+time-to-solution on large-scale problems.
+Indeed, MuyGPyS is intended for GP problems with millions or more observations,
+and supports a distributed memory backend for smoothly scaling to billion-scale
+problems.
 
-Automatically-generated documentation can be found at 
+MuyGPs uses nearest neighbors sparsification and performs leave-one-out cross
+validation on a regularized loss function to rapidly optimize a GP model without evaluating a much more expensive likelihood, which is required by similar
+scalable methods.
+
+## Getting Started 
+
+See the
+[illustration tutorial](https://muygpys.readthedocs.io/en/stable/examples/neighborhood_illustration.html)
+to see an illustration of why the neighborhood sparsification approach of MuyGPs
+works.
+
+Next, see the
+[univariate regression tutorial](https://muygpys.readthedocs.io/en/stable/examples/univariate_regression_tutorial.html)
+for a full description of the API and an end-to-end walkthrough of a simple
+regression problem.
+
+The full automatically-generated documentation, including several additional
+tutorials with code examples, can be found at 
 [readthedocs.io](https://muygpys.readthedocs.io/en/stable/?).
 
-Our documentation includes several jupyter notebook tutorials at 
-`docs/examples`.
-These tutorials are also include in the 
-[online documentation](https://muygpys.readthedocs.io/en/stable/).
-
-See in particular the 
-[univariate regression tutorial](docs/examples/univariate_regression_tutorial.ipynb)
-for a step-by-step introduction to the use of `MuyGPyS`.
-See also the 
-[regression api tutorial](docs/examples/regress_api_tutorial.ipynb)
-describing how to coalesce the same simple workflow into a one-line call.
-A deep kernel model inserting a MuyGPs layer into a PyTorch neural network can
-be found in the [torch tutorial](docs/examples/torch_tutorial.ipynb).
-
+Read further in this document for installation instructions.
 
 ## Backend Math Implementation Options
 
@@ -332,19 +346,21 @@ $ srun -N 1 --tasks-per-node 4 -p pdebug python tests/kernels.py
 
 * Benjamin W. Priest (priest2 at llnl dot gov)
 * Amanda L. Muyskens (muyskens1 at llnl dot gov)
-* Alec M. Dunton (dunton1 at llnl dot gov)
 * Imène Goumiri (goumiri1 at llnl dot gov)
 
 ## Papers
 
 MuyGPyS has been used the in the following papers (newest first):
 
-1. [Scalable Gaussian Process Hyperparameter Optimization via Coverage Regularization](http://export.arxiv.org/abs/2209.11280)
-2. [Light Curve Completion and Forecasting Using Fast and Scalable Gaussian Processes (MuyGPs)](https://arxiv.org/abs/2208.14592)
-3. [Fast Gaussian Process Posterior Mean Prediction via Local Cross Validation and Precomputation](https://arxiv.org/abs/2205.10879v1)
-4. [Gaussian Process Classification fo Galaxy Blend Identification in LSST](https://arxiv.org/abs/2107.09246)
-5. [Star-Galaxy Image Separation with Computationally Efficient Gaussian Process Classification](https://arxiv.org/abs/2105.01106)
-6. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
+1. [Closely-Spaced Object Classification Using MuyGPyS](https://arxiv.org/abs/2311.10904)
+2. [Light Curve Forecasting and Anomaly Detection Using Scalable, Anisotropic, and Heteroscedastic Gaussian Process Models](https://amostech.com/TechnicalPapers/2023/Poster/Goumiri.pdf)
+3. [Scalable Gaussian Process Hyperparameter Optimization via Coverage Regularization](http://export.arxiv.org/abs/2209.11280)
+4. [Light Curve Completion and Forecasting Using Fast and Scalable Gaussian Processes (MuyGPs)](https://arxiv.org/abs/2208.14592)
+5. [Fast Gaussian Process Posterior Mean Prediction via Local Cross Validation and Precomputation](https://arxiv.org/abs/2205.10879v1)
+6. [Gaussian Process Classification of Galaxy Blend Identification in LSST](https://arxiv.org/abs/2107.09246)
+7. [MuyGPs: Scalable Gaussian Process Hyperparameter Estimation Using Local Cross-validation](https://arxiv.org/abs/2104.14581)
+8. [Star-Galaxy Image Separation with Computationally Efficient Gaussian Process Classification](https://arxiv.org/abs/2105.01106)
+9. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
 
 ## Citation
 
