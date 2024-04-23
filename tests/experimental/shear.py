@@ -403,6 +403,57 @@ class LibraryTest(LibraryTestCase):
             target_mask=(1, 2),
         )
 
+    def test_convergence(self):
+        length_scale = self.model33.kernel.deformation.length_scale()
+        self.assertEqual(
+            self.model23.kernel.deformation.length_scale(), length_scale
+        )
+        Kcross23 = self.model23.kernel(self.crosswise_diffs)
+        Kin23 = self.model23.kernel(self.pairwise_diffs)
+        posterior_mean23 = self.model23.posterior_mean(
+            Kin23, Kcross23, self.nn_targets[:, 1:, :]
+        )
+        Kcross33 = self.model33.kernel(self.crosswise_diffs)
+        Kin33 = self.model33.kernel(self.pairwise_diffs)
+        posterior_mean33 = self.model33.posterior_mean(
+            Kin33, Kcross33, self.nn_targets
+        )
+
+        Kin_analytic33 = conventional_shear(
+            self.train_features, length_scale=length_scale
+        )
+        Kcross_analytic33 = conventional_shear(
+            self.train_features, self.test_features, length_scale=length_scale
+        )
+        targets33 = self.train_targets.T.reshape(3 * self.train_count)
+        Kin_analytic23 = Kin_analytic33[self.train_count :, self.train_count :]
+        Kcross_analytic23 = Kcross_analytic33[self.train_count :, :]
+        targets23 = targets33[self.train_count :]
+        # print(
+        #     self.train_features.shape,
+        #     self.test_features.shape,
+        #     targets.shape,
+        # )
+        # print(Kin_analytic.shape, Kcross_analytic.T.shape, targets.shape)
+        posterior_mean_analytic33 = conventional_mean(
+            Kin_analytic33, Kcross_analytic33.T, targets33, self.noise_prior
+        )
+        posterior_mean_analytic23 = conventional_mean(
+            Kin_analytic23, Kcross_analytic23.T, targets23, self.noise_prior
+        )
+        # print(posterior_mean_analytic.shape)
+
+        residual = np.abs(posterior_mean_analytic33 - posterior_mean_analytic23)
+        min_res = np.min(residual, axis=0)
+        max_res = np.max(residual, axis=0)
+        avg_res = np.mean(residual, axis=0)
+
+        print("\tconvergence\t\tshear 1\t\t\tshear 2")
+        print(f"min\t{min_res[0]}\t{min_res[1]}\t{min_res[2]}")
+        print(f"max\t{max_res[0]}\t{max_res[1]}\t{max_res[2]}")
+        print(f"mean\t{avg_res[0]}\t{avg_res[1]}\t{avg_res[2]}")
+        print()
+
 
 if __name__ == "__main__":
     absltest.main()
