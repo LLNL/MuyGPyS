@@ -408,16 +408,16 @@ class LibraryTest(LibraryTestCase):
         self.assertEqual(
             self.model23.kernel.deformation.length_scale(), length_scale
         )
-        Kcross23 = self.model23.kernel(self.crosswise_diffs)
-        Kin23 = self.model23.kernel(self.pairwise_diffs)
-        posterior_mean23 = self.model23.posterior_mean(
-            Kin23, Kcross23, self.nn_targets[:, 1:, :]
-        )
-        Kcross33 = self.model33.kernel(self.crosswise_diffs)
-        Kin33 = self.model33.kernel(self.pairwise_diffs)
-        posterior_mean33 = self.model33.posterior_mean(
-            Kin33, Kcross33, self.nn_targets
-        )
+        # Kcross23 = self.model23.kernel(self.crosswise_diffs)
+        # Kin23 = self.model23.kernel(self.pairwise_diffs)
+        # posterior_mean23 = self.model23.posterior_mean(
+        #     Kin23, Kcross23, self.nn_targets[:, 1:, :]
+        # )
+        # Kcross33 = self.model33.kernel(self.crosswise_diffs)
+        # Kin33 = self.model33.kernel(self.pairwise_diffs)
+        # posterior_mean33 = self.model33.posterior_mean(
+        #     Kin33, Kcross33, self.nn_targets
+        # )
 
         Kin_analytic33 = conventional_shear(
             self.train_features, length_scale=length_scale
