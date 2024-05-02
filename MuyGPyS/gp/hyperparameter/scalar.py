@@ -318,6 +318,21 @@ class NamedParameter(Parameter):
 
         return applied_fn
 
+    def filter_kwargs(self, **kwargs) -> Tuple[Dict, Dict]:
+        params = {key: kwargs[key] for key in kwargs if key == self._name}
+        kwargs = {key: kwargs[key] for key in kwargs if key != self._name}
+        params.setdefault(self.name(), self())
+        return params, kwargs
+
+    def apply_embedding_fn(
+        self, fn: Callable, deformation_fn: Callable
+    ) -> Callable:
+        def embedded_fn(dists, *args, **kwargs):
+            params, kwargs = self.filter_kwargs(**kwargs)
+            return fn(deformation_fn(dists, **params), *args, **kwargs)
+
+        return embedded_fn
+
     def append_lists(
         self,
         names: List[str],

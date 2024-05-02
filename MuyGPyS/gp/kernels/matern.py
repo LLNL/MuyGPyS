@@ -141,7 +141,9 @@ class Matern(KernelFn):
         self.smoothness.populate(self._hyperparameters)
         self._kernel_fn = _set_matern_fn(self.smoothness, **self._backend_fns)
         self._predef_fn = self.smoothness.apply_fn(self._kernel_fn)
-        self._fn = self.deformation.embed_fn(self._predef_fn)
+        self._fn = self.deformation.length_scale.apply_embedding_fn(
+            self._predef_fn, self.deformation
+        )
 
     def __call__(self, diffs, **kwargs):
         """
@@ -164,9 +166,6 @@ class Matern(KernelFn):
         return self._fn(diffs, **kwargs)
 
     def Kout(self, **kwargs) -> mm.ndarray:
-        # return self._backend_squeeze(
-        #     self._predef_fn(self._backend_zeros((1, 1)))
-        # )
         return self._backend_squeeze(self._backend_ones((1, 1)))
 
     def get_opt_params(

@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import List, Tuple, Callable, Dict
-
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS._src.util import auto_str
@@ -73,40 +71,6 @@ class Anisotropy(DeformationFn):
                 f"dimension size of {len(self.length_scale)}"
             )
         return self.metric(dists / self.length_scale(**length_scales))
-
-    def embed_fn(self, fn: Callable) -> Callable:
-        """
-        Augments a function to automatically apply the deformation to a
-        difference tensor.
-
-        Args:
-            fn:
-                A Callable with signature
-                `(diffs, *args, **kwargs) -> mm.ndarray` taking a difference
-                tensor `diffs` with shape `(..., feature_count)`.
-
-        Returns:
-            A new Callable that applies the deformation to `diffs`, removing
-            the last tensor dimension by collapsing the feature-wise differences
-            into scalar distances. Propagates any `length_scaleN` kwargs to the
-            deformation fn, making the function drivable by keyword
-            optimization.
-        """
-
-        def embedded_fn(diffs, *args, length_scale=None, **kwargs):
-            length_scales = {
-                key: kwargs[key]
-                for key in kwargs
-                if key.startswith("length_scale")
-            }
-            kwargs = {
-                key: kwargs[key]
-                for key in kwargs
-                if not key.startswith("length_scale")
-            }
-            return fn(self(diffs, **length_scales), *args, **kwargs)
-
-        return embedded_fn
 
     @mpi_chunk(return_count=1)
     def pairwise_tensor(

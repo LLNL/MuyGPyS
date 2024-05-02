@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import mpi_chunk
@@ -71,29 +71,6 @@ class Isotropy(DeformationFn):
         if length_scale is None:
             length_scale = self.length_scale()
         return self.metric.apply_length_scale(dists, length_scale)
-
-    def embed_fn(self, fn: Callable) -> Callable:
-        """
-        Augments a function to automatically apply the deformation to a
-        difference tensor.
-
-        Args:
-            fn:
-                A Callable with signature
-                `(diffs, *args, **kwargs) -> mm.ndarray` taking a difference
-                tensor `diffs` with shape `(..., feature_count)`.
-
-        Returns:
-            A new Callable that applies the deformation to `diffs`, removing
-            the last tensor dimension by collapsing the feature-wise differences
-            into scalar distances. Also adds a `length_scale` kwarg, making the
-            function drivable by keyword optimization.
-        """
-
-        def embedded_fn(dists, *args, length_scale=None, **kwargs):
-            return fn(self(dists, length_scale=length_scale), *args, **kwargs)
-
-        return embedded_fn
 
     @mpi_chunk(return_count=1)
     def pairwise_tensor(
