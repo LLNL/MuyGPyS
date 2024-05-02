@@ -18,7 +18,7 @@ bounds.
 
 from collections.abc import Sequence
 from numbers import Number
-from typing import Callable, cast, List, Tuple, Union
+from typing import Callable, cast, Dict, List, Tuple, Union
 
 import MuyGPyS._src.math.numpy as np
 import MuyGPyS._src.math as mm
@@ -294,21 +294,40 @@ class Parameter:
         """
         return self._fixed
 
-    def apply_fn(self, fn: Callable, name: str) -> Callable:
+
+class NamedParameter(Parameter):
+    """
+    A MuyGPs Hyperparameter with an attached name. Serves as the interface for
+    optimization for Parameters.
+    """
+
+    def __init__(self, name: str, param: Parameter):
+        """
+        Initialize a hyperparameter.
+        """
+        self._set(param)
+        self._name = name
+
+    def name(self) -> str:
+        return self._name
+
+    def apply_fn(self, fn: Callable) -> Callable:
         def applied_fn(*args, **kwargs):
-            kwargs.setdefault(name, self())
+            kwargs.setdefault(self._name, self())
             return fn(*args, **kwargs)
 
         return applied_fn
 
     def append_lists(
         self,
-        name: str,
         names: List[str],
         params: List[float],
         bounds: List[Tuple[float, float]],
     ):
         if not self.fixed():
-            names.append(name)
+            names.append(self._name)
             params.append(self())
             bounds.append(self.get_bounds())
+
+    def populate(self, hyperparameters: Dict) -> None:
+        hyperparameters[self._name] = self

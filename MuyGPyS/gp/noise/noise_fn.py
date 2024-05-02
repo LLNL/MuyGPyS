@@ -31,7 +31,6 @@ class NoiseFn:
 
     def append_lists(
         self,
-        name: str,
         names: List[str],
         params: List[float],
         bounds: List[Tuple[float, float]],

@@ -48,19 +48,6 @@ class DeformationFn:
             "Cannot call DeformationFn base class functions!"
         )
 
-    def populate_length_scale(self, hyperparameters: Dict) -> None:
-        """
-        Populates the hyperparameter dictionary of a KernelFn object with any
-        parameters of the DeformationFn object.
-
-        Args:
-            hyperparameters:
-                A dict containing the hyperparameters of a KernelFn object.
-        """
-        raise NotImplementedError(
-            "Cannot call DeformationFn base class functions!"
-        )
-
     def embed_fn(self, fn: Callable) -> Callable:
         """
         Augments a function to automatically apply the deformation to a

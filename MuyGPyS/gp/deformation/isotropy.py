@@ -11,7 +11,7 @@ from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
 from MuyGPyS.gp.deformation.metric import MetricFn
-from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.hyperparameter import ScalarParam, NamedParam
 
 
 @auto_str
@@ -44,7 +44,7 @@ class Isotropy(DeformationFn):
                 "Expected ScalarParam type for length_scale, not "
                 f"{type(length_scale)}"
             )
-        self.length_scale = length_scale
+        self.length_scale = NamedParam("length_scale", length_scale)
         self.metric = metric
 
     def __call__(
@@ -71,38 +71,6 @@ class Isotropy(DeformationFn):
         if length_scale is None:
             length_scale = self.length_scale()
         return self.metric.apply_length_scale(dists, length_scale)
-
-    def get_opt_params(
-        self,
-    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
-        """
-        Report lists of unfixed hyperparameter names, values, and bounds.
-
-        Returns
-        -------
-            names:
-                A list of unfixed hyperparameter names.
-            params:
-                A list of unfixed hyperparameter values.
-            bounds:
-                A list of unfixed hyperparameter bound tuples.
-        """
-        names: List[str] = []
-        params: List[float] = []
-        bounds: List[Tuple[float, float]] = []
-        self.length_scale.append_lists("length_scale", names, params, bounds)
-        return names, params, bounds
-
-    def populate_length_scale(self, hyperparameters: Dict) -> None:
-        """
-        Populates the hyperparameter dictionary of a KernelFn object with
-        `self.length_scale` of the Isotropy object.
-
-        Args:
-            hyperparameters:
-                A dict containing the hyperparameters of a KernelFn object.
-        """
-        hyperparameters["length_scale"] = self.length_scale
 
     def embed_fn(self, fn: Callable) -> Callable:
         """

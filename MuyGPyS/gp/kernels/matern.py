@@ -54,7 +54,7 @@ from MuyGPyS.gp.deformation import (
     Isotropy,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.hyperparameter import ScalarParam, NamedParam
 from MuyGPyS.gp.kernels import KernelFn
 
 
@@ -129,7 +129,7 @@ class Matern(KernelFn):
         **_backend_fns
     ):
         super().__init__(deformation=deformation)
-        self.smoothness = smoothness
+        self.smoothness = NamedParam("smoothness", smoothness)
         self._backend_ones = _backend_ones
         self._backend_zeros = _backend_zeros
         self._backend_squeeze = _backend_squeeze
@@ -138,11 +138,9 @@ class Matern(KernelFn):
 
     def _make(self):
         super()._make_base()
-        self._hyperparameters["smoothness"] = self.smoothness
+        self.smoothness.populate(self._hyperparameters)
         self._kernel_fn = _set_matern_fn(self.smoothness, **self._backend_fns)
-        self._predef_fn = self.smoothness.apply_fn(
-            self._kernel_fn, "smoothness"
-        )
+        self._predef_fn = self.smoothness.apply_fn(self._kernel_fn)
         self._fn = self.deformation.embed_fn(self._predef_fn)
 
     def __call__(self, diffs, **kwargs):
@@ -187,7 +185,7 @@ class Matern(KernelFn):
                 A list of unfixed hyperparameter bound tuples.
         """
         names, params, bounds = super().get_opt_params()
-        self.smoothness.append_lists("smoothness", names, params, bounds)
+        self.smoothness.append_lists(names, params, bounds)
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:
