@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 
-from typing import Optional
+from typing import Optional, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import mpi_chunk
@@ -12,6 +12,10 @@ from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
 from MuyGPyS.gp.deformation.metric import MetricFn
 from MuyGPyS.gp.hyperparameter import ScalarParam, NamedParam
+from MuyGPyS.gp.hyperparameter.experimental import (
+    HierarchicalParam,
+    NamedHierarchicalParam,
+)
 
 
 @auto_str
@@ -39,16 +43,25 @@ class Isotropy(DeformationFn):
         metric: MetricFn,
         length_scale: ScalarParam,
     ):
-        if not isinstance(length_scale, ScalarParam):
+        # This is brittle and should be refactored
+        if isinstance(length_scale, ScalarParam):
+            self.length_scale = NamedParam("length_scale", length_scale)
+        elif isinstance(length_scale, HierarchicalParam):
+            self.length_scale = NamedHierarchicalParam(
+                "length_scale", length_scale
+            )
+        else:
             raise ValueError(
                 "Expected ScalarParam type for length_scale, not "
                 f"{type(length_scale)}"
             )
-        self.length_scale = NamedParam("length_scale", length_scale)
         self.metric = metric
 
     def __call__(
-        self, dists: mm.ndarray, length_scale: Optional[float] = None, **kwargs
+        self,
+        dists: mm.ndarray,
+        length_scale: Optional[Union[float, mm.ndarray]] = None,
+        **kwargs,
     ) -> mm.ndarray:
         """
         Apply isotropic deformation to an elementwise difference tensor.
@@ -69,7 +82,12 @@ class Isotropy(DeformationFn):
             pairwise distance matrices.
         """
         if length_scale is None:
-            length_scale = self.length_scale()
+            length_scale = self.length_scale(**kwargs)
+        # This is brittle and I hate it. I'm not sure where to put this logic.
+        if isinstance(length_scale, mm.ndarray):
+            shape = [None] * dists.ndim
+            shape[0] = slice(None)
+            length_scale = length_scale[tuple(shape)]
         return self.metric.apply_length_scale(dists, length_scale)
 
     @mpi_chunk(return_count=1)

@@ -266,7 +266,7 @@ class Parameter:
             self._bounds = bounds
             self._fixed = False
 
-    def __call__(self) -> float:
+    def __call__(self, **kwargs) -> float:
         """
         Value accessor.
 

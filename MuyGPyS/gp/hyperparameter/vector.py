@@ -60,9 +60,7 @@ class VectorParameter:
         Returns:
             The current value of the hyperparameter.
         """
-        raise NotImplementedError(
-            "__call__ not implemented for base VectorParameter."
-        )
+        return mm.array([param() for param in self._params])
 
     def fixed(self) -> bool:
         """
@@ -86,6 +84,11 @@ class NamedVectorParameter(VectorParameter):
     def name(self) -> str:
         return self._name
 
+    def set_defaults(self, **params) -> Dict:
+        for p in self._params:
+            params.setdefault(p.name(), p())
+        return params
+
     def filter_kwargs(self, **kwargs) -> Tuple[Dict, Dict]:
         params = {
             key: kwargs[key] for key in kwargs if key.startswith(self._name)
@@ -93,8 +96,7 @@ class NamedVectorParameter(VectorParameter):
         kwargs = {
             key: kwargs[key] for key in kwargs if not key.startswith(self._name)
         }
-        for p in self._params:
-            params.setdefault(p.name(), p())
+        params = self.set_defaults(**params)
         return params, kwargs
 
     def __call__(self, **kwargs) -> mm.ndarray:
