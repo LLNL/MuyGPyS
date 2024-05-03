@@ -84,7 +84,7 @@ class Isotropy(DeformationFn):
         if length_scale is None:
             length_scale = self.length_scale(**kwargs)
         # This is brittle and I hate it. I'm not sure where to put this logic.
-        if isinstance(length_scale, mm.ndarray):
+        if isinstance(length_scale, mm.ndarray) and len(length_scale.shape) > 0:
             shape = [None] * dists.ndim
             shape[0] = slice(None)
             length_scale = length_scale[tuple(shape)]
