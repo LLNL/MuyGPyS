@@ -3,14 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import List, Tuple, Callable, Dict
-
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
 from MuyGPyS.gp.deformation.metric import MetricFn
-from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.hyperparameter import VectorParam, NamedVectorParam
 
 
 @auto_str
@@ -37,27 +35,10 @@ class Anisotropy(DeformationFn):
     def __init__(
         self,
         metric: MetricFn,
-        **length_scales,
+        length_scale: VectorParam,
     ):
         self.metric = metric
-        for i, key in enumerate(length_scales.keys()):
-            if key != "length_scale" + str(i):
-                raise ValueError(
-                    "Anisotropic model expects one keyword argument for each "
-                    "feature in the dataset labeled length_scale{i} for the "
-                    "ith feature with indexing beginning at zero."
-                )
-        if not (
-            all(
-                isinstance(param, ScalarParam)
-                for param in length_scales.values()
-            )
-        ):
-            raise ValueError(
-                "Anisotropic model expects all values for the length_scale{i} "
-                "keyword arguments to be of type ScalarParam."
-            )
-        self.length_scale = length_scales
+        self.length_scale = NamedVectorParam("length_scale", length_scale)
 
     def __call__(self, dists: mm.ndarray, **length_scales) -> mm.ndarray:
         """
@@ -84,97 +65,12 @@ class Anisotropy(DeformationFn):
             `(data_count, nn_count, nn_count)` whose last two dimensions are
             pairwise distance matrices.
         """
-        length_scale_array = self._length_scale_array(
-            dists.shape, **length_scales
-        )
-        return self.metric(dists / length_scale_array)
-
-    def _length_scale_array(
-        self, shape: mm.ndarray, **length_scales
-    ) -> mm.ndarray:
-        if shape[-1] != len(self.length_scale):
+        if dists.shape[-1] != len(self.length_scale):
             raise ValueError(
-                f"Difference tensor of shape {shape} must have final "
+                f"Difference tensor of shape {dists.shape} must have final "
                 f"dimension size of {len(self.length_scale)}"
             )
-        return mm.array(
-            [
-                (
-                    length_scales[key]
-                    if key in length_scales.keys()
-                    else self.length_scale[key]()
-                )
-                for key in self.length_scale
-            ]
-        )
-
-    def get_opt_params(
-        self,
-    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
-        """
-        Report lists of unfixed hyperparameter names, values, and bounds.
-
-        Returns
-        -------
-            names:
-                A list of unfixed hyperparameter names.
-            params:
-                A list of unfixed hyperparameter values.
-            bounds:
-                A list of unfixed hyperparameter bound tuples.
-        """
-        names: List[str] = []
-        params: List[float] = []
-        bounds: List[Tuple[float, float]] = []
-        for name, param in self.length_scale.items():
-            param.append_lists(name, names, params, bounds)
-        return names, params, bounds
-
-    def populate_length_scale(self, hyperparameters: Dict) -> None:
-        """
-        Populates the hyperparameter dictionary of a KernelFn object with
-        `self.length_scales` of the Anisotropy object.
-
-        Args:
-            hyperparameters:
-                A dict containing the hyperparameters of a KernelFn object.
-        """
-        for key, param in self.length_scale.items():
-            hyperparameters[key] = param
-
-    def embed_fn(self, fn: Callable) -> Callable:
-        """
-        Augments a function to automatically apply the deformation to a
-        difference tensor.
-
-        Args:
-            fn:
-                A Callable with signature
-                `(diffs, *args, **kwargs) -> mm.ndarray` taking a difference
-                tensor `diffs` with shape `(..., feature_count)`.
-
-        Returns:
-            A new Callable that applies the deformation to `diffs`, removing
-            the last tensor dimension by collapsing the feature-wise differences
-            into scalar distances. Propagates any `length_scaleN` kwargs to the
-            deformation fn, making the function drivable by keyword
-            optimization.
-        """
-
-        def embedded_fn(diffs, *args, length_scale=None, **kwargs):
-            length_scales = {
-                key: kwargs[key]
-                for key in kwargs
-                if key.startswith("length_scale")
-            }
-            kwargs = {
-                key: kwargs[key]
-                for key in kwargs
-                if not key.startswith("length_scale")
-            }
-            return fn(self(diffs, **length_scales), *args, **kwargs)
-
-        return embedded_fn
+        return self.metric(dists / self.length_scale(**length_scales))
 
     @mpi_chunk(return_count=1)
     def pairwise_tensor(

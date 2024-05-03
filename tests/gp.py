@@ -37,7 +37,12 @@ from MuyGPyS.gp.deformation import (
     F2,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import AnalyticScale, FixedScale, ScalarParam
+from MuyGPyS.gp.hyperparameter import (
+    AnalyticScale,
+    FixedScale,
+    ScalarParam,
+    VectorParam,
+)
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
@@ -93,16 +98,20 @@ class GPInitTest(parameterized.TestCase):
                 smoothness=ScalarParam(1.0, (1e-2, 5e4)),
                 deformation=Anisotropy(
                     l2,
-                    length_scale0=ScalarParam(2.0, (0.0, 3.0)),
-                    length_scale1=ScalarParam(2.0, (0.0, 3.0)),
+                    length_scale=VectorParam(
+                        ScalarParam(2.0, (0.0, 3.0)),
+                        ScalarParam(2.0, (0.0, 3.0)),
+                    ),
                 ),
             ),
             Matern(
                 smoothness=ScalarParam(1.0),
                 deformation=Anisotropy(
                     l2,
-                    length_scale0=ScalarParam(2.0, (0.0, 3.0)),
-                    length_scale1=ScalarParam(2.0, (0.0, 3.0)),
+                    length_scale=VectorParam(
+                        ScalarParam(2.0, (0.0, 3.0)),
+                        ScalarParam(2.0, (0.0, 3.0)),
+                    ),
                 ),
             ),
             RBF(
@@ -118,8 +127,10 @@ class GPInitTest(parameterized.TestCase):
             RBF(
                 deformation=Anisotropy(
                     F2,
-                    length_scale0=ScalarParam(2.0, (0.0, 3.0)),
-                    length_scale1=ScalarParam(2.0, (0.0, 3.0)),
+                    length_scale=VectorParam(
+                        ScalarParam(2.0, (0.0, 3.0)),
+                        ScalarParam(2.0, (0.0, 3.0)),
+                    ),
                 )
             ),
         )
@@ -189,15 +200,19 @@ class GPInitTest(parameterized.TestCase):
                 smoothness=ScalarParam("log_sample", (1e-2, 5e4)),
                 deformation=Anisotropy(
                     l2,
-                    length_scale0=ScalarParam(2.0, (0.0, 3.0)),
-                    length_scale1=ScalarParam(2.0, (0.0, 3.0)),
+                    length_scale=VectorParam(
+                        ScalarParam(2.0, (0.0, 3.0)),
+                        ScalarParam(2.0, (0.0, 3.0)),
+                    ),
                 ),
             ),
             RBF(
                 deformation=Anisotropy(
                     F2,
-                    length_scale0=ScalarParam(2.0, (0.0, 3.0)),
-                    length_scale1=ScalarParam(2.0, (0.0, 3.0)),
+                    length_scale=VectorParam(
+                        ScalarParam(2.0, (0.0, 3.0)),
+                        ScalarParam(2.0, (0.0, 3.0)),
+                    ),
                 )
             ),
         )

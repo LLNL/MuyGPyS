@@ -18,7 +18,7 @@ from MuyGPyS.examples.two_class_classify_uq import (
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import Isotropy, Anisotropy, l2
-from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.hyperparameter import ScalarParam, VectorParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
@@ -60,8 +60,9 @@ class ClassifyTest(parameterized.TestCase):
                         smoothness=ScalarParam(0.38),
                         deformation=Anisotropy(
                             l2,
-                            length_scale0=ScalarParam(1.5),
-                            length_scale1=ScalarParam(0.5),
+                            length_scale=VectorParam(
+                                ScalarParam(1.5), ScalarParam(0.5)
+                            ),
                         ),
                     ),
                     "noise": HomoscedasticNoise(1e-5),
@@ -133,8 +134,9 @@ class ClassifyUQTest(parameterized.TestCase):
                         smoothness=ScalarParam(0.38),
                         deformation=Anisotropy(
                             l2,
-                            length_scale0=ScalarParam(1.5),
-                            length_scale1=ScalarParam(0.5),
+                            length_scale=VectorParam(
+                                ScalarParam(1.5), ScalarParam(0.5)
+                            ),
                         ),
                     ),
                     "noise": HomoscedasticNoise(1e-5),
@@ -143,8 +145,9 @@ class ClassifyUQTest(parameterized.TestCase):
                     "kernel": RBF(
                         deformation=Anisotropy(
                             l2,
-                            length_scale0=ScalarParam(1.5),
-                            length_scale1=ScalarParam(0.5),
+                            length_scale=VectorParam(
+                                ScalarParam(1.5), ScalarParam(0.5)
+                            ),
                         )
                     ),
                     "noise": HomoscedasticNoise(1e-5),

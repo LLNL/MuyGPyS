@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 
-from typing import Callable, Dict, List, Tuple
+from typing import List, Tuple
 
 import MuyGPyS._src.math as mm
 from MuyGPyS.gp.deformation.metric import MetricFn
@@ -43,38 +43,6 @@ class DeformationFn:
                 A list of unfixed hyperparameter values.
             bounds:
                 A list of unfixed hyperparameter bound tuples.
-        """
-        raise NotImplementedError(
-            "Cannot call DeformationFn base class functions!"
-        )
-
-    def populate_length_scale(self, hyperparameters: Dict) -> None:
-        """
-        Populates the hyperparameter dictionary of a KernelFn object with any
-        parameters of the DeformationFn object.
-
-        Args:
-            hyperparameters:
-                A dict containing the hyperparameters of a KernelFn object.
-        """
-        raise NotImplementedError(
-            "Cannot call DeformationFn base class functions!"
-        )
-
-    def embed_fn(self, fn: Callable) -> Callable:
-        """
-        Augments a function to automatically apply the deformation to a
-        difference tensor.
-
-        Args:
-            fn:
-                A Callable with signature
-                `(diffs, *args, **kwargs) -> mm.ndarray` taking a difference
-                tensor `diffs`.
-
-        Returns:
-            A new Callable that applies the deformation to `diffs`, possibly
-            changing its tensor dimensionality.
         """
         raise NotImplementedError(
             "Cannot call DeformationFn base class functions!"

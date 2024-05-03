@@ -4,14 +4,18 @@
 # SPDX-License-Identifier: MIT
 
 
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Optional, Union
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
 from MuyGPyS.gp.deformation.metric import MetricFn
-from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.hyperparameter import ScalarParam, NamedParam
+from MuyGPyS.gp.hyperparameter.experimental import (
+    HierarchicalParam,
+    NamedHierarchicalParam,
+)
 
 
 @auto_str
@@ -39,16 +43,25 @@ class Isotropy(DeformationFn):
         metric: MetricFn,
         length_scale: ScalarParam,
     ):
-        if not isinstance(length_scale, ScalarParam):
+        # This is brittle and should be refactored
+        if isinstance(length_scale, ScalarParam):
+            self.length_scale = NamedParam("length_scale", length_scale)
+        elif isinstance(length_scale, HierarchicalParam):
+            self.length_scale = NamedHierarchicalParam(
+                "length_scale", length_scale
+            )
+        else:
             raise ValueError(
                 "Expected ScalarParam type for length_scale, not "
                 f"{type(length_scale)}"
             )
-        self.length_scale = length_scale
         self.metric = metric
 
     def __call__(
-        self, dists: mm.ndarray, length_scale: Optional[float] = None, **kwargs
+        self,
+        dists: mm.ndarray,
+        length_scale: Optional[Union[float, mm.ndarray]] = None,
+        **kwargs,
     ) -> mm.ndarray:
         """
         Apply isotropic deformation to an elementwise difference tensor.
@@ -69,63 +82,13 @@ class Isotropy(DeformationFn):
             pairwise distance matrices.
         """
         if length_scale is None:
-            length_scale = self.length_scale()
+            length_scale = self.length_scale(**kwargs)
+        # This is brittle and I hate it. I'm not sure where to put this logic.
+        if isinstance(length_scale, mm.ndarray) and len(length_scale.shape) > 0:
+            shape = [None] * dists.ndim
+            shape[0] = slice(None)
+            length_scale = length_scale[tuple(shape)]
         return self.metric.apply_length_scale(dists, length_scale)
-
-    def get_opt_params(
-        self,
-    ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
-        """
-        Report lists of unfixed hyperparameter names, values, and bounds.
-
-        Returns
-        -------
-            names:
-                A list of unfixed hyperparameter names.
-            params:
-                A list of unfixed hyperparameter values.
-            bounds:
-                A list of unfixed hyperparameter bound tuples.
-        """
-        names: List[str] = []
-        params: List[float] = []
-        bounds: List[Tuple[float, float]] = []
-        self.length_scale.append_lists("length_scale", names, params, bounds)
-        return names, params, bounds
-
-    def populate_length_scale(self, hyperparameters: Dict) -> None:
-        """
-        Populates the hyperparameter dictionary of a KernelFn object with
-        `self.length_scale` of the Isotropy object.
-
-        Args:
-            hyperparameters:
-                A dict containing the hyperparameters of a KernelFn object.
-        """
-        hyperparameters["length_scale"] = self.length_scale
-
-    def embed_fn(self, fn: Callable) -> Callable:
-        """
-        Augments a function to automatically apply the deformation to a
-        difference tensor.
-
-        Args:
-            fn:
-                A Callable with signature
-                `(diffs, *args, **kwargs) -> mm.ndarray` taking a difference
-                tensor `diffs` with shape `(..., feature_count)`.
-
-        Returns:
-            A new Callable that applies the deformation to `diffs`, removing
-            the last tensor dimension by collapsing the feature-wise differences
-            into scalar distances. Also adds a `length_scale` kwarg, making the
-            function drivable by keyword optimization.
-        """
-
-        def embedded_fn(dists, *args, length_scale=None, **kwargs):
-            return fn(self(dists, length_scale=length_scale), *args, **kwargs)
-
-        return embedded_fn
 
     @mpi_chunk(return_count=1)
     def pairwise_tensor(

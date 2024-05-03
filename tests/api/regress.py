@@ -26,7 +26,12 @@ from MuyGPyS.gp.deformation import (
     F2,
     l2,
 )
-from MuyGPyS.gp.hyperparameter import AnalyticScale, FixedScale, ScalarParam
+from MuyGPyS.gp.hyperparameter import (
+    AnalyticScale,
+    FixedScale,
+    ScalarParam,
+    VectorParam,
+)
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn
@@ -205,8 +210,9 @@ class HeatonTest(RegressionAPITest):
                             smoothness=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Anisotropy(
                                 l2,
-                                length_scale0=ScalarParam(1.5),
-                                length_scale1=ScalarParam(1.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(1.5), ScalarParam(1.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-3),

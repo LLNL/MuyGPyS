@@ -69,7 +69,7 @@ class KernelFn:
         self._make_base()
 
     def _make_base(self):
-        self.deformation.populate_length_scale(self._hyperparameters)
+        self.deformation.length_scale.populate(self._hyperparameters)
 
     def _make(self):
         raise NotImplementedError("_make is not implemented for base KernelFn")
@@ -113,7 +113,11 @@ class KernelFn:
             bounds:
                 A list of unfixed hyperparameter bound tuples.
         """
-        return self.deformation.get_opt_params()
+        names: List[str] = []
+        params: List[float] = []
+        bounds: List[Tuple[float, float]] = []
+        self.deformation.length_scale.append_lists(names, params, bounds)
+        return names, params, bounds
 
     def __str__(self) -> str:
         """

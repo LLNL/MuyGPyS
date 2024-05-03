@@ -3,6 +3,15 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .scalar import Parameter, Parameter as ScalarParam
+from .scalar import (
+    Parameter,
+    Parameter as ScalarParam,
+    NamedParameter as NamedParam,
+)
+from .vector import (
+    VectorParameter,
+    VectorParameter as VectorParam,
+    NamedVectorParameter as NamedVectorParam,
+)
 from .tensor import TensorParam
 from .scale import AnalyticScale, DownSampleScale, FixedScale, ScaleFn

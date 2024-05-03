@@ -14,11 +14,11 @@ from typing import Callable, Optional, Tuple, Union
 import MuyGPyS._src.math as mm
 
 from MuyGPyS._src.gp.noise import _homoscedastic_perturb
-from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.hyperparameter import ScalarParam, NamedParam
 from MuyGPyS.gp.noise.noise_fn import NoiseFn
 
 
-class HomoscedasticNoise(ScalarParam, NoiseFn):
+class HomoscedasticNoise(NamedParam, NoiseFn):
     """
     A scalar prior noise parameter.
 
@@ -45,7 +45,9 @@ class HomoscedasticNoise(ScalarParam, NoiseFn):
         bounds: Union[str, Tuple[float, float]] = "fixed",
         _backend_fn: Callable = _homoscedastic_perturb,
     ):
-        super(HomoscedasticNoise, self).__init__(val, bounds)
+        super(HomoscedasticNoise, self).__init__(
+            "noise", ScalarParam(val, bounds)
+        )
         if self.fixed() is False:
             if self._bounds[0] < 0.0 or self._bounds[1] < 0.0:
                 raise ValueError(

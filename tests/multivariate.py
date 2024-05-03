@@ -31,7 +31,12 @@ from MuyGPyS.examples.classify import make_multivariate_classifier, classify_any
 from MuyGPyS.examples.regress import make_multivariate_regressor, regress_any
 from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
 from MuyGPyS.gp.deformation import Isotropy, Anisotropy, l2
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, FixedScale
+from MuyGPyS.gp.hyperparameter import (
+    AnalyticScale,
+    ScalarParam,
+    FixedScale,
+    VectorParam,
+)
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
@@ -139,8 +144,9 @@ class ScaleTest(parameterized.TestCase):
                             smoothness=ScalarParam(1.5),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(7.2),
-                                length_scale1=ScalarParam(0.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(7.2), ScalarParam(0.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -151,8 +157,9 @@ class ScaleTest(parameterized.TestCase):
                             smoothness=ScalarParam(0.5),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(2.2),
-                                length_scale1=ScalarParam(0.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(2.2), ScalarParam(0.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-6),
@@ -163,8 +170,9 @@ class ScaleTest(parameterized.TestCase):
                             smoothness=ScalarParam(mm.inf),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(12.4),
-                                length_scale1=ScalarParam(0.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(12.4), ScalarParam(0.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-6),
@@ -404,8 +412,9 @@ class ClassifyTest(parameterized.TestCase):
                             smoothness=ScalarParam(0.63),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(1.5),
-                                length_scale1=ScalarParam(0.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(1.5), ScalarParam(0.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -415,8 +424,9 @@ class ClassifyTest(parameterized.TestCase):
                             smoothness=ScalarParam(0.79),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(0.7),
-                                length_scale1=ScalarParam(1.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(0.7), ScalarParam(1.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -503,8 +513,9 @@ class RegressTest(parameterized.TestCase):
                             smoothness=ScalarParam(1.5),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(1.5),
-                                length_scale1=ScalarParam(0.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(1.5), ScalarParam(0.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -514,8 +525,9 @@ class RegressTest(parameterized.TestCase):
                             ScalarParam(0.5),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(0.7),
-                                length_scale1=ScalarParam(1.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(0.7), ScalarParam(1.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -616,8 +628,9 @@ class MakeClassifierTest(parameterized.TestCase):
                             smoothness=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(1.5),
-                                length_scale1=ScalarParam(0.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(1.5), ScalarParam(0.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -627,8 +640,9 @@ class MakeClassifierTest(parameterized.TestCase):
                             smoothness=ScalarParam(0.8),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(0.7),
-                                length_scale1=ScalarParam(1.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(0.7), ScalarParam(1.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -742,8 +756,9 @@ class MakeRegressorTest(parameterized.TestCase):
                             smoothness=ScalarParam("sample", (1e-1, 1e0)),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(1.5),
-                                length_scale1=ScalarParam(0.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(1.5), ScalarParam(0.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),
@@ -754,8 +769,9 @@ class MakeRegressorTest(parameterized.TestCase):
                             smoothness=ScalarParam(0.8),
                             deformation=Anisotropy(
                                 metric=l2,
-                                length_scale0=ScalarParam(0.7),
-                                length_scale1=ScalarParam(1.5),
+                                length_scale=VectorParam(
+                                    ScalarParam(0.7), ScalarParam(1.5)
+                                ),
                             ),
                         ),
                         "noise": HomoscedasticNoise(1e-5),

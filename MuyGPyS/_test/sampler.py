@@ -304,7 +304,7 @@ class UnivariateSampler2D(SamplerBase):
         plt.show()
 
     def plot_kriging_weights(self, idx, nbrs_lookup):
-        fig, axes = plt.subplots(1, 3, figsize=(19, 4))
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
         singleton = [i for i, n in enumerate(self._test_mask) if n][idx]
         x_coord = singleton % self.points_per_dim
@@ -343,23 +343,23 @@ class UnivariateSampler2D(SamplerBase):
 
         vnorm = colors.LogNorm(vmin=vmin, vmax=vmax)
 
-        self._label_ax(axes[0], "Kriging Weights (all)")
-        im0 = axes[0].imshow(self._make_im(kriging_weights_all), norm=vnorm)
-        axes[0].plot(x_coord, y_coord, "r+")
+        # self._label_ax(axes[0], "Kriging Weights (all)")
+        # im0 = axes[0].imshow(self._make_im(kriging_weights_all), norm=vnorm)
+        # axes[0].plot(x_coord, y_coord, "r+")
 
-        self._label_ax(axes[1], "Kriging Weights (train)")
-        axes[1].imshow(
+        self._label_ax(axes[0], "Kriging Weights (train)")
+        im0 = axes[0].imshow(
             self._make_im(kriging_weights_train, mask=self._train_mask),
             norm=vnorm,
         )
-        axes[1].plot(x_coord, y_coord, "r+")
+        axes[0].plot(x_coord, y_coord, "r+")
 
-        self._label_ax(axes[2], "Kriging Weights (nearest)")
-        axes[2].imshow(
+        self._label_ax(axes[1], "Kriging Weights (nearest)")
+        axes[1].imshow(
             self._make_im(kriging_weights_nbrs, mask=nn_mask),
             norm=vnorm,
         )
-        axes[2].plot(x_coord, y_coord, "r+")
+        axes[1].plot(x_coord, y_coord, "r+")
         fig.colorbar(im0, ax=axes.ravel().tolist())
 
         plt.show()

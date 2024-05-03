@@ -20,7 +20,7 @@ from MuyGPyS._test.utils import (
     _consistent_assert,
     _make_gaussian_matrix,
 )
-from MuyGPyS.gp.hyperparameter import ScalarParam, FixedScale
+from MuyGPyS.gp.hyperparameter import ScalarParam, FixedScale, VectorParam
 from MuyGPyS.gp.kernels import RBF, Matern
 from MuyGPyS.gp.deformation import Anisotropy, Isotropy, F2, l2
 from MuyGPyS.neighbors import NN_Wrapper
@@ -83,9 +83,7 @@ class DistancesTest(parameterized.TestCase):
         )
         rbf_aniso = RBF(
             deformation=Anisotropy(
-                F2,
-                length_scale0=ScalarParam(1.0),
-                length_scale1=ScalarParam(1.0),
+                F2, length_scale=VectorParam(ScalarParam(1.0), ScalarParam(1.0))
             )
         )
         diffs = _consistent_unchunk_tensor(
@@ -574,8 +572,9 @@ class AnisotropicShapesTest(KernelTestCase):
         nn_dists = mm.sqrt(nn_dists)
         deformation_model = Anisotropy(
             metric=l2,
-            length_scale0=k_kwargs["length_scale0"],
-            length_scale1=k_kwargs["length_scale1"],
+            length_scale=VectorParam(
+                k_kwargs["length_scale0"], k_kwargs["length_scale1"]
+            ),
         )
         mtn = Matern(
             smoothness=k_kwargs["smoothness"], deformation=deformation_model
@@ -585,7 +584,7 @@ class AnisotropicShapesTest(KernelTestCase):
             _ = _consistent_unchunk_tensor(mtn(pairwise_diffs))
 
 
-class AnisotropicTest(KernelTestCase):
+class AnisotropicMaternTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -646,8 +645,9 @@ class AnisotropicTest(KernelTestCase):
         nn_dists = mm.sqrt(nn_dists)
         deformation_model = Anisotropy(
             metric=l2,
-            length_scale0=k_kwargs["length_scale0"],
-            length_scale1=k_kwargs["length_scale1"],
+            length_scale=VectorParam(
+                k_kwargs["length_scale0"], k_kwargs["length_scale1"]
+            ),
         )
         mtn = Matern(
             smoothness=k_kwargs["smoothness"], deformation=deformation_model
@@ -689,6 +689,8 @@ class AnisotropicTest(KernelTestCase):
         _check_ndarray(self.assertEqual, Kcross, mm.ftype)
         self.assertTrue(mm.allclose(Kcross, Kcross_sk))
 
+
+class AnisotropicRBFTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -744,8 +746,9 @@ class AnisotropicTest(KernelTestCase):
         nn_dists = mm.sqrt(nn_dists)
         deformation_model = Anisotropy(
             metric=F2,
-            length_scale0=k_kwargs["length_scale0"],
-            length_scale1=k_kwargs["length_scale1"],
+            length_scale=VectorParam(
+                k_kwargs["length_scale0"], k_kwargs["length_scale1"]
+            ),
         )
         rbf = RBF(deformation=deformation_model)
         pairwise_diffs = rbf.deformation.pairwise_tensor(train, nn_indices)
@@ -780,6 +783,8 @@ class AnisotropicTest(KernelTestCase):
         _check_ndarray(self.assertEqual, Kcross, mm.ftype)
         self.assertTrue(mm.allclose(Kcross, Kcross_sk))
 
+
+class AnisotropicTest(KernelTestCase):
     @parameterized.parameters(
         (
             (1000, f, nn, 10, nn_kwargs, k_kwargs)
@@ -835,8 +840,9 @@ class AnisotropicTest(KernelTestCase):
         nn_dists = mm.sqrt(nn_dists)
         deformation_model_aniso = Anisotropy(
             metric=F2,
-            length_scale0=k_kwargs["length_scale0"],
-            length_scale1=k_kwargs["length_scale0"],
+            length_scale=VectorParam(
+                k_kwargs["length_scale0"], k_kwargs["length_scale0"]
+            ),
         )
         rbf_aniso = RBF(deformation=deformation_model_aniso)
         pairwise_diffs = rbf_aniso.deformation.pairwise_tensor(
@@ -936,8 +942,9 @@ class AnisotropicTest(KernelTestCase):
         nn_dists = mm.sqrt(nn_dists)
         deformation_model_aniso = Anisotropy(
             metric=l2,
-            length_scale0=k_kwargs["length_scale0"],
-            length_scale1=k_kwargs["length_scale1"],
+            length_scale=VectorParam(
+                k_kwargs["length_scale0"], k_kwargs["length_scale1"]
+            ),
         )
         mtn_aniso = Matern(
             smoothness=k_kwargs["smoothness"],
@@ -1024,8 +1031,9 @@ class AnisotropicTest(KernelTestCase):
         nn_dists = mm.sqrt(nn_dists)
         deformation_model_aniso = Anisotropy(
             metric=F2,
-            length_scale0=k_kwargs["length_scale0"],
-            length_scale1=k_kwargs["length_scale0"],
+            length_scale=VectorParam(
+                k_kwargs["length_scale0"], k_kwargs["length_scale0"]
+            ),
         )
         rbf_aniso = RBF(deformation=deformation_model_aniso)
         pairwise_diffs = rbf_aniso.deformation.pairwise_tensor(

@@ -120,5 +120,5 @@ class TensorParam:
             "TensorParam does not support optimization bounds!"
         )
 
-    def append_lists(self, name, names, params, bounds):
+    def append_lists(self, names, params, bounds):
         pass

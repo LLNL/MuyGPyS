@@ -158,7 +158,7 @@ class MuyGPS:
                 A list of unfixed hyperparameter bound tuples.
         """
         names, params, bounds = self.kernel.get_opt_params()
-        self.noise.append_lists("noise", names, params, bounds)
+        self.noise.append_lists(names, params, bounds)
         return names, mm.array(params), mm.array(bounds)
 
     def posterior_mean(

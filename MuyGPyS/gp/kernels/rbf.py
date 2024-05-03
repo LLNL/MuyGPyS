@@ -88,7 +88,9 @@ class RBF(KernelFn):
 
     def _make(self):
         super()._make_base()
-        self._fn = self.deformation.embed_fn(self._kernel_fn)
+        self._fn = self.deformation.length_scale.apply_embedding_fn(
+            self._kernel_fn, self.deformation
+        )
 
     def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
         """
@@ -110,9 +112,6 @@ class RBF(KernelFn):
         return self._fn(diffs, **kwargs)
 
     def Kout(self, **kwargs) -> mm.ndarray:
-        # return self._backend_squeeze(
-        #     self._kernel_fn(self._backend_zeros((1, 1)))
-        # )
         return self._backend_squeeze(self._backend_ones((1, 1)))
 
     def get_opt_fn(self) -> Callable:
