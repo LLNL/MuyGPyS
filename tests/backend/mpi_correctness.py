@@ -70,7 +70,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import Anisotropy, Isotropy, MetricFn
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam
+from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, VectorParam
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
@@ -164,8 +164,9 @@ class TensorsTestCase(parameterized.TestCase):
             smoothness,
             Anisotropy(
                 l2_n,
-                length_scale0=ScalarParam(cls.length_scale),
-                length_scale1=ScalarParam(cls.length_scale),
+                length_scale=VectorParam(
+                    ScalarParam(cls.length_scale), ScalarParam(cls.length_scale)
+                ),
             ),
             **kwargs,
         )
@@ -205,8 +206,9 @@ class TensorsTestCase(parameterized.TestCase):
         return cls._make_muygps_rbf(
             Anisotropy(
                 F2_n,
-                length_scale0=ScalarParam(cls.length_scale),
-                length_scale1=ScalarParam(cls.length_scale),
+                length_scale=VectorParam(
+                    ScalarParam(cls.length_scale), ScalarParam(cls.length_scale)
+                ),
             )
         )
 

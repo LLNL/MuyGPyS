@@ -3,18 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Callable, Dict, Union, List, Tuple
-import re
+from typing import Callable, Dict, List, Tuple
 
 from scipy.stats.qmc import LatinHypercube
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.gp.hyperparameter import (
-    ScalarParam,
-    NamedParam,
-    VectorParam,
-    NamedVectorParam,
-)
+from MuyGPyS.gp.hyperparameter import VectorParam, NamedVectorParam
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
