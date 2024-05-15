@@ -24,10 +24,9 @@ class HierarchicalParameter:
         knot_features:
             Tensor of floats of shape `(knot_count, feature_count)`
             containing the feature vectors for each knot.
-        knot_values:
+        knot_params:
             List of scalar hyperparameters of length `knot_count`
             containing the initial values and optimization bounds for each knot.
-            Float values will be converted to fixed scalar hyperparameters.
         kernel:
             Initialized higher-level GP kernel.
     """
@@ -108,7 +107,9 @@ class NamedHierarchicalParameter(HierarchicalParameter):
     def knot_values(self) -> mm.ndarray:
         return self._params()
 
-    def __call__(self, batch_features, **kwargs) -> float:
+    def __call__(self, batch_features=None, **kwargs) -> float:
+        if batch_features is None:
+            raise TypeError("batch_features keyword argument is required")
         params, kwargs = self._params.filter_kwargs(**kwargs)
         solve = mm.linalg.solve(
             self._Kin_higher + self._noise() * mm.eye(self._knot_count),
@@ -157,6 +158,29 @@ class NamedHierarchicalParameter(HierarchicalParameter):
 
     def populate(self, hyperparameters: Dict) -> None:
         self._params.populate(hyperparameters)
+
+
+class NamedHierarchicalVectorParameter(NamedVectorParam):
+    def __init__(self, name: str, param: VectorParam):
+        self._params = [
+            NamedHierarchicalParameter(name + str(i), p)
+            for i, p in enumerate(param._params)
+        ]
+        self._name = name
+
+    def filter_kwargs(self, **kwargs) -> Tuple[Dict, Dict]:
+        params = {
+            key: kwargs[key] for key in kwargs if key.startswith(self._name)
+        }
+        kwargs = {
+            key: kwargs[key] for key in kwargs if not key.startswith(self._name)
+        }
+        if "batch_features" in kwargs:
+            for p in self._params:
+                params.setdefault(
+                    p.name(), p(kwargs["batch_features"], **params)
+                )
+        return params, kwargs
 
 
 def sample_knots(feature_count: int, knot_count: int) -> mm.ndarray:

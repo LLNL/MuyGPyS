@@ -7,5 +7,6 @@ from .hierarchical import (
     HierarchicalParameter,
     HierarchicalParameter as HierarchicalParam,
     NamedHierarchicalParameter as NamedHierarchicalParam,
+    NamedHierarchicalVectorParameter as NamedHierarchicalVectorParam,
     sample_knots,
 )
