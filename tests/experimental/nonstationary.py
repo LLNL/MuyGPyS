@@ -19,7 +19,6 @@ from MuyGPyS.gp.hyperparameter import (
 from MuyGPyS.gp.hyperparameter.experimental import (
     HierarchicalParameter,
     NamedHierarchicalParam,
-    NamedHierarchicalVectorParam,
     sample_knots,
 )
 from MuyGPyS.gp.tensors import batch_features_tensor
