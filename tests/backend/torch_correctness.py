@@ -1346,9 +1346,7 @@ class ObjectiveTest(OptimTestCase):
         )
         self.assertTrue(
             np.allclose(
-                cross_entropy_fn_n(
-                    cat_predictions_n, cat_batch_targets_n, eps=1e-6
-                ),
+                cross_entropy_fn_n(cat_predictions_n, cat_batch_targets_n),
                 cross_entropy_fn_t(cat_predictions_t, cat_batch_targets_t),
             )
         )

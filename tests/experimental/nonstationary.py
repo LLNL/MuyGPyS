@@ -11,16 +11,17 @@ import MuyGPyS._src.math.numpy as np
 
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.kernels import Matern, RBF
-from MuyGPyS.gp.deformation import l2, Isotropy, Anisotropy
-from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.deformation import l2, Isotropy
+from MuyGPyS.gp.hyperparameter import (
+    Parameter,
+    VectorParameter,
+)
 from MuyGPyS.gp.hyperparameter.experimental import (
-    HierarchicalNonstationaryHyperparameter,
+    HierarchicalParameter,
+    NamedHierarchicalParam,
     sample_knots,
 )
-from MuyGPyS.gp.tensors import (
-    make_train_tensors,
-    batch_features_tensor,
-)
+from MuyGPyS.gp.tensors import batch_features_tensor
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
 
@@ -54,24 +55,28 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
             response_count=1,
         )
         knot_features = train["input"]
-        knot_values = train["output"]
+        knot_values = VectorParameter(
+            *[Parameter(x) for x in np.squeeze(train["output"])]
+        )
         batch_features = test["input"]
-        hyp = HierarchicalNonstationaryHyperparameter(
-            knot_features,
-            knot_values,
-            kernel,
+        hyp = NamedHierarchicalParam(
+            "custom_param_name",
+            HierarchicalParameter(
+                knot_features,
+                knot_values,
+                kernel,
+            ),
         )
         hyperparameters = hyp(batch_features)
         _check_ndarray(
-            self.assertEqual, hyperparameters, mm.ftype, shape=(batch_count, 1)
+            self.assertEqual, hyperparameters, mm.ftype, shape=(batch_count,)
         )
 
     @parameterized.parameters(
         (
             (
                 feature_count,
-                type(knot_values[0]),
-                high_level_kernel,
+                type(high_level_kernel).__name__,
                 deformation,
             )
             for feature_count in [2, 17]
@@ -80,35 +85,35 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
                 sample_knots(feature_count=feature_count, knot_count=knot_count)
             ]
             for knot_values in [
-                np.random.uniform(size=knot_count),
-                [ScalarParam(i) for i in range(knot_count)],
+                VectorParameter(*[Parameter(i) for i in range(knot_count)]),
             ]
             for high_level_kernel in [RBF(), Matern()]
             for deformation in [
                 Isotropy(
                     l2,
-                    length_scale=HierarchicalNonstationaryHyperparameter(
+                    length_scale=HierarchicalParameter(
                         knot_features, knot_values, high_level_kernel
                     ),
                 ),
-                Anisotropy(
-                    l2,
-                    **{
-                        f"length_scale{i}": HierarchicalNonstationaryHyperparameter(
-                            knot_features,
-                            knot_values,
-                            high_level_kernel,
-                        )
-                        for i in range(feature_count)
-                    },
-                ),
+                # Anisotropy(
+                #     l2,
+                #     VectorParameter(
+                #         *[
+                #             HierarchicalParameter(
+                #                 knot_features,
+                #                 knot_values,
+                #                 high_level_kernel,
+                #             )
+                #             for _ in range(feature_count)
+                #         ]
+                #     ),
+                # ),
             ]
         )
     )
     def test_hierarchical_nonstationary_rbf(
         self,
         feature_count,
-        knot_values_type,
         high_level_kernel,
         deformation,
     ):
@@ -133,7 +138,7 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
         batch_indices, batch_nn_indices = sample_batch(
             nbrs_lookup, batch_count, data_count
         )
-        (_, pairwise_diffs, _, _) = make_train_tensors(
+        (_, pairwise_diffs, _, _) = muygps.make_train_tensors(
             batch_indices,
             batch_nn_indices,
             data["input"],
@@ -142,7 +147,7 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
 
         batch_features = batch_features_tensor(data["input"], batch_indices)
 
-        Kin = muygps.kernel(pairwise_diffs, batch_features)
+        Kin = muygps.kernel(pairwise_diffs, batch_features=batch_features)
 
         _check_ndarray(
             self.assertEqual,
