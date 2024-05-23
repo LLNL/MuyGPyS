@@ -8,11 +8,7 @@ from MuyGPyS._src.mpi_utils import mpi_chunk
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation.deformation_fn import DeformationFn
 from MuyGPyS.gp.deformation.metric import MetricFn
-from MuyGPyS.gp.hyperparameter import ScalarParam, VectorParam, NamedVectorParam
-from MuyGPyS.gp.hyperparameter.experimental import (
-    HierarchicalParam,
-    NamedHierarchicalVectorParam,
-)
+from MuyGPyS.gp.hyperparameter import VectorParam, NamedVectorParam
 
 
 @auto_str

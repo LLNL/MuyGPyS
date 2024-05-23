@@ -11,7 +11,7 @@ import MuyGPyS._src.math.numpy as np
 
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.kernels import Matern, RBF
-from MuyGPyS.gp.deformation import l2, Isotropy, Anisotropy
+from MuyGPyS.gp.deformation import l2, Isotropy
 from MuyGPyS.gp.hyperparameter import (
     Parameter,
     VectorParameter,
