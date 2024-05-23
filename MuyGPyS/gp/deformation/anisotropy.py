@@ -41,18 +41,8 @@ class Anisotropy(DeformationFn):
         metric: MetricFn,
         length_scale: VectorParam,
     ):
-        name = "length_scale"
-        params = length_scale._params
-        # This is brittle and should be refactored
-        if all(isinstance(p, ScalarParam) for p in params):
-            self.length_scale = NamedVectorParam(name, length_scale)
-        elif all(isinstance(p, HierarchicalParam) for p in params):
-            self.length_scale = NamedHierarchicalVectorParam(name, length_scale)
-        else:
-            raise ValueError(
-                "Expected uniform vector of ScalarParam or HierarchicalParam type for length_scale"
-            )
         self.metric = metric
+        self.length_scale = NamedVectorParam("length_scale", length_scale)
 
     def __call__(self, dists: mm.ndarray, **length_scales) -> mm.ndarray:
         """
@@ -84,14 +74,7 @@ class Anisotropy(DeformationFn):
                 f"Difference tensor of shape {dists.shape} must have final "
                 f"dimension size of {len(self.length_scale)}"
             )
-        length_scale = self.length_scale(**length_scales)
-        # This is brittle and similar to what we do in Isotropy.
-        if isinstance(length_scale, mm.ndarray) and len(length_scale.shape) > 0:
-            shape = [None] * dists.ndim
-            shape[0] = slice(None)
-            shape[-1] = slice(None)
-            length_scale = length_scale.T[tuple(shape)]
-        return self.metric(dists / length_scale)
+        return self.metric(dists / self.length_scale(**length_scales))
 
     @mpi_chunk(return_count=1)
     def pairwise_tensor(

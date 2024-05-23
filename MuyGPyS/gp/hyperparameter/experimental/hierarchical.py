@@ -107,9 +107,7 @@ class NamedHierarchicalParameter(HierarchicalParameter):
     def knot_values(self) -> mm.ndarray:
         return self._params()
 
-    def __call__(self, batch_features=None, **kwargs) -> float:
-        if batch_features is None:
-            raise TypeError("batch_features keyword argument is required")
+    def __call__(self, batch_features, **kwargs) -> float:
         params, kwargs = self._params.filter_kwargs(**kwargs)
         solve = mm.linalg.solve(
             self._Kin_higher + self._noise() * mm.eye(self._knot_count),

@@ -95,19 +95,19 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
                         knot_features, knot_values, high_level_kernel
                     ),
                 ),
-                Anisotropy(
-                    l2,
-                    VectorParameter(
-                        *[
-                            HierarchicalParameter(
-                                knot_features,
-                                knot_values,
-                                high_level_kernel,
-                            )
-                            for _ in range(feature_count)
-                        ]
-                    ),
-                ),
+                # Anisotropy(
+                #     l2,
+                #     VectorParameter(
+                #         *[
+                #             HierarchicalParameter(
+                #                 knot_features,
+                #                 knot_values,
+                #                 high_level_kernel,
+                #             )
+                #             for _ in range(feature_count)
+                #         ]
+                #     ),
+                # ),
             ]
         )
     )
