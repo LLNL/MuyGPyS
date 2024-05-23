@@ -1531,12 +1531,8 @@ class LossTest(OptimTestCase):
         )
         self.assertTrue(
             allclose_gen(
-                cross_entropy_fn_n(
-                    cat_predictions_n, cat_batch_targets_n, eps=1e-6
-                ),
-                cross_entropy_fn_j(
-                    cat_predictions_j, cat_batch_targets_j, eps=1e-6
-                ),
+                cross_entropy_fn_n(cat_predictions_n, cat_batch_targets_n),
+                cross_entropy_fn_j(cat_predictions_j, cat_batch_targets_j),
             )
         )
 
