@@ -51,7 +51,7 @@ documentation = "https://muygpys.readthedocs.io"
 tracker = "https://github.com/LLNL/MuyGPyS/issues"
 
 [project.optional-dependencies]
-test = [
+tests = [
     "absl-py>=0.13.0",
     "matplotlib>=3.2.1",
     "pandas==1.5.2",
