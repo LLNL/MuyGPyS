@@ -5,7 +5,9 @@
 
 """Public MuyGPyS modules and functions."""
 
-__version__ = "0.8.2"
+import importlib.metadata
+
+__version__ = importlib.metadata.version(__package__)
 
 from MuyGPyS._src.config import (
     config as config,

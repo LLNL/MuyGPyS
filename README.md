@@ -261,11 +261,10 @@ This repository includes several `extras_require` optional dependencies.
 - `tests` - install dependencies necessary to run [tests](tests/)
 - `docs` - install dependencies necessary to build the docs
 - `dev` - install dependencies for maintaining code style, running performance
-benchmarks, linting, and  packaging (includes all of the dependencies in `tests`
-and `docs`).
+benchmarks, linting, and packaging
 
 For example, follow these instructions to install from source for development 
-purposes with JAX support:
+purposes with CPU JAX support:
 ```
 $ git clone git@github.com:LLNL/MuyGPyS.git
 $ cd MuyGPyS
@@ -273,8 +272,7 @@ $ pip install -e .[dev,jax_cpu]
 ```
 
 If you would like to perform a GPU installation from source, you will need to
-install the jax dependency directly instead of using the `jax_cuda` flag or
-similar.
+install the JAX dependency directly.
 
 Additionally check out the develop branch to access the latest features in 
 between stable releases.
@@ -293,7 +291,7 @@ parallel computation
 - `tests` - install dependencies necessary to run [tests](tests/)
 - `docs` - install dependencies necessary to build the [docs](docs/)
 - `dev` - install dependencies for maintaining code style, linting, and 
-packaging (includes all of the dependencies in `tests` and `docs`)
+packaging
 
 ## Building Docs
 
