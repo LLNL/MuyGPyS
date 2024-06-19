@@ -369,7 +369,7 @@ class MuyGPS:
         return self._var_fn.get_opt_fn()
 
     def optimize_scale(
-        self, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray
+        self, pairwise_diffs: mm.ndarray, nn_targets: mm.ndarray, **kwargs
     ):
         """
         Optimize the value of the :math:`sigma^2` scale parameter.
@@ -394,7 +394,7 @@ class MuyGPS:
             A reference to this model with a freshly-optimized `scale`
             parameter.
         """
-        Kin = self.kernel(pairwise_diffs)
+        Kin = self.kernel(pairwise_diffs, **kwargs)
         opt_fn = self.scale.get_opt_fn(self)
         self.scale._set(opt_fn(Kin, nn_targets))
         self._make()
