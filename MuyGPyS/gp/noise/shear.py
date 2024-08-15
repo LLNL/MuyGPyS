@@ -11,8 +11,6 @@ Defines data structures and functors that handle noise priors for MuyGPs models.
 
 from typing import Callable, Tuple, Union
 
-import MuyGPyS._src.math as mm
-
 from MuyGPyS._src.gp.noise import _shear_perturb33
 
 from MuyGPyS.gp.noise.homoscedastic import HomoscedasticNoise
