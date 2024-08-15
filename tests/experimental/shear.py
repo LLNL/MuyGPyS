@@ -15,8 +15,10 @@ from MuyGPyS._test.shear import (
     BenchmarkTestCase,
     conventional_Kout,
     conventional_mean,
+    conventional_mean33,
     conventional_shear,
     conventional_variance,
+    conventional_variance33,
 )
 
 from MuyGPyS.optimize.batch import sample_batch
@@ -309,7 +311,9 @@ class LibraryTestCase(DataTestCase):
         )
         cls.batch_nn_targets = cls.batch_nn_targets.swapaxes(-2, -1)
 
-    def _mean_chassis(self, nn_targets, model, in_dim=3, out_dim=3):
+    def _mean_chassis(
+        self, nn_targets, model, in_dim=3, out_dim=3, mean_fn=conventional_mean
+    ):
         Kcross = model.kernel(self.crosswise_diffs)
         Kin = model.kernel(self.pairwise_diffs)
         posterior_mean = model.posterior_mean(Kin, Kcross, nn_targets)
@@ -323,7 +327,7 @@ class LibraryTestCase(DataTestCase):
             self.test_count, in_dim * self.nn_count
         )
         mean_flat = np.squeeze(
-            conventional_mean(
+            mean_fn(
                 Kin_flat[0],
                 Kcross_flat[0].swapaxes(-2, -1),
                 nn_targets_flat[0],
@@ -333,7 +337,18 @@ class LibraryTestCase(DataTestCase):
 
         self.assertTrue(mm.allclose(posterior_mean[0], mean_flat))
 
-    def _variance_chassis(self, model, in_dim=3, out_dim=3):
+    def _mean_chassis33(self, nn_targets, model, in_dim=3, out_dim=3):
+        self._mean_chassis(
+            nn_targets,
+            model,
+            in_dim=in_dim,
+            out_dim=out_dim,
+            mean_fn=conventional_mean33,
+        )
+
+    def _variance_chassis(
+        self, model, in_dim=3, out_dim=3, variance_fn=conventional_variance
+    ):
         Kcross = model.kernel(self.crosswise_diffs)
         Kin = model.kernel(self.pairwise_diffs)
         posterior_variance = model.posterior_variance(Kin, Kcross)
@@ -344,7 +359,7 @@ class LibraryTestCase(DataTestCase):
             self.test_count, in_dim * self.nn_count, out_dim
         )
         variance_flat = np.squeeze(
-            conventional_variance(
+            variance_fn(
                 Kin_flat[0],
                 Kcross_flat[0].swapaxes(-2, -1),
                 model.kernel.Kout(),
@@ -353,6 +368,14 @@ class LibraryTestCase(DataTestCase):
         )
 
         self.assertTrue(mm.allclose(posterior_variance[0], variance_flat))
+
+    def _variance_chassis33(self, model, in_dim=3, out_dim=3):
+        self._variance_chassis(
+            model,
+            in_dim=in_dim,
+            out_dim=out_dim,
+            variance_fn=conventional_variance33,
+        )
 
     def _opt_chassis(
         self, opt_model, batch_targets, batch_nn_targets, **kwargs
@@ -377,13 +400,13 @@ class LibraryTestCase(DataTestCase):
 
 class LibraryTest(LibraryTestCase):
     def test_mean33(self):
-        self._mean_chassis(self.nn_targets, self.model33)
+        self._mean_chassis33(self.nn_targets, self.model33)
 
     def test_mean23(self):
         self._mean_chassis(self.nn_targets[:, 1:, :], self.model23, in_dim=2)
 
     def test_variance33(self):
-        self._variance_chassis(self.model33)
+        self._variance_chassis33(self.model33)
 
     def test_variance23(self):
         self._variance_chassis(self.model23, in_dim=2)

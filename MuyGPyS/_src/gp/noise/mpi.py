@@ -3,7 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS._src.gp.noise.numpy import _homoscedastic_perturb, np
+from MuyGPyS._src.gp.noise.numpy import (
+    _homoscedastic_perturb,
+    _shear_perturb33,
+    np,
+)
 
 
 def _heteroscedastic_perturb(

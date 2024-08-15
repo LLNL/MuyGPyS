@@ -18,6 +18,7 @@ from numpy import (
     cov,
     count_nonzero,
     choose,
+    diag,
     divide,
     dot,
     einsum,

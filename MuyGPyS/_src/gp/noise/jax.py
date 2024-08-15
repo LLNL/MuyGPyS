@@ -31,6 +31,33 @@ def _homoscedastic_perturb(
 
 
 @jit
+def _shear_perturb33(Kin: jnp.ndarray, noise_variance: float) -> jnp.ndarray:
+    convergence_variance = noise_variance * 2
+    if Kin.ndim == 5:
+        b, in_count, nn_count, in_count2, nn_count2 = Kin.shape
+        assert nn_count == nn_count2
+        assert in_count == in_count2
+        assert in_count == 3
+        all_count = in_count * nn_count
+        Kin_flat = Kin.reshape(b, all_count, all_count)
+        nugget = jnp.diag(
+            jnp.hstack(
+                (
+                    convergence_variance * jnp.ones(nn_count),
+                    noise_variance * jnp.ones(2 * nn_count),
+                )
+            )
+        )
+        Kin_flat = Kin_flat + nugget
+        return Kin_flat.reshape(b, in_count, nn_count, in_count, nn_count)
+    else:
+        raise ValueError(
+            "homoscedastic perturbation is not implemented for tensors of "
+            f"shape {Kin.shape}"
+        )
+
+
+@jit
 def _heteroscedastic_perturb(
     Kin: jnp.ndarray, noise_variances: jnp.ndarray
 ) -> jnp.ndarray:

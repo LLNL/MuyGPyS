@@ -7,3 +7,4 @@ from .homoscedastic import HomoscedasticNoise
 from .heteroscedastic import HeteroscedasticNoise
 from .null import NullNoise
 from .noise_fn import NoiseFn
+from .shear import ShearNoise33

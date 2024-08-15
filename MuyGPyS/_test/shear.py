@@ -11,7 +11,7 @@ from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import DifferenceIsotropy, F2
 from MuyGPyS.gp.hyperparameter import ScalarParam, Parameter, FixedScale
 from MuyGPyS.gp.kernels.experimental import ShearKernel, ShearKernel2in3out
-from MuyGPyS.gp.noise import HomoscedasticNoise
+from MuyGPyS.gp.noise import HomoscedasticNoise, ShearNoise33
 
 
 def kk_f(x1, y1, x2, y2, a=1, b=1):
@@ -184,13 +184,24 @@ def conventional_mean(Kin, Kcross, targets, noise):
     nugget_size = Kin.shape[0]
     test_count = int(Kcross.shape[0] / 3)
     return (
-        (
-            Kcross
-            @ np.linalg.solve(
-                Kin + noise * np.eye(nugget_size),
-                targets,
-            )
+        (Kcross @ np.linalg.solve(Kin + noise * np.eye(nugget_size), targets))
+        .reshape(3, test_count)
+        .swapaxes(0, 1)
+    )
+
+
+def conventional_mean33(Kin, Kcross, targets, noise):
+    nugget_size = Kin.shape[0]
+    assert nugget_size % 3 == 0
+    test_count = int(Kcross.shape[0] / 3)
+    train_count = int(nugget_size / 3)
+    nugget = np.diag(
+        np.hstack(
+            (2 * noise * np.ones(train_count), noise * np.ones(2 * train_count))
         )
+    )
+    return (
+        (Kcross @ np.linalg.solve(Kin + nugget, targets))
         .reshape(3, test_count)
         .swapaxes(0, 1)
     )
@@ -199,9 +210,20 @@ def conventional_mean(Kin, Kcross, targets, noise):
 def conventional_variance(Kin, Kcross, Kout, noise):
     nugget_size = Kin.shape[0]
     return Kout - Kcross @ np.linalg.solve(
-        Kin + noise * np.eye(nugget_size),
-        Kcross.T,
+        Kin + noise * np.eye(nugget_size), Kcross.T
     )
+
+
+def conventional_variance33(Kin, Kcross, Kout, noise):
+    nugget_size = Kin.shape[0]
+    assert nugget_size % 3 == 0
+    train_count = int(nugget_size / 3)
+    nugget = np.diag(
+        np.hstack(
+            (2 * noise * np.ones(train_count), noise * np.ones(2 * train_count))
+        )
+    )
+    return Kout - Kcross @ np.linalg.solve(Kin + nugget, Kcross.T)
 
 
 class BenchmarkTestCase(parameterized.TestCase):
@@ -236,7 +258,7 @@ class BenchmarkTestCase(parameterized.TestCase):
                     length_scale=Parameter(0.04, [0.02, 0.07]),
                 ),
             ),
-            noise=HomoscedasticNoise(cls.noise_prior),
+            noise=ShearNoise33(cls.noise_prior),
             scale=FixedScale(),
         )
         cls.model23 = MuyGPS(
