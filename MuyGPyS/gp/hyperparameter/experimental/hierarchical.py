@@ -129,7 +129,7 @@ class NamedHierarchicalParameter(HierarchicalParameter):
         lower[self._name] = self(kwargs["batch_features"], **params)
         return lower, kwargs
 
-    def apply_fn(self, fn: Callable, name: str) -> Callable:
+    def apply_fn(self, fn: Callable) -> Callable:
         def applied_fn(*args, **kwargs):
             lower, kwargs = self.filter_kwargs(**kwargs)
             return fn(*args, **lower, **kwargs)
@@ -156,6 +156,17 @@ class NamedHierarchicalParameter(HierarchicalParameter):
 
     def populate(self, hyperparameters: Dict) -> None:
         self._params.populate(hyperparameters)
+
+    def fixed(self) -> bool:
+        """
+        Report whether the parameter is fixed, and is to be ignored during
+        optimization.
+
+        Returns:
+            `True` if fixed, `False` otherwise.
+        """
+        # return self._params.fixed()
+        return False
 
 
 class NamedHierarchicalVectorParameter(NamedVectorParam):

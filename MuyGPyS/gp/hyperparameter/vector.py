@@ -70,7 +70,7 @@ class VectorParameter:
         Returns:
             `True` if fixed, `False` otherwise.
         """
-        return mm.all(param._fixed for param in self._params)
+        return mm.all([param._fixed for param in self._params])
 
 
 class NamedVectorParameter(VectorParameter):
