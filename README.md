@@ -26,7 +26,7 @@ and supports a distributed memory backend for smoothly scaling to billion-scale
 problems.
 
 MuyGPs uses nearest neighbors sparsification and performs leave-one-out cross
-validation on a regularized loss function to rapidly optimize a GP model without evaluating a much more expensive likelihood, which is required by similar
+validation using regularized loss functions to rapidly optimize a GP model without evaluating a much more expensive likelihood, which is required by similar
 scalable methods.
 
 ## Getting Started 
@@ -41,32 +41,33 @@ Next, see the
 for a full description of the API and an end-to-end walkthrough of a simple
 regression problem.
 
-The full automatically-generated documentation, including several additional
-tutorials with code examples, can be found at 
+The full documentation, including several additional tutorials with code
+examples, can be found at
 [readthedocs.io](https://muygpys.readthedocs.io/en/stable/?).
 
 Read further in this document for installation instructions.
 
 ## Backend Math Implementation Options
 
-As of release v0.6.6, `MuyGPyS` supports four distinct backend implementations
-of all of its underlying math functions:
+In addition to the default basic numpy backend, as of release v0.6.6, `MuyGPyS`
+supports three additional backend implementations of all of its underlying math
+functions:
 
-- `numpy` - basic numpy (the default)
-- [JAX](https://github.com/google/jax) - GPU acceleration
+- [MPI](https://github.com/mpi4py/mpi4py) - distributed memory acceleration
 - [PyTorch](https://github.com/pytorch/pytorch) - GPU acceleration and neural
 network integration
-- [MPI](https://github.com/mpi4py/mpi4py) - distributed memory acceleration
+- [JAX](https://github.com/google/jax) - GPU acceleration
 
 It is possible to include the dependencies of any, all, or none of these
-backends at install time.
+additional backends at install time.
 Please see the below installation instructions.
 
 `MuyGPyS` uses the `MUYGPYS_BACKEND` environment variable to determine which
-backend to use import time.
+backend to use at import time.
 It is also possible to manipulate `MuyGPyS.config` to switch between backends
 programmatically.
-This is not advisable unless the user knows exactly what they are doing.
+This is not advisable unless the user knows exactly what they are doing
+(and must occur before importing any other `MuyGPyS` components).
 
 `MuyGPyS` will default to the `numpy` backend.
 It is possible to switch back ends by manipulating the `MUYGPYS_BACKEND`
@@ -75,20 +76,6 @@ environment variable in your shell, e.g.
 $ export MUYGPYS_BACKEND=jax    # turn on JAX backend
 $ export MUYGPYS_BACKEND=torch  # turn on Torch backend
 $ export MUYGPYS_BACKEND=mpi    # turn on MPI backend
-```
-
-### Just-In-Time Compilation with JAX
-
-`MuyGPyS` supports just-in-time compilation of the 
-underlying math functions to CPU or GPU using 
-[JAX](https://github.com/google/jax) since version v0.5.0.
-The JAX-compiled versions of the code are significantly faster than numpy,
-especially on GPUs.
-In order to use the `MuyGPyS` torch backend, run the following command in your 
-shell environment.
-
-```
-$ export MUYGPYS_BACKEND=jax
 ```
 
 ### Distributed memory support with MPI
@@ -156,6 +143,24 @@ MuyGPyS.config.update("muygpys_backend","torch")
 ...subsequent imports from MuyGPyS
 ```
 
+### Just-In-Time Compilation with JAX
+
+`MuyGPyS` supports just-in-time compilation of the
+underlying math functions to CPU or GPU using
+[JAX](https://github.com/google/jax) since version v0.5.0.
+The JAX-compiled versions of the code are significantly faster than numpy,
+especially on GPUs.
+In order to use the `MuyGPyS` torch backend, run the following command in your
+shell environment.
+
+```
+$ export MUYGPYS_BACKEND=jax
+```
+
+> **_NOTE_**: There is a known conflict between recent versions of `MuyGPyS` and
+`JAX` on Python $\geq$ 3.9.
+The current fix is to downgrade to Python 3.8.
+
 ## Precision
 
 JAX and torch use 32 bit types by default, whereas numpy tends to promote
@@ -169,7 +174,7 @@ Hence, `MuyGPyS` forces all back end implementations to use 64 bit types by
 default.
 
 However, the 64 bit operations are slightly slower than their 32 bit
-counterparts.
+counterparts, and limit throughput on GPUs.
 `MuyGPyS` accordingly supports 32 bit types, but this feature is experimental
 and might have sharp edges.
 For example, `MuyGPyS` might throw errors or otherwise behave strangely if the
@@ -187,7 +192,7 @@ This is not advisable unless the user knows exactly what they are doing.
 
 ## Installation
 
-### Pip: CPU
+### Installation using Pip: CPU
 
 The index `muygpys` is maintained on PyPI and can be installed using `pip`.
 `muygpys` supports many optional extras flags, which will install additional
@@ -209,21 +214,27 @@ installed a version of MPI such as
 ```
 $ # numpy-only installation. Functions will internally use numpy.
 $ pip install --upgrade muygpys
+
 $ # The same, but includes hnswlib.
 $ pip install --upgrade muygpys[hnswlib]
+
 $ # CPU-only JAX installation. Functions will be jit-compiled using JAX.
 $ pip install --upgrade muygpys[jax_cpu]
+
 $ # The same, but includes hnswlib.
 $ pip install --upgrade muygpys[jax_cpu,hnswlib]
+
 $ # MPI installation. Functions will operate in distributed memory.
 $ pip install --upgrade muygpys[mpi]
+
 $ # The same, but includes hnswlib.
 $ pip install --upgrade muygpys[mpi,hnswlib]
+
 $ # pytorch installation. MuyGPyS.torch will be usable.
 $ pip install --upgrade muygpys[torch]
 ```
 
-### Pip: GPU (CUDA)
+### Installation using Pip: GPU (CUDA)
 
 #### JAX GPU Instructions
 
@@ -255,7 +266,7 @@ MuyGPyS does not and most likely will not support installing CUDA PyTorch with
 an extras flag.
 Please [install PyTorch separately](https://pytorch.org/get-started/locally/).
 
-### From Source
+### Installation From Source
 
 This repository includes several `extras_require` optional dependencies.
 - `tests` - install dependencies necessary to run [tests](tests/)
@@ -305,25 +316,35 @@ Finally, open the file `docs/_build/html/index.html` in your browser of choice.
 ## Testing
 
 In order to run tests locally, first `pip` install `MuyGPyS` from source using 
-either the `dev` or `tests` options.
-All tests in the `test/` directory are then runnable as python scripts, e.g.
+either the `tests` option.
+All tests in the `tests/` directory are then runnable as python scripts, e.g.
 ```
 $ python tests/kernels.py
 ```
 
 Individual `absl` unit test classes can be run in isolation, e.g.
 ```
-$ python tests/kernels.py DifferencesTest
+$ python tests/kernels.py DistancesTest
+```
+It is also possible to run a single method from a test case:
+```
+$ python tests/kernels.py DistancesTest.test_l2
 ```
 
 The user can run most tests in all backends.
 Some tests use backend-dependent features, and will fail with informative error
 messages when attempting an unsupported backend.
-The user need only set `MUYGPYS_BACKEND` prior to running the desired test,
-e.g.,
+The user needs to set `MUYGPYS_BACKEND` and possibly `MUYGPYS_FTYPE` prior to
+running the desired test, e.g.,
 ```
 $ export MUYGPYS_BACKEND=jax
 $ python tests/kernels.py
+```
+or
+```
+$ export MUYGPYS_BACKEND=torch
+$ export MUYGPYS_FTYPE=32
+$ python tests/backends/torch_correctness.py
 ```
 
 If the MPI dependencies are installed, the user can also run `absl` tests using
@@ -348,17 +369,22 @@ $ srun -N 1 --tasks-per-node 4 -p pdebug python tests/kernels.py
 
 ## Papers
 
-MuyGPyS has been used the in the following papers (newest first):
+MuyGPyS has been used the in the following research papers (newest first):
 
+1. [A Robust Approach to Gaussian Process Implementation](https://arxiv.org/abs/2409.11577)
+1. [Enhancing Electrocardiography Data Classification Confidence: A Robust Gaussian Process Approach (MuyGPs)](https://arxiv.org/abs/2409.04642)
+1. [Stellar Blend Image Classification Using Computationall Efficient Gaussian Processes](https://arxiv.org/abs/2407.19297)
 1. [Closely-Spaced Object Classification Using MuyGPyS](https://arxiv.org/abs/2311.10904)
-2. [Light Curve Forecasting and Anomaly Detection Using Scalable, Anisotropic, and Heteroscedastic Gaussian Process Models](https://amostech.com/TechnicalPapers/2023/Poster/Goumiri.pdf)
-3. [Scalable Gaussian Process Hyperparameter Optimization via Coverage Regularization](http://export.arxiv.org/abs/2209.11280)
-4. [Light Curve Completion and Forecasting Using Fast and Scalable Gaussian Processes (MuyGPs)](https://arxiv.org/abs/2208.14592)
-5. [Fast Gaussian Process Posterior Mean Prediction via Local Cross Validation and Precomputation](https://arxiv.org/abs/2205.10879v1)
-6. [Gaussian Process Classification of Galaxy Blend Identification in LSST](https://arxiv.org/abs/2107.09246)
-7. [MuyGPs: Scalable Gaussian Process Hyperparameter Estimation Using Local Cross-validation](https://arxiv.org/abs/2104.14581)
-8. [Star-Galaxy Image Separation with Computationally Efficient Gaussian Process Classification](https://arxiv.org/abs/2105.01106)
-9. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
+1. [Light Curve Forecasting and Anomaly Detection Using Scalable, Anisotropic, and Heteroscedastic Gaussian Process Models](https://amostech.com/TechnicalPapers/2023/Poster/Goumiri.pdf)
+1. [Scalable Gaussian Process Hyperparameter Optimization via Coverage Regularization](http://export.arxiv.org/abs/2209.11280)
+1. [Bayesian Hyperparameter Optimization in Gaussian Processes using Statistical Coverage](https://www.osti.gov/biblio/1902019)
+1. [Light Curve Completion and Forecasting Using Fast and Scalable Gaussian Processes (MuyGPs)](https://arxiv.org/abs/2208.14592)
+1. [Fast Gaussian Process Posterior Mean Prediction via Local Cross Validation and Precomputation](https://arxiv.org/abs/2205.10879v1)
+1. [Gaussian Process Classification of Galaxy Blend Identification in LSST](https://arxiv.org/abs/2107.09246)
+1. [MuyGPs: Scalable Gaussian Process Hyperparameter Estimation Using Local Cross-validation](https://arxiv.org/abs/2104.14581)
+1. [Star-Galaxy Image Separation with Computationally Efficient Gaussian Process Classification](https://arxiv.org/abs/2105.01106)
+1. [Genetic Algorithm for Hyperparameter Optimization in Gaussian Process Modeling](https://www.osti.gov/biblio/1659396)
+1. [Star-Galaxy Separation via Gaussian Processes with Model Reduction](https://arxiv.org/abs/2010.06094)
 
 ## Citation
 
@@ -372,7 +398,6 @@ If you use MuyGPyS in a research paper, please reference our article:
   journal={arXiv preprint arXiv:2104.14581},
   year={2021}
 }
-
 ```
 
 ## License
