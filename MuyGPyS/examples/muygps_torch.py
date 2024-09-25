@@ -6,6 +6,9 @@
 """
 Resources and high-level API for a deep kernel learning with MuyGPs.
 
+The `MuyGPyS.examples` subpackage is deprecated and will be streamlined or
+removed in future versions.
+
 :func:`~MuyGPyS.examples.muygps_torch.train_deep_kernel_muygps` is a high-level
 API for training deep kernel MuyGPs models for regression.
 

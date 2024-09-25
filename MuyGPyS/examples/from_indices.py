@@ -5,6 +5,9 @@
 
 """
 Convenience wrapper for GP prediction from indices.
+
+The `MuyGPyS.examples` subpackage is deprecated and will be streamlined or
+removed in future versions.
 """
 
 import numpy as np

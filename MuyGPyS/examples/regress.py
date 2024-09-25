@@ -6,6 +6,9 @@
 """
 Resources and high-level API for a simple regression workflow.
 
+The `MuyGPyS.examples` subpackage is deprecated and will be streamlined or
+removed in future versions.
+
 :func:`~MuyGPyS.examples.regress.make_regressor` is a high-level API for
 creating and training :class:`MuyGPyS.gp.muygps.MuyGPS` objects for regression.
 :func:`~MuyGPyS.examples.regress.make_multivariate_regressor` is a high-level

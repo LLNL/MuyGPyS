@@ -6,6 +6,9 @@
 """
 Resources and high-level API for a fast posterior mean inference workflow.
 
+The `MuyGPyS.examples` subpackage is deprecated and will be streamlined or
+removed in future versions.
+
 :func:`~MuyGPyS.examples.fast_posterior_mean.make_fast_regressor` is a
 high-level API for creating the necessary components for fast posterior mean
 inference.

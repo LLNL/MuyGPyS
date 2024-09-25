@@ -6,6 +6,9 @@
 """
 Resources and high-level API for a simple classification workflow.
 
+The `MuyGPyS.examples` subpackage is deprecated and will be streamlined or
+removed in future versions.
+
 :func:`~MuyGPyS.examples.classify.make_classifier` is a high-level API for
 creating and training :class:`MuyGPyS.gp.muygps.MuyGPS` objects for
 classification. :func:`~MuyGPyS.examples.classify.make_multivariate_classifier`

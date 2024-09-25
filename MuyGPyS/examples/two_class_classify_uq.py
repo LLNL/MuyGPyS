@@ -6,6 +6,9 @@
 """
 Resources and high-level API for a two-class classification with UQ workflow.
 
+The `MuyGPyS.examples` subpackage is deprecated and will be streamlined or
+removed in future versions.
+
 Implements a two-class classification workflow with a bespoke uncertainty
 quantification tuning method. [muyskens2021star]_ describes this method and its
 application to a star-galaxy image separation problem.
