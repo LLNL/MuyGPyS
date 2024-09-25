@@ -316,7 +316,7 @@ Finally, open the file `docs/_build/html/index.html` in your browser of choice.
 ## Testing
 
 In order to run tests locally, first `pip` install `MuyGPyS` from source using 
-either the `tests` option.
+the `tests` option.
 All tests in the `tests/` directory are then runnable as python scripts, e.g.
 ```
 $ python tests/kernels.py

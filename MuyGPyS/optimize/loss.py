@@ -267,7 +267,8 @@ Returns:
 
 lool_fn = LossFn(_lool_fn, make_var_predict_and_loss_fn)
 """
-Leave-one-out likelihood function.
+Leave-one-out likelihood function given in Equation (10) of
+[wood22scalable]_.
 
 Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
 response. Treats multivariate outputs as interchangeable in terms of loss
@@ -297,7 +298,7 @@ Returns:
 
 lool_fn_unscaled = LossFn(_lool_fn_unscaled, make_var_predict_and_loss_fn)
 """
-Leave-one-out likelihood function.
+Unscaled version of the leave-one-out likelihood function.
 
 Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
 response. Treats multivariate outputs as interchangeable in terms of loss
@@ -353,7 +354,8 @@ Returns:
 
 looph_fn = LossFn(_looph_fn, make_var_predict_and_loss_fn)
 """
-Variance-regularized pseudo-Huber loss function.
+Variance-regularized pseudo-Huber loss function given in Equation (8) of
+[mukangango24robust]_.
 
 Computes a smooth approximation to the Huber loss function, similar to
 :func:`pseudo_huber_fn`, with the addition of both a variance scaling and a
