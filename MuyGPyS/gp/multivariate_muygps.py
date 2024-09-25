@@ -1,10 +1,13 @@
-# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
+# Copyright 2021-2024 Lawrence Livermore National Security, LLC and other
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
 
 """
 Multivariate MuyGPs implementation
+
+The separate Multivariate MuyGPs model is deprecated and will be removed in
+future versions.
 """
 from typing import Optional, Tuple
 

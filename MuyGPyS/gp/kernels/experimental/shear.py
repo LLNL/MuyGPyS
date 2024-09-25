@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
+# Copyright 2021-2024 Lawrence Livermore National Security, LLC and other
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
@@ -114,11 +114,9 @@ class ShearKernel(KernelFn):
 
         Args:
             diffs:
-                A tensor of pairwise diffs of shape
-                `(data_count, nn_count, nn_count, feature_count)` or
-                `(data_count, nn_count, feature_count)`. In the four dimensional
-                case, it is assumed that the diagonals dists
-                diffs[i, j, j, :] == 0.
+                A tensor of pairwise or crosswise distances or distances of
+                shape `(data_count, nn_count, nn_count, feature_count)` or
+                `(data_count, nn_count, feature_count)`.
 
         Returns:
             A cross-covariance matrix of shape `(data_count * 3, nn_count * 3)`
@@ -248,11 +246,9 @@ class ShearKernel2in3out(KernelFn):
 
         Args:
             diffs:
-                A tensor of pairwise diffs of shape
-                `(data_count, nn_count, nn_count, feature_count)` or
-                `(data_count, nn_count, feature_count)`. In the four dimensional
-                case, it is assumed that the diagonals dists
-                diffs[i, j, j, :] == 0.
+                A tensor of pairwise or crosswise distances or distances of
+                shape `(data_count, nn_count, nn_count, feature_count)` or
+                `(data_count, nn_count, feature_count)`.
 
         Returns:
             A cross-covariance matrix of shape `(data_count * 3, nn_count * 3)`

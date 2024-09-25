@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
+# Copyright 2021-2024 Lawrence Livermore National Security, LLC and other
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
@@ -26,7 +26,8 @@ class OptimizeFn:
 
     MuyGPyS-compatible optimization functions are objects of this class.
     Creating a new outer-loop optimization function is as simple as
-    instantiating a new `OptimizeFn` object.
+    initializing a new `OptimizeFn` object with conforming `optimize_fn` and
+    `make_obj_fn` functions.
 
     Args:
         optimize_fn:
@@ -39,7 +40,7 @@ class OptimizeFn:
             `batch_targets` `batch_features`, `loss_kwargs`.
     """
 
-    def __init__(self, optimize_fn, make_obj_fn):
+    def __init__(self, optimize_fn: Callable, make_obj_fn: Callable):
         self._fn = optimize_fn
         self._make_obj_fn = make_obj_fn
 
@@ -64,23 +65,26 @@ class OptimizeFn:
             muygps:
                 The model to be optimized.
             batch_targets:
-                Matrix of floats of shape `(batch_count, response_count)` whose
-                rows give the expected response for each batch element.
+                Matrix of floats of shape `(batch_count,) [+ (response_count,)]`
+                listing the expected (possibly multivariate) responses for each
+                batch element.
             batch_nn_targets:
                 Tensor of floats of shape
-                `(batch_count, nn_count, response_count)` containing the
-                expected response for each nearest neighbor of each batch
-                element.
+                `(batch_count, nn_count) [+ (response_count,)]` containing the
+                expected (possibly multivariate) response for each nearest
+                neighbor of each batch element.
             crosswise_diffs:
-                A tensor of shape `(batch_count, nn_count, feature_count)` whose
-                last two dimensions list the difference between each feature of
-                each batch element element and its nearest neighbors.
+                A tensor of shape
+                `(batch_count, nn_count) [+ (feature_count,)]` containing the
+                crosswise distances or feature-dimension-wise differences
+                (extra `feature_count` dimension) between the batch elements
+                and each of their nearest neighbors.
             pairwise_diffs:
                 A tensor of shape
-                `(batch_count, nn_count, nn_count, feature_count)` containing
-                the `(nn_count, nn_count, feature_count)`-shaped pairwise
-                nearest neighbor difference tensors corresponding to each of the
-                batch elements.
+                `(batch_count, nn_count, nn_count) [+ (feature_count,)]`
+                containing the pairwise distances or feature-dimension-wise
+                differences (extra `feature_count` dimension) between all pairs
+                of nearest neighbors for each batch element.
             loss_fn:
                 The loss functor used to evaluate model performance.
             loss_kwargs:
@@ -133,23 +137,26 @@ class OptimizeFn:
             muygps:
                 The model to be optimized.
             batch_targets:
-                Matrix of floats of shape `(batch_count, response_count)` whose
-                rows give the expected response for each batch element.
+                Matrix of floats of shape `(batch_count,) [+ (response_count,)]`
+                listing the expected (possibly multivariate) responses for each
+                batch element.
             batch_nn_targets:
                 Tensor of floats of shape
-                `(batch_count, nn_count, response_count)` containing the
-                expected response for each nearest neighbor of each batch
-                element.
+                `(batch_count, nn_count) [+ (response_count,)]` containing the
+                expected (possibly multivariate) response for each nearest
+                neighbor of each batch element.
             crosswise_diffs:
-                A tensor of shape `(batch_count, nn_count, feature_count)` whose
-                last two dimensions list the difference between each feature of
-                each batch element element and its nearest neighbors.
+                A tensor of shape
+                `(batch_count, nn_count) [+ (feature_count,)]` containing the
+                crosswise distances or feature-dimension-wise differences
+                (extra `feature_count` dimension) between the batch elements
+                and each of their nearest neighbors.
             pairwise_diffs:
                 A tensor of shape
-                `(batch_count, nn_count, nn_count, feature_count)` containing
-                the `(nn_count, nn_count, feature_count)`-shaped pairwise
-                nearest neighbor difference tensors corresponding to each of the
-                batch elements.
+                `(batch_count, nn_count, nn_count) [+ (feature_count,)]`
+                containing the pairwise distances or feature-dimension-wise
+                differences (extra `feature_count` dimension) between all pairs
+                of nearest neighbors for each batch element.
             loss_fn:
                 The loss functor used to evaluate model performance.
             target_mask:
@@ -242,23 +249,25 @@ Args:
     muygps:
         The model to be optimized.
     batch_targets:
-        Matrix of floats of shape `(batch_count, response_count)` whose
-        rows give the expected response for each batch element.
+        Matrix of floats of shape `(batch_count,) [+ (response_count,)]` listing
+        the expected (possibly multivariate) responses for each batch element.
     batch_nn_targets:
         Tensor of floats of shape
-        `(batch_count, nn_count, response_count)` containing the
-        expected response for each nearest neighbor of each batch
+        `(batch_count, nn_count) [+ (response_count,)]` containing the expected
+        (possibly multivariate) response for each nearest neighbor of each batch
         element.
     crosswise_diffs:
-        A tensor of shape `(batch_count, nn_count, feature_count)` whose
-        last two dimensions list the difference between each feature of
-        each batch element element and its nearest neighbors.
+        A tensor of shape
+        `(batch_count, nn_count) [+ (feature_count,)]` containing the crosswise
+        distances or feature-dimension-wise differences (extra `feature_count`
+        dimension) between the batch elements and each of their nearest
+        neighbors.
     pairwise_diffs:
         A tensor of shape
-        `(batch_count, nn_count, nn_count, feature_count)` containing
-        the `(nn_count, nn_count, feature_count)`-shaped pairwise
-        nearest neighbor difference tensors corresponding to each of the
-        batch elements.
+        `(batch_count, nn_count, nn_count) [+ (feature_count,)]` containing the
+        pairwise distances or feature-dimension-wise differences (extra
+        `feature_count` dimension) between all pairs of nearest neighbors for
+        each batch element.
     loss_fn:
         The loss functor used to evaluate model performance.
     loss_kwargs:
@@ -318,23 +327,25 @@ Args:
     muygps:
         The model to be optimized.
     batch_targets:
-        Matrix of floats of shape `(batch_count, response_count)` whose
-        rows give the expected response for each batch element.
+        Matrix of floats of shape `(batch_count,) [+ (response_count,)]` listing
+        the expected (possibly multivariate) responses for each batch element.
     batch_nn_targets:
         Tensor of floats of shape
-        `(batch_count, nn_count, response_count)` containing the
-        expected response for each nearest neighbor of each batch
+        `(batch_count, nn_count) [+ (response_count,)]` containing the expected
+        (possibly multivariate) response for each nearest neighbor of each batch
         element.
     crosswise_diffs:
-        A tensor of shape `(batch_count, nn_count, feature_count)` whose
-        last two dimensions list the difference between each feature of
-        each batch element element and its nearest neighbors.
+        A tensor of shape
+        `(batch_count, nn_count) [+ (feature_count,)]` containing the crosswise
+        distances or feature-dimension-wise differences (extra `feature_count`
+        dimension) between the batch elements and each of their nearest
+        neighbors.
     pairwise_diffs:
         A tensor of shape
-        `(batch_count, nn_count, nn_count, feature_count)` containing
-        the `(nn_count, nn_count, feature_count)`-shaped pairwise
-        nearest neighbor difference tensors corresponding to each of the
-        batch elements.
+        `(batch_count, nn_count, nn_count) [+ (feature_count,)]` containing the
+        pairwise distances or feature-dimension-wise differences (extra
+        `feature_count` dimension) between all pairs of nearest neighbors for
+        each batch element.
     loss_fn:
         The loss functor used to evaluate model performance.
     loss_kwargs:

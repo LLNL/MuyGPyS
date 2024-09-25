@@ -1,10 +1,13 @@
-# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
+# Copyright 2021-2024 Lawrence Livermore National Security, LLC and other
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
 
 """
 Resources and high-level API for a two-class classification with UQ workflow.
+
+The `MuyGPyS.examples` subpackage is deprecated and will be streamlined or
+removed in future versions.
 
 Implements a two-class classification workflow with a bespoke uncertainty
 quantification tuning method. [muyskens2021star]_ describes this method and its

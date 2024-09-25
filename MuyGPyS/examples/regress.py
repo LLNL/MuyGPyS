@@ -1,10 +1,13 @@
-# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
+# Copyright 2021-2024 Lawrence Livermore National Security, LLC and other
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
 
 """
 Resources and high-level API for a simple regression workflow.
+
+The `MuyGPyS.examples` subpackage is deprecated and will be streamlined or
+removed in future versions.
 
 :func:`~MuyGPyS.examples.regress.make_regressor` is a high-level API for
 creating and training :class:`MuyGPyS.gp.muygps.MuyGPS` objects for regression.

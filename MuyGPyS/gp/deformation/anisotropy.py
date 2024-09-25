@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
+# Copyright 2021-2024 Lawrence Livermore National Security, LLC and other
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
@@ -50,9 +50,8 @@ class Anisotropy(DeformationFn):
 
         Args:
             dists:
-                A tensor of pairwise differences of shape
-                `(..., feature_count)` representing the difference in feature
-                dimensions between sets of observables.
+                A difference tensor of shape `(..., feature_count)` listing
+                feature-wise differences among a set of observables.
             batch_features:
                 A `(batch_count, feature_count)` matrix of features to be used
                 with a hierarchical hyperparameter. `None` otherwise.
@@ -60,10 +59,8 @@ class Anisotropy(DeformationFn):
                 A floating point length scale, or a vector of `(knot_count,)`
                 knot length scales.
         Returns:
-            A crosswise distance matrix of shape `(data_count, nn_count)` or a
-            pairwise distance tensor of shape
-            `(data_count, nn_count, nn_count)` whose last two dimensions are
-            pairwise distance matrices.
+            A scaled distance tensor of the same shape as :math:`dists` less
+            the final dimension.
         """
         if dists.shape[-1] != len(self.length_scale):
             raise ValueError(

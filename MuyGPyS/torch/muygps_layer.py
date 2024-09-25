@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
+# Copyright 2021-2024 Lawrence Livermore National Security, LLC and other
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
@@ -43,6 +43,11 @@ class MuyGPs_layer(nn.Module):
     with the posterior variance of each dimension of the response.
 
     Example:
+        >>> import MuyGPyS._src.math.torch as torch
+        >>> from MuyGPyS.gp import MuyGPS
+        >>> from MuyGPyS.gp.deformation import Isotropy
+        >>> from MuyGPyS.gp.hyperparameters import ScalarParam
+        >>> from MuyGPyS.gp.noise import HomoscedasticNoise
         >>> from MuyGPyS.torch.muygps_layer import MuyGPs_layer
         >>> muygps_model = MuyGPS(
         ...     Matern(
@@ -55,15 +60,16 @@ class MuyGPs_layer(nn.Module):
         ...     noise=HomoscedasticNoise(1e-5),
         ... )
         >>> batch_indices = torch.arange(100,)
-        >>> batch_nn_indices = torch.arange(100,)
+        >>> batch_nn_indices = torch.arange(100, 10)
         >>> batch_targets = torch.ones(100,)
-        >>> batch_nn_targets = torch.ones(100,)
+        >>> batch_nn_targets = torch.ones(100, 10)
         >>> muygps_layer_object = MuyGPs_layer(
-        ... muygps_model,
-        ... batch_indices,
-        ... batch_nn_indices,
-        ... batch_targets,
-        ... batch_nn_targets)
+        ...     muygps_model,
+        ...     batch_indices,
+        ...     batch_nn_indices,
+        ...     batch_targets,
+        ...     batch_nn_targets,
+        ... )
 
 
 

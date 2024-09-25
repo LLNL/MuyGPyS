@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Lawrence Livermore National Security, LLC and other
+# Copyright 2021-2024 Lawrence Livermore National Security, LLC and other
 # MuyGPyS Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: MIT
@@ -63,12 +63,15 @@ def make_raw_predict_and_loss_fn(
             `(batch_count, nn_count, response_count)`, respectively. Unused by
             this function, but still required by the signature.
         batch_nn_targets:
-            A tensor of shape `(batch_count, nn_count, response_count)`
-            containing the expected response of the nearest neighbors of each
-            batch element.
+            Tensor of floats of shape
+            `(batch_count, nn_count) [+ (response_count,)]` containing the
+            expected (possibly multivariate) response for each nearest neighbor
+            of each batch element.
         batch_targets:
-            A matrix of shape `(batch_count, response_count)` containing the
-            expected response of each batch element.
+            Matrix of floats of shape `(batch_count,) [+ (response_count,)]`
+            listing the expected (possibly multivariate) responses for each
+            batch element.
+
         loss_kwargs:
             Additionall keyword arguments used by the loss function.
 
@@ -132,12 +135,14 @@ def make_var_predict_and_loss_fn(
             `(batch_count, nn_count, nn_count)` and
             `(batch_count, nn_count, response_count)`, respectively.
         batch_nn_targets:
-            A tensor of shape `(batch_count, nn_count, response_count)`
-            containing the expected response of the nearest neighbors of each
-            batch element.
+            Tensor of floats of shape
+            `(batch_count, nn_count) [+ (response_count,)]` containing the
+            expected (possibly multivariate) response for each nearest neighbor
+            of each batch element.
         batch_targets:
-            A matrix of shape `(batch_count, response_count)` containing the
-            expected response of each batch element.
+            Matrix of floats of shape `(batch_count,) [+ (response_count,)]`
+            listing the expected (possibly multivariate) responses for each
+            batch element.
         target_mask:
             An array of indices, listing the output dimensions of the prediction
             to be used for optimization.
@@ -228,9 +233,9 @@ The numpy backend uses
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
     eps:
         Probabilities are clipped to the range `[eps, 1 - eps]`.
 
@@ -252,9 +257,9 @@ computes
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
 
 Returns:
     The mse loss of the prediction.
@@ -262,7 +267,8 @@ Returns:
 
 lool_fn = LossFn(_lool_fn, make_var_predict_and_loss_fn)
 """
-Leave-one-out likelihood function.
+Leave-one-out likelihood function given in Equation (10) of
+[wood22scalable]_.
 
 Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
 response. Treats multivariate outputs as interchangeable in terms of loss
@@ -276,14 +282,15 @@ penalty. The function computes
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
     variances:
         The unscaled variance of the predicted responses of shape
-        `(batch_count, response_count)`.
+        `(batch_count,) [+ (response_count,)]`.
     scale:
-        The scale variance scaling parameter of shape `(response_count,)`.
+        The scale variance scaling parameter. Either a scalar or a vector of
+        shape `(response_count,)`.
 
 Returns:
     The LOOL loss of the prediction.
@@ -291,7 +298,7 @@ Returns:
 
 lool_fn_unscaled = LossFn(_lool_fn_unscaled, make_var_predict_and_loss_fn)
 """
-Leave-one-out likelihood function.
+Unscaled version of the leave-one-out likelihood function.
 
 Computes leave-one-out likelihood (LOOL) loss of the predicted versus known
 response. Treats multivariate outputs as interchangeable in terms of loss
@@ -304,12 +311,12 @@ computes
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
     variances:
         The unscaled variance of the predicted responses of shape
-        `(batch_count, response_count)`.
+        `(batch_count,) [+ (response_count,)]`.
 
 Returns:
     The LOOL loss of the prediction.
@@ -334,9 +341,9 @@ The function computes
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
     boundary_scale:
         The boundary value for the residual beyond which the loss becomes
         approximately linear. Useful values depend on the scale of the response.
@@ -347,7 +354,8 @@ Returns:
 
 looph_fn = LossFn(_looph_fn, make_var_predict_and_loss_fn)
 """
-Variance-regularized pseudo-Huber loss function.
+Variance-regularized pseudo-Huber loss function given in Equation (8) of
+[mukangango24robust]_.
 
 Computes a smooth approximation to the Huber loss function, similar to
 :func:`pseudo_huber_fn`, with the addition of both a variance scaling and a
@@ -368,14 +376,15 @@ computes
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
     variances:
         The unscaled variance of the predicted responses of shape
-        `(batch_count, response_count)`.
+        `(batch_count,) [+ (response_count,)]`.
     scale:
-        The scale variance scaling parameter of shape `(response_count,)`.
+        The scale variance scaling parameter. Either a scalar or a vector of
+        shape `(response_count,)`.
     boundary_scale:
         The boundary value for the residual beyond which the loss becomes
         approximately linear. Corresponds to the number of standard deviations
