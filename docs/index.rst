@@ -44,6 +44,22 @@ If you use MuyGPyS in a research paper, please reference our article::
    examples/anisotropic_tutorial.ipynb
    examples/loss_tutorial.ipynb
 
+Variable Name Conventions
+=========================
+
+We make use of several canonical variable names that refer to tensor shape
+dimensions.
+Here is a partial list of the major names and their meanings.
+
+* `train_count` - the number of training observations.
+* `test_count` - the number of test or prediction observations.
+* `batch_count` - the number of elements to be predicted. Can coincide with `train_count` or `test_count` depending on usage. Sometimes also called `data_count`.
+* `feature_count` - the number of features in the observations. Omitted for univariate feature spaces.
+* `response_count` - the number of response variables. Omitted for univariate responses.
+* `nn_count` - the number of nearest neighbors upon which predictions are conditioned.
+* `out_shape` - a tuple referring to the shape associated with the output shape of the cross-covariance. For a univariate problem, `in_shape = (nn_count,)`. For a multivariate problem, `out_shape` most likely refers to `(nn_count, response_count)`.
+* `in_shape` - a tuple referring to the shape associated with how the covariance is conditioned on observations. For a univariate problem, `in_shape == (nn_count,)`. For a multivariate problem, `in_shape` might refer to `(nn_count, response_count)`, but could instead have a different second element if the observations do not come from the same space as the predictions.
+
 .. toctree::
    :maxdepth: 2
    :caption: Resources:
