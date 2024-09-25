@@ -54,24 +54,29 @@ def make_loo_crossval_fn(
             A function that realizes variance scale parameter optimization given
             a noise model.
         pairwise_diffs:
-            A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
-            containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
-            nearest neighbor difference tensors corresponding to each of the
-            batch elements.
+            A tensor of shape
+            `(batch_count, nn_count, nn_count) [+ (feature_count,)]` containing
+            the pairwise distances or feature-dimension-wise differences (extra
+            `feature_count` dimension) between all pairs of nearest neighbors
+            for each batch element.
         crosswise_diffs:
-            A tensor of shape `(batch_count, nn_count, feature_count)` whose
-            last two dimensions list the difference between each feature of each
-            batch element element and its nearest neighbors.
+            A tensor of shape
+            `(batch_count, nn_count) [+ (feature_count,)]` containing the
+            crosswise distances or feature-dimension-wise differences (extra
+            `feature_count` dimension) between the batch elements and each of
+            their nearest neighbors.
         batch_nn_targets:
-            Tensor of floats of shape `(batch_count, nn_count, response_count)`
-            containing the expected response for each nearest neighbor of each
-            batch element.
+            Tensor of floats of shape
+            `(batch_count, nn_count) [+ (response_count,)]` containing the
+            expected (possibly multivariate) response for each nearest neighbor
+            of each batch element.
         batch_targets:
-            Matrix of floats of shape `(batch_count, response_count)` whose rows
-            give the expected response for each  batch element.
+            Matrix of floats of shape `(batch_count,) [+ (response_count,)`
+            listing the expected (possibly multivariate) responses for each
+            batch element.
         batch_features:
-            Matrix of floats of shape `(batch_count, feature_count)` whose rows
-            give the features for each batch element.
+            Optional matrix of floats of shape `(batch_count, feature_count)`
+            whose rows give the features for each batch element.
         target_mask:
             An array of indices, listing the output dimensions of the prediction
             to be used for optimization.

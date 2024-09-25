@@ -63,12 +63,15 @@ def make_raw_predict_and_loss_fn(
             `(batch_count, nn_count, response_count)`, respectively. Unused by
             this function, but still required by the signature.
         batch_nn_targets:
-            A tensor of shape `(batch_count, nn_count, response_count)`
-            containing the expected response of the nearest neighbors of each
-            batch element.
+            Tensor of floats of shape
+            `(batch_count, nn_count) [+ (response_count,)]` containing the
+            expected (possibly multivariate) response for each nearest neighbor
+            of each batch element.
         batch_targets:
-            A matrix of shape `(batch_count, response_count)` containing the
-            expected response of each batch element.
+            Matrix of floats of shape `(batch_count,) [+ (response_count,)]`
+            listing the expected (possibly multivariate) responses for each
+            batch element.
+
         loss_kwargs:
             Additionall keyword arguments used by the loss function.
 
@@ -132,12 +135,14 @@ def make_var_predict_and_loss_fn(
             `(batch_count, nn_count, nn_count)` and
             `(batch_count, nn_count, response_count)`, respectively.
         batch_nn_targets:
-            A tensor of shape `(batch_count, nn_count, response_count)`
-            containing the expected response of the nearest neighbors of each
-            batch element.
+            Tensor of floats of shape
+            `(batch_count, nn_count) [+ (response_count,)]` containing the
+            expected (possibly multivariate) response for each nearest neighbor
+            of each batch element.
         batch_targets:
-            A matrix of shape `(batch_count, response_count)` containing the
-            expected response of each batch element.
+            Matrix of floats of shape `(batch_count,) [+ (response_count,)]`
+            listing the expected (possibly multivariate) responses for each
+            batch element.
         target_mask:
             An array of indices, listing the output dimensions of the prediction
             to be used for optimization.
@@ -228,9 +233,9 @@ The numpy backend uses
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
     eps:
         Probabilities are clipped to the range `[eps, 1 - eps]`.
 
@@ -252,9 +257,9 @@ computes
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
 
 Returns:
     The mse loss of the prediction.
@@ -276,14 +281,15 @@ penalty. The function computes
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
     variances:
         The unscaled variance of the predicted responses of shape
-        `(batch_count, response_count)`.
+        `(batch_count,) [+ (response_count,)]`.
     scale:
-        The scale variance scaling parameter of shape `(response_count,)`.
+        The scale variance scaling parameter. Either a scalar or a vector of
+        shape `(response_count,)`.
 
 Returns:
     The LOOL loss of the prediction.
@@ -304,12 +310,12 @@ computes
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
     variances:
         The unscaled variance of the predicted responses of shape
-        `(batch_count, response_count)`.
+        `(batch_count,) [+ (response_count,)]`.
 
 Returns:
     The LOOL loss of the prediction.
@@ -334,9 +340,9 @@ The function computes
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
     boundary_scale:
         The boundary value for the residual beyond which the loss becomes
         approximately linear. Useful values depend on the scale of the response.
@@ -368,14 +374,15 @@ computes
 
 Args:
     predictions:
-        The predicted response of shape `(batch_count, response_count)`.
+        The predicted response of shape `(batch_count,) [+ (response_count,)]`.
     targets:
-        The expected response of shape `(batch_count, response_count)`.
+        The expected response of shape `(batch_count,) [+ (response_count,)]`.
     variances:
         The unscaled variance of the predicted responses of shape
-        `(batch_count, response_count)`.
+        `(batch_count,) [+ (response_count,)]`.
     scale:
-        The scale variance scaling parameter of shape `(response_count,)`.
+        The scale variance scaling parameter. Either a scalar or a vector of
+        shape `(response_count,)`.
     boundary_scale:
         The boundary value for the residual beyond which the loss becomes
         approximately linear. Corresponds to the number of standard deviations
