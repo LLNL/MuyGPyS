@@ -98,16 +98,15 @@ class RBF(KernelFn):
 
         Args:
             diffs:
-                A tensor of pairwise diffs of shape
-                `(data_count, nn_count, nn_count, feature_count)` or
-                `(data_count, nn_count, feature_count)`. In the four dimensional
-                case, it is assumed that the diagonals dists
-                diffs[i, j, j, :] == 0.
+                A tensor of pairwise or crosswise distances or distances of
+                shape `(data_count, nn_count, nn_count) [+ (feature_count,)]` or
+                `(data_count, nn_count) [+ (feature_count,)]`. The final
+                `feature_count` dimension is only required for
+                feature-dimension-wise deformations such as Anisotropy.
 
         Returns:
-            A cross-covariance matrix of shape `(data_count, nn_count)` or a
-            tensor of shape `(data_count, nn_count, nn_count)` whose last two
-            dimensions are kernel matrices.
+            A cross-covariance tensor of shape `(data_count,) + out_shape` or a
+            covariance tensor of shape `(data_count,) + in_shape + in_shape`.
         """
         return self._fn(diffs, **kwargs)
 

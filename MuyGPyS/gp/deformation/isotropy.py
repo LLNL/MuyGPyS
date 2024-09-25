@@ -75,11 +75,9 @@ class Isotropy(DeformationFn):
                 A tensor of distances between sets of observables.
             length_scale:
                 A floating point length scale.
+
         Returns:
-            A scaled distance matrix of the same shape as shape `(data_count, nn_count)` or a
-            pairwise distance tensor of shape
-            `(data_count, nn_count, nn_count)` whose last two dimensions are
-            pairwise distance matrices.
+            A scaled distance tensor of the same shape as :math:`dists`.
         """
         if length_scale is None:
             length_scale = self.length_scale(**kwargs)
@@ -196,14 +194,13 @@ class DifferenceIsotropy(Isotropy):
 
         Args:
             dists:
-                A tensor of distances between sets of observables.
+                A difference tensor of shape `(..., feature_count)` listing
+                feature-wise differences among a set of observables.
             length_scale:
                 A floating point length scale.
         Returns:
-            A scaled distance matrix of the same shape as shape `(data_count, nn_count)` or a
-            pairwise distance tensor of shape
-            `(data_count, nn_count, nn_count)` whose last two dimensions are
-            pairwise distance matrices.
+            A scaled distance tensor of the same shape as :math:`dists` less
+            the final dimension.
         """
         if length_scale is None:
             length_scale = self.length_scale()

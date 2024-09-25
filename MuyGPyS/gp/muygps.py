@@ -53,7 +53,7 @@ class MuyGPS:
         ...    kernel=Matern(
         ...        smoothness=Parameter(0.38, (0.1, 2.5)),
         ...        deformation=Isotropy(
-        ...            metric=F2,
+        ...            metric=l2,
         ...            length_scale=Parameter(0.2),
         ...        ),
         ...    ),
@@ -80,8 +80,8 @@ class MuyGPS:
 
     Args:
         kernel:
-            The kernel to be used. Defines :math:`Kin_\\theta(\\cdot, \\cdot)` as
-            referenced in `MuyGPS` functions.
+            The kernel to be used. Defines :math:`Kin_\\theta(\\cdot, \\cdot)`
+            as referenced in `MuyGPS` functions.
         noise:
             A noise model. Defines :math:`\\varepsilon` as referenced in
             `MuyGPS` functions.
@@ -191,21 +191,22 @@ class MuyGPS:
 
         Args:
             Kin:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count)`-shaped kernel matrices corresponding
-                to each of the batch elements.
+                A tensor of shape `(batch_count,) + in_shape + in_shape`
+                containing the pairwise, possibly multivariate covariance
+                among the neighborhood for each batch element.
             Kcross:
-                A matrix of shape `(batch_count, nn_count)` whose rows consist
-                of `(1, nn_count)`-shaped cross-covariance vector corresponding
-                to each of the batch elements and its nearest neighbors.
+                A tensor of shape `(batch_count,) + out_shape` listing the
+                (possibly multivariate) cross-covariance between each
+                batch element and its nearest neighbors.
             batch_nn_targets:
-                A tensor of shape `(batch_count, nn_count, response_count)`
-                whose last dimension lists the vector-valued responses for the
-                nearest neighbors of each batch element.
+                A tensor of shape
+                `(batch_count,) + in_shape [+ (response_count,)]`
+                listing the (possibly multivariate) responses for the nearest neighbors of each batch element.
 
         Returns:
-            A matrix of shape `(batch_count, response_count)` whose rows are
-            the predicted response for each of the given indices.
+            A matrix of shape `(batch_count,) [+ (response_count,)]` listing
+            the (possibly multivariate) predicted response for each batch
+            element.
         """
         return self._mean_fn(Kin, Kcross, batch_nn_targets)
 
@@ -241,17 +242,19 @@ class MuyGPS:
 
         Args:
             Kin:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count)`-shaped kernel matrices corresponding
-                to each of the batch elements.
+                A tensor of shape `(batch_count,) + in_shape + in_shape`
+                containing the pairwise, possibly multivariate covariance
+                among the neighborhood for each batch element.
             Kcross:
-                A matrix of shape `(batch_count, nn_count)` whose rows consist
-                of `(1, nn_count)`-shaped cross-covariance vector corresponding
-                to each of the batch elements and its nearest neighbors.
+                A tensor of shape `(batch_count,) + out_shape` listing the
+                (possibly multivariate) cross-covariance between each
+                batch element and its nearest neighbors.
 
         Returns:
-            A vector of shape `(batch_count, response_count)` consisting of the
-            diagonal elements of the posterior variance.
+            A matrix of shape
+            `(batch_count,) [+ (response_count, response_count)]` consisting of
+            the (possibly blockwise) diagonal elements of the posterior
+            variance.
         """
         return self._var_fn(Kin, Kcross)
 
@@ -278,13 +281,13 @@ class MuyGPS:
 
         Args:
             Kin:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count)`-shaped kernel matrices corresponding
-                to each of the batch elements.
+                A tensor of shape `(batch_count,) + in_shape + in_shape`
+                containing the pairwise, possibly multivariate covariance
+                among the neighborhood for each batch element.
             Kcross:
-                A matrix of shape `(batch_count, nn_count)` whose rows consist
-                of `(1, nn_count)`-shaped cross-covariance vector corresponding
-                to each of the batch elements and its nearest neighbors.
+                A tensor of shape `(batch_count,) + out_shape` listing the
+                (possibly multivariate) cross-covariance between each
+                batch element and its nearest neighbors.
 
         Returns:
             A matrix :math:`C` of shape `(train_count, nn_count)` whose rows are
@@ -324,17 +327,16 @@ class MuyGPS:
 
         Args:
             Kcross:
-                A matrix of shape `(batch_count, nn_count)` whose rows consist
-                of `(1, nn_count)`-shaped cross-covariance vector corresponding
-                to each of the batch elements and its nearest neighbors.
+                A tensor of shape `(batch_count,) + out_shape` listing the
+                (possibly multivariate) cross-covariance between each
+                batch element and its nearest neighbors.
             coeffs_tensor:
-                A matrix of shape `(batch_count, nn_count, response_count)`
-                whose rows are given by precomputed coefficients.
-
+                A tensor of shape `(batch_count,) + out_shape` listing the
+                precomputed coefficients for each batch element.
 
         Returns:
-            A matrix of shape `(batch_count, response_count)` whose rows are
-            the predicted response for each of the given indices.
+            A matrix of shape `(batch_count,) [+ (response_count,)]` listing
+            the predicted response for each batch element.
         """
         return self._fast_posterior_mean_fn(Kcross, coeffs_tensor)
 
@@ -380,15 +382,15 @@ class MuyGPS:
         Args:
             pairwise_diffs:
                 A tensor of shape
-                `(batch_count, nn_count, nn_count, feature_count)` containing
-                the `(nn_count, nn_count, feature_count)`-shaped pairwise
-                nearest neighbor difference tensors corresponding to each of the
-                batch elements.
+                `(batch_count, nn_count, nn_count) [+ (feature_count,)]`
+                containing the pairwise distances or feature-dimension-wise
+                differences (extra `feature_count` dimension) between all pairs
+                of nearest neighbors for each batch element.
             nn_targets:
                 Tensor of floats of shape
-                `(batch_count, nn_count, response_count)` containing the
-                expected response for each nearest neighbor of each batch
-                element.
+                `(batch_count, nn_count) [+ (response_count,)]` containing the
+                expected (possibly multivariate) response for each nearest
+                neighbor of each batch element.
 
         Returns:
             A reference to this model with a freshly-optimized `scale`
@@ -438,18 +440,24 @@ class MuyGPS:
         Returns
         -------
         crosswise_tensor:
-            A tensor of shape `(batch_count, nn_count, ...)` whose second and
-            subsequent dimensions list the metric comparison between each batch
-            element element and its nearest neighbors.
-        pairwise_diffs:
-            A tensor of shape `(batch_count, nn_count, nn_count, ...)`
-            containing the `(nn_count, nn_count, ...)`-shaped pairwise nearest
-            neighbor metrics tensors corresponding to each of the batch
-            elements.
+            A tensor of shape
+            `(batch_count, nn_count) [+ (feature_count,)]` containing the
+            crosswise distances or feature-dimension-wise differences
+            (extra `feature_count` dimension) between the batch elements
+            and each of their nearest neighbors. Shape depends on the
+            deformation.
+        pairwise_tensor:
+            A tensor of shape
+            `(batch_count, nn_count, nn_count) [+ (feature_count,)]`
+            containing the pairwise distances or feature-dimension-wise
+            differences (extra `feature_count` dimension) between all pairs
+            of nearest neighbors for each batch element. Shape depends on the
+            deformation.
         batch_nn_targets:
-            Tensor of floats of shape `(batch_count, nn_count, ...)` containing
-            the expected response for each nearest neighbor of each batch
-            element.
+            Tensor of floats of shape
+            `(batch_count, nn_count) [+ (response_count,)]` containing the
+            expected (possibly multivariate) response for each nearest
+            neighbor of each batch element.
         """
         if test_features is None:
             test_features = train_features
@@ -499,21 +507,28 @@ class MuyGPS:
         Returns
         -------
         crosswise_tensor:
-            A tensor of shape `(batch_count, nn_count, ...)` whose second and
-            subsequent dimensions list the metric comparison between each batch
-            element element and its nearest neighbors.
-        pairwise_diffs:
-            A tensor of shape `(batch_count, nn_count, nn_count, ...)`
-            containing the `(nn_count, nn_count, ...)`-shaped pairwise nearest
-            neighbor metrics tensors corresponding to each of the batch
-            elements.
+            A tensor of shape
+            `(batch_count, nn_count) [+ (feature_count,)]` containing the
+            crosswise distances or feature-dimension-wise differences
+            (extra `feature_count` dimension) between the batch elements
+            and each of their nearest neighbors. Shape depends on the
+            deformation.
+        pairwise_tensor:
+            A tensor of shape
+            `(batch_count, nn_count, nn_count) [+ (feature_count,)]`
+            containing the pairwise distances or feature-dimension-wise
+            differences (extra `feature_count` dimension) between all pairs
+            of nearest neighbors for each batch element. Shape depends on the
+            deformation.
         batch_targets:
-            Matrix of floats of shape `(batch_count, ...)` whose rows
-            give the expected response for each batch element.
+            Matrix of floats of shape `(batch_count,) [+ (response_count,)`
+            containing the (possibly multivariate) expected response for each
+            batch element.
         batch_nn_targets:
-            Tensor of floats of shape `(batch_count, nn_count, ...)` containing
-            the expected response for each nearest neighbor of each batch
-            element.
+            Tensor of floats of shape
+            `(batch_count, nn_count) [+ (response_count,)]` containing the
+            expected (possibly multivariate) response for each nearest
+            neighbor of each batch element.
         """
         crosswise_tensor = self.kernel.deformation.crosswise_tensor(
             train_features,

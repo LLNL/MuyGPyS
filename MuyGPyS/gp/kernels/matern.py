@@ -126,7 +126,7 @@ class Matern(KernelFn):
         _backend_ones: Callable = mm.ones,
         _backend_zeros: Callable = mm.zeros,
         _backend_squeeze: Callable = mm.squeeze,
-        **_backend_fns
+        **_backend_fns,
     ):
         super().__init__(deformation=deformation)
         self.smoothness = NamedParam("smoothness", smoothness)
@@ -155,13 +155,15 @@ class Matern(KernelFn):
 
         Args:
             diffs:
-                A tensor of pairwise differences of shape
-                `(data_count, nn_count, nn_count, feature_count)`. It is assumed
-                that the vectors along the diagonals diffs[i, j, j, :] == 0.
+                A tensor of pairwise or crosswise distances or distances of
+                shape `(data_count, nn_count, nn_count) [+ (feature_count,)]` or
+                `(data_count, nn_count) [+ (feature_count,)]`. The final
+                `feature_count` dimension is only required for
+                feature-dimension-wise deformations such as Anisotropy.
+
         Returns:
-            A cross-covariance matrix of shape `(data_count, nn_count)` or a
-            tensor of shape `(data_count, nn_count, nn_count)` whose last two
-            dimensions are kernel matrices.
+            A cross-covariance tensor of shape `(data_count,) + out_shape` or a
+            covariance tensor of shape `(data_count,) + in_shape + in_shape`.
         """
         return self._fn(diffs, **kwargs)
 

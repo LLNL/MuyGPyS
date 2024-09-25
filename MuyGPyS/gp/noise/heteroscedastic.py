@@ -28,7 +28,7 @@ class HeteroscedasticNoise(TensorParam, NoiseFn):
 
     Args:
         val:
-            An ndarray of shape `(batch_count, nn_count)`
+            An ndarray of shape `(batch_count,) + in_shape`
             containing the heteroscedastic nugget matrix.
     Raises:
         ValueError:
@@ -56,14 +56,13 @@ class HeteroscedasticNoise(TensorParam, NoiseFn):
 
         Args:
             Kin:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count)`-shaped kernel matrices corresponding
-                to each of the batch elements.
+                A tensor of shape `(batch_count,) + in_shape + in_shape`
+                containing the pairwise, possibly multivariate covariance
+                among the neighborhood for each batch element.
 
         Returns:
-            A tensor of shape `(batch_count, nn_count, nn_count)` where the
-            final two dimensions consist of the perturbed matrices of the input
-            :math:`Kin`.
+            A tensor of shape `(batch_count,) + in_shape + in_shape` containing
+            the perturbed instance of the input :math:`Kin`.
         """
         return self._perturb_fn(Kin, self._val)
 
@@ -79,9 +78,9 @@ class HeteroscedasticNoise(TensorParam, NoiseFn):
         Args:
             fn:
                 A callable whose first argument is assumed to be a tensor of
-                shape `(batch_count, nn_count, nn_count)` containing the
-                `(nn_count, nn_count)`-shaped kernel matrices corresponding to
-                each of the batch elements.
+                shape `(batch_count,) + in_shape + in_shape` pairwise, possibly
+                multivariate covariance among the neighborhood for each batch
+                element.
 
         Returns:
             A Callable with the same signature that applies a homoscedastic

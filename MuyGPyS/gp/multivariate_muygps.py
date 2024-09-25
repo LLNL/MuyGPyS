@@ -5,6 +5,9 @@
 
 """
 Multivariate MuyGPs implementation
+
+The separate Multivariate MuyGPs model is deprecated and will be removed in
+future versions.
 """
 from typing import Optional, Tuple
 

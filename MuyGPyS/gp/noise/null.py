@@ -37,9 +37,9 @@ class NullNoise(ScalarParam, NoiseFn):
 
         Args:
             Kin:
-                A tensor of shape `(batch_count, nn_count, nn_count)` containing
-                the `(nn_count, nn_count)`-shaped kernel matrices corresponding
-                to each of the batch elements.
+                A tensor of shape `(batch_count,) + in_shape + in_shape`
+                containing the pairwise, possibly multivariate covariance
+                among the neighborhood for each batch element.
 
         Returns:
             The same tensor.

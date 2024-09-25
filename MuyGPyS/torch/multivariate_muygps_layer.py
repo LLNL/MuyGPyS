@@ -5,6 +5,9 @@
 
 """
 MuyGPs PyTorch implementation
+
+The separate Multivariate MuyGPs model is deprecated and will be removed in
+future versions.
 """
 from MuyGPyS import config
 from MuyGPyS._src.math.torch import nn
