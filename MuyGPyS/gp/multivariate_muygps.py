@@ -10,6 +10,7 @@ The separate Multivariate MuyGPs model is deprecated and will be removed in
 future versions.
 """
 from typing import Optional, Tuple
+from warnings import warn
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _mmuygps_fast_posterior_mean
@@ -75,6 +76,11 @@ class MultivariateMuyGPS:
         self,
         *model_args,
     ):
+        warn(
+            f"{self.__class__.__name__} is deprecated and will be removed.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.models = [MuyGPS(**args) for args in model_args]
 
     def fixed(self) -> bool:

@@ -9,6 +9,8 @@ MuyGPs PyTorch implementation
 The separate Multivariate MuyGPs model is deprecated and will be removed in
 future versions.
 """
+from warnings import warn
+
 from MuyGPyS import config
 from MuyGPyS._src.math.torch import nn
 
@@ -100,6 +102,11 @@ class MultivariateMuyGPs_layer(nn.Module):
         batch_targets,
         batch_nn_targets,
     ):
+        warn(
+            f"{self.__class__.__name__} is deprecated and will be removed.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__()
         self.multivariate_muygps_model = multivariate_muygps_model
         self.deformation = self.multivariate_muygps_model.models[
