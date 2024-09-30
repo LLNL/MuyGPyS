@@ -90,4 +90,6 @@ def _muygps_fast_posterior_mean_precompute(
     train_nn_targets_fast: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    return np.linalg.solve(Kin, train_nn_targets_fast)
+    if train_nn_targets_fast.ndim == 2:
+        train_nn_targets_fast = train_nn_targets_fast[:, :, None]
+    return np.squeeze(np.linalg.solve(Kin, train_nn_targets_fast))
