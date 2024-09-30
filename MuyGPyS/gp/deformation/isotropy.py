@@ -41,7 +41,7 @@ class Isotropy(DeformationFn):
     def __init__(
         self,
         metric: MetricFn,
-        length_scale: ScalarParam,
+        length_scale: Union[ScalarParam, HierarchicalParam],
     ):
         # This is brittle and should be refactored
         if isinstance(length_scale, ScalarParam):

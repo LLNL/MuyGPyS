@@ -156,6 +156,98 @@ class HierarchicalNonstationaryHyperparameterTest(parameterized.TestCase):
             shape=(batch_count, nn_count, nn_count),
         )
 
+    @parameterized.parameters(
+        (
+            (
+                feature_count,
+                type(high_level_kernel).__name__,
+                smoothness,
+                deformation,
+            )
+            for feature_count in [2, 17]
+            for knot_count in [10]
+            for knot_features in [
+                sample_knots(feature_count=feature_count, knot_count=knot_count)
+            ]
+            for knot_values in [
+                VectorParameter(*[Parameter(i) for i in range(knot_count)]),
+            ]
+            for high_level_kernel in [RBF(), Matern()]
+            for smoothness, deformation in [
+                (
+                    Parameter(1.5),
+                    Isotropy(
+                        l2,
+                        length_scale=Parameter(1),
+                    ),
+                ),
+                (
+                    HierarchicalParameter(
+                        knot_features, knot_values, high_level_kernel
+                    ),
+                    Isotropy(
+                        l2,
+                        length_scale=Parameter(1),
+                    ),
+                ),
+                (
+                    Parameter(1.5),
+                    Isotropy(
+                        l2,
+                        length_scale=HierarchicalParameter(
+                            knot_features, knot_values, high_level_kernel
+                        ),
+                    ),
+                ),
+            ]
+        )
+    )
+    def test_hierarchical_nonstationary_matern(
+        self,
+        feature_count,
+        high_level_kernel,
+        smoothness,
+        deformation,
+    ):
+        muygps = MuyGPS(
+            kernel=Matern(smoothness=smoothness, deformation=deformation),
+        )
+
+        # prepare data
+        data_count = 1000
+        data = _make_gaussian_dict(
+            data_count=data_count,
+            feature_count=feature_count,
+            response_count=1,
+        )
+
+        # neighbors and differences
+        nn_count = 30
+        nbrs_lookup = NN_Wrapper(
+            data["input"], nn_count, nn_method="exact", algorithm="ball_tree"
+        )
+        batch_count = 200
+        batch_indices, batch_nn_indices = sample_batch(
+            nbrs_lookup, batch_count, data_count
+        )
+        (_, pairwise_diffs, _, _) = muygps.make_train_tensors(
+            batch_indices,
+            batch_nn_indices,
+            data["input"],
+            data["output"],
+        )
+
+        batch_features = batch_features_tensor(data["input"], batch_indices)
+
+        Kin = muygps.kernel(pairwise_diffs, batch_features=batch_features)
+
+        _check_ndarray(
+            self.assertEqual,
+            Kin,
+            mm.ftype,
+            shape=(batch_count, nn_count, nn_count),
+        )
+
 
 if __name__ == "__main__":
     absltest.main()
