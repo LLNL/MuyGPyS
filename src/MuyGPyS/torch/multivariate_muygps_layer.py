@@ -46,6 +46,8 @@ class MultivariateMuyGPs_layer(nn.Module):
     , and a vector of :math:`\\sigma^2` indicating the scale parameter
     associated with the posterior variance of each dimension of the response.
 
+    **This class is deprecated and will be removed in future versions.**
+
     Example:
         >>> from MuyGPyS.torch.muygps_layer import MultivariateMuyGPs_layer
         >>> multivariate_muygps_model = MMuyGPs(

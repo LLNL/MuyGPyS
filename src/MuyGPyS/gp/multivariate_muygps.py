@@ -30,6 +30,8 @@ class MultivariateMuyGPS:
     This class is similar in interface to :class:`MuyGPyS.gp.muygps.MuyGPS`, but
     requires a list of hyperparameter dicts at initialization.
 
+    **This class is deprecated and will be removed in future versions.**
+
     Example:
         >>> from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
         >>> k_kwargs1 = {
