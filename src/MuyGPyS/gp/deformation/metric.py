@@ -279,3 +279,10 @@ Args:
 Returns:
     A distance tensor of shape `(...)`.
 """
+
+dot = MetricFn(
+    differences_metric_fn=None,
+    crosswise_differences_fn=_crosswise_similarity,
+    pairwise_diffferences_fn=_pairwise_similarity,
+    apply_length_scale_fn=lambda x, y: x
+)
