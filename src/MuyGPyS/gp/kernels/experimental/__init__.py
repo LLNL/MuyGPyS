@@ -5,3 +5,4 @@
 
 from .shear import ShearKernel
 from .shear import ShearKernel2in3out
+from .soap import SOAPKernel
