@@ -3,12 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-import MuyGPyS._src.math.numpy as np
+import MuyGPyS._src.math.numpy as mm
 
 
 def _omega(
     diffs
-):
+) -> mm.ndarray:
     
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
@@ -20,7 +20,7 @@ def _omega(
 
 def _T1(
     diffs
-):
+) -> mm.ndarray:
     
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
@@ -32,7 +32,7 @@ def _T1(
 
 def _T2(
     diffs
-):
+) -> mm.ndarray:
     
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
@@ -44,7 +44,7 @@ def _T2(
 
 def _T3(
     diffs
-):
+) -> mm.ndarray:
     
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
@@ -55,15 +55,17 @@ def _T3(
     return djq_slice
 
 def _soap_fn(
-    diffs: np.ndarray,
-    zeta=2.0
-):
+    diffs: mm.ndarray,
+    sensitivity: float
+) -> mm.ndarray:
 
     omega = _omega(diffs)
     T1 = _T1(diffs)
     T2 = _T2(diffs)
     T3 = _T3(diffs)
 
-    Knm = (zeta - 1) * (omega**(zeta - 2)) * T2 * T3 + (omega**(zeta - 1)) * T1
+    Knm = (sensitivity - 1.0) * (omega**(sensitivity - 2.0)) * T2 * T3 + (omega**(sensitivity - 1.0)) * T1
 
-    return zeta * np.sum(Knm, axis=(-2, -1))
+    Kij = sensitivity * mm.sum(Knm, axis=(-2, -1))
+
+    return Kij

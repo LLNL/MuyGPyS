@@ -14,8 +14,13 @@ interacting with the rest of the library.
 from typing import Callable
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _l2, _F2
-from MuyGPyS._src.gp.tensors import _crosswise_tensor, _pairwise_tensor, _crosswise_similarity, _pairwise_similarity
+from MuyGPyS._src.gp.tensors import _l2, _F2, _dot
+from MuyGPyS._src.gp.tensors import (
+    _crosswise_tensor, 
+    _pairwise_tensor,
+    _crosswise_similarity, 
+    _pairwise_similarity
+)
 
 
 class MetricFn:
@@ -57,12 +62,12 @@ class MetricFn:
         self,
         differences_metric_fn: Callable,
         crosswise_differences_fn: Callable,
-        pairwise_diffferences_fn: Callable,
+        pairwise_differences_fn: Callable,
         apply_length_scale_fn: Callable,
     ):
         self._differences_metric_fn = differences_metric_fn
         self._crosswise_differences_fn = crosswise_differences_fn
-        self._pairwise_differences_fn = pairwise_diffferences_fn
+        self._pairwise_differences_fn = pairwise_differences_fn
         self._apply_length_scale_fn = apply_length_scale_fn
 
     def __call__(self, *args, **kwargs):
@@ -237,7 +242,7 @@ class MetricFn:
 l2 = MetricFn(
     differences_metric_fn=_l2,
     crosswise_differences_fn=_crosswise_tensor,
-    pairwise_diffferences_fn=_pairwise_tensor,
+    pairwise_differences_fn=_pairwise_tensor,
     apply_length_scale_fn=lambda x, y: x / y,
 )
 """
@@ -260,7 +265,7 @@ Returns:
 F2 = MetricFn(
     differences_metric_fn=_F2,
     crosswise_differences_fn=_crosswise_tensor,
-    pairwise_diffferences_fn=_pairwise_tensor,
+    pairwise_differences_fn=_pairwise_tensor,
     apply_length_scale_fn=lambda x, y: x / y**2,
 )
 """
@@ -283,6 +288,6 @@ Returns:
 dot = MetricFn(
     differences_metric_fn=None,
     crosswise_differences_fn=_crosswise_similarity,
-    pairwise_diffferences_fn=_pairwise_similarity,
+    pairwise_differences_fn=_pairwise_similarity,
     apply_length_scale_fn=lambda x, y: x
 )

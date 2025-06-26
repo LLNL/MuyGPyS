@@ -12,16 +12,15 @@ Define some of the specifics and give a bit of background.
 from typing import Callable, List, Tuple
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.kernels.soap import (
-    _soap_fn
-)
+from MuyGPyS._src.gp.kernels.soap import _soap_fn
 from MuyGPyS._src.util import auto_str
 from MuyGPyS.gp.deformation import (
+    DeformationFn,
     DifferenceIsotropy,
     dot,
 )
 from MuyGPyS.gp.kernels import KernelFn
-from MuyGPyS.gp.hyperparameter import ScalarParam
+from MuyGPyS.gp.hyperparameter import ScalarParam, NamedParam
 
 
 @auto_str
@@ -33,12 +32,14 @@ class SOAPKernel(KernelFn):
     """
 
     def __init__(
-            self,
-            deformation: DifferenceIsotropy = DifferenceIsotropy(
-                dot, length_scale=ScalarParam(1.0)
-            ),
-            _backend_fn: Callable = _soap_fn,
-            _backend_zeros: Callable = mm.zeros
+        self,
+        sensitivity: ScalarParam = ScalarParam(2.0),
+        deformation: DeformationFn = DifferenceIsotropy(
+            metric=dot, length_scale=ScalarParam(1.0)
+        ),
+        _backend_fn: Callable = _soap_fn,
+        _backend_zeros: Callable = mm.zeros,
+        _backend_squeeze: Callable = mm.squeeze,
     ):
         super().__init__(deformation=deformation)
         if not isinstance(self.deformation, DifferenceIsotropy):
@@ -46,36 +47,35 @@ class SOAPKernel(KernelFn):
                 "SOAPKernel must be an instance of DifferenceIsotropy"
                 f" not {type(deformation)}"
             )
+        self.sensitivity = NamedParam("sensitivity", sensitivity)
         self._kernel_fn = _backend_fn
         self._backend_zeros = _backend_zeros
+        self._backend_squeeze = _backend_squeeze
+
         self._make()
 
     def _make(self):
         super()._make_base()
+        self.sensitivity.populate(self._hyperparameters)
 
-        # do the ls passthrough like in the shaer kernel
-        # helps because current implementation 
-        def embedded_fn(diffs, *args, length_scale=None, **kwargs):
-            if length_scale is None:
-                length_scale = self.deformation.length_scale()
+        # Need length_scale passthrough
+        def embedded_fn(diffs, *args, sensitivity=None, **kwargs):
+            if sensitivity is None:
+                sensitivity = self.sensitivity()
             return self._kernel_fn(
-                diffs, *args, length_scale=length_scale, **kwargs
+                diffs, *args, sensitivity=sensitivity, **kwargs
             )
-        
+
         self._fn = embedded_fn
 
-    def __call__(self, diffs: mm.ndarray, adjust=True, **kwargs) -> mm.ndarray:
+    def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
         """
         Compute the SOAP Kernel(s) from distance tensors
         """
-        if adjust and diffs.shape[-4] != diffs.shape[-6]:
-            # add unitary dimension to crosswise tensor
-            diffs = diffs[..., None, :, :, :]
-
-            return self._fn(diffs, **kwargs)
+        return self._fn(diffs, **kwargs)
         
     def Kout(self, **kwargs) -> mm.ndarray:
-        return self.__call__(self._backend_zeros((1, 1, 1, 1, 1, 1, 1)))
+        return self._backend_squeeze(self._backend_zeros((1, 3, 1, 3, 4, 1, 1)))
         
     def get_opt_params(
             self,
