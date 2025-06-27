@@ -14,11 +14,11 @@ interacting with the rest of the library.
 from typing import Callable
 
 import MuyGPyS._src.math as mm
-from MuyGPyS._src.gp.tensors import _l2, _F2, _dot
+from MuyGPyS._src.gp.tensors import _l2, _F2
 from MuyGPyS._src.gp.tensors import (
-    _crosswise_tensor, 
+    _crosswise_tensor,
     _pairwise_tensor,
-    _crosswise_similarity, 
+    _crosswise_similarity,
     _pairwise_similarity
 )
 

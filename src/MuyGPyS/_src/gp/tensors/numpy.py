@@ -84,7 +84,8 @@ def _pairwise_differences(points: np.ndarray) -> np.ndarray:
         return points[:, :, None, :] - points[:, None, :, :]
     else:
         raise ValueError(f"points shape {points.shape} is not supported.")
-    
+
+
 def _crosswise_similarity(
         data: np.ndarray,
         nn_data: np.ndarray,
@@ -99,6 +100,7 @@ def _crosswise_similarity(
         points
     )
     return dot.reshape(*dot.shape[:4], -1, *dot.shape[-2:])
+
 
 def _pairwise_similarity(
         data: np.ndarray,

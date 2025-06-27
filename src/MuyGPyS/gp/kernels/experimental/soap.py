@@ -73,10 +73,10 @@ class SOAPKernel(KernelFn):
         Compute the SOAP Kernel(s) from distance tensors
         """
         return self._fn(diffs, **kwargs)
-        
+
     def Kout(self, **kwargs) -> mm.ndarray:
         return self._backend_squeeze(self._backend_zeros((1, 3, 1, 3, 4, 1, 1)))
-        
+
     def get_opt_params(
             self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
@@ -85,7 +85,7 @@ class SOAPKernel(KernelFn):
         """
         names, params, bounds = super().get_opt_params()
         return names, params, bounds
-    
+
     def get_opt_fn(self) -> Callable:
         """
         Return a kernel function with fixed parameters set.

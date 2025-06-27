@@ -9,7 +9,7 @@ import MuyGPyS._src.math.numpy as mm
 def _omega(
     diffs
 ) -> mm.ndarray:
-    
+
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
     slicer[-3] = 0
@@ -18,10 +18,11 @@ def _omega(
 
     return qq_slice
 
+
 def _T1(
     diffs
 ) -> mm.ndarray:
-    
+
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
     slicer[-3] = 3
@@ -30,10 +31,11 @@ def _T1(
 
     return dd_slice
 
+
 def _T2(
     diffs
 ) -> mm.ndarray:
-    
+
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
     slicer[-3] = 1
@@ -42,10 +44,11 @@ def _T2(
 
     return diq_slice
 
+
 def _T3(
     diffs
 ) -> mm.ndarray:
-    
+
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
     slicer[-3] = 2
@@ -53,6 +56,7 @@ def _T3(
     djq_slice = diffs[tuple(slicer)]
 
     return djq_slice
+
 
 def _soap_fn(
     diffs: mm.ndarray,
