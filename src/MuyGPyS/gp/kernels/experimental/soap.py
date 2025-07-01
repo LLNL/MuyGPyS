@@ -75,7 +75,7 @@ class SOAPKernel(KernelFn):
         return self._fn(diffs, **kwargs)
 
     def Kout(self, **kwargs) -> mm.ndarray:
-        return self._backend_squeeze(self._backend_zeros((1, 3, 1, 3, 4, 1, 1)))
+        return self._backend_squeeze(self._backend_zeros((1, 3, 1, 3, 1)))
 
     def get_opt_params(
             self,
