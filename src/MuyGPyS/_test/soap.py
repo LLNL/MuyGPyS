@@ -113,9 +113,19 @@ class BenchmarkTestCase(parameterized.TestCase):
         ]
 
         # features shape (env_count, 3, 2, atom_count, desc_count)
-        cls.train_features = np.random.rand(10, 3, 2, 10, 16)
-        cls.test_features = np.random.rand(2, 3, 2, 4, 16)
+        cls.raw_train_features = np.random.rand(10, 3, 2, 10, 116)
+        cls.raw_test_features = np.random.rand(2, 3, 2, 2, 116)
+        cls.train_features = pad_atom_count(
+            cls.raw_train_features,
+            cls.raw_test_features
+        )[0]
+        cls.test_features = pad_atom_count(
+            cls.raw_train_features,
+            cls.raw_test_features
+        )[1]
         cls.train_forces = np.random.rand(10, 3)
+
+        cls.test_count = cls.test_features.shape[0]
 
         cls.sim_fn = DifferenceIsotropy(
             metric=dot,

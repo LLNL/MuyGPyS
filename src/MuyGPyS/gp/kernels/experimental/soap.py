@@ -68,13 +68,13 @@ class SOAPKernel(KernelFn):
 
         self._fn = embedded_fn
 
-    def __call__(self, diffs: mm.ndarray, **kwargs) -> mm.ndarray:
+    def __call__(self, diffs, **kwargs):
         """
         Compute the SOAP Kernel(s) from distance tensors
         """
         return self._fn(diffs, **kwargs)
 
-    def Kout(self, **kwargs) -> mm.ndarray:
+    def Kout(self, **kwargs):
         return self._backend_squeeze(self._backend_zeros((1, 3, 1, 3, 1)))
 
     def get_opt_params(
@@ -84,6 +84,7 @@ class SOAPKernel(KernelFn):
         Return list of hyperparameter names, values, and bounds.
         """
         names, params, bounds = super().get_opt_params()
+        self.sensitivity.append_lists(names, params, bounds)
         return names, params, bounds
 
     def get_opt_fn(self) -> Callable:

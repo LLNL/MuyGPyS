@@ -60,7 +60,8 @@ def _T3(
 
 def _soap_fn(
     diffs: mm.ndarray,
-    sensitivity: float
+    sensitivity: float,
+    **kwargs
 ) -> mm.ndarray:
 
     omega = _omega(diffs)
