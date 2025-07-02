@@ -3,11 +3,22 @@
 #
 # SPDX-License-Identifier: MIT
 
-from jax import jit
 
-import MuyGPyS._src.math.jax as jnp
+def _omega(diffs, sensitivity):
+    raise NotImplementedError("Jax backend not yet supported for SOAPKernel")
 
 
-def _soap_fn(diffs, sensitivity: float):
+def _T1(diffs, sensitivity):
+    raise NotImplementedError("Jax backend not yet supported for SOAPKernel")
 
-    return print("Jax backend not yet supported for SOAPKernels")
+
+def _T2(diffs, sensitivity):
+    raise NotImplementedError("Jax backend not yet supported for SOAPKernel")
+
+
+def _T3(diffs, sensitivity):
+    raise NotImplementedError("Jax backend not yet supported for SOAPKernel")
+
+
+def _soap_fn(diffs, sensitivity):
+    raise NotImplementedError("Jax backend not yet supported for SOAPKernel")

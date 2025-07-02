@@ -3,9 +3,22 @@
 #
 # SPDX-License-Identifier: MIT
 
-import MuyGPyS._src.math.torch as torch
+
+def _omega(diffs, sensitivity):
+    raise NotImplementedError("Torch backend not yet supported for SOAPKernel")
+
+
+def _T1(diffs, sensitivity):
+    raise NotImplementedError("Torch backend not yet supported for SOAPKernel")
+
+
+def _T2(diffs, sensitivity):
+    raise NotImplementedError("Torch backend not yet supported for SOAPKernel")
+
+
+def _T3(diffs, sensitivity):
+    raise NotImplementedError("Torch backend not yet supported for SOAPKernel")
 
 
 def _soap_fn(diffs, sensitivity):
-
-    return print("Torch backend not yet supported for SOAPKernel")
+    raise NotImplementedError("Torch backend not yet supported for SOAPKernel")

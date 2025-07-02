@@ -3,4 +3,22 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS._src.gp.kernels.soap.numpy import _omega, _T1, _T2, _T3, _soap_fn
+
+def _omega(diffs, sensitivity):
+    raise NotImplementedError("MPI backend not yet supported for SOAPKernel")
+
+
+def _T1(diffs, sensitivity):
+    raise NotImplementedError("MPI backend not yet supported for SOAPKernel")
+
+
+def _T2(diffs, sensitivity):
+    raise NotImplementedError("MPI backend not yet supported for SOAPKernel")
+
+
+def _T3(diffs, sensitivity):
+    raise NotImplementedError("MPI backend not yet supported for SOAPKernel")
+
+
+def _soap_fn(diffs, sensitivity):
+    raise NotImplementedError("MPI backend not yet supported for SOAPKernel")
