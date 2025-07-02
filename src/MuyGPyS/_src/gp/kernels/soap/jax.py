@@ -3,8 +3,14 @@
 #
 # SPDX-License-Identifier: MIT
 
-
 from jax import jit
 
 import MuyGPyS._src.math.jax as jnp
 
+
+def _soap_fn(
+    diffs,
+    sensitivity: float
+):
+
+    return print("Jax backend not yet supported for SOAPKernels")
