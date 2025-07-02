@@ -19,12 +19,13 @@ class SimTestCase(BenchmarkTestCase):
     def SetUpClass(cls):
         super(SimTestCase, cls).setUpClass()
 
-    def _crosswise_sim_chassis(
-        self,
-        locations,
-        points,
-    ):
-        explicit_similarity = explicit_crosswise(locations=locations, points=points)
+    def _crosswise_sim_chassis(self):
+        explicit_similarity = explicit_crosswise(
+            data=self.test_features,
+            nn_data=self.train_features,
+            indices=np.arange(self.test_count),
+            nn_indices=self.nn_envs,
+        )
         library_similarity = self.sim_fn.crosswise_tensor(
             data=self.test_features,
             nn_data=self.train_features,
@@ -32,28 +33,25 @@ class SimTestCase(BenchmarkTestCase):
             nn_indices=self.nn_envs,
         )
         self.assertEqual(explicit_similarity.shape, library_similarity.shape)
-        self.assertTrue(np.allclose(explicit_similarity, library_similarity, atol=1e-3))
+        self.assertTrue(np.allclose(explicit_similarity, library_similarity))
 
-    def _pairwise_sim_chassis(
-        self,
-        points,
-    ):
+    def _pairwise_sim_chassis(self):
         explicit_similarity = explicit_pairwise(
-            points=points,
+            data=self.train_features, nn_indices=self.nn_envs
         )
         library_similarity = self.sim_fn.pairwise_tensor(
             data=self.train_features, nn_indices=self.nn_envs
         )
         self.assertEqual(explicit_similarity.shape, library_similarity.shape)
-        self.assertTrue(np.allclose(explicit_similarity, library_similarity, atol=1e-3))
+        self.assertTrue(np.allclose(explicit_similarity, library_similarity))
 
 
 class SimTest(SimTestCase):
     def test_crosswise(self):
-        self._crosswise_sim_chassis(self.test_features, self.train_features)
+        self._crosswise_sim_chassis()
 
     def test_pairwise(self):
-        self._pairwise_sim_chassis(self.train_features)
+        self._pairwise_sim_chassis()
 
 
 if __name__ == "__main__":

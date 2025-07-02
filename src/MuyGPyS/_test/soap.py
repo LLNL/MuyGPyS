@@ -43,7 +43,10 @@ def pad_atom_count(train_features, test_features):
     return train_features_padded, test_features_padded
 
 
-def explicit_crosswise(locations, points):
+def explicit_crosswise(data, nn_data, indices, nn_indices):
+    locations = data[indices]
+    points = nn_data[nn_indices].swapaxes(2, 1)
+
     crosswise_similarity = np.zeros(shape=(2, 3, 2, 3, 2, 2, 10, 10))
 
     for i in range(2):
@@ -63,7 +66,9 @@ def explicit_crosswise(locations, points):
     return crosswise_similarity.reshape(2, 3, 2, 3, 4, 10, 10)
 
 
-def explicit_pairwise(points):
+def explicit_pairwise(data, nn_indices):
+    points = data[nn_indices].swapaxes(2, 1)
+
     pairwise_similarity = np.zeros(shape=(2, 3, 2, 3, 2, 2, 2, 10, 10))
 
     for i in range(2):

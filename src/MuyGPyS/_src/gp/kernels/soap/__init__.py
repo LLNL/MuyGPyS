@@ -5,6 +5,6 @@
 
 from MuyGPyS._src.util import _collect_implementation
 
-_soap_fn, _omega, _T1, _T2, _T3 = _collect_implementation(
-    "MuyGPyS._src.gp.kernels.soap", "_soap_fn", "_omega", "_T1", "_T2", "_T3"
+_soap_fn = _collect_implementation(
+    "MuyGPyS._src.gp.kernels.soap", "_soap_fn"
 )
