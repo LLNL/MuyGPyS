@@ -3,10 +3,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-from MuyGPyS._src.gp.kernels.soap.numpy import (
-    _omega,
-    _T1,
-    _T2,
-    _T3,
-    _soap_fn
-)
+from MuyGPyS._src.gp.kernels.soap.numpy import _omega, _T1, _T2, _T3, _soap_fn

@@ -6,9 +6,7 @@
 import MuyGPyS._src.math.numpy as mm
 
 
-def _omega(
-    diffs
-) -> mm.ndarray:
+def _omega(diffs) -> mm.ndarray:
 
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
@@ -19,9 +17,7 @@ def _omega(
     return qq_slice
 
 
-def _T1(
-    diffs
-) -> mm.ndarray:
+def _T1(diffs) -> mm.ndarray:
 
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
@@ -32,9 +28,7 @@ def _T1(
     return dd_slice
 
 
-def _T2(
-    diffs
-) -> mm.ndarray:
+def _T2(diffs) -> mm.ndarray:
 
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
@@ -45,9 +39,7 @@ def _T2(
     return diq_slice
 
 
-def _T3(
-    diffs
-) -> mm.ndarray:
+def _T3(diffs) -> mm.ndarray:
 
     ndim = diffs.ndim
     slicer = [slice(None)] * ndim
@@ -58,18 +50,16 @@ def _T3(
     return djq_slice
 
 
-def _soap_fn(
-    diffs: mm.ndarray,
-    sensitivity: float,
-    **kwargs
-) -> mm.ndarray:
+def _soap_fn(diffs: mm.ndarray, sensitivity: float, **kwargs) -> mm.ndarray:
 
     omega = _omega(diffs)
     T1 = _T1(diffs)
     T2 = _T2(diffs)
     T3 = _T3(diffs)
 
-    Knm = (sensitivity - 1.0) * (omega**(sensitivity - 2.0)) * T2 * T3 + (omega**(sensitivity - 1.0)) * T1
+    Knm = (sensitivity - 1.0) * (omega ** (sensitivity - 2.0)) * T2 * T3 + (
+        omega ** (sensitivity - 1.0)
+    ) * T1
 
     Kij = sensitivity * mm.sum(Knm, axis=(-2, -1))
 

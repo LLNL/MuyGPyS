@@ -29,9 +29,7 @@ def _make_fast_predict_tensors(
         axis=1,
     )
 
-    pairwise_diffs_fast = _pairwise_tensor(
-        train_features, batch_nn_indices_fast
-    )
+    pairwise_diffs_fast = _pairwise_tensor(train_features, batch_nn_indices_fast)
     batch_nn_targets_fast = train_targets[batch_nn_indices_fast]
 
     return pairwise_diffs_fast, batch_nn_targets_fast
@@ -69,9 +67,7 @@ def _pairwise_tensor(
         return points[..., None, :] - points[..., None, :, :]
 
 
-def _crosswise_differences(
-    locations: np.ndarray, points: np.ndarray
-) -> np.ndarray:
+def _crosswise_differences(locations: np.ndarray, points: np.ndarray) -> np.ndarray:
     return locations[:, None, :] - points
 
 
@@ -87,31 +83,23 @@ def _pairwise_differences(points: np.ndarray) -> np.ndarray:
 
 
 def _crosswise_similarity(
-        data: np.ndarray,
-        nn_data: np.ndarray,
-        data_indices: np.ndarray,
-        nn_indices: np.ndarray,
+    data: np.ndarray,
+    nn_data: np.ndarray,
+    data_indices: np.ndarray,
+    nn_indices: np.ndarray,
 ) -> np.ndarray:
     locations = data[data_indices]
     points = nn_data[nn_indices].swapaxes(2, 1)
-    dot = np.einsum(
-        'ivdaq, iukpbq -> ivkudpab',
-        locations,
-        points
-    )
+    dot = np.einsum("ivdaq, iukpbq -> ivkudpab", locations, points)
     return dot.reshape(*dot.shape[:4], -1, *dot.shape[-2:])
 
 
 def _pairwise_similarity(
-        data: np.ndarray,
-        nn_indices: np.ndarray,
+    data: np.ndarray,
+    nn_indices: np.ndarray,
 ) -> np.ndarray:
     points = data[nn_indices].swapaxes(2, 1)
-    dot = np.einsum(
-        'ivkdaq, iulpbq -> ivkuldpab',
-        points,
-        points
-    )
+    dot = np.einsum("ivkdaq, iulpbq -> ivkuldpab", points, points)
     return dot.reshape(*dot.shape[:5], -1, *dot.shape[-2:])
 
 

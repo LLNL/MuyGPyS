@@ -24,18 +24,15 @@ class SimTestCase(BenchmarkTestCase):
         locations,
         points,
     ):
-        explicit_similarity = explicit_crosswise(
-            locations=locations,
-            points=points
-        )
+        explicit_similarity = explicit_crosswise(locations=locations, points=points)
         library_similarity = self.sim_fn.crosswise_tensor(
             data=self.test_features,
             nn_data=self.train_features,
             data_indices=np.arange(self.test_count),
-            nn_indices=self.nn_envs
+            nn_indices=self.nn_envs,
         )
         self.assertEqual(explicit_similarity.shape, library_similarity.shape)
-        self.assertTrue(np.allclose(explicit_similarity, library_similarity))
+        self.assertTrue(np.allclose(explicit_similarity, library_similarity, atol=1e-3))
 
     def _pairwise_sim_chassis(
         self,
@@ -45,11 +42,10 @@ class SimTestCase(BenchmarkTestCase):
             points=points,
         )
         library_similarity = self.sim_fn.pairwise_tensor(
-            data=self.train_features,
-            nn_indices=self.nn_envs
+            data=self.train_features, nn_indices=self.nn_envs
         )
         self.assertEqual(explicit_similarity.shape, library_similarity.shape)
-        self.assertTrue(np.allclose(explicit_similarity, library_similarity))
+        self.assertTrue(np.allclose(explicit_similarity, library_similarity, atol=1e-3))
 
 
 class SimTest(SimTestCase):

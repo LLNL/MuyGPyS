@@ -34,9 +34,7 @@ def _make_fast_predict_tensors(
         axis=1,
     )
 
-    pairwise_diffs_fast = _pairwise_tensor(
-        train_features, batch_nn_indices_fast
-    )
+    pairwise_diffs_fast = _pairwise_tensor(train_features, batch_nn_indices_fast)
     batch_nn_targets_fast = train_targets[batch_nn_indices_fast]
     return pairwise_diffs_fast, batch_nn_targets_fast
 
@@ -62,9 +60,7 @@ def _crosswise_tensor(
 
 
 @jit
-def _crosswise_differences(
-    locations: jnp.ndarray, points: jnp.ndarray
-) -> jnp.ndarray:
+def _crosswise_differences(locations: jnp.ndarray, points: jnp.ndarray) -> jnp.ndarray:
     return locations[:, None, :] - points
 
 

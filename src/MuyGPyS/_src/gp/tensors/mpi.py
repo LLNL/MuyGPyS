@@ -68,9 +68,7 @@ def _crosswise_tensor(
     )
 
 
-def _crosswise_differences(
-    locations: np.ndarray, points: np.ndarray
-) -> np.ndarray:
+def _crosswise_differences(locations: np.ndarray, points: np.ndarray) -> np.ndarray:
     raise NotImplementedError(
         'Function "muygps_crosswise_differences" does not support mpi!'
     )
@@ -96,6 +94,4 @@ def _pairwise_differences(points: np.ndarray) -> np.ndarray:
 def _fast_nn_update(
     train_nn_indices: np.ndarray,
 ) -> np.ndarray:
-    raise NotImplementedError(
-        'Function "muygps_fast_nn_update" does not support mpi!'
-    )
+    raise NotImplementedError('Function "muygps_fast_nn_update" does not support mpi!')

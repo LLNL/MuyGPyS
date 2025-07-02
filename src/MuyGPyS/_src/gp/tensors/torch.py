@@ -29,9 +29,7 @@ def _make_fast_predict_tensors(
         dim=1,
     )
 
-    pairwise_dists_fast = _pairwise_tensor(
-        train_features, batch_nn_indices_fast
-    )
+    pairwise_dists_fast = _pairwise_tensor(train_features, batch_nn_indices_fast)
     batch_nn_targets_fast = train_targets[batch_nn_indices_fast]
 
     return pairwise_dists_fast, batch_nn_targets_fast

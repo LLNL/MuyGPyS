@@ -19,7 +19,7 @@ from MuyGPyS._src.gp.tensors import (
     _crosswise_tensor,
     _pairwise_tensor,
     _crosswise_similarity,
-    _pairwise_similarity
+    _pairwise_similarity,
 )
 
 
@@ -111,9 +111,7 @@ class MetricFn:
             last two dimensions indicate difference vectors between the feature
             dimensions of each batch element and those of its nearest neighbors.
         """
-        return self._crosswise_differences_fn(
-            data, nn_data, data_indices, nn_indices
-        )
+        return self._crosswise_differences_fn(data, nn_data, data_indices, nn_indices)
 
     def crosswise_distances(
         self,
@@ -154,9 +152,7 @@ class MetricFn:
             nearest neighbors.
         """
         return self._differences_metric_fn(
-            self._crosswise_differences_fn(
-                data, nn_data, data_indices, nn_indices
-            )
+            self._crosswise_differences_fn(data, nn_data, data_indices, nn_indices)
         )
 
     def pairwise_differences(
@@ -218,9 +214,7 @@ class MetricFn:
             self._pairwise_differences_fn(data, nn_indices)
         )
 
-    def apply_length_scale(
-        self, dists: mm.ndarray, length_scale: float
-    ) -> mm.ndarray:
+    def apply_length_scale(self, dists: mm.ndarray, length_scale: float) -> mm.ndarray:
         """
         Compute a pairwise distance tensor among sets of nearest neighbors.
 
@@ -289,5 +283,5 @@ dot = MetricFn(
     differences_metric_fn=None,
     crosswise_differences_fn=_crosswise_similarity,
     pairwise_differences_fn=_pairwise_similarity,
-    apply_length_scale_fn=lambda x, y: x
+    apply_length_scale_fn=lambda x, y: x,
 )

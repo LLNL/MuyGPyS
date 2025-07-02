@@ -47,9 +47,7 @@ class Isotropy(DeformationFn):
         if isinstance(length_scale, ScalarParam):
             self.length_scale = NamedParam("length_scale", length_scale)
         elif isinstance(length_scale, HierarchicalParam):
-            self.length_scale = NamedHierarchicalParam(
-                "length_scale", length_scale
-            )
+            self.length_scale = NamedHierarchicalParam("length_scale", length_scale)
         else:
             raise ValueError(
                 "Expected ScalarParam type for length_scale, not "
@@ -156,9 +154,7 @@ class Isotropy(DeformationFn):
             indicates distance vectors between each batch element and its
             nearest neighbors.
         """
-        return self.metric.crosswise_distances(
-            data, nn_data, data_indices, nn_indices
-        )
+        return self.metric.crosswise_distances(data, nn_data, data_indices, nn_indices)
 
 
 @auto_str
