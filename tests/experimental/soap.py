@@ -54,5 +54,41 @@ class SimTest(SimTestCase):
         self._pairwise_sim_chassis()
 
 
+class KernelTestCase(BenchmarkTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(KernelTestCase, cls).setUpClass()
+
+        cls.crosswise_similarity = cls.sim_fn.crosswise_tensor(
+            data=cls.test_features,
+            nn_data=cls.train_features,
+            data_indices=np.arange(cls.test_count),
+            nn_indices=cls.nn_envs,
+        )
+        cls.pairwise_similarity = cls.sim_fn.pairwise_tensor(
+            data=cls.train_features, nn_indices=cls.nn_envs
+        )
+
+    def _Kin_chassis(self, Kernel_fn):
+        Kin = Kernel_fn(self.pairwise_similarity)
+        expected_shape = (self.test_count, 3, self.nn_count, 3, self.nn_count)
+
+        self.assertEqual(Kin.shape, expected_shape)
+
+    def _Kcross_chassis(self, Kernel_fn):
+        Kcross = Kernel_fn(self.crosswise_similarity)
+        expected_shape = (self.test_count, 3, self.nn_count, 3)
+
+        self.assertEqual(Kcross.shape, expected_shape)
+
+
+class KernelTest(KernelTestCase):
+    def test_Kcross(self):
+        self._Kcross_chassis(Kernel_fn=self.model.kernel)
+
+    def test_Kin(self):
+        self._Kin_chassis(Kernel_fn=self.model.kernel)
+
+
 if __name__ == "__main__":
     absltest.main()
