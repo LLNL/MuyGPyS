@@ -89,6 +89,151 @@ def explicit_pairwise(data, nn_indices):
 
     return pairwise_similarity.reshape(2, 3, 2, 3, 2, 4, 10, 10)
 
+def unwrap_feature_vectors(features, desc_dim):
+    """
+    unwraps feature vectors and constructs the descriptor and data objects
+    as outlined in kernel slides written by J. Stimac
+    
+    ARGs
+    ----
+      - features: np matrix of feature vectors for a set
+      
+      - desc_dim: int descritptor dimensionality 
+
+    Returns
+    -------
+        *** A more detailed description for these returned values is given *** 
+            in the slides on the implementation; the data objects are given
+            the same names as on the slides.
+
+      - X_dot:      np tensor with all descriptors for a given set 
+      - Delta:      np tensor with all desriptor derivatives for a given set
+      
+
+    """
+    n = int(features.shape[1]/2/desc_dim) # equal to max number of atoms per frame for the set
+    tot_num_desc_per_feature_row = int(n * desc_dim)
+    
+    X_dot = np.zeros((features.shape[0], n, desc_dim)) 
+    Delta = np.zeros((features.shape[0], n, desc_dim)) 
+
+    for i in np.arange(features.shape[0]):
+        X_dot[i, :, :] = np.reshape(features[i, :tot_num_desc_per_feature_row],(n, desc_dim), 'C')
+        Delta[i, :, :] = np.reshape(features[i, tot_num_desc_per_feature_row:],(n, desc_dim), 'C')
+        
+    return X_dot, Delta 
+
+def cov_dot_prod(X_dot1, Delta1, X_dot2, Delta2, hyperparams, loop_over_n=False):
+
+    """
+    NOTE:
+
+    """
+
+    var = hyperparams[0] * hyperparams[0] # variance over the prior
+    sensativity = hyperparams[1] 
+
+    # get feature vector lens 
+    X1_len = np.linalg.norm(X_dot1, 2, 2)[:, :, None] # (i, n, 0) 
+    X2_len = np.linalg.norm(X_dot2, 2, 2)[:, :, None] # (j, m, 0)
+
+    K = np.zeros((X_dot1.shape[0], X_dot2.shape[0])) 
+    n = X_dot1.shape[1]
+
+    if loop_over_n:
+        raise Exception(" DID NOT IMPLEMENT LOOP VERSION, SEE RBF COV FUNCTION FOR HOW THAT WOULD BE DONE")
+
+    else:
+
+        # vectorized version 
+        X_hat1 = X_dot1/X1_len # (i, n, k) 
+        X_hat2 = X_dot2/X2_len # (j, m, k) 
+
+        Delta1_hat = Delta1/X1_len - X_dot1 * np.sum(Delta1 * X_dot1, 2, keepdims=True)/(X1_len**3) # (i, n, k)
+        Delta2_hat = Delta2/X2_len - X_dot2 * np.sum(Delta2 * X_dot2, 2, keepdims=True)/(X2_len**3) # (j, m, k)
+
+        omega = np.sum(X_hat1[:, None,  :, None, :] * X_hat2[None, :, None, :, :], 4)        # (i, j, n, m) 
+        T1 = np.sum(Delta2_hat[None, :, None, :, :] * Delta1_hat[:, None, :, None, :], 4) # (i, j, n, m)  
+        T2 = np.sum(Delta2_hat[None, :, None, :, :] * X_hat1[:, None, :, None], 4)        # (i, j, n, m) 
+        T3 = np.sum(Delta1_hat[:, None, :, None, :] * X_hat2[None, :, None, :, :], 4)     # (i, j, n, m) 
+        K = np.sum((sensativity-1) * (omega**(sensativity-2)) * (T2 * T3) + omega**(sensativity-1) * T1,(2, 3)).squeeze()                # (i, j) 
+
+    K *= (var*sensativity)
+
+    return K
+
+def cov_mat_muygps(features1, features2, hyperparams, desc_dim, N_rows_per_iter):
+
+    features1 = np.asarray(features1)
+    features2 = np.asarray(features2)
+
+    (X_dot1, Delta1) = unwrap_feature_vectors(features1, desc_dim)
+    (X_dot2, Delta2) = unwrap_feature_vectors(features2, desc_dim)
+
+    K = np.zeros((X_dot1.shape[0], X_dot2.shape[0]))
+
+    # loop over different sections of rows of the cov matrix to avoid OOM
+    N_sections = np.ceil(X_dot1.shape[0]/N_rows_per_iter) 
+    for section in np.arange(N_sections):
+
+        #percent_done = 100 * section/N_sections 
+        #print(f"    COMPLETE WITH {percent_done:.2f}% OF COVARIANCE MATRIX")
+
+        ind_start = int(section * N_rows_per_iter)
+        if section == (N_sections - 1):
+            ind_stop = X_dot1.shape[0]
+        else:
+            ind_stop = int((section + 1) * N_rows_per_iter)
+         
+
+        K[ind_start:ind_stop, :] = cov_dot_prod(X_dot1[ind_start:ind_stop, :, :], Delta1[ind_start:ind_stop, :, :], X_dot2, Delta2, hyperparams)
+    #return np.asnumpy(K)
+    return np.asarray(K)
+
+def base_implmementation_mean(nn_list, test_features, train_features, train_forces, noise_prior):
+    hyperparams = np.array([1.0, 4.0])
+    forces_pred_test = np.array([]) # where to store predicted test forces
+    # loop over all env in the test set 
+    for ind_test_env in np.arange(nn_list.shape[0]):
+    
+        if np.mod(ind_test_env, 10) == 0: 
+            print(f" Percent done with test data {100 * ind_test_env / nn_list.shape[0]} ")
+
+        # down select test features for current env
+        ind_test_features = np.arange(3*ind_test_env, (3*ind_test_env) + 3)
+        features_test_select = test_features[ind_test_features, :]
+
+        # down select which forces in the training env to use
+        # - translate the index of environments to keep to which forces/force features to keep  
+        n_env_train = nn_list.shape[0]
+        ind_forces_2_envs = np.repeat(np.arange(n_env_train), 3) # index of which env each of the force/features rows corresponds to  
+        mask = np.isin(ind_forces_2_envs, nn_list[ind_test_env])
+        ind_forces_keep = np.where(mask)[0]
+        features_train_NN = train_features[ind_forces_keep, :]
+        forces_train_NN = train_forces[ind_forces_keep]
+
+        # evaluate covariance matrix between test and training set 
+        desc_dim = train_features.shape[-1]
+        Ktn = cov_mat_muygps(features_test_select,
+                            features_train_NN,
+                            hyperparams,
+                            desc_dim,
+                            1)
+
+        # evaluate covariance matrix for training set with itself 
+        Knn = cov_mat_muygps(features_train_NN,
+                            features_train_NN,
+                            hyperparams,
+                            desc_dim,
+                            1)
+
+        diag_ind = np.arange(Knn.shape[0])
+        Knn_ = Knn + np.diag(noise_prior**2 * np.ones((Knn.shape[0], Knn.shape[0]))) 
+        Knn_inv = np.linalg.pinv(Knn_)
+        forces_pred_test = np.append(forces_pred_test, Ktn @ Knn_inv @ forces_train_NN) 
+
+        return forces_pred_test
+
 
 class BenchmarkTestCase(parameterized.TestCase):
     @classmethod
@@ -96,7 +241,7 @@ class BenchmarkTestCase(parameterized.TestCase):
         super(BenchmarkTestCase, cls).setUpClass()
         cls.nn_count = 2
         cls.zeta = 2.0
-        cls.noise_prior = 1e-15
+        cls.noise_prior = 0.05
         cls.nn_envs = [[3, 6], [3, 6]]
 
         # features shape (env_count, 3, 2, atom_count, desc_count)
