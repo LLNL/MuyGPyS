@@ -90,8 +90,16 @@ def _crosswise_similarity(
 ) -> np.ndarray:
     locations = data[data_indices]
     points = nn_data[nn_indices].swapaxes(2, 1)
-    dot = np.einsum("ivdaq, iukpbq -> ivkudpab", locations, points)
-    return dot.reshape(*dot.shape[:4], -1, *dot.shape[-2:])
+
+    dot = np.sum(
+        locations[:, None, None, :, :, None, :, None, :]
+        * points[:, :, :, None, None, :, None, :, :],
+        axis=-1,
+    )
+
+    crosswise_similarity = dot.reshape(*dot.shape[:4], -1, *dot.shape[-2:])
+
+    return crosswise_similarity
 
 
 def _pairwise_similarity(
@@ -99,8 +107,15 @@ def _pairwise_similarity(
     nn_indices: np.ndarray,
 ) -> np.ndarray:
     points = data[nn_indices].swapaxes(2, 1)
-    dot = np.einsum("ivkdaq, iulpbq -> ivkuldpab", points, points)
-    return dot.reshape(*dot.shape[:5], -1, *dot.shape[-2:])
+
+    dot = np.sum(
+        points[:, None, None, :, :, :, None, :, None, :]
+        * points[:, :, :, None, None, None, :, None, :, :],
+        axis=-1,
+    )
+
+    pairwise_similarity = dot.reshape(*dot.shape[:5], -1, *dot.shape[-2:])
+    return pairwise_similarity
 
 
 def _F2(diffs: np.ndarray) -> np.ndarray:
