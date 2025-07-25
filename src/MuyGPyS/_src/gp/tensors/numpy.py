@@ -29,7 +29,9 @@ def _make_fast_predict_tensors(
         axis=1,
     )
 
-    pairwise_diffs_fast = _pairwise_tensor(train_features, batch_nn_indices_fast)
+    pairwise_diffs_fast = _pairwise_tensor(
+        train_features, batch_nn_indices_fast
+    )
     batch_nn_targets_fast = train_targets[batch_nn_indices_fast]
 
     return pairwise_diffs_fast, batch_nn_targets_fast
@@ -67,7 +69,9 @@ def _pairwise_tensor(
         return points[..., None, :] - points[..., None, :, :]
 
 
-def _crosswise_differences(locations: np.ndarray, points: np.ndarray) -> np.ndarray:
+def _crosswise_differences(
+    locations: np.ndarray, points: np.ndarray
+) -> np.ndarray:
     return locations[:, None, :] - points
 
 
@@ -89,13 +93,13 @@ def _crosswise_similarity(
     nn_indices: np.ndarray,
 ) -> np.ndarray:
     locations = data[data_indices]
-    points = nn_data[nn_indices].swapaxes(2, 1)
+    points = nn_data[nn_indices]
 
     dot = np.sum(
-        locations[:, None, None, :, :, None, :, None, :]
-        * points[:, :, :, None, None, :, None, :, :],
+        locations[:, None, :, None, :, None, :, None, :]
+        * points[:, :, None, :, None, :, None, :, :],
         axis=-1,
-    )
+    ).swapaxes(2, 1)
 
     crosswise_similarity = dot.reshape(*dot.shape[:4], -1, *dot.shape[-2:])
 
@@ -109,8 +113,8 @@ def _pairwise_similarity(
     points = data[nn_indices].swapaxes(2, 1)
 
     dot = np.sum(
-        points[:, None, None, :, :, :, None, :, None, :]
-        * points[:, :, :, None, None, None, :, None, :, :],
+        points[:, :, :, None, None, :, None, :, None, :]
+        * points[:, None, None, :, :, None, :, None, :, :],
         axis=-1,
     )
 
