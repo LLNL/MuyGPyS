@@ -141,11 +141,11 @@ def cov_dot_prod(
     sensativity = hyperparams[1]
 
     # get feature vector lens
-    X1_len = np.linalg.norm(X_dot1, 2, 2)[:, :, None]  # (i, n, 0)
-    X2_len = np.linalg.norm(X_dot2, 2, 2)[:, :, None]  # (j, m, 0)
+    # X1_len = np.linalg.norm(X_dot1, 2, 2)[:, :, None]  # (i, n, 0)
+    # X2_len = np.linalg.norm(X_dot2, 2, 2)[:, :, None]  # (j, m, 0)
 
     K = np.zeros((X_dot1.shape[0], X_dot2.shape[0]))
-    n = X_dot1.shape[1]
+    # n = X_dot1.shape[1]
 
     if loop_over_n:
         raise Exception(
@@ -234,7 +234,7 @@ def base_implmementation_mean(
     train_count = train_features.shape[0] // 3
     nn_count = nn_envs.shape[1]
     train_atom_count = train_features.shape[-1] // (2 * 116)
-    test_atom_count = test_features.shape[-1] // (2 * 116)
+    # test_atom_count = test_features.shape[-1] // (2 * 116)
 
     neighbor_envs_reshaped = np.repeat(nn_envs, repeats=3, axis=0)
     neighbor_envs_modified = neighbor_envs_reshaped * 3
@@ -289,7 +289,7 @@ def base_implmementation_mean(
             features_train_NN, features_train_NN, hyperparams, desc_dim, 1
         )
 
-        diag_ind = np.arange(Knn.shape[0])
+        # diag_ind = np.arange(Knn.shape[0])
         Knn_ = Knn + np.diag(
             noise_prior**2 * np.ones((Knn.shape[0], Knn.shape[0]))
         )
