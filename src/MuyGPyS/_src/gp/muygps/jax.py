@@ -164,4 +164,4 @@ def _muygps_fast_posterior_mean_precompute(
     Kin: jnp.ndarray,
     train_nn_targets_fast: jnp.ndarray,
 ) -> jnp.ndarray:
-    return jnp.linalg.solve(Kin, train_nn_targets_fast)
+    return jnp.linalg.solve(Kin, train_nn_targets_fast[..., None]).squeeze(-1)
