@@ -130,7 +130,9 @@ def unwrap_feature_vectors(features, desc_dim):
     return X_dot, Delta
 
 
-def cov_dot_prod(X_dot1, Delta1, X_dot2, Delta2, hyperparams, loop_over_n=False):
+def cov_dot_prod(
+    X_dot1, Delta1, X_dot2, Delta2, hyperparams, loop_over_n=False
+):
     """
     NOTE:
 
@@ -147,7 +149,8 @@ def cov_dot_prod(X_dot1, Delta1, X_dot2, Delta2, hyperparams, loop_over_n=False)
 
     if loop_over_n:
         raise Exception(
-            " DID NOT IMPLEMENT LOOP VERSION, SEE RBF COV FUNCTION FOR HOW THAT WOULD BE DONE"
+            " DID NOT IMPLEMENT LOOP VERSION, SEE RBF COV FUNCTION FOR HOW "
+            "THAT WOULD BE DONE"
         )
 
     else:
@@ -155,8 +158,14 @@ def cov_dot_prod(X_dot1, Delta1, X_dot2, Delta2, hyperparams, loop_over_n=False)
         X_hat1 = X_dot1  # /X1_len # (i, n, k)
         X_hat2 = X_dot2  # /X2_len # (j, m, k)
 
-        Delta1_hat = Delta1  # /X1_len - X_dot1 * np.sum(Delta1 * X_dot1, 2, keepdims=True)/(X1_len**3) # (i, n, k)
-        Delta2_hat = Delta2  # /X2_len - X_dot2 * np.sum(Delta2 * X_dot2, 2, keepdims=True)/(X2_len**3) # (j, m, k)
+        # /X1_len - X_dot1 * np.sum(
+        #     Delta1 * X_dot1, 2, keepdims=True
+        # )/(X1_len**3) # (i, n, k)
+        Delta1_hat = Delta1
+        # /X2_len - X_dot2 * np.sum(
+        #     Delta2 * X_dot2, 2, keepdims=True
+        # )/(X2_len**3) # (j, m, k)
+        Delta2_hat = Delta2
 
         omega = np.sum(
             X_hat1[:, None, :, None, :] * X_hat2[None, :, None, :, :], 4
@@ -181,7 +190,9 @@ def cov_dot_prod(X_dot1, Delta1, X_dot2, Delta2, hyperparams, loop_over_n=False)
     return K
 
 
-def cov_mat_muygps(features1, features2, hyperparams, desc_dim, N_rows_per_iter):
+def cov_mat_muygps(
+    features1, features2, hyperparams, desc_dim, N_rows_per_iter
+):
     features1 = np.asarray(features1)
     features2 = np.asarray(features2)
 
@@ -239,7 +250,8 @@ def base_implmementation_mean(
     for ind_test_env in np.arange(neighbor_envs.shape[0]):
         if np.mod(ind_test_env, 10) == 0:
             print(
-                f" Percent done with test data {100 * ind_test_env / nn_list.shape[0]} "
+                " Percent done with test data "
+                f"{100 * ind_test_env / nn_list.shape[0]} "
             )
 
         # down select test features for current env
@@ -248,10 +260,12 @@ def base_implmementation_mean(
         features_test_select = test_features[ind_test_features, :]
 
         # down select which forces in the training env to use
-        # - translate the index of environments to keep to which forces/force features to keep
+        # - translate the index of environments to keep to which forces/force
+        #     features to keep
         # n_env_train = nn_list.shape[0]
         # print(n_env_train)
-        # ind_forces_2_envs = np.repeat(np.arange(n_env_train), 3) # index of which env each of the force/features rows corresponds to
+        # ind_forces_2_envs = np.repeat(np.arange(n_env_train), 3)
+        # # index of which env each of the force/features rows corresponds to
         # print(ind_forces_2_envs)
         # mask = np.isin(ind_forces_2_envs, nn_list[ind_test_env])
         # ind_forces_keep = np.where(mask)[0]
@@ -276,9 +290,13 @@ def base_implmementation_mean(
         )
 
         diag_ind = np.arange(Knn.shape[0])
-        Knn_ = Knn + np.diag(noise_prior**2 * np.ones((Knn.shape[0], Knn.shape[0])))
+        Knn_ = Knn + np.diag(
+            noise_prior**2 * np.ones((Knn.shape[0], Knn.shape[0]))
+        )
         Knn_inv = np.linalg.pinv(Knn_)
-        forces_pred_test = np.append(forces_pred_test, Ktn @ Knn_inv @ forces_train_NN)
+        forces_pred_test = np.append(
+            forces_pred_test, Ktn @ Knn_inv @ forces_train_NN
+        )
 
     return forces_pred_test
 
