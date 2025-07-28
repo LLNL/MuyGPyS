@@ -18,7 +18,7 @@ from MuyGPyS.examples.classify import do_classify
 from MuyGPyS.examples.two_class_classify_uq import do_classify_uq, do_uq
 from MuyGPyS.examples.regress import do_regress
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
-from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.optimize import OptimizeFn
 from MuyGPyS.optimize.loss import mse_fn, LossFn
@@ -40,7 +40,7 @@ class ClassifyAPITest(APITestCase):
         loss_fn: LossFn,
         opt_fn: OptimizeFn,
         nn_kwargs: Dict,
-        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        k_kwargs: Dict,
         opt_kwargs: Dict,
         verbose: bool = False,
     ) -> None:
@@ -80,16 +80,9 @@ class ClassifyAPITest(APITestCase):
                 np.unique(np.argmax(train["output"], axis=1)),
             )
         print("Finds hyperparameters:")
-        if isinstance(muygps, MuyGPS):
-            param_names, param_vals, _ = muygps.get_opt_params()
-            for i, p in enumerate(param_names):
-                print(f"\t{p} : {param_vals[i]}")
-        elif isinstance(muygps, MMuyGPS):
-            for i, model in enumerate(muygps.models):
-                print(f"model {i}:")
-                param_names, param_vals, _ = model.get_opt_params()
-                for i, p in enumerate(param_names):
-                    print(f"\t{p} : {param_vals[i]}")
+        param_names, param_vals, _ = muygps.get_opt_params()
+        for i, p in enumerate(param_names):
+            print(f"\t{p} : {param_vals[i]}")
         print(f"obtains accuracy: {acc}")
         self.assertGreaterEqual(acc, target_acc)
 
@@ -102,10 +95,10 @@ class ClassifyAPITest(APITestCase):
         loss_fn: LossFn,
         opt_fn: OptimizeFn,
         nn_kwargs: Dict,
-        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        k_kwargs: Dict,
         opt_kwargs: Dict,
         verbose: bool = False,
-    ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, np.ndarray, float]:
+    ) -> Tuple[MuyGPS, np.ndarray, np.ndarray, float]:
         classifier, _, surrogate_predictions = do_classify(
             test["input"],
             train["input"],
@@ -268,7 +261,7 @@ class RegressionAPITest(parameterized.TestCase):
         loss_fn: LossFn,
         opt_fn: OptimizeFn,
         nn_kwargs: Dict,
-        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        k_kwargs: Dict,
         opt_kwargs: Dict,
         verbose: bool = False,
     ) -> None:
@@ -322,10 +315,15 @@ class RegressionAPITest(parameterized.TestCase):
         loss_fn: LossFn,
         opt_fn: OptimizeFn,
         nn_kwargs: Dict,
-        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        k_kwargs: Dict,
         opt_kwargs: Dict,
         verbose: bool = False,
-    ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, float, np.ndarray,]:
+    ) -> Tuple[
+        MuyGPS,
+        np.ndarray,
+        float,
+        np.ndarray,
+    ]:
         # print("gets here")
         regressor, _, predictions, variance = do_regress(
             test["input"],
@@ -358,7 +356,7 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         loss_fn: LossFn,
         opt_fn: OptimizeFn,
         nn_kwargs: Dict,
-        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        k_kwargs: Dict,
         opt_kwargs: Dict,
         verbose: bool = False,
     ) -> None:
@@ -378,16 +376,9 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         print(f"obtains mse: {mse}")
         self.assertLessEqual(mse, target_mse)
 
-        if isinstance(regressor, MuyGPS):
-            param_names, param_vals, _ = regressor.get_opt_params()
-            for i, p in enumerate(param_names):
-                print(f"\t{p} : {param_vals[i]}")
-        elif isinstance(regressor, MMuyGPS):
-            for i, model in enumerate(regressor.models):
-                print(f"model {i}:")
-                param_names, param_vals, _ = model.get_opt_params()
-                for i, p in enumerate(param_names):
-                    print(f"\t{p} : {param_vals[i]}")
+        param_names, param_vals, _ = regressor.get_opt_params()
+        for i, p in enumerate(param_names):
+            print(f"\t{p} : {param_vals[i]}")
 
     def _do_fast_posterior_mean(
         self,
@@ -398,10 +389,10 @@ class FastPosteriorMeanAPITest(parameterized.TestCase):
         loss_fn: LossFn,
         opt_fn: OptimizeFn,
         nn_kwargs: Dict,
-        k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]],
+        k_kwargs: Dict,
         opt_kwargs: Dict,
         verbose: bool = False,
-    ) -> Tuple[Union[MuyGPS, MMuyGPS], np.ndarray, float]:
+    ) -> Tuple[MuyGPS, np.ndarray, float]:
         (
             regressor,
             _,

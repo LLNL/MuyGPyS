@@ -151,10 +151,11 @@ main project.
 If you are developing a new feature or fixing a bug, please add a test or modify
 existing tests that will ensure the correctness of the new code. 
 
-`MuyGPyS`'s tests are contained in the `test` directory, and make use of the 
+`MuyGPyS`'s tests are contained in the `tests` directory, and make use of the 
 `absl` library. 
-pip install muygpys from source using the `tests` extras flags to automatically
-populate your environment with all the dependencies needed to run tests.
+pip install MuyGPyS from source using the `tests` extras flags
+(`pip install -e .[tests]`) to automatically populate your environment with all
+dependencies needed to run tests.
 
 # Formatting Guidelines
 
@@ -424,4 +425,12 @@ See the codebase for more sophisticated examples.
 guarantee a consistent format for python code.
 `black` is easy to use, and can be easily instrumented to auto-format
 code using most modern editors.
+The only custom setting used by MuyGPyS is `--line-length 80`, which can be
+added to your auto-formatting infrastructure if desired.
 
+## Linting
+
+`MuyGPyS` uses the [flake8](https://flake8.pycqa.org/en/latest/) linter to
+enforce several formatting rules in its CI.
+To run the checks locally from the repo roots, simply run
+`sh scripts/flake8/*`.

@@ -150,16 +150,12 @@ underlying math functions to CPU or GPU using
 [JAX](https://github.com/google/jax) since version v0.5.0.
 The JAX-compiled versions of the code are significantly faster than numpy,
 especially on GPUs.
-In order to use the `MuyGPyS` torch backend, run the following command in your
+In order to use the `MuyGPyS` jax backend, run the following command in your
 shell environment.
 
 ```
 $ export MUYGPYS_BACKEND=jax
 ```
-
-> **_NOTE_**: There is a known conflict between recent versions of `MuyGPyS` and
-`JAX` on Python $\geq$ 3.9.
-The current fix is to downgrade to Python 3.8.
 
 ## Precision
 
@@ -201,8 +197,8 @@ If installing CPU-only with pip, you might want to consider the following flags:
 These extras include:
 - `hnswlib` - install [hnswlib](https://github.com/nmslib/hnswlib) dependency to
 support fast approximate nearest neighbors indexing
-- `jax_cpu` - install [JAX](https://github.com/google/jax) dependencies to 
-support just-in-time compilation of math functions on CPU (see below to install
+- `jax` - install [JAX](https://github.com/google/jax) dependencies to support
+just-in-time compilation of math functions on CPU (see below to install
 on GPU CUDA architectures)
 - `torch` - install [PyTorch](https://github.com/pytorch/pytorch) dependencies
 to employ GPU acceleration and the use of the `MuyGPyS.torch` submodule
@@ -219,10 +215,10 @@ $ # The same, but includes hnswlib.
 $ pip install --upgrade muygpys[hnswlib]
 
 $ # CPU-only JAX installation. Functions will be jit-compiled using JAX.
-$ pip install --upgrade muygpys[jax_cpu]
+$ pip install --upgrade muygpys[jax]
 
 $ # The same, but includes hnswlib.
-$ pip install --upgrade muygpys[jax_cpu,hnswlib]
+$ pip install --upgrade muygpys[jax,hnswlib]
 
 $ # MPI installation. Functions will operate in distributed memory.
 $ pip install --upgrade muygpys[mpi]
@@ -239,13 +235,13 @@ $ pip install --upgrade muygpys[torch]
 #### JAX GPU Instructions
 
 [JAX](https://github.com/google/jax) also supports just-in-time compilation to
-CUDA, making the compiled math functions within `MuyGPyS` runnable on NVidia 
-GPUS.
-This requires you to install 
+various GPU platforms, making the compiled math functions within `MuyGPyS`
+runnable on various accelerators.
+This requires you to install
 [CUDA](https://developer.nvidia.com/cuda-downloads) and
 [CuDNN](https://developer.nvidia.com/CUDNN)
 in your environment, if they are not already installed, and to ensure that they
-are on your environment's `$LD_LIBRARY_PATH`. 
+are on your environment's `$LD_LIBRARY_PATH`.
 See [scripts](scripts/lc-setup/pascal.sh) for an example environment setup.
 
 `MuyGPyS` no longer supports automated GPU-supported JAX installation using pip
@@ -257,7 +253,7 @@ After installing JAX, the user will also need to install
 [Tensorflow Probability](https://github.com/tensorflow/probability) with a JAX
 backend via
 ```
-pip install tensorflow-probability[jax]>=0.16.0
+pip install tensorflow-probability[jax]>=0.25.0
 ```
 
 #### PyTorch GPU Instructions
@@ -279,7 +275,7 @@ purposes with CPU JAX support:
 ```
 $ git clone git@github.com:LLNL/MuyGPyS.git
 $ cd MuyGPyS
-$ pip install -e .[dev,jax_cpu]
+$ pip install -e .[dev,jax]
 ```
 
 If you would like to perform a GPU installation from source, you will need to
@@ -293,7 +289,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution rules.
 
 - `hnswlib` - install [hnswlib](https://github.com/nmslib/hnswlib) dependency to
 support fast approximate nearest neighbors indexing
-- `jax_cpu` - install [JAX](https://github.com/google/jax) dependencies to 
+- `jax` - install [JAX](https://github.com/google/jax) dependencies to 
 support just-in-time compilation of math functions on CPU (see below to install
 on GPU CUDA architectures)
 - `torch` - install [PyTorch](https://github.com/pytorch/pytorch)
@@ -371,6 +367,7 @@ $ srun -N 1 --tasks-per-node 4 -p pdebug python tests/kernels.py
 
 MuyGPyS has been used the in the following research papers (newest first):
 
+1. [A Scalable Gaussian Process Approach to Shear Mapping with MuyGPs](https://iopscience.iop.org/article/10.3847/1538-4357/adb0b7/meta)
 1. [A Robust Approach to Gaussian Process Implementation](https://arxiv.org/abs/2409.11577)
 1. [Enhancing Electrocardiography Data Classification Confidence: A Robust Gaussian Process Approach (MuyGPs)](https://arxiv.org/abs/2409.04642)
 1. [Stellar Blend Image Classification Using Computationall Efficient Gaussian Processes](https://arxiv.org/abs/2407.19297)
