@@ -87,7 +87,6 @@ from MuyGPyS._test.utils import (
     _exact_nn_kwarg_options,
     _make_gaussian_matrix,
     _make_gaussian_data,
-    _make_heteroscedastic_test_nugget,
 )
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import Anisotropy, Isotropy, MetricFn

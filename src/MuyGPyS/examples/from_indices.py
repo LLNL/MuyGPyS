@@ -12,7 +12,7 @@ removed in future versions.
 
 import numpy as np
 
-from typing import Tuple, Union
+from typing import Tuple
 
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.optimize import Bayes_optimize, OptimizeFn

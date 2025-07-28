@@ -15,7 +15,6 @@ import MuyGPyS._src.math.numpy as np
 from MuyGPyS import config
 from MuyGPyS._test.api import RegressionAPITest
 from MuyGPyS._test.utils import (
-    _balanced_subsample,
     _basic_nn_kwarg_options,
     _basic_opt_fn_and_kwarg_options,
 )
@@ -23,7 +22,6 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.gp.deformation import (
     Isotropy,
     Anisotropy,
-    F2,
     l2,
 )
 from MuyGPyS.gp.hyperparameter import (
@@ -32,7 +30,7 @@ from MuyGPyS.gp.hyperparameter import (
     ScalarParam,
     VectorParam,
 )
-from MuyGPyS.gp.kernels import Matern, RBF
+from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn
 

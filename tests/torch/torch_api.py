@@ -16,7 +16,6 @@ import MuyGPyS._src.math.torch as torch
 from MuyGPyS import config
 from MuyGPyS._src.math.torch import nn
 from MuyGPyS._test.api import RegressionAPITest
-from MuyGPyS._test.utils import _balanced_subsample
 from MuyGPyS.examples.muygps_torch import train_deep_kernel_muygps
 from MuyGPyS.examples.muygps_torch import predict_model
 from MuyGPyS.gp.hyperparameter import ScalarParam

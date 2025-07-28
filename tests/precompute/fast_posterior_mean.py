@@ -6,8 +6,6 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-import MuyGPyS._src.math as mm
-
 from MuyGPyS import config
 
 from MuyGPyS._test.utils import (
@@ -17,7 +15,7 @@ from MuyGPyS._test.utils import (
 )
 from MuyGPyS.examples.fast_posterior_mean import do_fast_posterior_mean
 from MuyGPyS.gp.deformation import Isotropy, l2
-from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, FixedScale
+from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn

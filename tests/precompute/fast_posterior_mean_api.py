@@ -25,11 +25,10 @@ from MuyGPyS._test.utils import (
 from MuyGPyS.gp.deformation import (
     Isotropy,
     Anisotropy,
-    F2,
     l2,
 )
 from MuyGPyS.gp.hyperparameter import ScalarParam, VectorParam
-from MuyGPyS.gp.kernels import Matern, RBF
+from MuyGPyS.gp.kernels import Matern
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.optimize.loss import mse_fn
 

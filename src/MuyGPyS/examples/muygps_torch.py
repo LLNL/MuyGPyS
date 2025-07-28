@@ -26,8 +26,6 @@ from MuyGPyS import config
 from MuyGPyS.optimize.loss import lool_fn_unscaled as lool_fn
 from MuyGPyS.neighbors import NN_Wrapper
 
-from MuyGPyS.torch import MuyGPs_layer
-
 if config.state.backend != "torch":
     import warnings
 

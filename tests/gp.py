@@ -19,7 +19,6 @@ from MuyGPyS._src.mpi_utils import (
 )
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
-    _basic_opt_fn_and_kwarg_options,
     _check_ndarray,
     _consistent_assert,
     _get_scale_series,
@@ -28,8 +27,6 @@ from MuyGPyS._test.utils import (
     _make_heteroscedastic_test_nugget,
     _precision_assert,
 )
-from MuyGPyS.examples.regress import make_regressor
-from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import (
     Isotropy,
@@ -39,14 +36,12 @@ from MuyGPyS.gp.deformation import (
 )
 from MuyGPyS.gp.hyperparameter import (
     AnalyticScale,
-    FixedScale,
     ScalarParam,
     VectorParam,
 )
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.loss import mse_fn
 
 
 class GPInitTest(parameterized.TestCase):
