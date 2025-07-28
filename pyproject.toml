@@ -55,6 +55,7 @@ tests = [
     "absl-py>=0.13.0",
     "matplotlib>=3.2.1",
     "pandas>=2.2.2",
+    "flake8",
 ]
 dev = [
     "black>=21.1.0",
