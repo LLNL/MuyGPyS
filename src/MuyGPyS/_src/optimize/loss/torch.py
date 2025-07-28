@@ -40,7 +40,7 @@ def _lool_fn(
     targets: torch.ndarray,
     variances: torch.ndarray,
     scale: float,
-    **kwargs
+    **kwargs,
 ) -> float:
     return _lool_fn_unscaled(predictions, targets, scale * variances, **kwargs)
 
@@ -49,7 +49,7 @@ def _lool_fn_unscaled(
     predictions: torch.ndarray,
     targets: torch.ndarray,
     variances: torch.ndarray,
-    **kwargs
+    **kwargs,
 ) -> float:
     if variances.ndim == 3:
         residual = torch.atleast_3d(predictions - targets)
@@ -69,7 +69,7 @@ def _pseudo_huber_fn(
     predictions: torch.ndarray,
     targets: torch.ndarray,
     boundary_scale: float = 1.5,
-    **kwargs
+    **kwargs,
 ) -> float:
     return boundary_scale**2 * torch.sum(
         torch.sqrt(1 + torch.divide(targets - predictions, boundary_scale) ** 2)
@@ -82,7 +82,7 @@ def _looph_fn_unscaled(
     targets: torch.ndarray,
     variances: torch.ndarray,
     boundary_scale: float = 3.0,
-    **kwargs
+    **kwargs,
 ) -> float:
     boundary_scale_sq = boundary_scale**2
     return torch.sum(
@@ -107,7 +107,7 @@ def _looph_fn(
     variances: torch.ndarray,
     scale: float,
     boundary_scale: float = 3.0,
-    **kwargs
+    **kwargs,
 ) -> float:
     return _looph_fn_unscaled(
         predictions,

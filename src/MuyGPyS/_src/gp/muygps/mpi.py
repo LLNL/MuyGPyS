@@ -18,15 +18,6 @@ def _muygps_fast_posterior_mean(
     )
 
 
-def _mmuygps_fast_posterior_mean(
-    Kcross: np.ndarray,
-    coeffs_tensor: np.ndarray,
-) -> np.ndarray:
-    raise NotImplementedError(
-        'Function "mmuygps_fast_posterior_mean" does not support mpi!'
-    )
-
-
 def _muygps_fast_posterior_mean_precompute(
     Kin: np.ndarray,
     train_nn_targets_fast: np.ndarray,

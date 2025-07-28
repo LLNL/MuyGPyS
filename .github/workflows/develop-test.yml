@@ -37,11 +37,11 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9", "3.10"]
-        test-group: [short, optimize, multivariate, optimize-experimental]
+        test-group: [short, optimize, optimize-experimental]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install numpy dependencies
@@ -67,9 +67,6 @@ jobs:
       - name: Optimize Tests - experimental
         if: matrix.test-group == 'optimize-experimental'
         run: python tests/experimental/mini_batch.py
-      - name: Multivariate Tests
-        if: matrix.test-group == 'multivariate'
-        run: python tests/multivariate.py
 
   build-jax:
     runs-on: ubuntu-latest
@@ -78,15 +75,15 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install JAX dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e .[tests,hnswlib,jax_cpu]
+          python -m pip install -e .[tests,hnswlib,jax]
       - name: Test JAX correctness
         run: |
           python tests/backend/jax_correctness.py
@@ -98,9 +95,9 @@ jobs:
       matrix:
         python-version: ["3.10"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install MPI dependencies
@@ -120,9 +117,9 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Torch dependencies
@@ -144,9 +141,9 @@ jobs:
         python-version: ["3.10"]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies

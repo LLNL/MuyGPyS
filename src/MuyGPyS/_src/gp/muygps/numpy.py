@@ -77,14 +77,6 @@ def _muygps_fast_posterior_mean(
     )
 
 
-def _mmuygps_fast_posterior_mean(
-    Kcross: np.ndarray,
-    coeffs_tensor: np.ndarray,
-    **kwargs,
-) -> np.ndarray:
-    return np.einsum("ijk,ijk->ik", Kcross, coeffs_tensor)
-
-
 def _muygps_fast_posterior_mean_precompute(
     Kin: np.ndarray,
     train_nn_targets_fast: np.ndarray,

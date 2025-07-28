@@ -82,9 +82,9 @@ hnswlib = [
     "pybind11>=2.5.0",
     "hnswlib>=0.6.0",
 ]
-jax_cpu = [
-    "jax[cpu]>=0.2.26",
-    "tensorflow-probability[jax]>=0.16.0",
+jax = [
+    "jax>=0.4.0",
+    "tensorflow-probability[jax]>=0.25.0",
 ]
 mpi = [
     "mpi4py==3.1.3",
