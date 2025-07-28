@@ -36,7 +36,7 @@ from MuyGPyS.examples.classify import (
     make_classifier,
 )
 from MuyGPyS.examples.from_indices import regress_from_indices
-from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.batch import get_balanced_batch
@@ -344,7 +344,7 @@ def do_uq(
 
 
 def classify_two_class_uq(
-    surrogate: Union[MuyGPS, MMuyGPS],
+    surrogate: MuyGPS,
     test_features: np.ndarray,
     train_features: np.ndarray,
     train_nbrs_lookup: NN_Wrapper,

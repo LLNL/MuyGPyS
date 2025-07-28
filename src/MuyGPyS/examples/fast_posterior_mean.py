@@ -12,9 +12,6 @@ removed in future versions.
 :func:`~MuyGPyS.examples.fast_posterior_mean.make_fast_regressor` is a
 high-level API for creating the necessary components for fast posterior mean
 inference.
-:func:`~MuyGPyS.examples.fast_posterior_mean.make_fast_multivariate_regressor`
-is a high-level API for creating the necessary components for fast posterior
-mean inference with multiple outputs.
 
 :func:`~MuyGPyS.examples.fast_posterior_mean.do_fast_posterior_mean` is a
 high-level api for executing a simple, generic fast posterior medan workflow
@@ -27,9 +24,9 @@ from time import perf_counter
 from typing import Dict, List, Tuple, Union
 
 import MuyGPyS._src.math as mm
-from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.examples.from_indices import fast_posterior_mean_from_indices
-from MuyGPyS.examples.regress import _decide_and_make_regressor
+from MuyGPyS.examples.regress import make_regressor
 from MuyGPyS.gp.tensors import fast_nn_update
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
@@ -87,80 +84,6 @@ def make_fast_regressor(
     return precomputed_coefficients_matrix, nn_indices
 
 
-def make_fast_multivariate_regressor(
-    mmuygps: MMuyGPS,
-    nbrs_lookup: NN_Wrapper,
-    train_features: mm.ndarray,
-    train_targets: mm.ndarray,
-) -> Tuple[mm.ndarray, mm.ndarray]:
-    """
-    Convenience function for creating precomputed coefficient matrix and neighbor lookup data
-    structure.
-
-    Args:
-        muygps:
-            A trained MultivariateMuyGPS object.
-        nbrs_lookup:
-             A data structure supporting nearest neighbor queries into
-            `train_features`.
-        train_features:
-            A matrix of shape `(train_count, feature_count)` whose rows consist
-            of observation vectors of the train data.
-        train_targets:
-            A matrix of shape `(train_count, response_count)` whose rows consist
-            of response vectors of the train data.
-
-    Returns
-    -------
-    precomputed_coefficients_matrix:
-        A matrix of shape `(train_count, nn_count)` whose rows list the
-        precomputed coefficients for each nearest neighbors set in the
-        training data.
-    nn_indices:
-        An array supporting nearest neighbor queries.
-    """
-    num_training_samples, _ = train_features.shape
-    nn_indices, _ = nbrs_lookup.get_batch_nns(
-        mm.arange(0, num_training_samples)
-    )
-
-    nn_indices = fast_nn_update(nn_indices)
-    pairwise_diffs_fast = mmuygps.models[0].kernel.deformation.pairwise_tensor(
-        train_features, nn_indices
-    )
-    train_nn_targets = train_targets[nn_indices]
-    precomputed_coefficients_matrix = mmuygps.fast_coefficients(
-        pairwise_diffs_fast, train_nn_targets
-    )
-    return precomputed_coefficients_matrix, nn_indices
-
-
-def _decide_and_make_fast_regressor(
-    muygps: Union[MuyGPS, MMuyGPS],
-    nbrs_lookup: NN_Wrapper,
-    train_features: mm.ndarray,
-    train_targets: mm.ndarray,
-) -> Tuple[mm.ndarray, mm.ndarray]:
-    if isinstance(muygps, MuyGPS):
-        precomputed_coefficients_matrix, nn_indices = make_fast_regressor(
-            muygps,
-            nbrs_lookup,
-            train_features,
-            train_targets,
-        )
-    else:
-        (
-            precomputed_coefficients_matrix,
-            nn_indices,
-        ) = make_fast_multivariate_regressor(
-            muygps,
-            nbrs_lookup,
-            train_features,
-            train_targets,
-        )
-    return precomputed_coefficients_matrix, nn_indices
-
-
 def do_fast_posterior_mean(
     test_features: mm.ndarray,
     train_features: mm.ndarray,
@@ -169,7 +92,7 @@ def do_fast_posterior_mean(
     batch_count: int = 200,
     loss_fn: LossFn = lool_fn,
     opt_fn: OptimizeFn = Bayes_optimize,
-    k_kwargs: Union[Dict, Union[List[Dict], Tuple[Dict, ...]]] = dict(),
+    k_kwargs: Dict = dict(),
     nn_kwargs: Dict = dict(),
     opt_kwargs: Dict = dict(),
     verbose: bool = False,
@@ -181,10 +104,6 @@ def do_fast_posterior_mean(
     Expected parameters include keyword argument dicts specifying kernel
     parameters and nearest neighbor parameters. See the docstrings of the
     appropriate functions for specifics.
-
-    Also supports workflows relying upon multivariate models. In order to create
-    a multivariate model, specify the `kern` argument and pass a list of
-    hyperparameter dicts to `k_kwargs`.
 
     Example:
         >>> from MuyGPyS.testing.test_utils import _make_gaussian_data
@@ -247,13 +166,8 @@ def do_fast_posterior_mean(
             Ignored if all of the parameters specified by argument `k_kwargs`
             are fixed.
         k_kwargs:
-            If given a list or tuple of length `response_count`, assume that the
-            elements are dicts containing kernel initialization keyword
-            arguments for the creation of a multivariate model (see
-            :func:`~MuyGPyS.examples.regress.make_multivariate_regressor`).
-            If given a dict, assume that the elements are keyword arguments to
-            a MuyGPs model (see
-            :func:`~MuyGPyS.examples.regress.make_regressor`).
+            Assume that the elements are keyword arguments to a MuyGPs model
+            (see :func:`~MuyGPyS.examples.regress.make_regressor`).
         nn_kwargs:
             Parameters for the nearest neighbors wrapper. See
             :class:`MuyGPyS.neighbors.NN_Wrapper` for the supported methods and
@@ -281,7 +195,7 @@ def do_fast_posterior_mean(
         A dictionary containing timings for the training, precomputation,
         nearest neighbor computation, and prediction.
     """
-    regressor, nbrs_lookup = _decide_and_make_regressor(
+    regressor, nbrs_lookup = make_regressor(
         train_features,
         train_targets,
         nn_count=nn_count,
@@ -315,7 +229,7 @@ def do_fast_posterior_mean(
 
 
 def fast_posterior_mean_any(
-    muygps: Union[MuyGPS, MMuyGPS],
+    muygps: MuyGPS,
     test_features: mm.ndarray,
     train_features: mm.ndarray,
     nbrs_lookup: NN_Wrapper,
@@ -324,8 +238,6 @@ def fast_posterior_mean_any(
     """
     Convenience function performing fast posterior mean inference using a
     pre-trained model.
-
-    Also supports workflows relying upon multivariate models.
 
     Args:
         muygps:
@@ -361,7 +273,7 @@ def fast_posterior_mean_any(
     (
         precomputed_coefficients_matrix,
         nn_indices,
-    ) = _decide_and_make_fast_regressor(
+    ) = make_fast_regressor(
         muygps,
         nbrs_lookup,
         train_features,

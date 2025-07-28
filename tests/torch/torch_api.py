@@ -23,9 +23,8 @@ from MuyGPyS.gp.hyperparameter import ScalarParam
 from MuyGPyS.gp.noise import HomoscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
 from MuyGPyS.optimize.batch import sample_batch
-from MuyGPyS.torch import MuyGPs_layer, MultivariateMuyGPs_layer
-from MuyGPyS.gp.muygps import MuyGPS
-from MuyGPyS.gp import MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.torch import MuyGPs_layer
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import Isotropy, l2
 from MuyGPyS.gp.kernels import Matern
 
@@ -56,155 +55,143 @@ stargal_files = {
 heaton_file = "heaton/sub_heaton.pkl"
 
 
-class SVDKMuyGPs_Star_Galaxy(nn.Module):
-    def __init__(
-        self,
-        multivariate_muygps_model,
-        batch_indices,
-        batch_nn_indices,
-        batch_targets,
-        batch_nn_targets,
-    ):
-        super().__init__()
-        self.embedding = nn.Sequential(
-            nn.Linear(40, 30),
-            nn.Dropout(0.5),
-            nn.PReLU(1),
-            nn.Linear(30, 10),
-            nn.Dropout(0.5),
-            nn.PReLU(1),
-        )
-        self.multivariate_muygps_model = multivariate_muygps_model
-        self.batch_indices = batch_indices
-        self.batch_nn_indices = batch_nn_indices
-        self.batch_targets = batch_targets
-        self.batch_nn_targets = batch_nn_targets
-        self.GP_layer = MultivariateMuyGPs_layer(
-            self.multivariate_muygps_model,
-            self.batch_indices,
-            self.batch_nn_indices,
-            self.batch_targets,
-            self.batch_nn_targets,
-        )
-        self.deformation = self.GP_layer.deformation
+# class SVDKMuyGPs_Star_Galaxy(nn.Module):
+#     def __init__(
+#         self,
+#         muygps_model,
+#         batch_indices,
+#         batch_nn_indices,
+#         batch_targets,
+#         batch_nn_targets,
+#     ):
+#         super().__init__()
+#         self.embedding = nn.Sequential(
+#             nn.Linear(40, 30),
+#             nn.Dropout(0.5),
+#             nn.PReLU(1),
+#             nn.Linear(30, 10),
+#             nn.Dropout(0.5),
+#             nn.PReLU(1),
+#         )
+#         self.muygps_model = muygps_model
+#         self.batch_indices = batch_indices
+#         self.batch_nn_indices = batch_nn_indices
+#         self.batch_targets = batch_targets
+#         self.batch_nn_targets = batch_nn_targets
+#         self.GP_layer = MuyGPs_layer(
+#             self.muygps_model,
+#             self.batch_indices,
+#             self.batch_nn_indices,
+#             self.batch_targets,
+#             self.batch_nn_targets,
+#         )
+#         self.deformation = self.GP_layer.deformation
 
-    def forward(self, x):
-        predictions = self.embedding(x)
-        predictions, variances = self.GP_layer(predictions)
-        return predictions, variances
+#     def forward(self, x):
+#         predictions = self.embedding(x)
+#         predictions, variances = self.GP_layer(predictions)
+#         return predictions, variances
 
 
-class MultivariateStargalRegressTest(RegressionAPITest):
-    @classmethod
-    def setUpClass(cls):
-        super(MultivariateStargalRegressTest, cls).setUpClass()
-        with open(
-            os.path.join(hardpath + stargal_dir, stargal_files["40"]), "rb"
-        ) as f:
-            cls.embedded_40_train, cls.embedded_40_test = pkl.load(f)
-            cls.embedded_40_train = {
-                "input": torch.ndarray(cls.embedded_40_train["input"]),
-                "output": torch.ndarray(cls.embedded_40_train["output"]),
-            }
-            cls.embedded_40_test = {
-                "input": torch.ndarray(cls.embedded_40_test["input"]),
-                "output": torch.ndarray(cls.embedded_40_test["output"]),
-            }
+# class StargalRegressTest(RegressionAPITest):
+#     @classmethod
+#     def setUpClass(cls):
+#         super(StargalRegressTest, cls).setUpClass()
+#         with open(
+#             os.path.join(hardpath + stargal_dir, stargal_files["40"]), "rb"
+#         ) as f:
+#             cls.embedded_40_train, cls.embedded_40_test = pkl.load(f)
+#             cls.embedded_40_train = {
+#                 "input": torch.ndarray(cls.embedded_40_train["input"]),
+#                 "output": torch.ndarray(cls.embedded_40_train["output"]),
+#             }
+#             cls.embedded_40_test = {
+#                 "input": torch.ndarray(cls.embedded_40_test["input"]),
+#                 "output": torch.ndarray(cls.embedded_40_test["output"]),
+#             }
 
-    @parameterized.parameters(((nn, bs) for nn in [30] for bs in [500]))
-    def test_regress(
-        self,
-        nn_count,
-        batch_count,
-    ):
-        target_mse = 1.0
-        train = _balanced_subsample(self.embedded_40_train, 10000)
-        test = _balanced_subsample(self.embedded_40_test, 1000)
+#     @parameterized.parameters(((nn, bs) for nn in [30] for bs in [500]))
+#     def test_regress(
+#         self,
+#         nn_count,
+#         batch_count,
+#     ):
+#         target_mse = 1.0
+#         train = _balanced_subsample(self.embedded_40_train, 10000)
+#         test = _balanced_subsample(self.embedded_40_test, 1000)
 
-        train_features = train["input"]
-        train_responses = train["output"]
-        test_features = test["input"]
+#         train_features = train["input"]
+#         train_responses = train["output"]
+#         test_features = test["input"]
 
-        nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="hnsw")
-        train_count, num_test_responses = train_responses.shape
+#         nbrs_lookup = NN_Wrapper(train_features, nn_count, nn_method="hnsw")
+#         train_count, num_test_responses = train_responses.shape
 
-        batch_indices, batch_nn_indices = sample_batch(
-            nbrs_lookup, batch_count, train_count
-        )
+#         batch_indices, batch_nn_indices = sample_batch(
+#             nbrs_lookup, batch_count, train_count
+#         )
 
-        batch_targets = train_responses[batch_indices, :]
-        batch_nn_targets = train_responses[batch_nn_indices, :]
+#         batch_targets = train_responses[batch_indices, :]
+#         batch_nn_targets = train_responses[batch_nn_indices, :]
 
-        model_args = [
-            {
-                "kernel": Matern(
-                    smoothness=ScalarParam(1.5),
-                    deformation=Isotropy(
-                        metric=l2,
-                        length_scale=ScalarParam(7.2),
-                    ),
-                ),
-                "noise": HomoscedasticNoise(1e-5),
-            },
-            {
-                "kernel": Matern(
-                    smoothness=ScalarParam(0.5),
-                    deformation=Isotropy(
-                        metric=l2,
-                        length_scale=ScalarParam(2.2),
-                    ),
-                ),
-                "noise": HomoscedasticNoise(1e-6),
-            },
-        ]
+#         model_kwargs = {
+#             "kernel": Matern(
+#                 smoothness=ScalarParam(1.5),
+#                 deformation=Isotropy(
+#                     metric=l2,
+#                     length_scale=ScalarParam(7.2),
+#                 ),
+#             ),
+#             "noise": HomoscedasticNoise(1e-5),
+#         }
 
-        multivariate_muygps_model = MMuyGPS(*model_args)
+#         muygps_model = MuyGPS(**model_kwargs)
 
-        model = SVDKMuyGPs_Star_Galaxy(
-            multivariate_muygps_model=multivariate_muygps_model,
-            batch_indices=batch_indices,
-            batch_nn_indices=batch_nn_indices,
-            batch_targets=batch_targets,
-            batch_nn_targets=batch_nn_targets,
-        )
+#         model = SVDKMuyGPs_Star_Galaxy(
+#             muygps_model=muygps_model,
+#             batch_indices=batch_indices,
+#             batch_nn_indices=batch_nn_indices,
+#             batch_targets=batch_targets,
+#             batch_nn_targets=batch_nn_targets,
+#         )
 
-        nbrs_struct, model_trained = train_deep_kernel_muygps(
-            model=model,
-            train_features=train_features,
-            train_responses=train_responses,
-            batch_indices=batch_indices,
-            nbrs_lookup=nbrs_lookup,
-            training_iterations=10,
-            optimizer_method=torch.optim.Adam,
-            learning_rate=1e-3,
-            scheduler_decay=0.95,
-            loss_function="lool",
-            update_frequency=1,
-        )
+#         nbrs_struct, model_trained = train_deep_kernel_muygps(
+#             model=model,
+#             train_features=train_features,
+#             train_responses=train_responses,
+#             batch_indices=batch_indices,
+#             nbrs_lookup=nbrs_lookup,
+#             training_iterations=10,
+#             optimizer_method=torch.optim.Adam,
+#             learning_rate=1e-3,
+#             scheduler_decay=0.95,
+#             loss_function="lool",
+#             update_frequency=1,
+#         )
 
-        model_trained.eval()
+#         model_trained.eval()
 
-        predictions, variances = predict_model(
-            model=model_trained,
-            test_features=test_features,
-            train_features=train_features,
-            train_responses=train_responses,
-            nbrs_lookup=nbrs_struct,
-            nn_count=nn_count,
-        )
+#         predictions, variances = predict_model(
+#             model=model_trained,
+#             test_features=test_features,
+#             train_features=train_features,
+#             train_responses=train_responses,
+#             nbrs_lookup=nbrs_struct,
+#             nn_count=nn_count,
+#         )
 
-        test_responses = test["output"]
-        mse_actual = (
-            np.sum(
-                (
-                    predictions.squeeze().detach().numpy()
-                    - test_responses.squeeze().detach().numpy()
-                )
-                ** 2
-            )
-            / test_responses.shape[0]
-        )
-        self.assertLessEqual(mse_actual, target_mse)
+#         test_responses = test["output"]
+#         mse_actual = (
+#             np.sum(
+#                 (
+#                     predictions.squeeze().detach().numpy()
+#                     - test_responses.squeeze().detach().numpy()
+#                 )
+#                 ** 2
+#             )
+#             / test_responses.shape[0]
+#         )
+#         self.assertLessEqual(mse_actual, target_mse)
 
 
 class SVDKMuyGPs_Heaton(nn.Module):

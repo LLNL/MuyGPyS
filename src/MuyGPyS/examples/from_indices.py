@@ -14,13 +14,13 @@ import numpy as np
 
 from typing import Tuple, Union
 
-from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.optimize import Bayes_optimize, OptimizeFn
 from MuyGPyS.optimize.loss import LossFn, lool_fn
 
 
 def tensors_from_indices(
-    muygps: Union[MuyGPS, MMuyGPS],
+    muygps: MuyGPS,
     indices: np.ndarray,
     nn_indices: np.ndarray,
     test: np.ndarray,
@@ -40,7 +40,7 @@ def tensors_from_indices(
 
 
 def posterior_mean_from_indices(
-    muygps: Union[MuyGPS, MMuyGPS],
+    muygps: MuyGPS,
     indices: np.ndarray,
     nn_indices: np.ndarray,
     test: np.ndarray,
@@ -57,7 +57,7 @@ def posterior_mean_from_indices(
 
 
 def posterior_variance_from_indices(
-    muygps: Union[MuyGPS, MMuyGPS],
+    muygps: MuyGPS,
     indices: np.ndarray,
     nn_indices: np.ndarray,
     test: np.ndarray,
@@ -74,7 +74,7 @@ def posterior_variance_from_indices(
 
 
 def regress_from_indices(
-    muygps: Union[MuyGPS, MMuyGPS],
+    muygps: MuyGPS,
     indices: np.ndarray,
     nn_indices: np.ndarray,
     test: np.ndarray,
@@ -91,7 +91,7 @@ def regress_from_indices(
 
 
 def fast_posterior_mean_from_indices(
-    muygps: Union[MuyGPS, MMuyGPS],
+    muygps: MuyGPS,
     indices: np.ndarray,
     nn_indices: np.ndarray,
     test_features: np.ndarray,

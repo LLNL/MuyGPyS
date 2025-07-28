@@ -26,7 +26,7 @@ from MuyGPyS import config
 from MuyGPyS.optimize.loss import lool_fn_unscaled as lool_fn
 from MuyGPyS.neighbors import NN_Wrapper
 
-from MuyGPyS.torch import MultivariateMuyGPs_layer
+from MuyGPyS.torch import MuyGPs_layer
 
 if config.state.backend != "torch":
     import warnings
@@ -129,88 +129,6 @@ def predict_single_model(
     return predictions, variances
 
 
-def predict_multiple_model(
-    model,
-    test_features: torch.Tensor,
-    train_features: torch.Tensor,
-    train_responses: torch.Tensor,
-    nbrs_lookup: NN_Wrapper,
-    nn_count: int,
-):
-    """
-    Generate predictions using a PyTorch model containing a
-    `MuyGPyS.torch.muygps_layer.MultivariateMuyGPs_layer` in its structure.
-    Meant for the case in which there is more than one GP model used to model
-    multiple outputs. Note that the custom PyTorch MultivariateMuyGPs_layer
-    objects only support the Matern kernel. Support for more kernels will be
-    added in future releases.
-
-    Args:
-        model:
-            A custom PyTorch.nn.Module object containing an
-            `embedding` component and one
-            `MuyGPyS.torch.muygps_layer.MultivariateMuyGPs_layer` layer.
-        test_features:
-            A torch.Tensor of shape `(test_count, feature_count)` containing
-            the test features to be regressed.
-        train_features:
-            A torch.Tensor of shape `(train_count, feature_count)` containing
-            the training features.
-        train_responses:
-            A torch.Tensor of shape `(train_count, response_count)` containing
-            the training responses corresponding to each feature.
-        nbrs_lookup:
-            A NN_Wrapper nearest neighbor lookup data structure.
-
-    Returns
-    -------
-    predictions:
-        A torch.Tensor of shape `(test_count, response_count)` whose rows are
-        the predicted response for each of the given test feature.
-    variances:
-        A torch.Tensor of shape `(batch_count,)` consisting of the diagonal
-        elements of the posterior variance, or a matrix of shape
-        `(batch_count, response_count)` for a multidimensional response.
-    """
-    if model.embedding is None:
-        raise NotImplementedError("MuyGPs PyTorch model requires embedding.")
-
-    train_features_embedded = model.embedding(train_features).detach().numpy()
-    test_features_embedded = model.embedding(test_features).detach().numpy()
-
-    test_count = test_features_embedded.shape[0]
-
-    nn_indices_test, _ = nbrs_lookup._get_nns(
-        test_features_embedded, nn_count=nn_count
-    )
-
-    train_features_embedded = torch.from_numpy(train_features_embedded)
-    test_features_embedded = torch.from_numpy(test_features_embedded)
-
-    test_nn_targets = train_responses[nn_indices_test]
-
-    crosswise_dists = model.deformation.crosswise_tensor(
-        test_features_embedded,
-        train_features_embedded,
-        torch.arange(test_count),
-        nn_indices_test,
-    )
-
-    pairwise_dists = model.deformation.pairwise_tensor(
-        train_features_embedded, nn_indices_test
-    )
-
-    predictions = model.GP_layer.multivariate_muygps_model.posterior_mean(
-        pairwise_dists, crosswise_dists, test_nn_targets
-    )
-
-    variances = model.GP_layer.multivariate_muygps_model.posterior_variance(
-        pairwise_dists, crosswise_dists
-    )
-
-    return predictions, variances
-
-
 def predict_model(
     model,
     test_features: torch.Tensor,
@@ -221,11 +139,9 @@ def predict_model(
 ):
     """
     Generate predictions using a PyTorch model containing a
-    `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer or a
-    `MuyGPyS.torch.muygps_layer.MultivariateMuyGPs_layer` layer in its
-    structure. Note that the custom PyTorch layers for MuyGPs
-    objects only support the Matern kernel. Support for more kernels will be
-    added in future releases.
+    `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer in its structure. Note that
+    the custom PyTorch layers for MuyGPs objects only support the Matern kernel.
+    Support for more kernels will be added in future releases.
 
     Example:
         >>> #model must be defined as a PyTorch model inheriting from
@@ -249,7 +165,7 @@ def predict_model(
     Args:
         model:
             A custom PyTorch.nn.Module object containing an embedding component
-            and one MuyGPs_layer or MultivariateMuyGPS_layer layer.
+            and one MuyGPs_layer layer.
         test_features:
             A torch.Tensor of shape `(test_count, feature_count)` containing
             the test features to be regressed.
@@ -274,24 +190,14 @@ def predict_model(
     """
     if model.GP_layer is None:
         raise NotImplementedError("MuyGPs PyTorch model requires GP_layer.")
-    if isinstance(model.GP_layer, MultivariateMuyGPs_layer):
-        return predict_multiple_model(
-            model,
-            test_features,
-            train_features,
-            train_responses,
-            nbrs_lookup,
-            nn_count,
-        )
-    else:
-        return predict_single_model(
-            model,
-            test_features,
-            train_features,
-            train_responses,
-            nbrs_lookup,
-            nn_count,
-        )
+    return predict_single_model(
+        model,
+        test_features,
+        train_features,
+        train_responses,
+        nbrs_lookup,
+        nn_count,
+    )
 
 
 def train_deep_kernel_muygps(
@@ -311,11 +217,9 @@ def train_deep_kernel_muygps(
 ):
     """
     Train a PyTorch model containing an embedding component and
-    a `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer or a
-    `MuyGPyS.torch.muygps_layer. MultivariateMuyGPs_layer` layer in its
-    structure. Note that the custom PyTorch layers for MuyGPs models only
-    support the Matern kernel. Support for more kernels will be added in
-    future releases.
+    a `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer in its structure. Note
+    that the custom PyTorch layers for MuyGPs models only support the Matern
+    kernel. Support for more kernels will be added in future releases.
 
     Example:
         >>> #model must be defined as a PyTorch model inheriting from
@@ -348,8 +252,7 @@ def train_deep_kernel_muygps(
     Args:
         model:
             A custom PyTorch.nn.Module object containing at least one
-            embedding layer and one MuyGPs_layer or MultivariateMuyGPS_layer
-            layer.
+            embedding layer and one MuyGPs_layer layer.
         train_features:
             A torch.Tensor of shape `(train_count, feature_count)` containing
             the training features.
@@ -485,9 +388,7 @@ def update_nearest_neighbors(
     """
     Update the nearest neighbors after deformation via a PyTorch model
     containing an embedding component and a
-    `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer or a
-    `MuyGPyS.torch.muygps_layer. MultivariateMuyGPs_layer` layer in its
-    structure.
+    `MuyGPyS.torch.muygps_layer.MuyGPs_layer` layer in its structure.
 
     Example:
         >>> #model must be defined as a PyTorch model inheriting from
@@ -511,8 +412,7 @@ def update_nearest_neighbors(
     Args:
         model:
             A custom PyTorch.nn.Module object containing at least one
-            embedding layer and one MuyGPs_layer or MultivariateMuyGPS_layer
-            layer.
+            embedding layer and one MuyGPs_layer layer.
         train_features:
             A torch.Tensor of shape `(train_count, feature_count)` containing
             the training features.

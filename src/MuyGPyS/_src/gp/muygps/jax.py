@@ -160,14 +160,6 @@ def _muygps_fast_posterior_mean(
 
 
 @jit
-def _mmuygps_fast_posterior_mean(
-    Kcross: jnp.ndarray,
-    coeffs_tensor: jnp.ndarray,
-) -> jnp.ndarray:
-    return jnp.einsum("ijk,ijk->ik", Kcross, coeffs_tensor)
-
-
-@jit
 def _muygps_fast_posterior_mean_precompute(
     Kin: jnp.ndarray,
     train_nn_targets_fast: jnp.ndarray,

@@ -5,10 +5,9 @@
 
 try:
     from jax import config as jax_config
-    from jax._src.config import Config as JaxConfig
 except Exception:
     jax_config = None  # type: ignore
-    from MuyGPyS._src.jaxconfig import Config as JaxConfig  # type: ignore
+from MuyGPyS._src.jaxconfig import Config as JaxConfig  # type: ignore
 
 import itertools
 import sys
