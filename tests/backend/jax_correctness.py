@@ -45,14 +45,12 @@ from MuyGPyS._src.gp.muygps.numpy import (
     _muygps_posterior_mean as muygps_posterior_mean_n,
     _muygps_diagonal_variance as muygps_diagonal_variance_n,
     _muygps_fast_posterior_mean as muygps_fast_posterior_mean_n,
-    _mmuygps_fast_posterior_mean as mmuygps_fast_posterior_mean_n,
     _muygps_fast_posterior_mean_precompute as muygps_fast_posterior_mean_precompute_n,
 )
 from MuyGPyS._src.gp.muygps.jax import (
     _muygps_posterior_mean as muygps_posterior_mean_j,
     _muygps_diagonal_variance as muygps_diagonal_variance_j,
     _muygps_fast_posterior_mean as muygps_fast_posterior_mean_j,
-    _mmuygps_fast_posterior_mean as mmuygps_fast_posterior_mean_j,
     _muygps_fast_posterior_mean_precompute as muygps_fast_posterior_mean_precompute_j,
 )
 from MuyGPyS._src.gp.noise.numpy import (
@@ -89,9 +87,8 @@ from MuyGPyS._test.utils import (
     _exact_nn_kwarg_options,
     _make_gaussian_matrix,
     _make_gaussian_data,
-    _make_heteroscedastic_test_nugget,
 )
-from MuyGPyS.gp import MuyGPS, MultivariateMuyGPS as MMuyGPS
+from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import Anisotropy, Isotropy, MetricFn
 from MuyGPyS.gp.hyperparameter import AnalyticScale, ScalarParam, VectorParam
 from MuyGPyS.gp.kernels import Matern, RBF
@@ -1097,248 +1094,6 @@ class FastPredictTest(MuyGPSTestCase):
             allclose_inv(
                 self.fast_regress_coeffs_n,
                 self.fast_regress_coeffs_j,
-            )
-        )
-
-
-class FastMultivariatePredictTest(MuyGPSTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(FastMultivariatePredictTest, cls).setUpClass()
-        cls.train_count = 1000
-        cls.test_count = 100
-        cls.feature_count = 10
-        cls.response_count = 2
-        cls.nn_count = 40
-        cls.batch_count = 500
-        cls.length_scale = 1.0
-        cls.smoothness = 0.55
-        cls.smoothness_bounds = (1e-1, 1e1)
-        cls.noise = 1e-3
-        cls.noise_heteroscedastic_n = _make_heteroscedastic_test_nugget(
-            cls.batch_count, cls.nn_count, cls.noise
-        )
-        cls.noise_heteroscedastic_train_n = _make_heteroscedastic_test_nugget(
-            cls.train_count, cls.nn_count, cls.noise
-        )
-        cls.noise_heteroscedastic_j = jnp.array(cls.noise_heteroscedastic_n)
-        cls.noise_heteroscedastic_train_j = jnp.array(
-            cls.noise_heteroscedastic_train_n
-        )
-        cls.k_kwargs_n = [
-            {
-                "kernel": Matern(
-                    smoothness=ScalarParam(
-                        cls.smoothness, cls.smoothness_bounds
-                    ),
-                    deformation=Isotropy(
-                        l2_n,
-                        length_scale=ScalarParam(cls.length_scale),
-                    ),
-                ),
-                "noise": HeteroscedasticNoise(
-                    cls.noise_heteroscedastic_train_n,
-                    _backend_fn=heteroscedastic_perturb_n,
-                ),
-            },
-            {
-                "kernel": Matern(
-                    smoothness=ScalarParam(
-                        cls.smoothness, cls.smoothness_bounds
-                    ),
-                    deformation=Isotropy(
-                        l2_n,
-                        length_scale=ScalarParam(cls.length_scale),
-                    ),
-                ),
-                "noise": HeteroscedasticNoise(
-                    cls.noise_heteroscedastic_train_n,
-                    _backend_fn=heteroscedastic_perturb_n,
-                ),
-            },
-        ]
-        cls.train_features_n = _make_gaussian_matrix(
-            cls.train_count, cls.feature_count
-        )
-        cls.train_features_j = jnp.array(cls.train_features_n)
-        cls.train_responses_n = _make_gaussian_matrix(
-            cls.train_count, cls.response_count
-        )
-        cls.train_responses_j = jnp.array(cls.train_responses_n)
-        cls.test_features_n = _make_gaussian_matrix(
-            cls.test_count, cls.feature_count
-        )
-        cls.test_features_j = jnp.array(cls.test_features_n)
-        cls.test_responses_n = _make_gaussian_matrix(
-            cls.test_count, cls.response_count
-        )
-        cls.test_responses_j = jnp.array(cls.test_responses_n)
-        cls.nbrs_lookup = NN_Wrapper(
-            cls.train_features_n, cls.nn_count, **_exact_nn_kwarg_options[0]
-        )
-        cls.mmuygps = MMuyGPS(*cls.k_kwargs_n)
-        cls.batch_indices_n, cls.batch_nn_indices_n = sample_batch(
-            cls.nbrs_lookup, cls.batch_count, cls.train_count
-        )
-        cls.batch_indices_j = jnp.iarray(cls.batch_indices_n)
-        cls.batch_nn_indices_j = jnp.iarray(cls.batch_nn_indices_n)
-        cls.nn_indices_all_n, _ = cls.nbrs_lookup.get_batch_nns(
-            np.arange(0, cls.train_count)
-        )
-        (
-            cls.Kin_fast_n,
-            cls.train_nn_targets_fast_n,
-        ) = make_fast_predict_tensors_n(
-            cls.nn_indices_all_n,
-            cls.train_features_n,
-            cls.train_responses_n,
-        )
-
-        cls.homoscedastic_Kin_fast_n = cls.muygps_gen_n.noise.perturb(
-            l2_n(cls.Kin_fast_n),
-        )
-        cls.fast_regress_coeffs_n = cls.muygps_gen_n.fast_coefficients(
-            cls.homoscedastic_Kin_fast_n, cls.train_nn_targets_fast_n
-        )
-
-        cls.heteroscedastic_Kin_fast_n = (
-            cls.muygps_heteroscedastic_train_n.noise.perturb(
-                l2_n(cls.Kin_fast_n),
-            )
-        )
-        cls.fast_regress_coeffs_heteroscedastic_n = (
-            cls.muygps_heteroscedastic_train_n.fast_coefficients(
-                cls.heteroscedastic_Kin_fast_n, cls.train_nn_targets_fast_n
-            )
-        )
-
-        cls.test_neighbors_n, _ = cls.nbrs_lookup.get_nns(cls.test_features_n)
-        cls.closest_neighbor_n = cls.test_neighbors_n[:, 0]
-        cls.closest_set_n = cls.nn_indices_all_n[cls.closest_neighbor_n]
-
-        cls.new_nn_indices_n = fast_nn_update_n(cls.nn_indices_all_n)
-        cls.closest_set_new_n = cls.new_nn_indices_n[
-            cls.closest_neighbor_n
-        ].astype(int)
-        cls.crosswise_dists_fast_n = (
-            cls.muygps_05_n.kernel.deformation.crosswise_tensor(
-                cls.test_features_n,
-                cls.train_features_n,
-                np.arange(0, cls.test_count),
-                cls.closest_set_new_n,
-            )
-        )
-        Kcross_fast_n = np.zeros(
-            (cls.test_count, cls.nn_count, cls.response_count)
-        )
-        for i, model in enumerate(cls.mmuygps.models):
-            Kcross_fast_n[:, :, i] = model.kernel(cls.crosswise_dists_fast_n)
-        cls.Kcross_fast_n = Kcross_fast_n
-
-        cls.nn_indices_all_j, _ = cls.nbrs_lookup.get_batch_nns(
-            np.arange(0, cls.train_count)
-        )
-        cls.nn_indices_all_j = jnp.iarray(cls.nn_indices_all_j)
-
-        (
-            cls.Kin_fast_j,
-            cls.train_nn_targets_fast_j,
-        ) = make_fast_predict_tensors_j(
-            cls.nn_indices_all_j,
-            cls.train_features_j,
-            cls.train_responses_j,
-        )
-
-        cls.homoscedastic_Kin_fast_j = cls.muygps_gen_j.noise.perturb(
-            l2_j(cls.Kin_fast_j),
-        )
-        cls.fast_regress_coeffs_j = cls.muygps_gen_j.fast_coefficients(
-            cls.homoscedastic_Kin_fast_j, cls.train_nn_targets_fast_j
-        )
-
-        cls.heteroscedastic_Kin_fast_j = (
-            cls.muygps_heteroscedastic_train_j.noise.perturb(
-                l2_n(cls.Kin_fast_j)
-            )
-        )
-
-        cls.fast_regress_coeffs_heteroscedastic_j = (
-            cls.muygps_heteroscedastic_train_j.fast_coefficients(
-                cls.heteroscedastic_Kin_fast_j, cls.train_nn_targets_fast_j
-            )
-        )
-
-        cls.test_neighbors_j, _ = cls.nbrs_lookup.get_nns(cls.test_features_j)
-        cls.closest_neighbor_j = cls.test_neighbors_j[:, 0]
-        cls.closest_set_j = cls.nn_indices_all_j[cls.closest_neighbor_j].astype(
-            int
-        )
-
-        cls.new_nn_indices_j = fast_nn_update_j(cls.nn_indices_all_j)
-        cls.closest_set_new_j = cls.new_nn_indices_j[cls.closest_neighbor_j]
-        cls.crosswise_dists_fast_j = (
-            cls.muygps_05_j.kernel.deformation.crosswise_tensor(
-                cls.test_features_j,
-                cls.train_features_j,
-                np.arange(0, cls.test_count),
-                cls.closest_set_new_j,
-            )
-        )
-
-        cls.Kcross_fast_j = jnp.array(Kcross_fast_n)
-
-    def test_make_fast_homoscedastic_multivariate_predict_tensors(self):
-        self.assertTrue(
-            allclose_inv(
-                self.homoscedastic_Kin_fast_n, self.homoscedastic_Kin_fast_j
-            )
-        )
-        self.assertTrue(
-            allclose_inv(
-                self.train_nn_targets_fast_n, self.train_nn_targets_fast_j
-            )
-        )
-
-    def test_make_fast_heteroscedastic_multivariate_predict_tensors(self):
-        self.assertTrue(
-            allclose_inv(
-                self.heteroscedastic_Kin_fast_n,
-                self.heteroscedastic_Kin_fast_j,
-            )
-        )
-        self.assertTrue(
-            allclose_inv(
-                self.train_nn_targets_fast_n, self.train_nn_targets_fast_j
-            )
-        )
-
-    def test_fast_multivariate_predict(self):
-        self.assertTrue(
-            allclose_inv(
-                mmuygps_fast_posterior_mean_n(
-                    self.Kcross_fast_n,
-                    self.fast_regress_coeffs_n[self.closest_neighbor_n],
-                ),
-                mmuygps_fast_posterior_mean_j(
-                    self.Kcross_fast_j,
-                    self.fast_regress_coeffs_j[self.closest_neighbor_j],
-                ),
-            )
-        )
-
-    def test_fast_multivariate_predict_coeffs(self):
-        self.assertTrue(
-            allclose_inv(
-                self.fast_regress_coeffs_n,
-                self.fast_regress_coeffs_j,
-            )
-        )
-
-    def test_fast_multivariate_heteroscedastic_predict_coeffs(self):
-        self.assertTrue(
-            allclose_inv(
-                self.fast_regress_coeffs_heteroscedastic_n,
-                self.fast_regress_coeffs_heteroscedastic_j,
             )
         )
 

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from MuyGPyS._src.math.torch import nn
-from MuyGPyS.torch import MuyGPs_layer, MultivariateMuyGPs_layer
+from MuyGPyS.torch import MuyGPs_layer
 
 
 class SVDKMuyGPs(nn.Module):
@@ -32,44 +32,6 @@ class SVDKMuyGPs(nn.Module):
         self.batch_nn_targets = batch_nn_targets
         self.GP_layer = MuyGPs_layer(
             self.muygps_model,
-            self.batch_indices,
-            self.batch_nn_indices,
-            self.batch_targets,
-            self.batch_nn_targets,
-        )
-        self.deformation = self.GP_layer.deformation
-
-    def forward(self, x):
-        predictions = self.embedding(x)
-        predictions, variances = self.GP_layer(predictions)
-        return predictions, variances
-
-
-class SVDKMultivariateMuyGPs(nn.Module):
-    def __init__(
-        self,
-        multivariate_muygps_model,
-        batch_indices,
-        batch_nn_indices,
-        batch_targets,
-        batch_nn_targets,
-    ):
-        super().__init__()
-        self.embedding = nn.Sequential(
-            nn.Linear(40, 30),
-            nn.Dropout(0.5),
-            nn.ELU(1),
-            nn.Linear(30, 10),
-            nn.Dropout(0.5),
-            nn.ELU(1),
-        )
-        self.multivariate_muygps_model = multivariate_muygps_model
-        self.batch_indices = batch_indices
-        self.batch_nn_indices = batch_nn_indices
-        self.batch_targets = batch_targets
-        self.batch_nn_targets = batch_nn_targets
-        self.GP_layer = MultivariateMuyGPs_layer(
-            self.multivariate_muygps_model,
             self.batch_indices,
             self.batch_nn_indices,
             self.batch_targets,

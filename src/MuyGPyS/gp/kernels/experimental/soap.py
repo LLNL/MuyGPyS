@@ -28,7 +28,8 @@ class SOAPKernel(KernelFn):
     """
     The SOAP Kernel.
 
-    Better description goes here. A lot will go into this soon, but leave bare bones for now.
+    Better description goes here. A lot will go into this soon, but leave bare
+    bones for now.
     """
 
     def __init__(
@@ -78,7 +79,7 @@ class SOAPKernel(KernelFn):
         return self._backend_squeeze(self._backend_zeros((1, 3, 1, 3, 1)))
 
     def get_opt_params(
-            self,
+        self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:
         """
         Return list of hyperparameter names, values, and bounds.

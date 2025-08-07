@@ -19,7 +19,6 @@ from MuyGPyS._src.mpi_utils import (
 )
 from MuyGPyS._test.utils import (
     _basic_nn_kwarg_options,
-    _basic_opt_fn_and_kwarg_options,
     _check_ndarray,
     _consistent_assert,
     _get_scale_series,
@@ -28,8 +27,6 @@ from MuyGPyS._test.utils import (
     _make_heteroscedastic_test_nugget,
     _precision_assert,
 )
-from MuyGPyS.examples.regress import make_regressor
-from MuyGPyS.examples.classify import make_classifier
 from MuyGPyS.gp import MuyGPS
 from MuyGPyS.gp.deformation import (
     Isotropy,
@@ -39,14 +36,12 @@ from MuyGPyS.gp.deformation import (
 )
 from MuyGPyS.gp.hyperparameter import (
     AnalyticScale,
-    FixedScale,
     ScalarParam,
     VectorParam,
 )
 from MuyGPyS.gp.kernels import Matern, RBF
 from MuyGPyS.gp.noise import HomoscedasticNoise, HeteroscedasticNoise
 from MuyGPyS.neighbors import NN_Wrapper
-from MuyGPyS.optimize.loss import mse_fn
 
 
 class GPInitTest(parameterized.TestCase):
@@ -626,167 +621,6 @@ class GPDiagonalVariance(GPTestCase):
                 manual_diagonal_variance,
             )
             self.assertGreater(diagonal_variance[i], 0.0)
-
-
-class MakeClassifierTest(parameterized.TestCase):
-    @parameterized.parameters(
-        (
-            (1000, 1000, 10, b, n, nn_kwargs, lf, opt_fn_and_kwargs, kwargs)
-            for b in [250]
-            for n in [10]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for lf in [mse_fn]
-            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
-            for kwargs in (
-                {
-                    "kernel": Matern(
-                        smoothness=ScalarParam("sample", (1e-1, 1e0))
-                    ),
-                    "noise": HomoscedasticNoise(1e-5),
-                },
-            )
-        )
-    )
-    def test_make_multivariate_classifier(
-        self,
-        train_count,
-        test_count,
-        feature_count,
-        batch_count,
-        nn_count,
-        nn_kwargs,
-        loss_fn,
-        opt_fn_and_kwargs,
-        k_kwargs,
-    ):
-        if config.state.backend == "torch":
-            _warn0(f"{self.__class__} does not support torch")
-            return
-
-        opt_fn, opt_kwargs = opt_fn_and_kwargs
-
-        response_count = 2
-        train, test = _make_gaussian_data(
-            train_count,
-            test_count,
-            feature_count,
-            response_count,
-            categorical=True,
-        )
-
-        muygps, _ = make_classifier(
-            train["input"],
-            train["output"],
-            nn_count=nn_count,
-            batch_count=batch_count,
-            loss_fn=loss_fn,
-            nn_kwargs=nn_kwargs,
-            k_kwargs=k_kwargs,
-            opt_fn=opt_fn,
-            opt_kwargs=opt_kwargs,
-            verbose=False,
-        )
-
-        self.assertEqual(k_kwargs["noise"](), muygps.noise())
-        for name, param in k_kwargs["kernel"]._hyperparameters.items():
-            if param.fixed() is False:
-                print(
-                    f"optimized to find value "
-                    f"{muygps.kernel._hyperparameters[name]()}"
-                )
-            else:
-                self.assertEqual(
-                    param(),
-                    muygps.kernel._hyperparameters[name](),
-                )
-
-
-class MakeRegressorTest(parameterized.TestCase):
-    @parameterized.parameters(
-        (
-            (1000, 1000, 10, b, n, nn_kwargs, lf, opt_fn_and_kwargs, k_kwargs)
-            for b in [250]
-            for n in [10]
-            for nn_kwargs in [_basic_nn_kwarg_options[0]]
-            for lf in [mse_fn]
-            for opt_fn_and_kwargs in _basic_opt_fn_and_kwarg_options
-            # for ssm in ["analytic"]
-            for k_kwargs in (
-                {
-                    "kernel": Matern(
-                        smoothness=ScalarParam("sample", (1e-1, 1e0))
-                    ),
-                    "noise": HomoscedasticNoise(1e-5),
-                    "scale": FixedScale(),
-                },
-                {
-                    "kernel": Matern(
-                        smoothness=ScalarParam("sample", (1e-1, 1e0))
-                    ),
-                    "noise": HomoscedasticNoise(1e-5),
-                    "scale": AnalyticScale(),
-                },
-            )
-        )
-    )
-    def test_make_multivariate_regressor(
-        self,
-        train_count,
-        test_count,
-        feature_count,
-        batch_count,
-        nn_count,
-        nn_kwargs,
-        loss_fn,
-        opt_fn_and_kwargs,
-        k_kwargs,
-    ):
-        if config.state.backend == "torch":
-            _warn0(f"{self.__class__} does not support torch")
-            return
-
-        opt_fn, opt_kwargs = opt_fn_and_kwargs
-
-        response_count = 1
-        # construct the observation locations
-        train, test = _make_gaussian_data(
-            train_count,
-            test_count,
-            feature_count,
-            response_count,
-            categorical=False,
-        )
-
-        muygps, _ = make_regressor(
-            train["input"],
-            train["output"],
-            nn_count=nn_count,
-            batch_count=batch_count,
-            loss_fn=loss_fn,
-            opt_fn=opt_fn,
-            opt_kwargs=opt_kwargs,
-            nn_kwargs=nn_kwargs,
-            k_kwargs=k_kwargs,
-        )
-
-        self.assertEqual(k_kwargs["noise"](), muygps.noise())
-        for name, param in k_kwargs["kernel"]._hyperparameters.items():
-            if param.fixed() is False:
-                print(
-                    f"optimized to find value "
-                    f"{muygps.kernel._hyperparameters[name]()}"
-                )
-            else:
-                self.assertEqual(
-                    param(),
-                    muygps.kernel._hyperparameters[name](),
-                )
-
-        self.assertTrue(muygps.scale.trained)
-        if isinstance(muygps.scale, AnalyticScale):
-            print(f"\toptimized scale to find value " f"{muygps.scale()}")
-        else:
-            self.assertEqual(mm.array([1.0]), muygps.scale())
 
 
 class GPScaleTest(GPTestCase):

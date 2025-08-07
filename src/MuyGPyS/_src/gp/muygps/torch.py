@@ -77,13 +77,6 @@ def _muygps_fast_posterior_mean(
     )
 
 
-def _mmuygps_fast_posterior_mean(
-    Kcross: torch.ndarray,
-    coeffs_ndarray: torch.ndarray,
-) -> torch.ndarray:
-    return torch.einsum("ijk,ijk->ik", Kcross, coeffs_ndarray)
-
-
 def _muygps_fast_posterior_mean_precompute(
     Kin: torch.ndarray,
     train_nn_targets_fast: torch.ndarray,
