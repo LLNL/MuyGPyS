@@ -110,7 +110,9 @@ def _pairwise_similarity(
     data: np.ndarray,
     nn_indices: np.ndarray,
 ) -> np.ndarray:
-    points = data[nn_indices].swapaxes(2, 1)
+    points = data[nn_indices]  # .swapaxes(2, 1)
+
+    shape = points.shape
 
     dot = np.sum(
         points[:, :, :, None, None, :, None, :, None, :]
@@ -118,7 +120,11 @@ def _pairwise_similarity(
         axis=-1,
     )
 
-    pairwise_similarity = dot.reshape(*dot.shape[:5], -1, *dot.shape[-2:])
+    pairwise_similarity = (
+        dot.reshape(*dot.shape[:5], -1, *dot.shape[-2:])
+        .reshape(shape[0], 3 * shape[1], 3 * shape[1], 4, shape[-2], shape[-2])
+        .reshape(shape[0], 3, shape[1], 3, shape[1], 4, shape[-2], shape[-2])
+    )
     return pairwise_similarity
 
 

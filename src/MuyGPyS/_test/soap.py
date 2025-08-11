@@ -399,9 +399,7 @@ def unwrap_feature_vectors(features, desc_dim):
 
 
 def cov_dot_prod(
-    
     X_dot1, Delta1, X_dot2, Delta2, hyperparams, loop_over_n=False
-
 ):
     """
     NOTE:
@@ -461,9 +459,7 @@ def cov_dot_prod(
 
 
 def cov_mat_muygps(
-    
     features1, features2, hyperparams, desc_dim, N_rows_per_iter
-
 ):
     features1 = np.asarray(features1)
     features2 = np.asarray(features2)
