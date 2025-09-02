@@ -46,7 +46,7 @@ def _T3(diffs) -> mm.ndarray:
     return djq_slice
 
 
-def _Knm(omega, T1, T2, T3, sensitivity):
+def _Knm(omega, T1, T2, T3, sensitivity) -> mm.ndarray:
     Knm = (sensitivity - 1.0) * (omega ** (sensitivity - 2.0)) * (T2 * T3) + (
         omega ** (sensitivity - 1.0)
     ) * T1
@@ -59,9 +59,7 @@ def _soap_fn(diffs: mm.ndarray, sensitivity: float, **kwargs) -> mm.ndarray:
     T2 = _T2(diffs)
     T3 = _T3(diffs)
 
-    Knm = (sensitivity - 1.0) * (omega ** (sensitivity - 2.0)) * T2 * T3 + (
-        omega ** (sensitivity - 1.0)
-    ) * T1
+    Knm = _Knm(omega, T1, T2, T3, sensitivity)
 
     Kij = sensitivity * mm.sum(Knm, axis=(-2, -1))
 
