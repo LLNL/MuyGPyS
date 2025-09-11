@@ -98,6 +98,17 @@ class KernelFn:
     def Kout(self) -> mm.ndarray:
         raise NotImplementedError("Kout is not implemented for base KernelFn")
 
+    def apply_Kout_fn(self, **kwargs) -> Callable:
+        default_Kout = self.Kout()
+
+        def apply_Kout_fn(fn: Callable) -> Callable:
+            def fixed_Kout_fn(Kin, Kcross, *args, **kwargs):
+                return fn(Kin, Kcross, default_Kout, *args, **kwargs)
+
+            return fixed_Kout_fn
+
+        return apply_Kout_fn
+
     def get_opt_params(
         self,
     ) -> Tuple[List[str], List[float], List[Tuple[float, float]]]:

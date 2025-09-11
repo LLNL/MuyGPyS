@@ -7,7 +7,7 @@
 MuyGPs implementation
 """
 
-from typing import Callable
+from typing import Callable, Optional
 
 import MuyGPyS._src.math as mm
 from MuyGPyS._src.gp.muygps import _muygps_diagonal_variance
@@ -22,7 +22,7 @@ from MuyGPyS.gp.noise import NoiseFn
 class PosteriorVariance:
     def __init__(
         self,
-        Kout: mm.ndarray,
+        apply_Kout_fn: Callable,
         noise: NoiseFn,
         scale: ScaleFn,
         _backend_fn: Callable = _muygps_diagonal_variance,
@@ -30,13 +30,7 @@ class PosteriorVariance:
         self._fn = _backend_fn
         self._fn = noise.perturb_fn(self._fn)
 
-        def fix_Kout_fn(fn: Callable) -> Callable:
-            def fixed_Kout_fn(Kin, Kcross, *args, **kwargs):
-                return fn(Kin, Kcross, Kout, *args, **kwargs)
-
-            return fixed_Kout_fn
-
-        self._fn = fix_Kout_fn(self._fn)
+        self._fn = apply_Kout_fn(self._fn)
         self._opt_fn = self._fn
         self._fn = scale.scale_fn(self._fn)
 
@@ -44,9 +38,10 @@ class PosteriorVariance:
         self,
         Kin: mm.ndarray,
         Kcross: mm.ndarray,
+        Kout: Optional[mm.ndarray] = None,
         **kwargs,
     ) -> mm.ndarray:
-        return self._fn(Kin, Kcross, **kwargs)
+        return self._fn(Kin, Kcross, set_Kout=Kout, **kwargs)
 
     def get_opt_fn(self) -> Callable:
         return self._opt_fn
