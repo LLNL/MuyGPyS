@@ -114,9 +114,11 @@ class MuyGPS:
         self._mean_fn = PosteriorMean(
             self.noise, _backend_fn=self._backend_mean_fn
         )
-        Kout = self.kernel.Kout()
         self._var_fn = PosteriorVariance(
-            Kout, self.noise, self.scale, _backend_fn=self._backend_var_fn
+            self.kernel.apply_Kout_fn(),
+            self.noise,
+            self.scale,
+            _backend_fn=self._backend_var_fn,
         )
         self._fast_posterior_mean_fn = FastPosteriorMean(
             _backend_fn=self._backend_fast_mean_fn
@@ -214,6 +216,7 @@ class MuyGPS:
         self,
         Kin: mm.ndarray,
         Kcross: mm.ndarray,
+        Kout: Optional[mm.ndarray] = None,
     ) -> mm.ndarray:
         """
         Returns the posterior variance from the provided covariance and
@@ -249,6 +252,11 @@ class MuyGPS:
                 A tensor of shape `(batch_count,) + out_shape` listing the
                 (possibly multivariate) cross-covariance between each
                 batch element and its nearest neighbors.
+            Kout:
+                Optional tensor of shape
+                `(batch_count, response_count, response_count)` listing the
+                elementwise prior covariance between the response dimensions for
+                each batch element. The backend will attempt to use the default prior if not supplied.
 
         Returns:
             A matrix of shape
@@ -256,7 +264,7 @@ class MuyGPS:
             the (possibly blockwise) diagonal elements of the posterior
             variance.
         """
-        return self._var_fn(Kin, Kcross)
+        return self._var_fn(Kin, Kcross, Kout)
 
     def fast_coefficients(
         self,
