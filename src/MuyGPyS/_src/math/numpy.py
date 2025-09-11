@@ -52,6 +52,7 @@ from numpy import (
     mod,
     nan,
     ndarray,
+    ndenumerate,
     number,
     outer,
     pad,
