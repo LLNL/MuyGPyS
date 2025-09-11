@@ -42,150 +42,166 @@ def pad_atom_count(train_features, test_features):
     return train_features_padded, test_features_padded
 
 
-def explicit_crosswise(
-    data, nn_data, indices, nn_indices, test_index, neighbor_index
-):
+def explicit_crosswise(data, nn_data, indices, nn_indices):
     """
     Crosswise unit test.
     Takes in train and test data sets and related index information.
     """
-    desc_count = data.shape[-1]
-    test_atom_count = data.shape[-2]
-    train_atom_count = nn_data.shape[-2]
+
+    nn_indices = nn_indices
 
     locations = data[indices]
-    points = nn_data[nn_indices]
+    points = nn_data[nn_indices].swapaxes(1,2)
 
-    test_point = locations[test_index]
-    neighbor_point = points[test_index, neighbor_index]
+    nn_count = nn_indices.shape[1]
+    test_count = locations.shape[0]
+    test_atom_count = locations.shape[-2]
+    train_atom_count = points.shape[-2]
 
-    crosswise_product = np.zeros(
-        shape=(3, 3, 2, 2, test_atom_count, train_atom_count)
+    crosswise_similarity = np.zeros(
+        shape=(test_count, 3, nn_count, 3, 4, test_atom_count, train_atom_count)
     )
 
-    for c1 in range(3):
-        for c2 in range(3):
-            for d1 in range(2):
-                for d2 in range(2):
-                    for a1 in range(test_atom_count):
-                        for a2 in range(train_atom_count):
-                            for q1 in range(desc_count):
-                                for q2 in range(desc_count):
-                                    crosswise_product[
-                                        c1, c2, d1, d2, a1, a2
-                                    ] = np.sum(
-                                        test_point[c1, d1, a1, q1]
-                                        * neighbor_point[c2, d2, a2, q2],
-                                        axis=(-1, -2),
-                                    )
-
-    crosswise_similarity = crosswise_product.reshape(
-        *crosswise_product.shape[:2], -1, *crosswise_product.shape[-2:]
-    )
+    # crosswise
+    for (i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2), _ in np.ndenumerate(crosswise_similarity):
+        if i_combo==0: # should be q1 dot q2
+            q_1 = locations[i_env_test, i_xyz_1, 0, i_atom_1]
+            # i_env_train = nn_indices[i_env_test, i_nn]
+            q_2 = points[i_env_test, i_xyz_2, i_nn, 0, i_atom_2]
+            q1_dot_q2 = np.sum(q_1 * q_2)
+            crosswise_similarity[i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2] = q1_dot_q2
+        elif i_combo==1: # should be q1 dot dq2
+            q_1 = locations[i_env_test, i_xyz_1, 0, i_atom_1]
+            # i_env_test = nn_indices[i_env_test, i_nn]
+            dq_2 = points[i_env_test, i_xyz_2, i_nn, 1, i_atom_2]
+            q1_dot_dq2 = np.sum(q_1 * dq_2)
+            crosswise_similarity[i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2] = q1_dot_dq2
+        elif i_combo==2: # should be dq1 dot q2
+            dq_1 = locations[i_env_test, i_xyz_1, 1, i_atom_1]
+            # i_env_test = nn_indices[i_env_test, i_nn]
+            q_2 = points[i_env_test, i_xyz_2, i_nn, 0, i_atom_2]
+            dq1_dot_q2 = np.sum(dq_1 * q_2)
+            crosswise_similarity[i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2] = dq1_dot_q2
+        elif i_combo==3: # should be dq1 dot dq2
+            dq_1 = locations[i_env_test, i_xyz_1, 1, i_atom_1]
+            # i_env_test = nn_indices[i_env_test, i_nn]
+            dq_2 = points[i_env_test, i_xyz_2, i_nn, 1, i_atom_2]
+            dq1_dot_dq2 = np.sum(dq_1 * dq_2)
+            crosswise_similarity[i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2] = dq1_dot_dq2
 
     return crosswise_similarity
 
 
-def explicit_pairwise(nn_data, nn_indices, test_index, neighbor_index):
+def explicit_pairwise(data, nn_indices):
     """
-    Crosswise unit test.
+    pairwise unit test.
     Takes in train and test data sets and related index information.
     """
-    train_atom_count = nn_data.shape[-2]
 
-    points = nn_data[nn_indices]
+    nn_indices = nn_indices
 
-    neighbor_point = points[test_index, neighbor_index]
+    points = data[nn_indices].swapaxes(1, 2)
 
-    pairwise_product = np.zeros(
-        shape=(3, 3, 2, 2, train_atom_count, train_atom_count)
+    nn_count = nn_indices.shape[1]
+    train_atom_count = points.shape[-2]
+    test_count = points.shape[0]
+
+    pairwise_similarity = np.zeros(
+        shape=(test_count, 3, nn_count, 3, nn_count, 4, train_atom_count, train_atom_count)
     )
 
-    for c1 in range(3):
-        for c2 in range(3):
-            for d1 in range(2):
-                for d2 in range(2):
-                    for a1 in range(train_atom_count):
-                        for a2 in range(train_atom_count):
-                            pairwise_product[c1, c2, d1, d2, a1, a2] = np.sum(
-                                neighbor_point[c1, d1, a1]
-                                * neighbor_point[c2, d2, a2],
-                                axis=-1,
-                            )
-
-    pairwise_similarity = pairwise_product.reshape(
-        *pairwise_product.shape[:2], -1, *pairwise_product.shape[-2:]
-    )
+    # pairwise
+    for (i_env_test, i_xyz_1, i_nn_1, i_xyz_2, i_nn_2, i_combo, i_atom_1, i_atom_2), _ in np.ndenumerate(pairwise_similarity):
+        if i_combo==0: # should be q1 dot q2
+            q_1 = points[i_env_test, i_xyz_1, i_nn_1, 0, i_atom_1]
+            q_2 = points[i_env_test, i_xyz_2, i_nn_2, 0, i_atom_2]
+            q1_dot_q2 = np.sum(q_1 * q_2)
+            pairwise_similarity[i_env_test, i_xyz_1, i_nn_1, i_xyz_2, i_nn_2, i_combo, i_atom_1, i_atom_2] = q1_dot_q2
+        elif i_combo==1: # should be q1 dot dq2
+            q_1 = points[i_env_test, i_xyz_1, i_nn_1, 0, i_atom_1]
+            q_2 = points[i_env_test, i_xyz_2, i_nn_2, 1, i_atom_2]
+            q1_dot_q2 = np.sum(q_1 * q_2)
+            pairwise_similarity[i_env_test, i_xyz_1, i_nn_1, i_xyz_2, i_nn_2, i_combo, i_atom_1, i_atom_2] = q1_dot_q2
+        elif i_combo==2: # should be q1 dot dq2
+            q_1 = points[i_env_test, i_xyz_1, i_nn_1, 1, i_atom_1]
+            q_2 = points[i_env_test, i_xyz_2, i_nn_2, 0, i_atom_2]
+            q1_dot_q2 = np.sum(q_1 * q_2)
+            pairwise_similarity[i_env_test, i_xyz_1, i_nn_1, i_xyz_2, i_nn_2, i_combo, i_atom_1, i_atom_2] = q1_dot_q2
+        elif i_combo==3: # should be q1 dot dq2
+            q_1 = points[i_env_test, i_xyz_1, i_nn_1, 1, i_atom_1]
+            q_2 = points[i_env_test, i_xyz_2, i_nn_2, 1, i_atom_2]
+            q1_dot_q2 = np.sum(q_1 * q_2)
+            pairwise_similarity[i_env_test, i_xyz_1, i_nn_1, i_xyz_2, i_nn_2, i_combo, i_atom_1, i_atom_2] = q1_dot_q2
 
     return pairwise_similarity
 
 
-def test_random(
-    data=None, nn_data=None, indices=None, nn_indices=None, N_tests=5
-):
-    train_count = nn_data.shape[0]
-    if data is not None:
-        test_count = data.shape[0]
-    else:
-        test_count = nn_indices.shape[0]
+# def test_random(
+#     data=None, nn_data=None, indices=None, nn_indices=None, N_tests=5
+# ):
+#     train_count = nn_data.shape[0]
+#     if data is not None:
+#         test_count = data.shape[0]
+#     else:
+#         test_count = nn_indices.shape[0]
 
-    random_test_index = np.random.randint(low=0, high=test_count, size=N_tests)
-    random_neighbor_index = np.random.randint(
-        low=0, high=nn_count, size=N_tests
-    )
+#     random_test_index = np.random.randint(low=0, high=test_count, size=N_tests)
+#     random_neighbor_index = np.random.randint(
+#         low=0, high=nn_count, size=N_tests
+#     )
 
-    if data is not None:
-        sim = _crosswise_similarity(data, nn_data, indices, nn_indices)
-    else:
-        sim = _pairwise_similarity(data=nn_data, nn_indices=nn_indices)
+#     if data is not None:
+#         sim = _crosswise_similarity(data, nn_data, indices, nn_indices)
+#     else:
+#         sim = _pairwise_similarity(data=nn_data, nn_indices=nn_indices)
 
-    check_bool = []
+#     check_bool = []
 
-    for idx in range(N_tests):
-        print(
-            f"Testing: test_index={random_test_index[idx]}, nn_index={random_neighbor_index[idx]}"
-        )
-        if data is not None:
-            check = crosswise_check(
-                data,
-                nn_data,
-                indices,
-                nn_indices,
-                random_test_index[idx],
-                random_neighbor_index[idx],
-            )
-            check_bool.append(
-                np.allclose(
-                    check,
-                    sim[random_test_index[idx], :, random_neighbor_index[idx]],
-                )
-            )
-        else:
-            check = pairwise_check(
-                nn_data,
-                nn_indices,
-                random_test_index[idx],
-                random_neighbor_index[idx],
-            )
-            check_bool.append(
-                np.allclose(
-                    check,
-                    sim[
-                        random_test_index[idx],
-                        :,
-                        random_neighbor_index[idx],
-                        :,
-                        random_neighbor_index[idx],
-                    ],
-                )
-            )
+#     for idx in range(N_tests):
+#         print(
+#             f"Testing: test_index={random_test_index[idx]}, nn_index={random_neighbor_index[idx]}"
+#         )
+#         if data is not None:
+#             check = crosswise_check(
+#                 data,
+#                 nn_data,
+#                 indices,
+#                 nn_indices,
+#                 random_test_index[idx],
+#                 random_neighbor_index[idx],
+#             )
+#             check_bool.append(
+#                 np.allclose(
+#                     check,
+#                     sim[random_test_index[idx], :, random_neighbor_index[idx]],
+#                 )
+#             )
+#         else:
+#             check = pairwise_check(
+#                 nn_data,
+#                 nn_indices,
+#                 random_test_index[idx],
+#                 random_neighbor_index[idx],
+#             )
+#             check_bool.append(
+#                 np.allclose(
+#                     check,
+#                     sim[
+#                         random_test_index[idx],
+#                         :,
+#                         random_neighbor_index[idx],
+#                         :,
+#                         random_neighbor_index[idx],
+#                     ],
+#                 )
+#             )
 
-    if all(check_bool):
-        return True
-    else:
-        raise ValueError(
-            f"Slices are the same shape but do not match value-wise."
-        )
+#     if all(check_bool):
+#         return True
+#     else:
+#         raise ValueError(
+#             f"Slices are the same shape but do not match value-wise."
+#         )
 
 
 def create_tensors_for_muygps(desc, derivatives, forces, frames):
@@ -511,6 +527,7 @@ def base_implmementation_mean(
         test_count, 3, nn_count
     )
 
+
     hyperparams = np.array([1.0, 4.0])
     forces_pred_test = np.array([])  # where to store predicted test forces
     # loop over all env in the test set
@@ -524,7 +541,7 @@ def base_implmementation_mean(
 
         # down select test features for current env
         ind_test_features = np.arange(3 * ind_test_env, (3 * ind_test_env) + 3)
-        print(ind_test_features)
+        # print(ind_test_features)
         features_test_select = test_features[ind_test_features, :]
 
         # down select which forces in the training env to use
@@ -573,26 +590,29 @@ class BenchmarkTestCase(parameterized.TestCase):
     @classmethod
     def setUpClass(cls):
         super(BenchmarkTestCase, cls).setUpClass()
-        cls.nn_count = 2
-        cls.zeta = 2.0
-        cls.noise_prior = 1e-5
-        cls.nn_envs = [[1, 3], [1, 3]]
+        cls.nn_count = 10
+        cls.zeta = 4.0
+        cls.noise_prior = 1e-15
+        cls.train_count = 10
+        cls.test_count = 7
+        cls.desc_count = 116
+        cls.nn_envs = np.array([np.random.choice(cls.train_count, size = (cls.nn_count), replace=False) for i in range(cls.test_count)])
 
-        # features shape (env_count, 3, 2, atom_count, desc_count)
-        cls.raw_train_features = np.random.rand(10, 3, 2, 10, 116)
-        cls.raw_test_features = np.random.rand(2, 3, 2, 2, 116)
-        cls.train_features = pad_atom_count(
-            cls.raw_train_features, cls.raw_test_features
-        )[0]
-        cls.test_features = pad_atom_count(
-            cls.raw_train_features, cls.raw_test_features
-        )[1]
-        cls.train_forces = np.random.rand(10, 3)
+        cls.train_forces_raw = np.random.normal(loc=0, scale=1, size=(cls.train_count, 3))
+        cls.train_desc = np.random.normal(loc=0, scale=1, size=(cls.train_count, cls.desc_count))
+        cls.train_derivs = np.random.normal(loc=0, scale=1, size=(cls.train_count, cls.train_count, 3, cls.desc_count))
 
-        cls.test_count = cls.test_features.shape[0]
+        cls.test_forces_raw = np.random.normal(loc=0, scale=1, size=(cls.test_count, 3))
+        cls.test_desc = np.random.normal(loc=0, scale=1, size=(cls.test_count, cls.desc_count))
+        cls.test_derivs = np.random.normal(loc=0, scale=1, size=(cls.test_count, cls.test_count, 3, cls.desc_count))
+
+        cls.train_features = create_tensors_for_muygps(cls.train_desc, cls.train_derivs, cls.train_forces_raw, np.zeros(cls.train_count))[0]
+        cls.train_forces = create_tensors_for_muygps(cls.train_desc, cls.train_derivs, cls.train_forces_raw, np.zeros(cls.train_count))[1]
+        cls.test_features = create_tensors_for_muygps(cls.test_desc, cls.test_derivs, cls.test_forces_raw, np.zeros(cls.test_count))[0]
+        cls.test_forces = create_tensors_for_muygps(cls.test_desc, cls.test_derivs, cls.test_forces_raw, np.zeros(cls.test_count))[1]
 
         cls.sim_fn = DifferenceIsotropy(metric=dot, length_scale=Parameter(1.0))
         cls.model = MuyGPS(
-            kernel=SOAPKernel(deformation=cls.sim_fn),
+            kernel=SOAPKernel(deformation=cls.sim_fn, sensitivity=Parameter(cls.zeta)),
             noise=HomoscedasticNoise(cls.noise_prior),
         )

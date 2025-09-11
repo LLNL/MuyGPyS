@@ -24,23 +24,23 @@ class SimTestCase(BenchmarkTestCase):
             data=self.test_features,
             nn_data=self.train_features,
             indices=np.arange(self.test_count),
-            nn_indices=self.nn_envs,
+            nn_indices=self.nn_envs.astype(int),
         )
         library_similarity = self.sim_fn.crosswise_tensor(
             data=self.test_features,
             nn_data=self.train_features,
             data_indices=np.arange(self.test_count),
-            nn_indices=self.nn_envs,
+            nn_indices=self.nn_envs.astype(int),
         )
         self.assertEqual(explicit_similarity.shape, library_similarity.shape)
         self.assertTrue(np.allclose(explicit_similarity, library_similarity))
 
     def _pairwise_sim_chassis(self):
         explicit_similarity = explicit_pairwise(
-            data=self.train_features, nn_indices=self.nn_envs
+            data=self.train_features, nn_indices=self.nn_envs.astype(int)
         )
         library_similarity = self.sim_fn.pairwise_tensor(
-            data=self.train_features, nn_indices=self.nn_envs
+            data=self.train_features, nn_indices=self.nn_envs.astype(int)
         )
         self.assertEqual(explicit_similarity.shape, library_similarity.shape)
         self.assertTrue(np.allclose(explicit_similarity, library_similarity))
@@ -63,10 +63,10 @@ class KernelTestCase(BenchmarkTestCase):
             data=cls.test_features,
             nn_data=cls.train_features,
             data_indices=np.arange(cls.test_count),
-            nn_indices=cls.nn_envs,
+            nn_indices=cls.nn_envs.astype(int),
         )
         cls.pairwise_similarity = cls.sim_fn.pairwise_tensor(
-            data=cls.train_features, nn_indices=cls.nn_envs
+            data=cls.train_features, nn_indices=cls.nn_envs.astype(int)
         )
 
     def _Kin_chassis(self, Kernel_fn):
@@ -89,6 +89,30 @@ class KernelTest(KernelTestCase):
     def test_Kin(self):
         self._Kin_chassis(Kernel_fn=self.model.kernel)
 
+
+class PosteriorTestCase(BenchmarkTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(KernelTestCase, cls).setUpClass()
+
+        cls.crosswise_similarity = cls.sim_fn.crosswise_tensor(
+            data=cls.test_features,
+            nn_data=cls.train_features,
+            data_indices=np.arange(cls.test_count),
+            nn_indices=cls.nn_envs.astype(int),
+        )
+        cls.pairwise_similarity = cls.sim_fn.pairwise_tensor(
+            data=cls.train_features, nn_indices=cls.nn_envs.astype(int)
+        )
+        cls.Kin = cls.model.kernel(self.pairwise_similarity)
+
+        cls.Kcross = cls.model.kernel(self.crosswise_similarity)
+
+        def _mean_chassis(self)
+
+
+class PosteriorTest(PosteriorTestCase):
+    pass
 
 if __name__ == "__main__":
     absltest.main()
