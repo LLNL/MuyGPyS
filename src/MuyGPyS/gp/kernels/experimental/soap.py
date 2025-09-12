@@ -77,6 +77,15 @@ class SOAPKernel(KernelFn):
 
     def Kout(self, **kwargs):
         return self._backend_squeeze(self._backend_zeros((1, 3, 1, 3, 1)))
+    
+    def apply_Kout_fn(self, **kwargs) -> Callable:
+        def apply_Kout_fn(fn: Callable) -> Callable:
+            def fixed_Kout_fn(Kin, Kcross, set_Kout, *args, **kwargs):
+                return fn(Kin, Kcross, set_Kout, *args, **kwargs)
+
+            return fixed_Kout_fn
+
+        return apply_Kout_fn
 
     def get_opt_params(
         self,
