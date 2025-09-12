@@ -132,6 +132,17 @@ def _pairwise_similarity(
 
     return pairwise_similarity
 
+def _out_similarity(
+    data: np.ndarray,
+    data_indices: np.ndarray
+) -> np.ndarray:
+    points = data[data_indices]
+
+    dot = np.einsum("ixdaq, iyebq -> ixydeab", points, points)
+
+    out_similarity = dot.reshape(*dot.shape[:3], -1, *dot.shape[-2:])
+
+    return out_similarity
 
 def _F2(diffs: np.ndarray) -> np.ndarray:
     return np.sum(diffs**2, axis=-1)
