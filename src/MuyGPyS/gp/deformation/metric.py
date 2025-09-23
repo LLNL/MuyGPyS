@@ -20,6 +20,7 @@ from MuyGPyS._src.gp.tensors import (
     _pairwise_tensor,
     _crosswise_similarity,
     _pairwise_similarity,
+    _out_similarity
 )
 
 
@@ -64,10 +65,12 @@ class MetricFn:
         crosswise_differences_fn: Callable,
         pairwise_differences_fn: Callable,
         apply_length_scale_fn: Callable,
+        out_differences_fn: Callable = None
     ):
         self._differences_metric_fn = differences_metric_fn
         self._crosswise_differences_fn = crosswise_differences_fn
         self._pairwise_differences_fn = pairwise_differences_fn
+        self._out_differences_fn = out_differences_fn
         self._apply_length_scale_fn = apply_length_scale_fn
 
     def __call__(self, *args, **kwargs):
@@ -218,6 +221,31 @@ class MetricFn:
             self._pairwise_differences_fn(data, nn_indices)
         )
 
+    def out_differences(
+        self,
+        data: mm.ndarray,
+        data_indices: mm.ndarray,
+        **kwargs,
+    ) -> mm.ndarray:
+        """
+        Placeholder docstring
+
+        Args:
+            data:
+                The data matrix of shape `(batch_count, feature_count)`
+                containing batch elements.
+            indices:
+                An integral matrix of shape (batch_count,) listing the
+                indices for the batch of data points.
+
+        Returns:
+            A tensor of shape `(batch_count, nn_count, nn_count, feature_count)`
+            containing the `(nn_count, nn_count, feature_count)`-shaped pairwise
+            nearest neighbor difference tensors corresponding to each of the
+            batch elements.
+        """
+        return self._out_differences_fn(data, data_indices)
+
     def apply_length_scale(
         self, dists: mm.ndarray, length_scale: float
     ) -> mm.ndarray:
@@ -290,4 +318,5 @@ dot = MetricFn(
     crosswise_differences_fn=_crosswise_similarity,
     pairwise_differences_fn=_pairwise_similarity,
     apply_length_scale_fn=lambda x, y: x,
+    out_differences_fn=_out_similarity,
 )

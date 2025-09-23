@@ -160,6 +160,33 @@ class Isotropy(DeformationFn):
             data, nn_data, data_indices, nn_indices
         )
 
+    @mpi_chunk(return_count=1)
+    def out_tensor(
+        self,
+        data: mm.ndarray,
+        data_indices: mm.ndarray,
+        **kwargs,
+    ) -> mm.ndarray:
+        """
+        Placeholder description
+
+        Args:
+            data:
+                The data matrix of shape `(data_count, feature_count)`
+                containing batch elements.
+            indices:
+                An integral vector of shape `(batch_count,)` containing the
+                indices of the batch.
+
+        Returns:
+            A tensor of shape `(shape)` whose second dimension
+            indicates distance vectors between each batch element and its
+            nearest neighbors.
+        """
+        raise NotImplementedError(
+            "out_distances not implemented for Isotropy class"
+        )
+
 
 @auto_str
 class DifferenceIsotropy(Isotropy):
@@ -276,4 +303,31 @@ class DifferenceIsotropy(Isotropy):
         """
         return self.metric.crosswise_differences(
             data, nn_data, data_indices, nn_indices
+        )
+
+    @mpi_chunk(return_count=1)
+    def out_tensor(
+        self,
+        data: mm.ndarray,
+        data_indices: mm.ndarray,
+        **kwargs,
+    ) -> mm.ndarray:
+        """
+        Placeholder description
+
+        Args:
+            data:
+                The data matrix of shape `(data_count, feature_count)`
+                containing batch elements.
+            indices:
+                An integral vector of shape `(batch_count,)` containing the
+                indices of the batch.
+
+        Returns:
+            A tensor of shape `(shape)` whose second dimension
+            indicates distance vectors between each batch element and its
+            nearest neighbors.
+        """
+        return self.metric.out_differences(
+            data, data_indices,
         )
