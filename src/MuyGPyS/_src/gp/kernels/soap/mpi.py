@@ -18,6 +18,10 @@ def _T2(diffs, sensitivity):
 
 def _T3(diffs, sensitivity):
     raise NotImplementedError("MPI backend not yet supported for SOAPKernel")
+    
+    
+def _Knm(omega, T1, T2, T3, sensitivity):
+    raise NotImplementedError("MPI backend not yet supported for SOAPKernel")
 
 
 def _soap_fn(diffs, sensitivity):
