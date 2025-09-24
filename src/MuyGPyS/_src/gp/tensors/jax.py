@@ -88,6 +88,69 @@ def _pairwise_tensor(
 
 
 @jit
+def _crosswise_similarity(
+    data: jnp.ndarray,
+    nn_data: jnp.ndarray,
+    data_indices: jnp.ndarray,
+    nn_indices: jnp.ndarray,
+) -> jnp.ndarray:
+    locations = data[data_indices]
+    points = nn_data[nn_indices].swapaxes(2, 1)
+
+    # working implementation without einsum
+    # dot = np.sum(
+    #     locations[:, None, :, None, :, None, :, None, :]
+    #     * points[:, :, None, :, None, :, None, :, :],
+    #     axis=-1,
+    # ).swapaxes(1, 2)
+    # shape = dot.shape
+
+    # locations.shape = (i, x, d, a, q)
+    # points.shape = (i, y, k, e, b, q)
+    dot = jnp.einsum("ixdaq, iykebq -> iykxdeab", locations, points)
+
+    crosswise_similarity = dot.reshape(*dot.shape[:-4], -1, *dot.shape[-2:])
+
+    return crosswise_similarity
+
+
+@jit
+def _pairwise_similarity(
+    data: jnp.ndarray,
+    nn_indices: jnp.ndarray,
+) -> jnp.ndarray:
+    points = data[nn_indices].swapaxes(2, 1)
+
+    # working implementation without einsum
+    # dot = np.sum(
+    #     points[:, :, :, None, None, :, None, :, None, :]
+    #     * points[:, None, None, :, :, None, :, None, :, :],
+    #     axis=-1,
+    # )
+
+    # points.shape=(i, x, k, d, a, q) / (i, y, l, e, b, q)
+    dot = jnp.einsum("ixkdaq,iylebq->ixkyldeab", points, points)
+
+    pairwise_similarity = dot.reshape(*dot.shape[:5], -1, *dot.shape[-2:])
+
+    return pairwise_similarity
+
+
+@jit
+def _out_similarity(
+    data: jnp.ndarray,
+    data_indices: jnp.ndarray
+) -> np.ndarray:
+    points = data[data_indices]
+
+    dot = jnp.einsum("ixdaq, iyebq -> ixydeab", points, points)
+
+    out_similarity = dot.reshape(*dot.shape[:3], -1, *dot.shape[-2:])
+
+    return out_similarity
+
+
+@jit
 def _F2(diffs: jnp.ndarray) -> jnp.ndarray:
     return jnp.sum(diffs**2, axis=-1)
 
