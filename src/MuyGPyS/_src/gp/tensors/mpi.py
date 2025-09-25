@@ -92,6 +92,29 @@ def _pairwise_differences(points: np.ndarray) -> np.ndarray:
         'Function "muygps_pairwise_differences" does not support mpi!'
     )
 
+    
+def _crosswise_similarity(
+    data: jnp.ndarray,
+    nn_data: jnp.ndarray,
+    data_indices: jnp.ndarray,
+    nn_indices: jnp.ndarray,
+):
+    raise NotImplementedError("MPI backend not yet supported for similarity tensors")
+
+
+def _pairwise_similarity(
+    data: jnp.ndarray,
+    nn_indices: jnp.ndarray,
+):
+    raise NotImplementedError("MPI backend not yet supported for similarity tensors")
+
+
+def _out_similarity(
+    data: jnp.ndarray,
+    data_indices: jnp.ndarray
+):
+    raise NotImplementedError("MPI backend not yet supported for similarity tensors")
+    
 
 def _fast_nn_update(
     train_nn_indices: np.ndarray,
