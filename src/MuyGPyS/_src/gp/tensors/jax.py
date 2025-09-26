@@ -88,6 +88,32 @@ def _pairwise_tensor(
 
 
 @jit
+def _crosswise_similarity(
+    data: jnp.ndarray,
+    nn_data: jnp.ndarray,
+    data_indices: jnp.ndarray,
+    nn_indices: jnp.ndarray,
+):
+    raise NotImplementedError("JAX backend not yet supported for similarity tensors")
+
+
+@jit
+def _pairwise_similarity(
+    data: jnp.ndarray,
+    nn_indices: jnp.ndarray,
+):
+    raise NotImplementedError("JAX backend not yet supported for similarity tensors")
+
+
+@jit
+def _out_similarity(
+    data: jnp.ndarray,
+    data_indices: jnp.ndarray
+):
+    raise NotImplementedError("JAX backend not yet supported for similarity tensors")
+
+
+@jit
 def _F2(diffs: jnp.ndarray) -> jnp.ndarray:
     return jnp.sum(diffs**2, axis=-1)
 

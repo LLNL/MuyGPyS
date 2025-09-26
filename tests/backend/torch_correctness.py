@@ -120,25 +120,25 @@ looph_fn_t = LossFn(looph_fn_t, make_var_predict_and_loss_fn)
 l2_n = MetricFn(
     differences_metric_fn=_l2_n,
     crosswise_differences_fn=crosswise_tensor_n,
-    pairwise_diffferences_fn=pairwise_tensor_n,
+    pairwise_differences_fn=pairwise_tensor_n,
     apply_length_scale_fn=lambda x, y: x / y,
 )
 l2_t = MetricFn(
     differences_metric_fn=_l2_t,
     crosswise_differences_fn=crosswise_tensor_t,
-    pairwise_diffferences_fn=pairwise_tensor_t,
+    pairwise_differences_fn=pairwise_tensor_t,
     apply_length_scale_fn=lambda x, y: x / y,
 )
 F2_n = MetricFn(
     differences_metric_fn=_F2_n,
     crosswise_differences_fn=crosswise_tensor_n,
-    pairwise_diffferences_fn=pairwise_tensor_n,
+    pairwise_differences_fn=pairwise_tensor_n,
     apply_length_scale_fn=lambda x, y: x / y**2,
 )
 F2_t = MetricFn(
     differences_metric_fn=_F2_t,
     crosswise_differences_fn=crosswise_tensor_t,
-    pairwise_diffferences_fn=pairwise_tensor_t,
+    pairwise_differences_fn=pairwise_tensor_t,
     apply_length_scale_fn=lambda x, y: x / y**2,
 )
 

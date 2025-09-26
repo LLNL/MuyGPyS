@@ -86,6 +86,66 @@ def _pairwise_differences(points: np.ndarray) -> np.ndarray:
         raise ValueError(f"points shape {points.shape} is not supported.")
 
 
+def _crosswise_similarity(
+    data: np.ndarray,
+    nn_data: np.ndarray,
+    data_indices: np.ndarray,
+    nn_indices: np.ndarray,
+) -> np.ndarray:
+    locations = data[data_indices]
+    points = nn_data[nn_indices].swapaxes(2, 1)
+
+    # working implementation without einsum
+    # dot = np.sum(
+    #     locations[:, None, :, None, :, None, :, None, :]
+    #     * points[:, :, None, :, None, :, None, :, :],
+    #     axis=-1,
+    # ).swapaxes(1, 2)
+    # shape = dot.shape
+
+    # locations.shape = (i, x, d, a, q)
+    # points.shape = (i, y, k, e, b, q)
+    dot = np.einsum("ixdaq, iykebq -> iykxdeab", locations, points)
+
+    crosswise_similarity = dot.reshape(*dot.shape[:-4], -1, *dot.shape[-2:])
+
+    return crosswise_similarity
+
+
+def _pairwise_similarity(
+    data: np.ndarray,
+    nn_indices: np.ndarray,
+) -> np.ndarray:
+    points = data[nn_indices].swapaxes(2, 1)
+
+    # working implementation without einsum
+    # dot = np.sum(
+    #     points[:, :, :, None, None, :, None, :, None, :]
+    #     * points[:, None, None, :, :, None, :, None, :, :],
+    #     axis=-1,
+    # )
+
+    # points.shape=(i, x, k, d, a, q) / (i, y, l, e, b, q)
+    dot = np.einsum("ixkdaq,iylebq->ixkyldeab", points, points)
+
+    pairwise_similarity = dot.reshape(*dot.shape[:5], -1, *dot.shape[-2:])
+
+    return pairwise_similarity
+
+
+def _out_similarity(
+    data: np.ndarray,
+    data_indices: np.ndarray
+) -> np.ndarray:
+    points = data[data_indices]
+
+    dot = np.einsum("ixdaq, iyebq -> ixydeab", points, points)
+
+    out_similarity = dot.reshape(*dot.shape[:3], -1, *dot.shape[-2:])
+
+    return out_similarity
+
+
 def _F2(diffs: np.ndarray) -> np.ndarray:
     return np.sum(diffs**2, axis=-1)
 

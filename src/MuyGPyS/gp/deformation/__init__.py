@@ -6,5 +6,5 @@
 from .anisotropy import Anisotropy
 from .deformation_fn import DeformationFn
 from .isotropy import DifferenceIsotropy, Isotropy
-from .metric import MetricFn, l2, F2
+from .metric import MetricFn, l2, F2, dot
 from .null import NullDeformation

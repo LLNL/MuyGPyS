@@ -93,6 +93,29 @@ def _pairwise_differences(points: np.ndarray) -> np.ndarray:
     )
 
 
+def _crosswise_similarity(
+    data: np.ndarray,
+    nn_data: np.ndarray,
+    data_indices: np.ndarray,
+    nn_indices: np.ndarray,
+):
+    raise NotImplementedError("MPI backend not yet supported for similarity tensors")
+
+
+def _pairwise_similarity(
+    data: np.ndarray,
+    nn_indices: np.ndarray,
+):
+    raise NotImplementedError("MPI backend not yet supported for similarity tensors")
+
+
+def _out_similarity(
+    data: np.ndarray,
+    data_indices: np.ndarray
+):
+    raise NotImplementedError("MPI backend not yet supported for similarity tensors")
+
+
 def _fast_nn_update(
     train_nn_indices: np.ndarray,
 ) -> np.ndarray:

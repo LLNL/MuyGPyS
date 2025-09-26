@@ -78,6 +78,29 @@ def _pairwise_differences(points: torch.ndarray) -> torch.ndarray:
         raise ValueError(f"points shape {points.shape} is not supported.")
 
 
+def _crosswise_similarity(
+    data: torch.ndarray,
+    nn_data: torch.ndarray,
+    data_indices: torch.ndarray,
+    nn_indices: torch.ndarray,
+):
+    raise NotImplementedError("Torch backend not yet supported for similarity tensors")
+
+
+def _pairwise_similarity(
+    data: torch.ndarray,
+    nn_indices: torch.ndarray,
+):
+    raise NotImplementedError("Torch backend not yet supported for similarity tensors")
+
+
+def _out_similarity(
+    data: torch.ndarray,
+    data_indices: torch.ndarray
+):
+    raise NotImplementedError("Torch backend not yet supported for similarity tensors")
+
+
 def _F2(diffs: torch.ndarray) -> torch.ndarray:
     return torch.sum(diffs**2, axis=-1)
 

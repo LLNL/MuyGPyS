@@ -3,6 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .shear import ShearKernel
-from .shear import ShearKernel2in3out
-from .soap import SOAPKernel
+from MuyGPyS._src.util import _collect_implementation
+
+(_soap_fn,) = _collect_implementation("MuyGPyS._src.gp.kernels.soap", "_soap_fn")
