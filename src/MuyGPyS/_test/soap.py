@@ -13,33 +13,70 @@ from MuyGPyS.gp.kernels.experimental import SOAPKernel
 from MuyGPyS.gp.noise import HomoscedasticNoise
 
 
-def pad_atom_count(train_features, test_features):
-    a_train = train_features.shape[3]
-    a_test = test_features.shape[3]
-    a_max = max(a_train, a_test)
+def get_nearest_neighbors(
+    desc_test,
+    desc_train,
+    desc_filtered_train,
+    L_train,
+    N_neigh_env,
+    N_neigh_frame,
+    dist_metric="cos",
+):
 
-    train_pad = a_max - a_train
-    test_pad = a_max - a_test
+    if dist_metric == "cos":
 
-    train_pad_width = ((0, 0), (0, 0), (0, 0), (0, train_pad), (0, 0))
+        desc_train_len = np.linalg.norm(desc_train, 2, 1)[:, None]
+        desc_filtered_train_len = np.linalg.norm(desc_filtered_train, 2, 1)[
+            :, None
+        ]
+        desc_test_len = np.linalg.norm(desc_test, 2, 1)[:, None]
 
-    test_pad_width = ((0, 0), (0, 0), (0, 0), (0, test_pad), (0, 0))
+        dist_matrix = (
+            1 - (desc_test / desc_test_len) @ (desc_train / desc_train_len).T
+        )
+        dist_filtered_matrix = (
+            1
+            - (desc_test / desc_test_len)
+            @ (desc_filtered_train / desc_filtered_train_len).T
+        )
 
-    train_features_padded = np.pad(
-        array=train_features,
-        pad_width=train_pad_width,
-        mode="mean",
-        # constant_values=0,
+    if dist_metric == "euclidean":
+
+        dist_matrix = np.linalg.norm(
+            desc_test[:, :, None] - desc_train.T[None, :, :], 2, 1
+        )
+        dist_filtered_matrix = np.linalg.norm(
+            desc_test[:, :, None] - desc_filtered_train.T[None, :, :], 2, 1
+        )
+
+    average_dist_to_frame = (dist_matrix @ L_train.T) / np.sum(L_train, 1)
+
+    # check if have more training set frames than NN being asked for
+    if N_neigh_frame >= average_dist_to_frame.shape[1]:
+        neigh_ind_frames = np.tile(
+            np.arange(average_dist_to_frame.shape[1]),
+            (average_dist_to_frame.shape[0], 1),
+        )
+    else:
+        neigh_ind_frames = np.argpartition(
+            average_dist_to_frame, N_neigh_frame, axis=1
+        )
+
+    # check if have more training env than NN being asked for
+    if N_neigh_env >= dist_filtered_matrix.shape[1]:
+        neigh_ind_frames = np.tile(
+            np.arange(dist_filtered_matrix.shape[1]),
+            (dist_filtered_matrix.shape[0], 1),
+        )
+    else:
+        neigh_ind_envs = np.argpartition(
+            dist_filtered_matrix, N_neigh_env, axis=1
+        )
+
+    return (
+        neigh_ind_envs[:, :N_neigh_env],
+        neigh_ind_frames[:, :N_neigh_frame],
     )
-
-    test_features_padded = np.pad(
-        array=test_features,
-        pad_width=test_pad_width,
-        mode="mean",
-        # constant_values=0,
-    )
-
-    return train_features_padded, test_features_padded
 
 
 def explicit_crosswise(data, nn_data, indices, nn_indices):
@@ -51,7 +88,7 @@ def explicit_crosswise(data, nn_data, indices, nn_indices):
     nn_indices = nn_indices
 
     locations = data[indices]
-    points = nn_data[nn_indices].swapaxes(1,2)
+    points = nn_data[nn_indices].swapaxes(1, 2)
 
     nn_count = nn_indices.shape[1]
     test_count = locations.shape[0]
@@ -63,31 +100,47 @@ def explicit_crosswise(data, nn_data, indices, nn_indices):
     )
 
     # crosswise
-    for (i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2), _ in np.ndenumerate(crosswise_similarity):
-        if i_combo==0: # should be q1 dot q2
+    for (
+        i_env_test,
+        i_xyz_2,
+        i_nn,
+        i_xyz_1,
+        i_combo,
+        i_atom_1,
+        i_atom_2,
+    ), _ in np.ndenumerate(crosswise_similarity):
+        if i_combo == 0:  # should be q1 dot q2
             q_1 = locations[i_env_test, i_xyz_1, 0, i_atom_1]
             # i_env_train = nn_indices[i_env_test, i_nn]
             q_2 = points[i_env_test, i_xyz_2, i_nn, 0, i_atom_2]
             q1_dot_q2 = np.sum(q_1 * q_2)
-            crosswise_similarity[i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2] = q1_dot_q2
-        elif i_combo==1: # should be q1 dot dq2
+            crosswise_similarity[
+                i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2
+            ] = q1_dot_q2
+        elif i_combo == 1:  # should be q1 dot dq2
             q_1 = locations[i_env_test, i_xyz_1, 0, i_atom_1]
             # i_env_test = nn_indices[i_env_test, i_nn]
             dq_2 = points[i_env_test, i_xyz_2, i_nn, 1, i_atom_2]
             q1_dot_dq2 = np.sum(q_1 * dq_2)
-            crosswise_similarity[i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2] = q1_dot_dq2
-        elif i_combo==2: # should be dq1 dot q2
+            crosswise_similarity[
+                i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2
+            ] = q1_dot_dq2
+        elif i_combo == 2:  # should be dq1 dot q2
             dq_1 = locations[i_env_test, i_xyz_1, 1, i_atom_1]
             # i_env_test = nn_indices[i_env_test, i_nn]
             q_2 = points[i_env_test, i_xyz_2, i_nn, 0, i_atom_2]
             dq1_dot_q2 = np.sum(dq_1 * q_2)
-            crosswise_similarity[i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2] = dq1_dot_q2
-        elif i_combo==3: # should be dq1 dot dq2
+            crosswise_similarity[
+                i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2
+            ] = dq1_dot_q2
+        elif i_combo == 3:  # should be dq1 dot dq2
             dq_1 = locations[i_env_test, i_xyz_1, 1, i_atom_1]
             # i_env_test = nn_indices[i_env_test, i_nn]
             dq_2 = points[i_env_test, i_xyz_2, i_nn, 1, i_atom_2]
             dq1_dot_dq2 = np.sum(dq_1 * dq_2)
-            crosswise_similarity[i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2] = dq1_dot_dq2
+            crosswise_similarity[
+                i_env_test, i_xyz_2, i_nn, i_xyz_1, i_combo, i_atom_1, i_atom_2
+            ] = dq1_dot_dq2
 
     return crosswise_similarity
 
@@ -107,164 +160,118 @@ def explicit_pairwise(data, nn_indices):
     test_count = points.shape[0]
 
     pairwise_similarity = np.zeros(
-        shape=(test_count, 3, nn_count, 3, nn_count, 4, train_atom_count, train_atom_count)
+        shape=(
+            test_count,
+            3,
+            nn_count,
+            3,
+            nn_count,
+            4,
+            train_atom_count,
+            train_atom_count,
+        )
     )
 
     # pairwise
-    for (i_env_test, i_xyz_1, i_nn_1, i_xyz_2, i_nn_2, i_combo, i_atom_1, i_atom_2), _ in np.ndenumerate(pairwise_similarity):
-        if i_combo==0: # should be q1 dot q2
+    for (
+        i_env_test,
+        i_xyz_1,
+        i_nn_1,
+        i_xyz_2,
+        i_nn_2,
+        i_combo,
+        i_atom_1,
+        i_atom_2,
+    ), _ in np.ndenumerate(pairwise_similarity):
+        if i_combo == 0:  # should be q1 dot q2
             q_1 = points[i_env_test, i_xyz_1, i_nn_1, 0, i_atom_1]
             q_2 = points[i_env_test, i_xyz_2, i_nn_2, 0, i_atom_2]
             q1_dot_q2 = np.sum(q_1 * q_2)
-            pairwise_similarity[i_env_test, i_xyz_1, i_nn_1, i_xyz_2, i_nn_2, i_combo, i_atom_1, i_atom_2] = q1_dot_q2
-        elif i_combo==1: # should be q1 dot dq2
+            pairwise_similarity[
+                i_env_test,
+                i_xyz_1,
+                i_nn_1,
+                i_xyz_2,
+                i_nn_2,
+                i_combo,
+                i_atom_1,
+                i_atom_2,
+            ] = q1_dot_q2
+        elif i_combo == 1:  # should be q1 dot dq2
             q_1 = points[i_env_test, i_xyz_1, i_nn_1, 0, i_atom_1]
             q_2 = points[i_env_test, i_xyz_2, i_nn_2, 1, i_atom_2]
             q1_dot_q2 = np.sum(q_1 * q_2)
-            pairwise_similarity[i_env_test, i_xyz_1, i_nn_1, i_xyz_2, i_nn_2, i_combo, i_atom_1, i_atom_2] = q1_dot_q2
-        elif i_combo==2: # should be q1 dot dq2
+            pairwise_similarity[
+                i_env_test,
+                i_xyz_1,
+                i_nn_1,
+                i_xyz_2,
+                i_nn_2,
+                i_combo,
+                i_atom_1,
+                i_atom_2,
+            ] = q1_dot_q2
+        elif i_combo == 2:  # should be q1 dot dq2
             q_1 = points[i_env_test, i_xyz_1, i_nn_1, 1, i_atom_1]
             q_2 = points[i_env_test, i_xyz_2, i_nn_2, 0, i_atom_2]
             q1_dot_q2 = np.sum(q_1 * q_2)
-            pairwise_similarity[i_env_test, i_xyz_1, i_nn_1, i_xyz_2, i_nn_2, i_combo, i_atom_1, i_atom_2] = q1_dot_q2
-        elif i_combo==3: # should be q1 dot dq2
+            pairwise_similarity[
+                i_env_test,
+                i_xyz_1,
+                i_nn_1,
+                i_xyz_2,
+                i_nn_2,
+                i_combo,
+                i_atom_1,
+                i_atom_2,
+            ] = q1_dot_q2
+        elif i_combo == 3:  # should be q1 dot dq2
             q_1 = points[i_env_test, i_xyz_1, i_nn_1, 1, i_atom_1]
             q_2 = points[i_env_test, i_xyz_2, i_nn_2, 1, i_atom_2]
             q1_dot_q2 = np.sum(q_1 * q_2)
-            pairwise_similarity[i_env_test, i_xyz_1, i_nn_1, i_xyz_2, i_nn_2, i_combo, i_atom_1, i_atom_2] = q1_dot_q2
+            pairwise_similarity[
+                i_env_test,
+                i_xyz_1,
+                i_nn_1,
+                i_xyz_2,
+                i_nn_2,
+                i_combo,
+                i_atom_1,
+                i_atom_2,
+            ] = q1_dot_q2
 
     return pairwise_similarity
 
 
-# def test_random(
-#     data=None, nn_data=None, indices=None, nn_indices=None, N_tests=5
-# ):
-#     train_count = nn_data.shape[0]
-#     if data is not None:
-#         test_count = data.shape[0]
-#     else:
-#         test_count = nn_indices.shape[0]
-
-#     random_test_index = np.random.randint(low=0, high=test_count, size=N_tests)
-#     random_neighbor_index = np.random.randint(
-#         low=0, high=nn_count, size=N_tests
-#     )
-
-#     if data is not None:
-#         sim = _crosswise_similarity(data, nn_data, indices, nn_indices)
-#     else:
-#         sim = _pairwise_similarity(data=nn_data, nn_indices=nn_indices)
-
-#     check_bool = []
-
-#     for idx in range(N_tests):
-#         print(
-#             f"Testing: test_index={random_test_index[idx]}, nn_index={random_neighbor_index[idx]}"
-#         )
-#         if data is not None:
-#             check = crosswise_check(
-#                 data,
-#                 nn_data,
-#                 indices,
-#                 nn_indices,
-#                 random_test_index[idx],
-#                 random_neighbor_index[idx],
-#             )
-#             check_bool.append(
-#                 np.allclose(
-#                     check,
-#                     sim[random_test_index[idx], :, random_neighbor_index[idx]],
-#                 )
-#             )
-#         else:
-#             check = pairwise_check(
-#                 nn_data,
-#                 nn_indices,
-#                 random_test_index[idx],
-#                 random_neighbor_index[idx],
-#             )
-#             check_bool.append(
-#                 np.allclose(
-#                     check,
-#                     sim[
-#                         random_test_index[idx],
-#                         :,
-#                         random_neighbor_index[idx],
-#                         :,
-#                         random_neighbor_index[idx],
-#                     ],
-#                 )
-#             )
-
-#     if all(check_bool):
-#         return True
-#     else:
-#         raise ValueError(
-#             f"Slices are the same shape but do not match value-wise."
-#         )
-
-
 def create_tensors_for_muygps(desc, derivatives, forces, frames):
     L = get_L(frames)
-    max_env = derivatives.shape[1]
-    desc_4_deriv = reshape_desc_for_deriv(L, desc, max_env)  # (i, n, d)
+    desc_new, deriv_new = reshape_desc_for_deriv_memfix(
+        L, desc, derivatives
+    )  # (i, n, d)
     # derivatives (i, n, 3, d)
 
-    frame_count = desc.shape[0]
-    atom_count = derivatives.shape[1]
-    desc_count = desc.shape[-1]
+    env_count = desc_new.shape[0]
+    atom_count = deriv_new.shape[1]
+    desc_count = desc_new.shape[-1]
 
     # get features
-    features = np.zeros((frame_count, 3, 2, atom_count, desc_count))
-    for a in range(frame_count):
+    features = np.zeros((env_count, 3, 2, atom_count, desc_count))
+
+    for a in range(env_count):
         for c in range(3):
-            features[a, c, 0, :, :] = desc_4_deriv[a, :, :]
-            # print(f'a={a}, {features[a, c, 0, 0 ,0]}')
-            features[a, c, 1, :, :] = derivatives[a, :, c, :]
+            features[a, c, 0, :, :] = desc_new[a, :, :]
+            features[a, c, 1, :, :] = deriv_new[a, :, c, :]
 
     return (features, forces)
 
 
 def reshape_features_for_muygps(desc, derivatives, forces, frames):
-    """
 
-    function will setup the features for muygps. This is assuming that we are only
-    fitting to forces. Each feature vector will include the descriptors followed
-    by the associated derivatives.
-
-    ARGS:
-    -----
-        desc - np array, matrix of descriptors (i x d) where i is the number of atomic environments and d is the dimension of descriptors
-
-        deriv - np array, tensor of descriptor derivatives (i, n, c, d), where
-                n is the max number of atoms that could be found in a frame for a dataset
-                and c is the number of cartesian components, which will always be 3
-
-        forces - np array of atomic forces of size (i, c)
-
-        frames  -  np.array the size of the total number of atomic environments (or atoms)
-                    in a set of frames; each element corresponds to which frame an
-                    atom belongs to
-
-                    eg.) [0, 0, 0, 1, 1, 1, 2, 2, 2] for a set that has three atoms in
-                     frame 0, three atoms in frame, 1, and two atoms in frame 2
-
-    RETURNS
-    -------
-        features - np array of feature vector rows (3 * i x 2 * n * d).
-                    In a given row, the descriptors for all atoms in a frame will be
-                    first listed, followed by the descriptor derivatives. The derivatives
-                    will correspond to the forces in the same row in the returned forces
-                    variable
-
-        forces - np. array vector of the forces but just reshaped to be size (3 * i)
-                 when reshaped, they will be in order [fx1, fy1, fz1, fx2, ....]
-                 where the xyz are the cartesian coordiantes and the numbers are the environment index
-
-    """
     L = get_L(frames)
-    max_env = derivatives.shape[1]
-    desc_4_deriv = reshape_desc_for_deriv(L, desc, max_env)  # (i, n, d)
+    # desc_4_deriv = reshape_desc_for_deriv(L, desc, max_env) # (i, n, d)
+    desc_4_deriv, derivatives = reshape_desc_for_deriv_memfix(
+        L, desc, derivatives
+    )
     # derivatives (i, n, 3, d)
 
     # get features
@@ -293,29 +300,7 @@ def reshape_features_for_muygps(desc, derivatives, forces, frames):
 
 
 def get_L(frames):
-    """
-    function contructs object called L, an np.array such  that elements (i,j)
-     is 1 if atomic environment j is in frame (also referred to as frame) i, and
-     othewise that element is 0.
 
-     ARGS
-     ----
-        frames: np.array the size of the total number of atomic environments (or atoms)
-                in a set of frames; each element corresponds to which frame an
-                atom belongs to
-
-                eg.) [0, 0, 0, 1, 1, 1, 2, 2, 2] for a set that has three atoms in
-                 frames 0, three atoms in frame, 1, and two atoms in frame 2
-     RETURNS
-     -------
-        L:      np.array described above; in the example used in description for
-                frames, L would be:
-
-                        [[1, 1, 1, 0, 0, 0, 0, 0]
-                        [[0, 0, 0, 1, 1, 1, 0, 0]
-                        [[0, 0, 0, 0, 0, 0, 1, 1]]
-
-    """
     frames = frames.squeeze()
     _, ind = np.unique(frames, return_index=True)
     frame_list = frames[np.sort(ind)]
@@ -327,74 +312,59 @@ def get_L(frames):
     return L
 
 
-def reshape_desc_for_deriv(L, desc, max_env):
-    """
-    constructs desc_for_derivs, an tensor constructed out of the descriptor matrix that
-    replicates rows in a fashion that is sensible for the cov matrix force entries
+def reshape_desc_for_deriv_memfix(L, desc, deriv):
 
-    ARGS:
-    ----
-         L: np.array produced by the get_L() function in this module, which
-             contains information about number of atoms in each frame
-         desc: np.array of dataset descriptors of size [n, d]
-
-         max_env: int, maxium number of environments an atom can be for the entire data set
-
-    returns
-    -------
-
-         desc_for_deriv [n, max_env, d] where n is the total number of atoms in the set
-             which is also the 0th dimension of desc, max_env is the max number of env and atom can
-             be in; this will be taken as the max number of atoms in the largest frame
-             of the set; d is the number of descriptor dimensions.
-
-             -> for frames that have less than max_env, the rest of the max_env
-                 dimension will be filled with ones. Although it might seem
-                 more reasonable to fill with zeros, the some kerenls require
-                 dividing by this quantity, which will lead to NANs. If we use
-                 ones, this should not hurt because they should always be mulilied
-                 with descriptor derivatives that are zeros.
-
-
-    """
     d = desc.shape[1]
     n_tot = desc.shape[0]
-    # desc_for_deriv = np.zeros((n_tot, max_env, d))
-    desc_for_deriv = np.ones((n_tot, max_env, d))
-    n_frames = L.shape[0]
-    n_env_so_far = 0
-    for a in np.arange(n_frames):
-        n_env = int(np.sum(L[a, :]))
-        desc_for_deriv[
-            n_env_so_far : n_env_so_far + n_env, :n_env, :
-        ] = np.tile(desc[n_env_so_far : n_env_so_far + n_env, :], (n_env, 1, 1))
-        n_env_so_far += n_env
 
-    return desc_for_deriv
+    # get max_env by finding atom with most neighbors
+    atom_is_neigh = np.logical_not(np.all(np.isclose(deriv, 0), axis=(2, 3)))
+
+    # get neighbor list
+    row_indices, col_indices = np.nonzero(atom_is_neigh)
+    neigh_list = [[] for _ in range(n_tot)]
+    for r, c in zip(row_indices, col_indices):
+        neigh_list[r].append(int(c))
+
+    num_atoms_in_frames = np.sum(L, 1).astype("int")
+    frame_starts = np.cumsum(np.insert(num_atoms_in_frames, 0, 0))[:-1]
+    atom_to_frame = np.repeat(
+        np.arange(len(num_atoms_in_frames)), num_atoms_in_frames
+    )
+    offsets = frame_starts[atom_to_frame]
+
+    flat_neigh = np.concatenate(neigh_list)
+    lens = np.array([len(n) for n in neigh_list]).astype("int")
+    i_for_flat = np.repeat(np.arange(n_tot), lens)
+    offsets_flat = offsets[i_for_flat]
+    flat_indices = np.array(flat_neigh + offsets_flat).astype("int")
+
+    # desc_for_deriv
+    max_neighbors = max(lens)
+    # desc_for_deriv = np.zeros((n_tot, max_neighbors, d), dtype=desc.dtype)
+    desc_for_deriv = np.ones((n_tot, max_neighbors, d), dtype=desc.dtype)
+    desc_for_deriv_flat = desc[flat_indices, :]
+
+    # deriv_reshaped
+    X, Y = deriv.shape[2], deriv.shape[3]
+    deriv_reshaped = np.zeros((n_tot, max_neighbors, X, Y), dtype=deriv.dtype)
+    deriv_reshaped_flat = deriv[i_for_flat, flat_neigh, :, :]
+
+    # Scatter back
+    starts = np.cumsum(np.insert(lens, 0, 0))[:-1]
+    for i, (start, length) in enumerate(zip(starts, lens)):
+        desc_for_deriv[i, :length, :] = desc_for_deriv_flat[
+            start : start + length, :
+        ]
+        deriv_reshaped[i, :length, :, :] = deriv_reshaped_flat[
+            start : start + length, :, :
+        ]
+
+    return desc_for_deriv, deriv_reshaped
 
 
 def unwrap_feature_vectors(features, desc_dim):
-    """
-    unwraps feature vectors and constructs the descriptor and data objects
-    as outlined in kernel slides written by J. Stimac
 
-    ARGs
-    ----
-      - features: np matrix of feature vectors for a set
-
-      - desc_dim: int descritptor dimensionality
-
-    Returns
-    -------
-        *** A more detailed description for these returned values is given ***
-            in the slides on the implementation; the data objects are given
-            the same names as on the slides.
-
-      - X_dot:      np tensor with all descriptors for a given set
-      - Delta:      np tensor with all desriptor derivatives for a given set
-
-
-    """
     n = int(
         features.shape[1] / 2 / desc_dim
     )  # equal to max number of atoms per frame for the set
@@ -417,10 +387,7 @@ def unwrap_feature_vectors(features, desc_dim):
 def cov_dot_prod(
     X_dot1, Delta1, X_dot2, Delta2, hyperparams, loop_over_n=False
 ):
-    """
-    NOTE:
 
-    """
     var = hyperparams[0] * hyperparams[0]  # variance over the prior
     sensativity = hyperparams[1]
 
@@ -491,8 +458,6 @@ def cov_mat_muygps(
     # loop over different sections of rows of the cov matrix to avoid OOM
     N_sections = np.ceil(X_dot1.shape[0] / N_rows_per_iter)
     for section in np.arange(N_sections):
-        # percent_done = 100 * section/N_sections
-        # print(f"    COMPLETE WITH {percent_done:.2f}% OF COVARIANCE MATRIX")
 
         ind_start = int(section * N_rows_per_iter)
         if section == (N_sections - 1):
@@ -507,7 +472,6 @@ def cov_mat_muygps(
             Delta2,
             hyperparams,
         )
-    # return np.asnumpy(K)
     return np.asarray(K)
 
 
@@ -518,7 +482,6 @@ def base_implmementation_mean(
     train_count = train_features.shape[0] // 3
     nn_count = nn_envs.shape[1]
     train_atom_count = train_features.shape[-1] // (2 * 116)
-    # test_atom_count = test_features.shape[-1] // (2 * 116)
 
     neighbor_envs_reshaped = np.repeat(nn_envs, repeats=3, axis=0)
     neighbor_envs_modified = neighbor_envs_reshaped * 3
@@ -526,7 +489,6 @@ def base_implmementation_mean(
     neighbor_envs = (neighbor_envs_modified + env_adjust).reshape(
         test_count, 3, nn_count
     )
-
 
     hyperparams = np.array([1.0, 4.0])
     forces_pred_test = np.array([])  # where to store predicted test forces
@@ -543,18 +505,6 @@ def base_implmementation_mean(
         ind_test_features = np.arange(3 * ind_test_env, (3 * ind_test_env) + 3)
         # print(ind_test_features)
         features_test_select = test_features[ind_test_features, :]
-
-        # down select which forces in the training env to use
-        # - translate the index of environments to keep to which forces/force
-        #     features to keep
-        # n_env_train = nn_list.shape[0]
-        # print(n_env_train)
-        # ind_forces_2_envs = np.repeat(np.arange(n_env_train), 3)
-        # # index of which env each of the force/features rows corresponds to
-        # print(ind_forces_2_envs)
-        # mask = np.isin(ind_forces_2_envs, nn_list[ind_test_env])
-        # ind_forces_keep = np.where(mask)[0]
-        # print(ind_forces_keep)
 
         features_train_NN = train_features[neighbor_envs[ind_test_env]].reshape(
             train_count * 3, 2 * train_atom_count * 116
@@ -596,23 +546,68 @@ class BenchmarkTestCase(parameterized.TestCase):
         cls.train_count = 10
         cls.test_count = 7
         cls.desc_count = 116
-        cls.nn_envs = np.array([np.random.choice(cls.train_count, size = (cls.nn_count), replace=False) for i in range(cls.test_count)])
+        cls.nn_envs = np.array(
+            [
+                np.random.choice(
+                    cls.train_count, size=(cls.nn_count), replace=False
+                )
+                for i in range(cls.test_count)
+            ]
+        )
 
-        cls.train_forces_raw = np.random.normal(loc=0, scale=1, size=(cls.train_count, 3))
-        cls.train_desc = np.random.normal(loc=0, scale=1, size=(cls.train_count, cls.desc_count))
-        cls.train_derivs = np.random.normal(loc=0, scale=1, size=(cls.train_count, cls.train_count, 3, cls.desc_count))
+        cls.train_forces_raw = np.random.normal(
+            loc=0, scale=1, size=(cls.train_count, 3)
+        )
+        cls.train_desc = np.random.normal(
+            loc=0, scale=1, size=(cls.train_count, cls.desc_count)
+        )
+        cls.train_derivs = np.random.normal(
+            loc=0,
+            scale=1,
+            size=(cls.train_count, cls.train_count, 3, cls.desc_count),
+        )
 
-        cls.test_forces_raw = np.random.normal(loc=0, scale=1, size=(cls.test_count, 3))
-        cls.test_desc = np.random.normal(loc=0, scale=1, size=(cls.test_count, cls.desc_count))
-        cls.test_derivs = np.random.normal(loc=0, scale=1, size=(cls.test_count, cls.test_count, 3, cls.desc_count))
+        cls.test_forces_raw = np.random.normal(
+            loc=0, scale=1, size=(cls.test_count, 3)
+        )
+        cls.test_desc = np.random.normal(
+            loc=0, scale=1, size=(cls.test_count, cls.desc_count)
+        )
+        cls.test_derivs = np.random.normal(
+            loc=0,
+            scale=1,
+            size=(cls.test_count, cls.test_count, 3, cls.desc_count),
+        )
 
-        cls.train_features = create_tensors_for_muygps(cls.train_desc, cls.train_derivs, cls.train_forces_raw, np.zeros(cls.train_count))[0]
-        cls.train_forces = create_tensors_for_muygps(cls.train_desc, cls.train_derivs, cls.train_forces_raw, np.zeros(cls.train_count))[1]
-        cls.test_features = create_tensors_for_muygps(cls.test_desc, cls.test_derivs, cls.test_forces_raw, np.zeros(cls.test_count))[0]
-        cls.test_forces = create_tensors_for_muygps(cls.test_desc, cls.test_derivs, cls.test_forces_raw, np.zeros(cls.test_count))[1]
+        cls.train_features = create_tensors_for_muygps(
+            cls.train_desc,
+            cls.train_derivs,
+            cls.train_forces_raw,
+            np.zeros(cls.train_count),
+        )[0]
+        cls.train_forces = create_tensors_for_muygps(
+            cls.train_desc,
+            cls.train_derivs,
+            cls.train_forces_raw,
+            np.zeros(cls.train_count),
+        )[1]
+        cls.test_features = create_tensors_for_muygps(
+            cls.test_desc,
+            cls.test_derivs,
+            cls.test_forces_raw,
+            np.zeros(cls.test_count),
+        )[0]
+        cls.test_forces = create_tensors_for_muygps(
+            cls.test_desc,
+            cls.test_derivs,
+            cls.test_forces_raw,
+            np.zeros(cls.test_count),
+        )[1]
 
         cls.sim_fn = DifferenceIsotropy(metric=dot, length_scale=Parameter(1.0))
         cls.model = MuyGPS(
-            kernel=SOAPKernel(deformation=cls.sim_fn, sensitivity=Parameter(cls.zeta)),
+            kernel=SOAPKernel(
+                deformation=cls.sim_fn, sensitivity=Parameter(cls.zeta)
+            ),
             noise=HomoscedasticNoise(cls.noise_prior),
         )

@@ -93,7 +93,7 @@ class KernelTest(KernelTestCase):
 class PosteriorTestCase(BenchmarkTestCase):
     @classmethod
     def setUpClass(cls):
-        super(KernelTestCase, cls).setUpClass()
+        super(PosteriorTestCase, cls).setUpClass()
 
         cls.crosswise_similarity = cls.sim_fn.crosswise_tensor(
             data=cls.test_features,
@@ -104,15 +104,40 @@ class PosteriorTestCase(BenchmarkTestCase):
         cls.pairwise_similarity = cls.sim_fn.pairwise_tensor(
             data=cls.train_features, nn_indices=cls.nn_envs.astype(int)
         )
-        cls.Kin = cls.model.kernel(self.pairwise_similarity)
+        cls.out_similarity = cls.sim_fn.out_tensor(
+            data=cls.test_features, data_indices=np.arange(cls.test_count)
+        )
+        cls.Kin = cls.model.kernel(cls.pairwise_similarity)
 
-        cls.Kcross = cls.model.kernel(self.crosswise_similarity)
+        cls.Kcross = cls.model.kernel(cls.crosswise_similarity)
 
-        def _mean_chassis(self)
+        cls.Kout = cls.model.kernel(cls.out_similarity)
+
+    def _mean_chassis(self):
+        nn_targets = self.train_forces[self.nn_envs.astype(int)].swapaxes(-2, -1)
+        posterior_mean = self.model.posterior_mean(
+            Kin=self.Kin,
+            Kcross=self.Kcross,
+            batch_nn_targets=nn_targets
+        )
+        self.assertEqual(posterior_mean.shape, (self.test_count, 3))
+
+    def _variance_chassis(self):
+        posterior_var = self.model.posterior_variance(
+            Kin=self.Kin,
+            Kcross=self.Kcross,
+            Kout=self.Kout
+        )
+        self.assertEqual(posterior_var.shape, (self.test_count, 3, 3))
 
 
 class PosteriorTest(PosteriorTestCase):
-    pass
+    def test_mean(self):
+        self._mean_chassis()
+
+    def test_variance(self):
+        self._variance_chassis()
+
 
 if __name__ == "__main__":
     absltest.main()
