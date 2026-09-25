@@ -12,4 +12,5 @@ __pycache__/
 data/*
 docs/examples/data/*
 venv/
+.venv/
 *.mypy_cache
